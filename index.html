@@ -141,6 +141,8 @@
       <label>Actual job cost (back-test, optional)</label>
       <input type="number" id="actualJobCost" value="0" step="1000" placeholder="e.g. 116955">
       <p class="note">PRD 02 Milestone 4 gate: model within 10% of a real completed job.</p>
+      <div class="check"><input type="checkbox" id="backSolveResidual"><label style="margin:0">Back-solve the residual to that total</label></div>
+      <p class="note">Sizes what the estimate contains that the model can't yet explain. It also forces a 0% variance, so the gate stops meaning anything while it's on.</p>
       <div class="check"><input type="checkbox" id="includeMissing"><label style="margin:0">Show Lever-B / missing-cost preview</label></div>
       <p class="note">Gated on the cost-plus contract review (Foundation §3.1). Preview only — don't bill until the contract defines reimbursable cost.</p>
       <div class="actions">
@@ -271,6 +273,7 @@ function readInputs() {
     buildWeeks: $('overrideWeeks').checked ? +$('buildWeeks').value : undefined,
     visitsPerWeek: +$('visitsPerWeek').value, hoursPerVisit: +$('hoursPerVisit').value,
     actualJobCost: actual > 0 ? actual : undefined,
+    backSolveResidual: $('backSolveResidual').checked,
     allowances, directLines, includeMissing: $('includeMissing').checked,
   };
 }
@@ -310,10 +313,12 @@ function render() {
     ['Direct entry', cv.directPct, cv.direct, 'var(--steel)'],
     ['Allowances', cv.allowancePct, cv.allowance, 'var(--amber)'],
   ];
+  if (cv.residual > 0) rows.push(['Residual (back-solved)', cv.residualPct, cv.residual, 'var(--lowc)']);
   if (cv.unmodelled > 0) rows.push(['Not modelled', cv.unmodelledPct, cv.unmodelled, 'var(--lowc)']);
   $('coverage').innerHTML = rows.map(([n,pct,amt,c]) =>
     `<div class="cov-row"><div>${n}</div><div class="cov-track"><div class="cov-fill" style="width:${Math.min(100,pct)}%;background:${c}"></div></div><div class="cov-num">${pct}% · ${money(amt)}</div></div>`).join('');
   $('coverageNote').innerHTML = `As a share of ${cv.basis} (${money(cv.denominator)}). `
+    + `<b>${cv.unsubstantiatedPct}% is unsubstantiated</b> — allowances, residual and unmodelled scope carry no quantity behind them. `
     + (cv.unpricedDirectLines.length ? `<b>Still $0:</b> ${esc(cv.unpricedDirectLines.join(', '))}.` : 'All direct-entry codes are priced.');
 
   // back-test
@@ -323,9 +328,11 @@ function render() {
     $('bt-actual').textContent = money(bt.actual);
     $('bt-model').textContent = money(bt.model);
     $('bt-var').textContent = `${bt.variancePct}%`;
-    $('bt-var').style.color = bt.withinGate ? 'var(--ok)' : 'var(--lowc)';
-    $('bt-gate').textContent = bt.withinGate ? 'Variance · within gate' : 'Variance · fails gate';
-    $('bt-note').textContent = bt.withinGate
+    $('bt-var').style.color = bt.circular ? 'var(--warn)' : bt.withinGate ? 'var(--ok)' : 'var(--lowc)';
+    $('bt-gate').textContent = bt.circular ? 'Variance · circular' : bt.withinGate ? 'Variance · within gate' : 'Variance · fails gate';
+    $('bt-note').textContent = bt.circular
+      ? `Circular — the residual was back-solved to this total, so 0% is arithmetic, not accuracy. The finding is the ${money(t.coverage.residual)} residual, not the fit.`
+      : bt.withinGate
       ? 'Model reproduces the completed job inside the 10% gate.'
       : `${money(bt.unmodelled)} of this job is not modelled — it sits in the direct-entry codes still at $0. That is missing input, not model error.`;
   } else $('backTestPanel').style.display = 'none';

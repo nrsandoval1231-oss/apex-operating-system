@@ -124,7 +124,17 @@ ok('budget by code produced', t.budgetByCode.length>0);
 const bt = takeoff({...WHITAKER, actualJobCost:T.jobCost});
 ok('back-test measures against ACTUAL job cost', bt.coverage.basis==='actual job cost');
 ok('back-test exposes the unmodelled remainder', bt.backTest.unmodelled>0 && !bt.backTest.withinGate, `${bt.backTest.variancePct}%`);
-ok('coverage flags unpriced direct lines', bt.coverage.unpricedDirectLines.length===5);
+ok('coverage flags every unpriced direct line', bt.coverage.unpricedDirectLines.length===8, String(bt.coverage.unpricedDirectLines.length));
+
+// ── Back-solved residual: sizes the unknown, but makes the gate circular ─────
+const withEq = takeoff({...WHITAKER, actualJobCost:T.jobCost, backSolveResidual:true,
+  directLines: [{code:300,name:'Pool Equipment',extended:10000,confidence:'direct',basis:'entered'}]});
+ok('residual forces job cost to the actual total', near(withEq.jobCost,T.jobCost,1), String(withEq.jobCost));
+ok('residual back-test is flagged CIRCULAR', withEq.backTest.circular===true && withEq.backTest.variancePct===0);
+ok('residual is excluded from substantiated direct cost', withEq.coverage.direct===10000, String(withEq.coverage.direct));
+ok('residual counted as unsubstantiated, not coverage', withEq.coverage.residual>0 && withEq.coverage.unsubstantiatedPct>50, `${withEq.coverage.unsubstantiatedPct}%`);
+ok('residual raises a warn flag', withEq.flags.some(f=>f.level==='warn'&&f.msg.includes('BACK-SOLVED RESIDUAL')));
+ok('no residual line when back-solve is off', !takeoff({...WHITAKER,actualJobCost:T.jobCost}).directLines.some(l=>l.code===9999));
 
 console.log(`\n${pass} pass / ${fail} fail`);
 process.exit(fail?1:0);

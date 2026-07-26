@@ -48,6 +48,7 @@ export const COST_CODES = [
   { code: 1600, name: 'Startup & Chemicals', status: 'missing' },
   { code: 1700, name: 'Cleanup & Punch', status: 'missing' },
   { code: 1800, name: 'Warranty & Callback', status: 'missing' },
+  { code: 9999, name: 'Unallocated residual', status: 'residual' },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -644,10 +645,13 @@ function bondingLine(geo) {
  */
 export const DIRECT_LINES_SEED = [
   { code: 300, name: 'Pool Equipment', extended: 0, confidence: 'direct', basis: 'pump/filter/heater/UV per spec — enter from quote' },
+  { code: 500, name: 'Utilities — Electrician', extended: 0, confidence: 'direct', basis: 'his estimate carries a $3,000 Electrician line; bonding labor may sit inside it (ref §500)' },
   { code: 600, name: 'Lights', extended: 0, confidence: 'direct', basis: 'fixture count × unit — enter from quote' },
   { code: 700, name: 'Pool Plumbing', extended: 0, confidence: 'direct', basis: '~755 LF PVC on Whitaker; layout-driven, enter or component-estimate (ref §700)' },
   { code: 900, name: 'Cover', extended: 0, confidence: 'direct', basis: 'encapsulated under-track system; "Gunite Encap Kit" is a real invoice line (ref §900)' },
+  { code: 1100, name: 'Water Features', extended: 0, confidence: 'direct', basis: 'spillway/sheer descent per spec — enter from quote' },
   { code: 1200, name: 'Automation', extended: 0, confidence: 'direct', basis: 'controller + valves — enter from quote' },
+  { code: 1300, name: 'Additional Upgrades', extended: 0, confidence: 'direct', basis: 'catch-all on his estimate — itemise before trusting it' },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -761,6 +765,30 @@ export function takeoff(inputs) {
   const allowanceTotal = allowances.reduce((s, a) => s + a.amount, 0);
 
   const takeoffCost = parametricLines.reduce((s, l) => s + l.extended, 0);
+
+  /**
+   * Back-solve the unallocated remainder against a known completed-job total.
+   *
+   * Useful for sizing what is still unmodelled on a real job — but it makes the back-test
+   * CIRCULAR by construction: job cost is forced to equal actual, so a 0% variance proves
+   * nothing. The residual is the finding, not the fit. Keep watching `coverage`, which counts
+   * the residual as unsubstantiated no matter how large it is.
+   */
+  if (opts.backSolveResidual && opts.actualJobCost) {
+    const entered = directLines.reduce((s, l) => s + (l.extended || 0), 0);
+    const residual = opts.actualJobCost - (takeoffCost + entered + allowanceTotal);
+    if (Math.abs(residual) > 0.5) {
+      directLines.push({
+        code: 9999,
+        name: 'Unallocated residual (back-solved)',
+        qty: null, unit: null, unitCost: null, crewHours: null,
+        extended: r(residual),
+        confidence: 'residual',
+        basis: `${fmtMoney(opts.actualJobCost)} actual − ${fmtMoney(takeoffCost)} takeoff − ${fmtMoney(entered)} entered − ${fmtMoney(allowanceTotal)} allowances. NOT a takeoff — this is what the estimate contains that the model does not yet explain.`,
+      });
+    }
+  }
+
   const directCost = directLines.reduce((s, l) => s + (l.extended || 0), 0);
 
   // Reimbursable cost the fee is charged on: takeoff + direct + allowances (Foundation §6).
@@ -820,18 +848,26 @@ export function takeoff(inputs) {
       const denom = opts.actualJobCost || jobCost;
       const pct = (n) => (denom ? r((n / denom) * 100, 1) : 0);
       const unmodelled = opts.actualJobCost ? Math.max(0, opts.actualJobCost - jobCost) : 0;
+      // A back-solved residual is NOT substantiated cost — it is the opposite. Split it out of
+      // `direct` so filling it in can never be mistaken for progress toward the 100% goal.
+      const residual = directLines.find((l) => l.code === 9999)?.extended ?? 0;
+      const enteredDirect = directCost - residual;
       return {
         basis: opts.actualJobCost ? 'actual job cost' : 'modelled job cost',
         denominator: r(denom),
         parametric: r(takeoffCost),
-        direct: r(directCost),
+        direct: r(enteredDirect),
         allowance: r(allowanceTotal),
+        residual: r(residual),
         unmodelled: r(unmodelled),
         parametricPct: pct(takeoffCost),
-        directPct: pct(directCost),
+        directPct: pct(enteredDirect),
         allowancePct: pct(allowanceTotal),
+        residualPct: pct(residual),
         unmodelledPct: pct(unmodelled),
-        unpricedDirectLines: directLines.filter((l) => !l.extended).map((l) => l.name),
+        // Everything the customer is billed for that no quantity explains.
+        unsubstantiatedPct: pct(allowanceTotal + residual + unmodelled),
+        unpricedDirectLines: directLines.filter((l) => !l.extended && l.code !== 9999).map((l) => l.name),
       };
     })(),
     // Always computed — "gated" means do not BILL it, not do not LOOK at it. Sizing the prize
@@ -850,6 +886,8 @@ export function takeoff(inputs) {
           variancePct: r(((jobCost - opts.actualJobCost) / opts.actualJobCost) * 100, 1),
           withinGate: Math.abs((jobCost - opts.actualJobCost) / opts.actualJobCost) <= 0.1,
           unmodelled: r(opts.actualJobCost - jobCost),
+          // A back-solved residual forces the model to match, so the gate is meaningless here.
+          circular: !!opts.backSolveResidual,
         }
       : null,
     flags: buildFlags(allowances, allowanceTotal, jobCost, parametricLines, directLines),
@@ -863,7 +901,14 @@ function codeName(code) {
 
 function buildFlags(allowances, allowanceTotal, jobCost, lines, directLines = []) {
   const flags = [];
-  const unpriced = directLines.filter((l) => !l.extended);
+  const residual = directLines.find((l) => l.code === 9999);
+  if (residual) {
+    flags.push({
+      level: 'warn',
+      msg: `${fmtMoney(residual.extended)} (${r((residual.extended / jobCost) * 100, 1)}% of job cost) is a BACK-SOLVED RESIDUAL, not a takeoff. It forces the model to match the actual total, so the back-test gate is circular and proves nothing while this line exists. Decompose it into real cost codes — it is a to-do list, not a result.`,
+    });
+  }
+  const unpriced = directLines.filter((l) => !l.extended && l.code !== 9999);
   if (unpriced.length) {
     flags.push({
       level: 'warn',
