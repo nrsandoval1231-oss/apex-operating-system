@@ -788,22 +788,33 @@ export function buildSchedule(geo, lines, opts = {}) {
   const gridLF = rebar?.extra?.gridLF ?? 0;
   const deckSf = lines.find((l) => l.code === 1000)?.qty ?? 0;
 
+  /**
+   * `days` is ELAPSED duration; `crewDays` is in-house crew EFFORT. They are not the same and
+   * conflating them breaks capacity planning: fill & startup runs ~5 elapsed days but is mostly
+   * monitoring, and a sub phase can run for days while the crew spends an hour on site.
+   *
+   * Resource split confirmed by Travis 2026-07-26: subs handle excavation, gunite, electrical
+   * and concrete decking. The in-house crew — one crew, one lead — handles everything else.
+   * Sub phases still carry a little crew time for setup, access and inspection.
+   */
   const phases = [
-    { name: 'Layout & permit', days: 1, lag: opts.permitLagDays ?? 7, lagWhy: 'permit issuance' },
-    { name: 'Excavation', days: bankYd3 / rates.digYd3PerDay, lag: 0 },
-    { name: 'Steel', days: gridLF / rates.rebarLFPerDay, lag: 0 },
-    { name: 'Plumbing rough', days: 2, lag: 2, lagWhy: 'pre-gunite inspection' },
-    { name: 'Gunite', days: 1, lag: opts.guniteCureDays ?? 10, lagWhy: 'shell cure (wet-down window)' },
-    { name: 'Tile & coping', days: geo.copingPerimeter / rates.copingLFPerDay, lag: 0 },
-    { name: 'Deck', days: deckSf / rates.deckSfPerDay, lag: deckSf > 0 ? 5 : 0, lagWhy: 'deck cure' },
-    { name: 'Equipment & electrical', days: 3, lag: 0 },
-    { name: 'Plaster', days: 1, lag: 0 },
-    { name: 'Fill & startup', days: geo.gallons / rates.fillGalPerDay + 4, lag: 0 },
-    { name: 'Punch & handover', days: 1, lag: 0 },
-  ].map((p) => ({ ...p, days: r(p.days, 2) }));
+    { name: 'Layout & permit', days: 1, crewDays: 0.5, resource: 'crew', lag: opts.permitLagDays ?? 7, lagWhy: 'permit issuance' },
+    { name: 'Excavation', days: bankYd3 / rates.digYd3PerDay, crewDays: 0.25, resource: 'sub', lag: 0 },
+    { name: 'Steel', days: gridLF / rates.rebarLFPerDay, resource: 'crew', lag: 0 },
+    { name: 'Plumbing rough', days: 2, resource: 'crew', lag: 2, lagWhy: 'pre-gunite inspection' },
+    { name: 'Gunite', days: 1, crewDays: 0.5, resource: 'sub', lag: opts.guniteCureDays ?? 10, lagWhy: 'shell cure (wet-down window)' },
+    { name: 'Tile & coping', days: geo.copingPerimeter / rates.copingLFPerDay, resource: 'crew', lag: 0 },
+    { name: 'Deck', days: deckSf / rates.deckSfPerDay, crewDays: 0.25, resource: 'sub', lag: deckSf > 0 ? 5 : 0, lagWhy: 'deck cure' },
+    { name: 'Equipment & electrical', days: 3, crewDays: 2, resource: 'split', lag: 0 },
+    { name: 'Plaster', days: 1, resource: 'crew', lag: 0 },
+    { name: 'Fill & startup', days: geo.gallons / rates.fillGalPerDay + 4, crewDays: 1.5, resource: 'crew', lag: 0 },
+    { name: 'Punch & handover', days: 1, resource: 'crew', lag: 0 },
+  ].map((p) => ({ ...p, days: r(p.days, 2), crewDays: r(p.crewDays ?? p.days, 2) }));
 
   const workingDays = phases.reduce((s, p) => s + p.days, 0);
   const lagDays = phases.reduce((s, p) => s + p.lag, 0);
+  const crewDays = phases.reduce((s, p) => s + p.crewDays, 0);
+  const subDays = phases.filter((p) => p.resource === 'sub').reduce((s, p) => s + p.days, 0);
   const calendarDays = workingDays * (7 / 5) + lagDays; // working days land Mon–Fri
   const buildWeeks = calendarDays / 7;
 
@@ -811,10 +822,50 @@ export function buildSchedule(geo, lines, opts = {}) {
     phases,
     workingDays: r(workingDays, 1),
     lagDays: r(lagDays, 1),
+    crewDays: r(crewDays, 1),
+    subDays: r(subDays, 1),
     calendarDays: r(calendarDays, 1),
     buildWeeks: r(buildWeeks, 1),
     note: 'Derived from quantities + fixed cure/inspection lags. Excludes the Lubbock freeze season — gunite cannot be shot in freezing weather (ref §0/§5.5), which closes the calendar seasonally.',
   };
+}
+
+/**
+ * Crew capacity — what one in-house crew can actually carry.
+ *
+ * The build calendar above is a TECHNICAL minimum: how fast a pool can go if the crew is free
+ * whenever it's needed. That assumption holds for one job and breaks for several, because five
+ * jobs in flight contend for the same crew.
+ *
+ * Little's Law: with N jobs in flight at cycle time T weeks, throughput is N/T jobs per week.
+ * Each job consumes C crew-days, and the crew supplies 5 per week, so N/T × C ≤ 5, i.e.
+ *
+ *   T = max(technical minimum, N × C / 5)
+ *
+ * Past the point where crew time binds, adding jobs stops adding output and only adds queue —
+ * every customer waits longer for the same number of pools per year.
+ */
+export function crewCapacity({ crewDaysPerJob, minCycleWeeks, maxConcurrent = 6, crewDaysPerWeek = 5 }) {
+  const rows = [];
+  for (let n = 1; n <= maxConcurrent; n++) {
+    const crewBoundWeeks = (n * crewDaysPerJob) / crewDaysPerWeek;
+    const cycleWeeks = Math.max(minCycleWeeks, crewBoundWeeks);
+    const throughputPerYear = (n / cycleWeeks) * 52;
+    rows.push({
+      concurrent: n,
+      cycleWeeks: r(cycleWeeks, 1),
+      crewBound: crewBoundWeeks > minCycleWeeks,
+      utilisation: r(Math.min(1, crewBoundWeeks / cycleWeeks) * 100, 0),
+      poolsPerYear: r(throughputPerYear, 1),
+      addedWaitWeeks: r(cycleWeeks - minCycleWeeks, 1),
+    });
+  }
+  // The knee: the SMALLEST N that already reaches the crew's annual ceiling. Below it the crew
+  // is idle and output is left on the table; above it output is flat and only the queue grows.
+  // (Taking the largest N before the crew binds would be wrong — that point is under-loaded.)
+  const ceiling = (52 * crewDaysPerWeek) / crewDaysPerJob;
+  const sweetSpot = rows.find((x) => x.poolsPerYear >= ceiling * 0.98) ?? rows[rows.length - 1];
+  return { crewDaysPerJob, minCycleWeeks, rows, sweetSpot, ceilingPoolsPerYear: r(ceiling, 1) };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
