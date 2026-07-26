@@ -1,0 +1,59 @@
+---
+/**
+ * QuoteSection.astro — Phase 3. The #quote section: heading/lead from content, the two-column
+ * grid (form + capture panel), and the QuoteForm React island (client:visible — only this part
+ * ships JS). The inline script wires every [data-preselect] CTA to the island so clicking e.g.
+ * "Start my pool quote" pre-selects Designer Pools (AC-2.2), while the selector stays changeable.
+ *
+ * Webhook + contact come from site config (env). Hard rule 6 / AC-1.7: leadWebhookUrl resolves
+ * to the TEST endpoint unless PUBLIC_ENV=production.
+ */
+import { sections } from '@content/site-copy';
+import { site, leadWebhookUrl } from '@lib/site';
+import QuoteForm from './QuoteForm.tsx';
+---
+<section id="quote">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">{sections.quote.eyebrow}</p>
+      <h2>{sections.quote.heading}</h2>
+      <p class="lead">{sections.quote.lead}</p>
+    </div>
+
+    <div class="qgrid">
+      <QuoteForm
+        client:visible
+        webhookUrl={leadWebhookUrl}
+        phoneDisplay={site.phoneDisplay}
+        phoneE164={site.phoneE164}
+      />
+      <aside class="capture-side" aria-hidden="true">
+        <div class="capture capture-idle">
+          <div class="cap-top mono"><span class="dots"><i></i><i></i><i></i></span> apex — lead intake</div>
+          <div class="cap-body">
+            <p class="cap-empty mono">
+              &gt; ready when you are<span class="blink">_</span><br /><br />
+              Fill out the form and we’ll text you back in minutes, not days — routed straight to
+              the crew for the service you pick.
+            </p>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<script>
+  // Wire vertical CTAs to the quote-form island. Set a global for the initial mount race, and
+  // dispatch an event for when the island is already mounted. (AC-2.2)
+  const setPreselect = (v: string) => {
+    (window as unknown as { __apexPreselect?: string }).__apexPreselect = v;
+    window.dispatchEvent(new CustomEvent('apex:preselect', { detail: v }));
+  };
+  document.querySelectorAll('[data-preselect]').forEach((el) => {
+    el.addEventListener('click', () => {
+      const v = el.getAttribute('data-preselect');
+      if (v) setPreselect(v);
+    });
+  });
+</script>

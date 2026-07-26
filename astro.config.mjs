@@ -1,4 +1,5 @@
 import { defineConfig } from 'astro/config';
+import react from '@astrojs/react';
 
 // Canonical domain (`site`) is BLOCKED on D-03 — the maintainer picks which of the
 // three domains is canonical. It only affects absolute URLs (sitemap, canonical/OG
@@ -9,7 +10,8 @@ const site = process.env.PUBLIC_SITE_URL || 'https://apexgetsitdone.com';
 
 export default defineConfig({
   site,
-  // Zero client JS by default; islands are added deliberately in Phase 3 (the quote form).
+  // Zero client JS by default; the only island is the Phase 3 quote form (client:visible).
+  integrations: [react()],
   build: {
     inlineStylesheets: 'auto',
   },
