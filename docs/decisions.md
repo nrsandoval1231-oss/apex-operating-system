@@ -16,6 +16,16 @@
 
 **D-19 · Holding store is the interim CRM.** Until D-10 resolves, leads land in Airtable or a Google Sheet, and the write is built so the destination swaps in one node.
 
+**D-12 · Job-status signal source — RESOLVED 2026-07-26.** The signal is a **contract, not a
+platform**: one POST per status transition to `/apex-job-status`, specified in
+`docs/job-status-contract.md` and received by `workflows/02-job-status.ts`. The emitting side is a
+Monday board (`apex-prds/reference/monday-jobs-board-spec.md`), but nothing in this repo depends on
+that — any system that can POST the contract works, so the board can be rebuilt or replaced freely.
+Idempotency comes from a **deterministic** `event_id` = `evt_<job_id>_<to_status>`, which also
+guarantees a reopened-and-recompleted job never earns a second review request.
+→ *Phases 4 and 5 are no longer blocked on a signal source. They remain gated on their own items:
+Phase 4 on D-11 (SMS provider), Phase 5 on D-01 (Meta access).*
+
 ---
 
 ## ⚠ BLOCKED — needs Nick
@@ -25,9 +35,6 @@
 
 **D-11 · SMS provider.** Recommend Twilio (mature, good n8n support, programmable quiet hours). Needs an account + number, and A2P 10DLC registration for business texting in the US — which takes time, so start it early. Alternatives: Telnyx, MessageBird.
 → *Blocks the SMS branch of Phase 2. Email + team notification can ship without it.*
-
-**D-12 · Job-status signal source.** Reviews (Phase 4) need a "job completed" trigger; the Meta loop (Phase 5) needs "job won" + value. Both come from wherever job status lives — which is the gated CRM / job-costing system. No signal, no trigger.
-→ *Blocks Phases 4 and 5.*
 
 **D-13 · Inbox reality.** Confirm `pools@ / coating@ / reno@ / service@ apexgetsitdone.com` actually exist as monitored mailboxes (or decide the real routing targets). Team notifications are useless if they go to dead addresses.
 → *Blocks Phase 2 team-notification wiring.*

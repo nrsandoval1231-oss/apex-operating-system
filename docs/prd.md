@@ -21,9 +21,16 @@ The intake and speed-to-lead layers depend on nothing external and should be bui
 | 1 Intake + validate + route | ✅ yes | — |
 | 2 Speed-to-lead response | ✅ yes | needs SMS provider (D-11) + inboxes confirmed (D-13) |
 | 3 CRM stitch | ⚠ partial | CRM platform not chosen (D-10) — use holding store until then |
-| 4 Review engine | ⚠ partial | needs job-completion signal (D-12) |
-| 5 Meta offline-conversion loop | ❌ gated | Meta access (D-01) + won-job signal (D-12) |
+| 4 Review engine | ⚠ partial | ~~D-12~~ **resolved** · now only needs SMS provider (D-11) |
+| 5 Meta offline-conversion loop | ⚠ partial | ~~D-12~~ **resolved** · now only needs Meta access (D-01) |
 | 6 Reporting + monitoring | ✅ mostly | reporting needs whatever store Phases 1–3 write to |
+
+**Job status (the D-12 signal) — built.** `workflows/02-job-status.ts` receives one event per
+transition at `/apex-job-status`, validates, dedupes on a deterministic `event_id`, and records to
+the `JobEvents` store. It **sends nothing**, so it can go live immediately and accumulate real
+event history while D-11 and D-01 are still closed. Contract: `docs/job-status-contract.md`.
+It computes `meta_eligible` and `review_eligible` once, so Phases 4 and 5 filter rather than
+re-derive the rules.
 
 ---
 

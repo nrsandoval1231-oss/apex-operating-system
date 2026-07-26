@@ -37,6 +37,7 @@ A workflow is done when it passes `docs/acceptance-criteria.md` — those are wr
 
 - `docs/prd.md` — phases, dependency graph, what's buildable now vs gated
 - `docs/data-contract.md` — the lead object you receive (must match the website repo byte-for-byte) and what you add to it
+- `docs/job-status-contract.md` — the **job-status event** you receive (the D-12 signal). Platform-agnostic on purpose: the emitter is a Monday board today, but nothing here depends on that
 - `docs/acceptance-criteria.md` — pass/fail behaviors; definition of done
 - `docs/decisions.md` — locked decisions and `⚠ BLOCKED` gates
 - `workflows/` — the SDK source for each n8n workflow

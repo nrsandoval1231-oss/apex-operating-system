@@ -71,11 +71,26 @@ As the lead moves through the pipeline, append — never overwrite the originals
   "response_channel":   "sms | email | both",
   "routed_to":          "pools@apexgetsitdone.com",
   "crm_record_id":      "",                 // set in Phase 3, once a CRM exists (D-10)
-  "job_status":         "lead",             // lead → quoted → won → lost, updated downstream
+  "job_status":         "lead",             // see the enum below — updated by the job-status signal
   "won_value":          null,               // set when job is won; feeds Meta offline conversion
   "meta_uploaded_at":   null                // Phase 5
 }
 ```
+
+### `job_status` enum — canonical
+
+```
+lead → quoted → won → in progress → complete → reconciled
+                 └── lost (terminal, reachable from lead or quoted)
+```
+
+This document previously carried `lead → quoted → won → lost`, and `apex-prds/06-project-management.md`
+§7 specified `lead → quoted → won → in progress → complete → reconciled`. **Both were incomplete.**
+The union above is now canonical in both, and is enforced in one place — the `Validate & Classify`
+node of `workflows/02-job-status.ts`.
+
+`won` fires the Meta offline conversion (Phase 5). `complete` fires the review request (Phase 4).
+Transitions arrive as events — see `job-status-contract.md`.
 
 `lead_id` + these fields are what make per-vertical conversion and cost-per-won-job computable. The whole point of the system is that this object stays complete and joined from ad click to won job.
 
