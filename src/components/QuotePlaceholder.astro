@@ -1,0 +1,38 @@
+---
+/**
+ * QuotePlaceholder.astro — Phase 3 stub.
+ *
+ * The quote form + capture panel + webhook POST are Phase 3 and are intentionally NOT
+ * built here. But the header CTA and every vertical CTA anchor to #quote, so this renders
+ * a real, clearly-labeled target for that anchor (no dead links) with a working phone
+ * fallback. It builds NO form and makes NO webhook call.
+ *
+ * TODO(Phase 3): replace this with the React island quote form — service selector
+ * (pre-selectable via the CTA data-preselect attributes already in the markup), contact
+ * fields, live per-vertical consent line, lead-object assembly (generateLeadId +
+ * getAttribution), and POST to PUBLIC_LEAD_WEBHOOK_URL. See docs/data-contract.md and
+ * decisions.md D-21 (webhook sequencing).
+ */
+import { sections } from '@content/site-copy';
+import { site } from '@lib/site';
+---
+<section id="quote">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">{sections.quote.eyebrow}</p>
+      <h2>{sections.quote.heading}</h2>
+      <p class="lead">{sections.quote.lead}</p>
+    </div>
+
+    <div class="quote-stub">
+      <span class="tag mono">◢ Quote form ships in Phase 3</span>
+      <p>
+        The quote form and its lead-capture flow are the next build phase. In the meantime,
+        call the crew directly and we'll get you routed to the right vertical.
+      </p>
+      <div class="call">
+        <a class="btn" href={`tel:${site.phoneE164}`}>Call {site.phoneDisplay} &rarr;</a>
+      </div>
+    </div>
+  </div>
+</section>

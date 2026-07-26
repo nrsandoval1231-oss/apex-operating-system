@@ -1,0 +1,37 @@
+---
+/**
+ * index.astro — the Apex home page. Assembles the sections in the mockup order:
+ * header · hero+router · pools (deep) · three shallow verticals · guarantee band ·
+ * testimonials · owner · quote (Phase 3 placeholder) · footer.
+ *
+ * All copy/content comes from content/ data files; contact details from env; images from
+ * the manifest via <ImageSlot>. No lead form or webhook here — that's Phase 3.
+ */
+import BaseLayout from '@layouts/BaseLayout.astro';
+import Header from '@components/Header.astro';
+import Hero from '@components/Hero.astro';
+import PoolsSection from '@components/PoolsSection.astro';
+import MoreVerticals from '@components/MoreVerticals.astro';
+import GuaranteeBand from '@components/GuaranteeBand.astro';
+import Testimonials from '@components/Testimonials.astro';
+import Owner from '@components/Owner.astro';
+import QuotePlaceholder from '@components/QuotePlaceholder.astro';
+import Footer from '@components/Footer.astro';
+
+const title = 'Apex — Anything Construction. Apex Gets It Done. | Lubbock, TX';
+const description =
+  'Apex builds pools, coatings, renovations, and pool service across Lubbock and the South Plains. Four crews, one standard — done right the first time and backed for decades.';
+---
+<BaseLayout title={title} description={description}>
+  <Header />
+  <main>
+    <Hero />
+    <PoolsSection />
+    <MoreVerticals />
+    <GuaranteeBand />
+    <Testimonials />
+    <Owner />
+    <QuotePlaceholder />
+  </main>
+  <Footer />
+</BaseLayout>

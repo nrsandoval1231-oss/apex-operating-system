@@ -1,0 +1,58 @@
+---
+/**
+ * ImageSlot.astro — the ONLY way images render on the site (D-20 / AC-9).
+ *
+ * Given a slot id from the image manifest (content/images.ts), it renders EITHER the real
+ * photo (once `src` is filled) OR a visibly-labeled placeholder — always inside a box with
+ * the slot's fixed aspect ratio, so swapping a real photo in causes zero layout shift
+ * (AC-9.1). Alt text and sources come from the manifest, never from the calling component
+ * (AC-9.2, AC-9.3). Placeholders are never silently blank (AC-9.4).
+ */
+import { getImageSlot, type ImageSlotId } from '@content/images';
+import LionMark from './LionMark.astro';
+
+interface Props {
+  id: ImageSlotId;
+  /** Extra class on the wrapper (e.g. to fill a tile). */
+  class?: string;
+  /** `sizes` attribute for responsive srcset once a real photo is set (AC-9.5). */
+  sizes?: string;
+  /** Eager-load above-the-fold images; defaults to lazy (AC-9.5). */
+  loading?: 'lazy' | 'eager';
+}
+
+const { id, class: className, sizes, loading = 'lazy' } = Astro.props;
+const slot = getImageSlot(id);
+
+// Decorative images render empty alt; meaningful images use the manifest alt (AC-9.2).
+const altText = slot.decorative ? '' : slot.alt;
+const wrapperClass = ['img-slot', className].filter(Boolean).join(' ');
+const style = `aspect-ratio:${slot.ratio};`;
+---
+{slot.src ? (
+  <div class={wrapperClass} style={style}>
+    <img
+      src={slot.src}
+      srcset={slot.srcset}
+      sizes={sizes}
+      alt={altText}
+      loading={loading}
+      decoding="async"
+    />
+  </div>
+) : (
+  <div
+    class={wrapperClass}
+    style={style}
+    role={slot.decorative ? 'presentation' : 'img'}
+    aria-label={slot.decorative ? undefined : slot.alt}
+    data-image-slot={slot.id}
+    data-image-unfilled="true"
+  >
+    <div class="img-ph" aria-hidden="true">
+      <span class={`img-ph-tex tone-${slot.tone}`}></span>
+      <LionMark size={180} class="lionwm" />
+      <span class="lbl mono">{slot.label}</span>
+    </div>
+  </div>
+)}

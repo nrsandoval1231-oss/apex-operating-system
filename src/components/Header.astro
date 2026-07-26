@@ -1,0 +1,24 @@
+---
+/**
+ * Header.astro — sticky nav: brand, phone (from env), and a Get a Quote CTA.
+ * Contact details come from site config (env), never hardcoded.
+ */
+import { site } from '@lib/site';
+import LionMark from './LionMark.astro';
+---
+<header>
+  <div class="wrap nav">
+    <a class="brand" href="#top" aria-label="Apex Gets It Done — home">
+      <LionMark size={38} class="lion" />
+      <div>
+        <div class="wm">APEX</div>
+        <div class="tag">GETS IT DONE</div>
+      </div>
+    </a>
+    <div class="nav-r">
+      <a class="nav-phone" href={`tel:${site.phoneE164}`}>{site.phoneDisplay}</a>
+      <a class="btn ghost nav-phone-sm" href={`tel:${site.phoneE164}`}>Call</a>
+      <a class="btn" href="#quote">Get a Quote</a>
+    </div>
+  </div>
+</header>

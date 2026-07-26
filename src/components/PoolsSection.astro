@@ -1,0 +1,49 @@
+---
+/**
+ * PoolsSection.astro — Designer Pools, built DEEP (process, features, warranty,
+ * financing, dedicated CTA). Content from content/pools.ts; brand + accent from the
+ * verticals single source of truth. The CTA carries data-preselect for Phase 3 (AC-2.2).
+ */
+import { pools } from '@content/pools';
+import { getVerticalConfig } from '@content/verticals';
+import ImageSlot from './ImageSlot.astro';
+
+const cfg = getVerticalConfig(pools.vertical);
+---
+<section id="pools">
+  <div class="wrap">
+    <div class="pool-grid">
+      <div>
+        <div class="sec-head vstripe">
+          <p class="eyebrow" style="color:var(--pool)">{cfg.consentBrand}</p>
+          <h2 set:html={pools.heading.replace(/, /, ',<br>')}></h2>
+        </div>
+        <p class="lead">{pools.lead}</p>
+
+        <ul class="featlist">
+          {pools.features.map((f) => <li>{f}</li>)}
+        </ul>
+
+        <div class="process">
+          {pools.process.map((step) => (
+            <div class="pstep">
+              <div class="n mono">{step.n}</div>
+              <h3>{step.title}</h3>
+              <p>{step.body}</p>
+            </div>
+          ))}
+        </div>
+
+        <div class="badge disp">{pools.warrantyBadge} <b>{pools.warrantyEmphasis}</b></div>
+        <div class="fin">{pools.financing}</div>
+        <div style="margin-top:26px">
+          <a class="btn" href="#quote" data-preselect={pools.vertical}>{pools.cta}</a>
+        </div>
+      </div>
+
+      <div>
+        <ImageSlot id={pools.image} class="pools-hero-img" sizes="(max-width:900px) 100vw, 45vw" />
+      </div>
+    </div>
+  </div>
+</section>

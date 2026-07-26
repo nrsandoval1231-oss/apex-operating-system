@@ -1,0 +1,31 @@
+---
+/**
+ * LionMark.astro — the Apex lion mark, inline SVG (uses currentColor for the body so it
+ * inherits the surrounding text colour). Ported verbatim from the mockup's <symbol>.
+ */
+interface Props {
+  size?: number;
+  class?: string;
+  /** Decorative by default; set a label to expose it to assistive tech. */
+  label?: string;
+}
+const { size = 38, class: className, label } = Astro.props;
+---
+<svg
+  width={size}
+  height={size}
+  viewBox="0 0 64 64"
+  class={className}
+  role={label ? 'img' : undefined}
+  aria-label={label}
+  aria-hidden={label ? undefined : 'true'}
+>
+  <path
+    fill="currentColor"
+    d="M32 3 L40 11 L52 9 L49 21 L61 27 L50 33 L54 46 L41 43 L36 55 L32 47 L28 55 L23 43 L10 46 L14 33 L3 27 L15 21 L12 9 L24 11 Z"
+  />
+  <path fill="#E0901B" d="M32 20 L38 26 L35 34 L32 30 L29 34 L26 26 Z" />
+  <circle cx="25" cy="27" r="2.4" fill="#E0901B" />
+  <circle cx="39" cy="27" r="2.4" fill="#E0901B" />
+  <path fill="#E0901B" d="M27 39 h10 l-5 6 Z" />
+</svg>
