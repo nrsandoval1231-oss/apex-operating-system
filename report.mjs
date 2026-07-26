@@ -8,7 +8,20 @@
  *   node report.mjs sample           # a different pool, to show the method generalizes
  *   node report.mjs 18x36 --deep 7 --spa 8x8 --deck 700
  */
-import { takeoff, fmtMoney, COST_CODES } from './engine.mjs';
+import { takeoff, fmtMoney, COST_CODES, DIRECT_LINES_SEED } from './engine.mjs';
+import { SECTION_TOTAL } from './whitaker-actual.mjs';
+
+/**
+ * Whitaker's actual direct-entry lines, carried onto a new job as a STARTING POINT (--carry).
+ * These are quote-driven codes, so carrying them is a placeholder, not an estimate — some are
+ * genuinely near-fixed (equipment, electrician, automation), others scale with the pool
+ * (cover track and fabric, plumbing runs). Flagged so nobody mistakes one for the other.
+ */
+const CARRIED = DIRECT_LINES_SEED.map((l) => {
+  const code = l.code === 500 ? 500 : l.code;
+  const amount = [300, 500, 600, 700, 900, 1100, 1200].includes(code) ? SECTION_TOTAL(code) : 0;
+  return { ...l, extended: amount, basis: amount ? `carried from Whitaker (${l.basis})` : l.basis };
+});
 
 const argv = process.argv.slice(2);
 const flag = (n, d) => { const i = argv.indexOf('--' + n); return i === -1 ? d : argv[i + 1]; };
@@ -46,7 +59,10 @@ if (!scenario) {
       length: Math.max(...dims), width: Math.min(...dims),
       depthShallow: Number(flag('shallow', 3.5)), depthDeep: Number(flag('deep', 6)),
       spa: spa ? { length: spa[0], width: spa[1], depth: Number(flag('spadepth', 3.5)) } : null,
-      deckSqFt: Number(flag('deck', 0)),
+      // Omit entirely when not given — passing 0 reads as "deck is zero sq ft" and kills the line.
+      ...(flag('deck') ? { deckSqFt: Number(flag('deck')) } : {}),
+      // --carry reuses Whitaker's direct-entry lines as a starting point for the quote-driven codes.
+      ...(argv.includes('--carry') ? { directLines: CARRIED } : {}),
     },
   };
 }

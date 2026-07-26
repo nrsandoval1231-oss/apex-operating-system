@@ -697,7 +697,7 @@ function bondingLine(geo) {
  */
 export const DIRECT_LINES_SEED = [
   { code: 300, name: 'Pool Equipment', extended: 0, confidence: 'direct', basis: 'pump/filter/heater/UV per spec — enter from quote' },
-  { code: 500, name: 'Utilities — Electrician', extended: 0, confidence: 'direct', basis: 'his estimate carries a $3,000 Electrician line; bonding labor may sit inside it (ref §500)' },
+  { code: 500, name: 'Utilities — Plumber & Electrician', extended: 0, confidence: 'direct', basis: 'Whitaker: Plumber $5,000 + Electrician $3,000. Separate from code 700 Pool Plumbing; bonding labor may sit inside the electrician line (ref §500)' },
   { code: 600, name: 'Lights', extended: 0, confidence: 'direct', basis: 'fixture count × unit — enter from quote' },
   { code: 700, name: 'Pool Plumbing', extended: 0, confidence: 'direct', basis: '~755 LF PVC on Whitaker; layout-driven, enter or component-estimate (ref §700)' },
   { code: 900, name: 'Cover', extended: 0, confidence: 'direct', basis: 'encapsulated under-track system; "Gunite Encap Kit" is a real invoice line (ref §900)' },
