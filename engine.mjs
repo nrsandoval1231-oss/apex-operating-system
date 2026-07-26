@@ -249,12 +249,14 @@ export const UNIT_COSTS = {
   gunite: { rate: 439.56, unit: '$/yd³ paid', confidence: 'high', note: 'inside published $350–600 (ref §4)' },
   rebarInstalled: { rate: 3.77, unit: '$/lb steel', confidence: 'medium', note: 'labor-heavy, not a material rate' },
   plasterMaterial: { rate: 87.21, unit: '$/bag', confidence: 'high', note: 'Diamond Brite territory' },
-  plasterLabor: { rate: 5.64, unit: '$/sq ft', confidence: 'medium' },
+  plasterLabor: { rate: 5.637, unit: '$/sq ft', confidence: 'medium' },
   tileMaterial: { rate: 34.21, unit: '$/sq ft', confidence: 'low', note: 'high — scope unclear, possibly glass/spa fully tiled (ref §800 flag)' },
   tileLabor: { rate: 25, unit: '$/LF waterline', confidence: 'medium', note: 'his $2,500 Tile/Labor line ÷ 100 LF; labor follows the run, not the band area' },
   forming: { rate: 5.5, unit: '$/LF perimeter', confidence: 'medium', note: 'his $550 Forming line ÷ 100 LF — no assembly modelled this before' },
   siteWork: { rate: 13.04, unit: '$/loose yd³', confidence: 'low', note: 'his $1,500 backfill/driveway-clean/cleanup/haul-off line ÷ 115 loose yd³' },
-  copingInstalled: { rate: 71.23, unit: '$/LF', confidence: 'medium', note: 'stone + auto-cover encapsulation' },
+  copingInstalled: { rate: 71.23, unit: '$/LF', confidence: 'medium', note: 'combined; retained for reference — the split below is what bills' },
+  copingMaterial: { rate: 33.96, unit: '$/LF', confidence: 'medium', note: 'his $3,600 Coping/Materials ÷ 106 LF; stone + auto-cover encapsulation' },
+  copingLabor: { rate: 37.26, unit: '$/LF', confidence: 'medium', note: 'his $3,950 Coping/Labor ÷ 106 LF' },
   bondingCopper: { rate: 1.12, unit: '$/LF #8', confidence: 'low', note: 'his $250 line is light — 224 LF of #8 is $230–345 in material alone (ref §500)' },
   fillWater: { rate: 0.012, unit: '$/gal', confidence: 'low', note: 'meter/truck; hard Ogallala water (ref §5)' },
   deckConcrete: { rate: 13.59, unit: '$/sq ft', confidence: 'medium', note: '$5k ÷ 368 sq ft from the 4 ft border rule; inside ref §1000 published $12–18' },
@@ -546,47 +548,75 @@ function rebarLine(geo) {
   };
 }
 
-function plasterLine(geo) {
+/**
+ * Finishes bill as MATERIAL and LABOR on separate lines, because that is how his estimate is
+ * structured (Tile/Materials + Tile/Labor, Coping/Materials + Coping/Labor, Plaster/Materials +
+ * Plaster/Labor). Matching that structure is the adoption argument in PRD 02: the customer-facing
+ * document keeps its shape and every figure on it gains a quantity behind it.
+ *
+ * They also have genuinely different drivers — plaster material is per BAG, plaster labor per
+ * SQ FT; tile material per SQ FT of band, tile labor per LF of waterline run. A blended rate hid
+ * that and produced odd unit costs like "$77.39/sq ft" on a customer-facing line.
+ */
+function plasterLines(geo) {
   const area = geo.wettedArea;
   // ref §800: 921 sq ft ÷ 23 = 40 bags, +10% waste = 44. Waste applies to the bag count, not
   // to the coverage rate — rounding up before the waste factor over-orders by a bag.
   const baseBags = Math.round(area / 23); // 22–25 sq ft/bag @ ⅜–½ in
   const bags = Math.ceil(baseBags * 1.1);
-  const mat = bags * UNIT_COSTS.plasterMaterial.rate;
-  const labor = area * UNIT_COSTS.plasterLabor.rate;
-  return {
-    code: 800,
-    name: 'Pool Finishes — Plaster',
-    qty: r(area),
-    unit: 'sq ft wetted',
-    unitCost: r((mat + labor) / area, 2),
-    extended: r(mat + labor),
-    confidence: 'medium',
-    basis: `${bags} bags @ $${UNIT_COSTS.plasterMaterial.rate} + labor ${r(area)} sq ft @ $${UNIT_COSTS.plasterLabor.rate}`,
-    crewHours: r(area * PRODUCTION.plasterHrsPerSqFt, 1),
-    extra: { bags },
-  };
+  const sqft = r(area);
+  return [
+    {
+      code: 800,
+      name: 'Pool Finishes — Plaster / Materials',
+      qty: bags,
+      unit: 'bags',
+      unitCost: UNIT_COSTS.plasterMaterial.rate,
+      extended: r(bags * UNIT_COSTS.plasterMaterial.rate),
+      confidence: UNIT_COSTS.plasterMaterial.confidence,
+      basis: `${sqft} sq ft wetted ÷ 23 sq ft/bag +10% waste = ${bags} bags`,
+      extra: { bags },
+    },
+    {
+      code: 800,
+      name: 'Pool Finishes — Plaster / Labor',
+      qty: sqft,
+      unit: 'sq ft wetted',
+      unitCost: UNIT_COSTS.plasterLabor.rate,
+      extended: r(sqft * UNIT_COSTS.plasterLabor.rate),
+      confidence: UNIT_COSTS.plasterLabor.confidence,
+      basis: `${sqft} sq ft wetted @ $${UNIT_COSTS.plasterLabor.rate}/sq ft`,
+      crewHours: r(area * PRODUCTION.plasterHrsPerSqFt, 1),
+    },
+  ];
 }
 
 function tileLine(geo) {
   const band = geo.perimeter * 0.5 * 1.15; // 6in waterline band, +15% waste
-  const qty = r(band);
-  // Material follows the band AREA, labor follows the waterline RUN — his estimate carries them
-  // as two lines ($1,950 + $2,500) and modelling material alone understated finishes by $2,500.
-  const mat = qty * UNIT_COSTS.tileMaterial.rate;
-  const labor = geo.perimeter * UNIT_COSTS.tileLabor.rate;
-  const extended = r(mat + labor);
-  return {
-    code: 800,
-    name: 'Pool Finishes — Waterline Tile',
-    qty,
-    unit: 'sq ft',
-    unitCost: r(extended / qty, 2),
-    extended,
-    confidence: UNIT_COSTS.tileMaterial.confidence,
-    basis: `${r(geo.perimeter)} LF × 0.5 ft band +15% waste = ${qty} sq ft @ $${UNIT_COSTS.tileMaterial.rate} material + ${r(geo.perimeter)} LF labor @ $${UNIT_COSTS.tileLabor.rate}`,
-    extra: { material: r(mat), labor: r(labor) },
-  };
+  const sqft = r(band);
+  const lf = r(geo.perimeter);
+  return [
+    {
+      code: 800,
+      name: 'Pool Finishes — Tile / Materials',
+      qty: sqft,
+      unit: 'sq ft',
+      unitCost: UNIT_COSTS.tileMaterial.rate,
+      extended: r(sqft * UNIT_COSTS.tileMaterial.rate),
+      confidence: UNIT_COSTS.tileMaterial.confidence,
+      basis: `${lf} LF × 0.5 ft band +15% waste = ${sqft} sq ft`,
+    },
+    {
+      code: 800,
+      name: 'Pool Finishes — Tile / Labor',
+      qty: lf,
+      unit: 'LF waterline',
+      unitCost: UNIT_COSTS.tileLabor.rate,
+      extended: r(lf * UNIT_COSTS.tileLabor.rate),
+      confidence: UNIT_COSTS.tileLabor.confidence,
+      basis: `${lf} LF waterline run @ $${UNIT_COSTS.tileLabor.rate}/LF — labor follows the run, not the band area`,
+    },
+  ];
 }
 
 /** Shell forming — his estimate carries a $550 Forming line the model never had (§400). */
@@ -626,19 +656,30 @@ function siteWorkLine(excavation) {
 }
 
 function copingLine(geo) {
-  const lf = geo.copingPerimeter * 1.1; // +10% waste
-  const rate = UNIT_COSTS.copingInstalled.rate;
-  const qty = r(lf);
-  return {
-    code: 800,
-    name: 'Pool Finishes — Coping',
-    qty,
-    unit: 'LF',
-    unitCost: rate,
-    extended: r(qty * rate),
-    confidence: UNIT_COSTS.copingInstalled.confidence,
-    basis: `${r(geo.copingPerimeter)} LF exposed perimeter +10% waste`,
-  };
+  const qty = r(geo.copingPerimeter * 1.1); // +10% waste
+  const basis = `${r(geo.copingPerimeter)} LF exposed perimeter +10% waste = ${qty} LF`;
+  return [
+    {
+      code: 800,
+      name: 'Pool Finishes — Coping / Materials',
+      qty,
+      unit: 'LF',
+      unitCost: UNIT_COSTS.copingMaterial.rate,
+      extended: r(qty * UNIT_COSTS.copingMaterial.rate),
+      confidence: UNIT_COSTS.copingMaterial.confidence,
+      basis,
+    },
+    {
+      code: 800,
+      name: 'Pool Finishes — Coping / Labor',
+      qty,
+      unit: 'LF',
+      unitCost: UNIT_COSTS.copingLabor.rate,
+      extended: r(qty * UNIT_COSTS.copingLabor.rate),
+      confidence: UNIT_COSTS.copingLabor.confidence,
+      basis,
+    },
+  ];
 }
 
 /**
@@ -801,9 +842,9 @@ export function takeoff(inputs) {
     rebarLine(geo),
     formingLine(geo),
     guniteLine(geo),
-    tileLine(geo),
-    copingLine(geo),
-    plasterLine(geo),
+    ...tileLine(geo),
+    ...copingLine(geo),
+    ...plasterLines(geo),
     bondingLine(geo),
     deckLine(geo, opts),
   ].filter(Boolean);

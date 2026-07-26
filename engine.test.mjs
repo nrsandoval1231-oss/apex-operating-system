@@ -57,9 +57,11 @@ ok('combined gallons ≈ 12,881', near(geo.gallons,T.gallons,20), geo.gallons.to
 // ── Assemblies ───────────────────────────────────────────────────────────────
 const t = takeoff(WHITAKER);
 const L = (n) => t.lines.find(l=>l.name.includes(n));
+// Finishes bill as separate Materials/Labor lines (matching his estimate), so sum the pair.
+const LS = (n) => t.lines.filter(l=>l.name.includes(n)).reduce((s,l)=>s+l.extended,0);
 ok('excavation ≈ 92.3 bank yd³', near(L('Excavation').qty,T.excavation,0.5), String(L('Excavation').qty));
 ok('gunite ordered ≈ 27.3 yd³', near(L('Gunite').qty,T.gunite,0.3), String(L('Gunite').qty));
-ok('plaster area ≈ 887 sq ft', near(L('Plaster').qty,T.wetted,1), String(L('Plaster').qty));
+ok('plaster labor qty = wetted area ≈ 887 sq ft', near(L('Plaster / Labor').qty,T.wetted,1), String(L('Plaster / Labor').qty));
 ok('plaster bags = 43', L('Plaster').extra.bags===T.plasterBags, String(L('Plaster').extra.bags));
 ok('rebar steel ≈ 1,061 lb', near(L('Rebar').qty,T.rebarLb,10), String(L('Rebar').qty));
 ok('deck line derived from the border rule', L('Pool Deck').qty===T.deckSqFt && L('Pool Deck').extra.derived);
@@ -71,13 +73,24 @@ const fmt = (n)=>'$'+n.toLocaleString();
 reproduces('Excavation', 5500);
 reproduces('Gunite', 12000);
 reproduces('Rebar', 4000);
-reproduces('Coping', 7550);
 reproduces('Pool Deck', 5000);
 reproduces('Forming', 550);
 reproduces('Site Work', 1500);
-ok('reproduces his $8,750 plaster (materials + labor)', near(L('Plaster').extended,8750,30), fmt(L('Plaster').extended));
-ok('reproduces his $4,450 tile (materials + labor)', near(L('Tile').extended,4450,30), fmt(L('Tile').extended));
-ok('tile splits material vs labor like his estimate', near(L('Tile').extra.material,1950,25) && near(L('Tile').extra.labor,2500,25), `${L('Tile').extra.material}/${L('Tile').extra.labor}`);
+
+// Finishes split into Materials + Labor, matching his estimate line for line (§800).
+const pair = (n, mat, lab) => {
+  ok(`reproduces his $${mat.toLocaleString()} ${n}/Materials line`, near(L(`${n} / Materials`).extended,mat,10), fmt(L(`${n} / Materials`).extended));
+  ok(`reproduces his $${lab.toLocaleString()} ${n}/Labor line`, near(L(`${n} / Labor`).extended,lab,10), fmt(L(`${n} / Labor`).extended));
+};
+pair('Tile', 1950, 2500);
+pair('Coping', 3600, 3950);
+pair('Plaster', 3750, 5000);
+ok('tile material is per sq ft, labor per LF (different drivers)',
+  L('Tile / Materials').unit==='sq ft' && L('Tile / Labor').unit==='LF waterline');
+ok('plaster material is per bag, labor per sq ft',
+  L('Plaster / Materials').unit==='bags' && L('Plaster / Labor').unit==='sq ft wetted');
+ok('finishes pairs still total his section figures', near(LS('Tile'),4450,10) && near(LS('Coping'),7550,10) && near(LS('Plaster'),8750,10),
+  `${LS('Tile')}/${LS('Coping')}/${LS('Plaster')}`);
 
 // Whole-cost-code reconciliation against the real estimate (PRD 02 Milestone 4).
 const byCode = (c) => t.lines.filter(l=>l.code===c).reduce((s,l)=>s+l.extended,0);
