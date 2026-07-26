@@ -12,11 +12,11 @@ Operational modernization for Apex (Lubbock, TX). One brand, four verticals: **D
 |---|---|---|---|
 | **00** | [Foundation — Definitions & Data Model](00-foundation.md) | ✅ **Written** (v0.2) | — |
 | **01** | [Lead Capture, Funnels & Marketing](01-lead-capture-funnels.md) | ✅ **Written** · handed off | Access transfer for launch only |
-| **02** | [Pool Proposal & Takeoff Engine](02-proposal-takeoff-engine.md) | ✅ **Written** (v0.2) | Needs job dimensions data |
+| **02** | [Pool Proposal & Takeoff Engine](02-proposal-takeoff-engine.md) | ✅ **Written** (v0.2) · engine built | Back-test passes on 1 job; needs a 2nd |
 | **03** | [Cost Capture & Allocation](03-cost-capture-allocation.md) | ⚠ **Stub — blocked** | QuickBooks setup + contract review |
 | **04** | [Commission Engine](04-commission-engine.md) | ⚠ **Stub — blocked** | Allowance mechanic + PRD 03 |
 | **05** | [CRM & Pipeline Analytics](05-crm-pipeline-analytics.md) | ⏸ **Stub — deferred** | Needs ~60 days of real lead data |
-| **06** | [Project Management Boards](06-project-management.md) | ⏸ **Stub — deferred** | Depends on 03 + 05 |
+| **06** | [Job Execution & Crew Scheduling](06-project-management.md) | ✅ **Written** (v0.1) | Phase 1 has **no** blockers |
 
 **00 is the source of truth.** Every other document references it. Definitions live there once — cost codes, GP definition, allocation policy, the enum of verticals — so the PRDs can't drift apart and contradict each other at integration time.
 
@@ -28,6 +28,10 @@ It contains the two findings that reshape everything downstream:
 
 - **§1** — the pricing structure is *markup*, not margin. "Cost Plus at 30%" is a **23.08%** gross margin. It's printed on customer estimates, so it's a disclosed contract fee, not an internal error. Decision on file: **Lever B** (expand the reimbursable cost base) rather than raising the disclosed rate.
 - **§7** — under cost-plus, commission paid on GP *rewards cost overruns*. Costs rise → fee rises → GP rises → commission rises. Three fixes offered; needs sign-off.
+
+A third finding now sits in **PRD 06 §2**: with one in-house crew, the business saturates at
+**three concurrent pool builds**. Running the stated maximum of five produces the same ~19 pools
+per year while making every customer wait 5.5 weeks longer — which under cost-plus is pure cost.
 
 ---
 
