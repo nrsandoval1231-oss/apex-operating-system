@@ -1,0 +1,72 @@
+---
+/**
+ * BaseLayout.astro — the document shell for every page.
+ *
+ * Responsibilities:
+ *  - Self-hosted fonts (Oswald / Inter / JetBrains Mono) via @fontsource — no external
+ *    render-blocking request, better Lighthouse (AC-5.1) and no font layout shift.
+ *  - Design tokens + all styles via global.css.
+ *  - Runs the FIRST-TOUCH attribution capture on every page load (Phase 1 spine). This is
+ *    what makes landing_page/source/campaign survive navigation (AC-1.5) before the
+ *    Phase 3 form ever assembles a lead.
+ *
+ * SEO meta (per-vertical titles/OG, sitemap, GTM/GA4) is Phase 4; a sound baseline title +
+ * description + canonical is set here. Canonical/OG absolute URLs depend on the canonical
+ * domain, which is BLOCKED on D-03 — Astro.site is env-driven so it can be set late.
+ */
+import '@fontsource/oswald/400.css';
+import '@fontsource/oswald/500.css';
+import '@fontsource/oswald/600.css';
+import '@fontsource/oswald/700.css';
+import '@fontsource/inter/400.css';
+import '@fontsource/inter/500.css';
+import '@fontsource/inter/600.css';
+import '@fontsource/inter/700.css';
+import '@fontsource/jetbrains-mono/400.css';
+import '@fontsource/jetbrains-mono/500.css';
+import '@fontsource/jetbrains-mono/700.css';
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description: string;
+}
+const { title, description } = Astro.props;
+
+// Canonical URL from the (env-driven) site; BLOCKED on D-03 for the final domain choice.
+const canonical = Astro.site ? new URL(Astro.url.pathname, Astro.site).href : Astro.url.pathname;
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="canonical" href={canonical} />
+    <meta name="theme-color" content="#1B1C1E" />
+
+    <!-- Open Graph baseline (per-vertical OG images are Phase 4 / D-20 photography) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <meta name="generator" content={Astro.generator} />
+  </head>
+  <body>
+    <a class="skip-link" href="#top">Skip to content</a>
+    <slot />
+
+    <!--
+      Phase 1 spine: capture first-touch attribution on every page load.
+      Idempotent — persists to sessionStorage and never overwrites an earlier landing.
+    -->
+    <script>
+      import { captureFirstTouch } from '../lib/attribution';
+      captureFirstTouch();
+    </script>
+  </body>
+</html>

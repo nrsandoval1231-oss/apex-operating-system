@@ -1,0 +1,20 @@
+# build output
+dist/
+.output/
+
+# dependencies
+node_modules/
+
+# astro
+.astro/
+
+# secrets — Hard rule 5: never commit env files
+.env
+.env.production
+.env.*.local
+
+# logs / os
+npm-debug.log*
+*.log
+.DS_Store
+Thumbs.db
