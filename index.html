@@ -251,7 +251,10 @@ DIRECT_LINES_SEED.forEach((l, i) => {
 
 function readInputs() {
   const hasSpa = $('hasSpa').checked;
-  const allowances = [...$('allowances').querySelectorAll('.allow-row')].map(r => ({
+  // Carry `supersededBy` through from the seed — rebuilding these from the DOM alone drops it,
+  // and the deck allowance silently double-counts against the deck takeoff line.
+  const allowances = [...$('allowances').querySelectorAll('.allow-row')].map((r, i) => ({
+    ...DEFAULT_ALLOWANCES[i],
     name: r.querySelector('[data-an]').value,
     amount: +r.querySelector('[data-av]').value || 0,
   }));

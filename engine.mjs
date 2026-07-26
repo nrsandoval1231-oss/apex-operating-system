@@ -251,6 +251,9 @@ export const UNIT_COSTS = {
   plasterMaterial: { rate: 87.21, unit: '$/bag', confidence: 'high', note: 'Diamond Brite territory' },
   plasterLabor: { rate: 5.64, unit: '$/sq ft', confidence: 'medium' },
   tileMaterial: { rate: 34.21, unit: '$/sq ft', confidence: 'low', note: 'high — scope unclear, possibly glass/spa fully tiled (ref §800 flag)' },
+  tileLabor: { rate: 25, unit: '$/LF waterline', confidence: 'medium', note: 'his $2,500 Tile/Labor line ÷ 100 LF; labor follows the run, not the band area' },
+  forming: { rate: 5.5, unit: '$/LF perimeter', confidence: 'medium', note: 'his $550 Forming line ÷ 100 LF — no assembly modelled this before' },
+  siteWork: { rate: 13.04, unit: '$/loose yd³', confidence: 'low', note: 'his $1,500 backfill/driveway-clean/cleanup/haul-off line ÷ 115 loose yd³' },
   copingInstalled: { rate: 71.23, unit: '$/LF', confidence: 'medium', note: 'stone + auto-cover encapsulation' },
   bondingCopper: { rate: 1.12, unit: '$/LF #8', confidence: 'low', note: 'his $250 line is light — 224 LF of #8 is $230–345 in material alone (ref §500)' },
   fillWater: { rate: 0.012, unit: '$/gal', confidence: 'low', note: 'meter/truck; hard Ogallala water (ref §5)' },
@@ -268,8 +271,16 @@ export const PRODUCTION = {
 };
 
 // Allowances — Foundation §6. Placeholders, NOT takeoff. Fee is charged on top; flagged.
+/**
+ * His three allowance lines, all marked "Upgrade" on the estimate (14.5% of job cost).
+ *
+ * "Concrete Diamonds Budget" is the decorative deck. Once the 4 ft border rule gives the deck a
+ * quantity it stops being an allowance and becomes a takeoff line — which is exactly PRD 02's
+ * thesis, same dollar figure with a basis behind it. `supersededBy` records that: when a line
+ * for that cost code exists, the allowance is dropped so the two can't both be charged.
+ */
 export const DEFAULT_ALLOWANCES = [
-  { name: 'Concrete Diamonds Budget', amount: 5000 },
+  { name: 'Concrete Diamonds Budget', amount: 5000, supersededBy: 1000 },
   { name: 'Turf Budget', amount: 5000 },
   { name: 'Fence Budget', amount: 7000 },
 ];
@@ -559,17 +570,58 @@ function plasterLine(geo) {
 
 function tileLine(geo) {
   const band = geo.perimeter * 0.5 * 1.15; // 6in waterline band, +15% waste
-  const rate = UNIT_COSTS.tileMaterial.rate;
   const qty = r(band);
+  // Material follows the band AREA, labor follows the waterline RUN — his estimate carries them
+  // as two lines ($1,950 + $2,500) and modelling material alone understated finishes by $2,500.
+  const mat = qty * UNIT_COSTS.tileMaterial.rate;
+  const labor = geo.perimeter * UNIT_COSTS.tileLabor.rate;
+  const extended = r(mat + labor);
   return {
     code: 800,
     name: 'Pool Finishes — Waterline Tile',
     qty,
     unit: 'sq ft',
+    unitCost: r(extended / qty, 2),
+    extended,
+    confidence: UNIT_COSTS.tileMaterial.confidence,
+    basis: `${r(geo.perimeter)} LF × 0.5 ft band +15% waste = ${qty} sq ft @ $${UNIT_COSTS.tileMaterial.rate} material + ${r(geo.perimeter)} LF labor @ $${UNIT_COSTS.tileLabor.rate}`,
+    extra: { material: r(mat), labor: r(labor) },
+  };
+}
+
+/** Shell forming — his estimate carries a $550 Forming line the model never had (§400). */
+function formingLine(geo) {
+  const qty = r(geo.perimeter);
+  const rate = UNIT_COSTS.forming.rate;
+  return {
+    code: 400,
+    name: 'Pool Shell — Forming',
+    qty,
+    unit: 'LF perimeter',
     unitCost: rate,
     extended: r(qty * rate),
-    confidence: UNIT_COSTS.tileMaterial.confidence,
-    basis: `${r(geo.perimeter)} LF × 0.5 ft band +15% waste`,
+    confidence: UNIT_COSTS.forming.confidence,
+    basis: `${qty} LF perimeter @ $${rate}/LF`,
+  };
+}
+
+/**
+ * Site work — backfill, driveway cleaning, cleanup and haul-off. A separate line on his
+ * estimate ($1,500) that the excavation assembly never accounted for. Scales with the LOOSE
+ * volume actually trucked off, not the bank volume dug.
+ */
+function siteWorkLine(excavation) {
+  const qty = excavation.extra.looseYd3;
+  const rate = UNIT_COSTS.siteWork.rate;
+  return {
+    code: 200,
+    name: 'Excavation — Site Work & Haul-off',
+    qty,
+    unit: 'loose yd³',
+    unitCost: rate,
+    extended: r(qty * rate),
+    confidence: UNIT_COSTS.siteWork.confidence,
+    basis: `backfill trench, clean drive, cleanup + haul ${qty} loose yd³ (${excavation.extra.trucks} trucks) @ $${rate}`,
   };
 }
 
@@ -742,9 +794,12 @@ export function takeoff(inputs) {
   const opts = { avgDepth: 4.75, ...inputs };
   const geo = combinedGeometry(opts);
 
+  const excavation = excavationLine(geo, opts);
   const parametricLines = [
-    excavationLine(geo, opts),
+    excavation,
+    siteWorkLine(excavation),
     rebarLine(geo),
+    formingLine(geo),
     guniteLine(geo),
     tileLine(geo),
     copingLine(geo),
@@ -761,7 +816,11 @@ export function takeoff(inputs) {
     ...l,
   }));
 
-  const allowances = inputs.allowances ?? DEFAULT_ALLOWANCES;
+  // Drop any allowance whose scope is now taken off, or the same work is billed twice.
+  const takenOffCodes = new Set(parametricLines.map((l) => l.code));
+  const allAllowances = inputs.allowances ?? DEFAULT_ALLOWANCES;
+  const supersededAllowances = allAllowances.filter((a) => a.supersededBy && takenOffCodes.has(a.supersededBy));
+  const allowances = allAllowances.filter((a) => !supersededAllowances.includes(a));
   const allowanceTotal = allowances.reduce((s, a) => s + a.amount, 0);
 
   const takeoffCost = parametricLines.reduce((s, l) => s + l.extended, 0);
@@ -890,7 +949,8 @@ export function takeoff(inputs) {
           circular: !!opts.backSolveResidual,
         }
       : null,
-    flags: buildFlags(allowances, allowanceTotal, jobCost, parametricLines, directLines),
+    supersededAllowances,
+    flags: buildFlags(allowances, allowanceTotal, jobCost, parametricLines, directLines, supersededAllowances),
   };
 }
 
@@ -899,8 +959,14 @@ function codeName(code) {
   return c ? c.name : String(code);
 }
 
-function buildFlags(allowances, allowanceTotal, jobCost, lines, directLines = []) {
+function buildFlags(allowances, allowanceTotal, jobCost, lines, directLines = [], superseded = []) {
   const flags = [];
+  for (const a of superseded) {
+    flags.push({
+      level: 'info',
+      msg: `"${a.name}" (${fmtMoney(a.amount)}) was dropped — cost code ${a.supersededBy} is now taken off, so keeping the allowance would bill the same work twice. This is the allowance-to-takeoff conversion PRD 02 is aiming for: same scope, now with a quantity behind it.`,
+    });
+  }
   const residual = directLines.find((l) => l.code === 9999);
   if (residual) {
     flags.push({

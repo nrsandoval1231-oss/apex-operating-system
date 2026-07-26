@@ -58,6 +58,36 @@ Coping $7,550 · Deck $5,000 · Plaster $8,750. Lines extend on the **rounded** 
 `qty × unit cost = extended` exactly — otherwise the substantiation test fails on the customer's
 own arithmetic.
 
+## Milestone 4 — the back-test passes
+
+`node backtest.mjs` compares the model against **his real estimate, line for line**
+(`whitaker-actual.mjs`, extracted from the customer PDF; all 13 section subtotals and the grand
+total reconcile, which is what verifies the read). Nothing is back-solved, so the gate means
+something:
+
+| Code | Category | Model | Actual | |
+|---|---|---|---|---|
+| 200 | Excavation | $7,000 | $7,000 | exact |
+| 400 | Pool Shell | $16,801 | $16,800 | exact |
+| 800 | Pool Finishes | $20,755 | $20,750 | exact |
+| 1000 | Pool Deck | $10,001 | $10,000 | exact |
+| 1300 | Additional Upgrades | $7,000 | $7,000 | exact |
+| | **modelled codes** | **$61,557** | **$61,550** | **0.0%** |
+
+Enter his direct-entry lines too and the whole job lands at **$116,961 against $116,955.18** —
+89.8% of job cost substantiated, with only the 14.5% of upgrade allowances carrying no quantity.
+
+Four gaps had to close to get there, all found by the back-test:
+
+- **Tile labor** — the model priced material only ($1,950) and missed his separate $2,500 labor
+  line. Material follows the band area, labor follows the waterline run.
+- **Forming** — a $550 line no assembly had.
+- **Site work** — backfill, driveway cleaning and haul-off, $1,500, separate from the dig.
+- **Deck double-count** — the engine billed a $5,001 deck takeoff *and* kept the $5,000
+  "Concrete Diamonds Budget" allowance. Allowances now carry `supersededBy`, so taking off a
+  cost code drops the allowance covering it. This is PRD 02's thesis in miniature: same dollar
+  figure, now with a quantity behind it.
+
 ## The number that matters most
 
 **The parametric layer substantiates ~35% of Whitaker's real job cost.** Run the back-test

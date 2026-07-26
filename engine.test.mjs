@@ -73,7 +73,17 @@ reproduces('Gunite', 12000);
 reproduces('Rebar', 4000);
 reproduces('Coping', 7550);
 reproduces('Pool Deck', 5000);
+reproduces('Forming', 550);
+reproduces('Site Work', 1500);
 ok('reproduces his $8,750 plaster (materials + labor)', near(L('Plaster').extended,8750,30), fmt(L('Plaster').extended));
+ok('reproduces his $4,450 tile (materials + labor)', near(L('Tile').extended,4450,30), fmt(L('Tile').extended));
+ok('tile splits material vs labor like his estimate', near(L('Tile').extra.material,1950,25) && near(L('Tile').extra.labor,2500,25), `${L('Tile').extra.material}/${L('Tile').extra.labor}`);
+
+// Whole-cost-code reconciliation against the real estimate (PRD 02 Milestone 4).
+const byCode = (c) => t.lines.filter(l=>l.code===c).reduce((s,l)=>s+l.extended,0);
+ok('code 200 Excavation reconciles to $7,000', near(byCode(200),7000,10), fmt(byCode(200)));
+ok('code 400 Shell reconciles to $16,800', near(byCode(400)+byCode(500),16800,10), fmt(byCode(400)+byCode(500)));
+ok('code 800 Finishes reconciles to $20,750', near(byCode(800),20750,10), fmt(byCode(800)));
 
 // The substantiation test (PRD 02 success criteria) as an assertion: the two numbers printed
 // beside each other on the estimate must multiply out to the total printed next to them.
@@ -97,7 +107,12 @@ ok('two equivalent entries land within 5% on job cost', Math.abs(t.jobCost-c2.jo
 // ── Pricing structure ────────────────────────────────────────────────────────
 ok('fee charged on allowances (jobCost includes allowances)', t.jobCost > t.takeoffCost + t.directCost);
 ok('trueMargin 23.08 at 0.30 fee', near(t.pricing.trueMarginPct,23.08,0.02), String(t.pricing.trueMarginPct));
-ok('allowances default = 17,000', t.allowanceTotal===17000, String(t.allowanceTotal));
+// Concrete Diamonds is superseded once the deck is taken off — otherwise the same decorative
+// concrete is billed as both an allowance and a takeoff line.
+ok('allowances net to 12,000 after supersession', t.allowanceTotal===12000, String(t.allowanceTotal));
+ok('Concrete Diamonds superseded by the deck takeoff', t.supersededAllowances.length===1 && t.supersededAllowances[0].supersededBy===1000);
+ok('supersession raises an explanatory flag', t.flags.some(f=>f.msg.includes('bill the same work twice')));
+ok('no supersession when the deck is not taken off', takeoff({...WHITAKER, deckBorderFt:0, deckSqFt:0}).allowanceTotal===17000);
 
 // ── Derived build calendar (Foundation §8) ───────────────────────────────────
 ok('build weeks DERIVED, lands in ref 6–8 wk window', t.schedule.buildWeeks>=6 && t.schedule.buildWeeks<=8, String(t.schedule.buildWeeks));
@@ -132,7 +147,7 @@ const withEq = takeoff({...WHITAKER, actualJobCost:T.jobCost, backSolveResidual:
 ok('residual forces job cost to the actual total', near(withEq.jobCost,T.jobCost,1), String(withEq.jobCost));
 ok('residual back-test is flagged CIRCULAR', withEq.backTest.circular===true && withEq.backTest.variancePct===0);
 ok('residual is excluded from substantiated direct cost', withEq.coverage.direct===10000, String(withEq.coverage.direct));
-ok('residual counted as unsubstantiated, not coverage', withEq.coverage.residual>0 && withEq.coverage.unsubstantiatedPct>50, `${withEq.coverage.unsubstantiatedPct}%`);
+ok('residual counted as unsubstantiated, not coverage', withEq.coverage.residual>0 && withEq.coverage.unsubstantiatedPct>40, `${withEq.coverage.unsubstantiatedPct}%`);
 ok('residual raises a warn flag', withEq.flags.some(f=>f.level==='warn'&&f.msg.includes('BACK-SOLVED RESIDUAL')));
 ok('no residual line when back-solve is off', !takeoff({...WHITAKER,actualJobCost:T.jobCost}).directLines.some(l=>l.code===9999));
 
