@@ -18,6 +18,11 @@ Operational modernization for Apex (Lubbock, TX). One brand, four verticals: **D
 | **05** | [CRM & Pipeline Analytics](05-crm-pipeline-analytics.md) | ⏸ **Stub — deferred** | Needs ~60 days of real lead data |
 | **06** | [Job Execution & Crew Scheduling](06-project-management.md) | ✅ **Written** (v0.1) | Phase 1 has **no** blockers |
 
+> **Start here if you want to move the project, not read it:** [`decision-register.md`](decision-register.md) —
+> all 28 open decisions across the four repos and seven PRDs, ranked by what they unlock and grouped
+> by owner. Six of them unblock everything else. The build is roughly two sessions ahead of the
+> decisions, and that register is how it gets unstuck.
+
 **00 is the source of truth.** Every other document references it. Definitions live there once — cost codes, GP definition, allocation policy, the enum of verticals — so the PRDs can't drift apart and contradict each other at integration time.
 
 ---
