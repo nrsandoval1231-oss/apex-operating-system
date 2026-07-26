@@ -95,6 +95,38 @@ const GAL_PER_CUFT = 7.48052;
 const STEPS_AREA_FRACTION = 0.149;
 
 /**
+ * Apex build standards — confirmed by Travis, 2026-07-26. These were the three biggest
+ * assumptions in the reference takeoff; they are now inputs with known values, which means
+ * a proposal needs only length × width to produce a full takeoff.
+ *
+ * The spa correction matters most: the reference assumed 7×7×3.5 and warned it was "the
+ * biggest single unknown." The real 6×6 shrinks combined wetted area ~3.7%, so every unit
+ * cost back-solved from Whitaker's dollars moves with it (see §Unit cost library).
+ */
+export const APEX_STANDARDS = {
+  depthShallow: 3.5, // always a 3.5 → 6.0 ft slope
+  depthDeep: 6.0,
+  spa: { length: 6, width: 6, depth: 3.5 }, // always 6×6×3.5 (was assumed 7×7×3.5)
+  deckBorderFt: 4, // deck is always a 4 ft border around the pool
+};
+
+/**
+ * Deck area from a fixed-width border (Apex standard: 4 ft).
+ *
+ * A band of width w around an L×W rectangle is w×perimeter plus the four corner squares:
+ *   area = w·P + 4w²   →  Whitaker: 4(76) + 4(16) = 368 sq ft
+ *
+ * Reference §1000 called the deck "the largest unquantified item on the sheet" and back-solved
+ * 280–415 sq ft from the $5,000 allowance. 368 lands inside that range, which is a clean
+ * independent check on the 4 ft rule. An explicit `deckSqFt` still overrides.
+ */
+export function deckArea({ perimeter, deckBorderFt, deckSqFt }) {
+  if (deckSqFt != null) return { sqFt: deckSqFt, derived: false, borderFt: null };
+  const w = deckBorderFt ?? APEX_STANDARDS.deckBorderFt;
+  return { sqFt: w * perimeter + 4 * w ** 2, derived: true, borderFt: w };
+}
+
+/**
  * Pool wetted-surface + volume geometry.
  * Validates against Whitaker (14×24, avg 4.75): surface 336, perimeter 76, floor ~338,
  * walls 361, +steps 50 → wetted 749 sq ft; volume 1,596 ft³ ≈ 11,939 gal.
@@ -113,6 +145,12 @@ export function poolGeometry({
   stepsArea,
   slopeFactor,
 }) {
+  // Apex builds the same 3.5 → 6.0 ft slope on every pool, so a bare length × width is a
+  // complete depth spec. An explicit avgDepth or profile still wins.
+  if (avgDepth == null && depthShallow == null && depthDeep == null) {
+    depthShallow = APEX_STANDARDS.depthShallow;
+    depthDeep = APEX_STANDARDS.depthDeep;
+  }
   const hasProfile = depthShallow != null && depthDeep != null;
   const depth = hasProfile ? (depthShallow + depthDeep) / 2 : avgDepth;
   // Floor runs down the slope: hypotenuse of (run, rise = deep − shallow). The run is the LONG
@@ -150,7 +188,12 @@ export function poolGeometry({
  * volume 171.5 ft³ ≈ 1,283 gal. Spa is the single biggest unknown (reference §1) — off by
  * default; a bundled-spa price contaminates unit costs, so dimension it explicitly when known.
  */
-export function spaGeometry({ length = 7, width = 7, depth = 3.5, seatArea }) {
+export function spaGeometry({
+  length = APEX_STANDARDS.spa.length,
+  width = APEX_STANDARDS.spa.width,
+  depth = APEX_STANDARDS.spa.depth,
+  seatArea,
+}) {
   const surfaceArea = length * width;
   const perimeter = 2 * (length + width);
   // Bench seat wraps most of the spa: calibrated to Whitaker (25 sq ft ÷ 49 = 0.51).
@@ -188,17 +231,29 @@ export function combinedGeometry(inputs) {
 // Unit cost library — seed from reference §4. PROVISIONAL. confidence per line.
 // Editable: this is what Phase 1 freezes and an owner maintains.
 // ─────────────────────────────────────────────────────────────────────────────
+/**
+ * RE-DERIVED 2026-07-26 against the confirmed 6×6 spa (`node calibrate.mjs`).
+ *
+ * These are not quoted rates — they are Whitaker's dollars ÷ the quantity this engine computes,
+ * so that qty × rate reproduces the figure the customer actually saw. The reference takeoff
+ * assumed a 7×7 spa; the real 6×6 cuts wetted area 3.7% and perimeter 3.8%, so every rate below
+ * moved. Rates rose where quantity fell (same dollars over less work) — gunite $424 → $440,
+ * plaster $85 → $87/bag — and fell where quantity rose, e.g. coping $75.50 → $71.23 once the
+ * waste factor was included in the divisor rather than left out of it.
+ *
+ * Still ONE job. The library needs 5–10 (PRD 02 Milestone 1) before it can be frozen.
+ */
 export const UNIT_COSTS = {
-  excavation: { rate: 58, unit: '$/bank yd³', confidence: 'low', note: 'caliche dig; needs sub invoice (ref §0/§4)' },
-  gunite: { rate: 424, unit: '$/yd³ paid', confidence: 'high', note: 'inside published $350–600 (ref §4)' },
-  rebarInstalled: { rate: 3.69, unit: '$/lb steel', confidence: 'medium', note: 'labor-heavy, not a material rate' },
-  plasterMaterial: { rate: 85, unit: '$/bag', confidence: 'high', note: 'Diamond Brite territory' },
-  plasterLabor: { rate: 5.43, unit: '$/sq ft', confidence: 'medium' },
-  tileMaterial: { rate: 32.5, unit: '$/sq ft', confidence: 'low', note: 'high — scope unclear, possibly glass/spa fully tiled (ref §800 flag)' },
-  copingInstalled: { rate: 75.5, unit: '$/LF', confidence: 'medium', note: 'stone + auto-cover encapsulation' },
-  bondingCopper: { rate: 1.25, unit: '$/LF #8', confidence: 'low', note: 'estimate line looked light (ref §500)' },
+  excavation: { rate: 59.59, unit: '$/bank yd³', confidence: 'low', note: 'caliche dig; needs sub invoice (ref §0/§4)' },
+  gunite: { rate: 439.56, unit: '$/yd³ paid', confidence: 'high', note: 'inside published $350–600 (ref §4)' },
+  rebarInstalled: { rate: 3.77, unit: '$/lb steel', confidence: 'medium', note: 'labor-heavy, not a material rate' },
+  plasterMaterial: { rate: 87.21, unit: '$/bag', confidence: 'high', note: 'Diamond Brite territory' },
+  plasterLabor: { rate: 5.64, unit: '$/sq ft', confidence: 'medium' },
+  tileMaterial: { rate: 34.21, unit: '$/sq ft', confidence: 'low', note: 'high — scope unclear, possibly glass/spa fully tiled (ref §800 flag)' },
+  copingInstalled: { rate: 71.23, unit: '$/LF', confidence: 'medium', note: 'stone + auto-cover encapsulation' },
+  bondingCopper: { rate: 1.12, unit: '$/LF #8', confidence: 'low', note: 'his $250 line is light — 224 LF of #8 is $230–345 in material alone (ref §500)' },
   fillWater: { rate: 0.012, unit: '$/gal', confidence: 'low', note: 'meter/truck; hard Ogallala water (ref §5)' },
-  deckConcrete: { rate: 15, unit: '$/sq ft', confidence: 'low', note: 'ref §1000 back-solves $12–18/sq ft from a $5k allowance; never measured' },
+  deckConcrete: { rate: 13.59, unit: '$/sq ft', confidence: 'medium', note: '$5k ÷ 368 sq ft from the 4 ft border rule; inside ref §1000 published $12–18' },
 };
 
 // Production rates for crew hours — PROVISIONAL, needs calibration (PRD 02 §scope expansion).
@@ -415,14 +470,17 @@ function excavationLine(geo, opts) {
   const trucks = Math.ceil(loose / 14);
   const rate = UNIT_COSTS.excavation.rate;
   const caliche = calicheExposure([poolDig, ...(spaDig ? [spaDig] : [])], opts);
+  // Extend on the ROUNDED quantity — the number printed on the estimate must multiply out to
+  // the number beside it, or the substantiation test fails on the customer's own arithmetic.
+  const qty = r(bank, 1);
 
   return {
     code: 200,
     name: 'Excavation',
-    qty: r(bank, 1),
+    qty,
     unit: 'bank yd³',
     unitCost: rate,
-    extended: r(bank * rate),
+    extended: r(qty * rate),
     confidence: UNIT_COSTS.excavation.confidence,
     basis: `pool ${r(poolDig.bank, 1)} + spa ${r(spaDig ? spaDig.bank : 0, 1)} yd³ (footprint ${r(poolDig.footprint)} sq ft × ${r(poolDig.digDepth, 2)} ft dig) +7% sloughing; ${r(loose)} loose yd³, ${trucks} trucks @14`,
     crewHours: r(bank * PRODUCTION.excavationHrsPerYd3, 1),
@@ -437,13 +495,14 @@ function guniteLine(geo) {
   const inPlace = shellVol + bondBeam;
   const ordered = inPlace * 1.15; // +15% blended rebound
   const rate = UNIT_COSTS.gunite.rate;
+  const qty = r(ordered, 1);
   return {
     code: 400,
     name: 'Pool Shell — Gunite',
-    qty: r(ordered, 1),
+    qty,
     unit: 'yd³ paid',
     unitCost: rate,
-    extended: r(ordered * rate),
+    extended: r(qty * rate),
     confidence: UNIT_COSTS.gunite.confidence,
     basis: `${r(geo.wettedArea)} sq ft @ 8in = ${r(shellVol, 1)} + bond beam ${r(bondBeam, 1)} = ${r(inPlace, 1)} in-place +15% rebound`,
     crewHours: r(ordered * PRODUCTION.guniteHrsPerYd3, 1),
@@ -457,13 +516,14 @@ function rebarLine(geo) {
   const wt4 = bondBeamLF * 0.668; // lb/ft #4
   const steelLb = wt3 + wt4;
   const rate = UNIT_COSTS.rebarInstalled.rate;
+  const qty = r(steelLb);
   return {
     code: 400,
     name: 'Pool Shell — Rebar',
-    qty: r(steelLb),
+    qty,
     unit: 'lb steel',
     unitCost: rate,
-    extended: r(steelLb * rate),
+    extended: r(qty * rate),
     confidence: UNIT_COSTS.rebarInstalled.confidence,
     basis: `${r(gridLF)} LF #3 grid + ${r(bondBeamLF)} LF #4 bond beam = ${r(steelLb)} lb (${r(steelLb / 2000, 2)} ton)`,
     crewHours: r(steelLb * PRODUCTION.rebarTieHrsPerLb, 1),
@@ -499,13 +559,14 @@ function plasterLine(geo) {
 function tileLine(geo) {
   const band = geo.perimeter * 0.5 * 1.15; // 6in waterline band, +15% waste
   const rate = UNIT_COSTS.tileMaterial.rate;
+  const qty = r(band);
   return {
     code: 800,
     name: 'Pool Finishes — Waterline Tile',
-    qty: r(band),
+    qty,
     unit: 'sq ft',
     unitCost: rate,
-    extended: r(band * rate),
+    extended: r(qty * rate),
     confidence: UNIT_COSTS.tileMaterial.confidence,
     basis: `${r(geo.perimeter)} LF × 0.5 ft band +15% waste`,
   };
@@ -514,13 +575,14 @@ function tileLine(geo) {
 function copingLine(geo) {
   const lf = geo.copingPerimeter * 1.1; // +10% waste
   const rate = UNIT_COSTS.copingInstalled.rate;
+  const qty = r(lf);
   return {
     code: 800,
     name: 'Pool Finishes — Coping',
-    qty: r(lf),
+    qty,
     unit: 'LF',
     unitCost: rate,
-    extended: r(lf * rate),
+    extended: r(qty * rate),
     confidence: UNIT_COSTS.copingInstalled.confidence,
     basis: `${r(geo.copingPerimeter)} LF exposed perimeter +10% waste`,
   };
@@ -534,20 +596,24 @@ function copingLine(geo) {
  * 3–4 ft surround. Once someone measures the deck it stops being an allowance and becomes a
  * takeoff line — which is the whole point of the exercise. Emitted only when sq ft is supplied.
  */
-function deckLine(opts) {
-  const sf = opts.deckSqFt ?? 0;
-  if (!sf) return null;
+function deckLine(geo, opts) {
+  const deck = deckArea({ perimeter: geo.pool.perimeter, deckBorderFt: opts.deckBorderFt, deckSqFt: opts.deckSqFt });
+  if (!deck.sqFt) return null;
   const rate = opts.deckRate ?? UNIT_COSTS.deckConcrete.rate;
+  const qty = r(deck.sqFt);
   return {
     code: 1000,
     name: 'Pool Deck — Decorative Concrete',
-    qty: r(sf),
+    qty,
     unit: 'sq ft',
     unitCost: rate,
-    extended: r(sf * rate),
+    extended: r(qty * rate),
     confidence: UNIT_COSTS.deckConcrete.confidence,
-    basis: `${r(sf)} sq ft measured deck @ $${rate}/sq ft (ref §1000 back-solves $12–18/sq ft)`,
-    crewHours: r(sf * PRODUCTION.deckHrsPerSqFt, 1),
+    basis: deck.derived
+      ? `${deck.borderFt} ft border: ${deck.borderFt}×${geo.pool.perimeter} LF perimeter + 4 corners = ${r(deck.sqFt)} sq ft @ $${rate}/sq ft`
+      : `${r(deck.sqFt)} sq ft measured deck @ $${rate}/sq ft`,
+    crewHours: r(deck.sqFt * PRODUCTION.deckHrsPerSqFt, 1),
+    extra: { derived: deck.derived, borderFt: deck.borderFt },
   };
 }
 
@@ -557,13 +623,14 @@ function bondingLine(geo) {
   const jumpers = 100;
   const lf = loopLF + jumpers;
   const rate = UNIT_COSTS.bondingCopper.rate;
+  const qty = r(lf);
   return {
     code: 500,
     name: 'Utilities — Bonding',
-    qty: r(lf),
+    qty,
     unit: 'LF #8 Cu',
     unitCost: rate,
-    extended: r(lf * rate),
+    extended: r(qty * rate),
     confidence: UNIT_COSTS.bondingCopper.confidence,
     basis: `perimeter loop ${r(loopLF)} LF + ~${jumpers} LF jumpers (material only; labor may sit in Electrician line)`,
   };
@@ -622,7 +689,7 @@ export function buildSchedule(geo, lines, opts = {}) {
   const rebar = lines.find((l) => l.name.includes('Rebar'));
   const bankYd3 = exc ? exc.qty : 0;
   const gridLF = rebar?.extra?.gridLF ?? 0;
-  const deckSf = opts.deckSqFt ?? 0;
+  const deckSf = lines.find((l) => l.code === 1000)?.qty ?? 0;
 
   const phases = [
     { name: 'Layout & permit', days: 1, lag: opts.permitLagDays ?? 7, lagWhy: 'permit issuance' },
@@ -679,7 +746,7 @@ export function takeoff(inputs) {
     copingLine(geo),
     plasterLine(geo),
     bondingLine(geo),
-    deckLine(opts),
+    deckLine(geo, opts),
   ].filter(Boolean);
 
   const directLines = (inputs.directLines ?? DIRECT_LINES_SEED).map((l) => ({

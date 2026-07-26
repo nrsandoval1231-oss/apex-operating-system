@@ -13,22 +13,50 @@ and the reverse-engineered `reference/whitaker-oasis-quantity-takeoff.md`.
 |---|---|
 | `engine.mjs` | Pure, dependency-free takeoff engine: geometry → assemblies → quantities → schedule → pricing → budget → hours → Lever B. Every formula cites its source. |
 | `engine.test.mjs` | 44 checks validating the engine against the real Whitaker numbers. `node engine.test.mjs`. |
-| `report.mjs` | CLI takeoff report — the substantiation test made runnable. `node report.mjs whitaker` / `sample` / `18x36 --deep 7 --spa 8x8 --deck 700`. |
-| `index.html` | The interactive builder UI. Live recompute, editable allowances/direct lines, budget + CSV/JSON export. |
+| `report.mjs` | CLI takeoff report — the substantiation test made runnable. `node report.mjs whitaker` / `sample` / `18x36 --deep 7 --spa 8x8`. |
+| `calibrate.mjs` | Back-solves the unit-cost library from his real line dollars. Re-run whenever geometry changes. |
+| `index.html` | The interactive builder UI. Live recompute, derived calendar, coverage, back-test, gated Lever-B panel, CSV/JSON export. |
+
+## Apex build standards (confirmed 2026-07-26)
+
+Three assumptions became known values, so a proposal now needs only **length × width**:
+
+| Standard | Value | Was |
+|---|---|---|
+| Depth profile | always 3.5 → 6.0 ft slope | assumed |
+| Spa | always 6 × 6 × 3.5 ft | **assumed 7×7** |
+| Deck | always a 4 ft border | unquantified $5k allowance |
+
+The spa correction is load-bearing. The reference takeoff published 921 sq ft / 104 LF /
+13,222 gal from a 7×7 spa it flagged as "the biggest single unknown." The real 6×6 cuts wetted
+area 3.7% and perimeter 3.8% — and since every unit cost is *back-solved* from his dollars ÷ our
+quantity, **the whole library had to be re-derived** (`node calibrate.mjs`). Gunite went
+$424 → $440/yd³, plaster $85 → $87/bag. Both still land inside published ranges, which is the
+cross-check that the correction didn't break anything.
+
+The 4 ft deck rule gives 4×76 + 4×4² = **368 sq ft** on Whitaker — inside the 280–415 sq ft the
+reference had independently back-solved from the $5,000 allowance. Two different methods agreeing
+is the strongest evidence in the model.
 
 ## Validation against the reference job
 
-`node report.mjs whitaker` reproduces the reverse-engineered takeoff from geometry alone:
+`node report.mjs whitaker` reproduces the takeoff from geometry alone, and every line multiplies
+out to the dollar figure the customer actually saw:
 
 | Measure | Model | Reference | |
 |---|---|---|---|
-| Wetted area | 921 sq ft | 921 | exact |
-| Perimeter | 104 LF | 104 | exact |
-| Water volume | 13,222 gal | 13,222 | exact |
-| Excavation | 94.9 bank yd³ | 95 | 0.1% |
-| Gunite ordered | 28.4 yd³ | 28.3 | 0.4% |
-| Plaster bags | 44 | 44 | exact |
-| Rebar steel | 1,102 lb | 1,084 | 1.7% |
+| Wetted area | 887 sq ft | 887 | exact |
+| Perimeter | 100 LF | 100 | exact |
+| Water volume | 12,881 gal | 12,881 | exact |
+| Excavation | 92.3 bank yd³ | 92.3 | exact |
+| Gunite ordered | 27.3 yd³ | 27.3 | exact |
+| Plaster bags | 43 | 43 | exact |
+| Rebar steel | 1,061 lb | 1,061 | exact |
+
+It also reproduces his line dollars: Excavation $5,500 · Gunite $12,000 · Rebar $4,000 ·
+Coping $7,550 · Deck $5,000 · Plaster $8,750. Lines extend on the **rounded** quantity so that
+`qty × unit cost = extended` exactly — otherwise the substantiation test fails on the customer's
+own arithmetic.
 
 ## The number that matters most
 
@@ -57,8 +85,19 @@ be mistaken for completeness.
 - **Caliche exposure modelled** (`calicheExposure()`): what fraction of the dig sits below the
   ~27 in calcic horizon. Not priced into the excavation line — the $58/yd³ seed rate was
   back-solved from a job that already dug caliche, so a premium on top would double-count.
-- **Deck is a takeoff line** when `deckSqFt` is supplied, instead of hiding in an allowance.
+- **Deck is a takeoff line** derived from the 4 ft border rule, instead of hiding in an allowance.
 - **Coverage + back-test** reporting (above).
+
+## v0.3 — build standards
+
+- `APEX_STANDARDS` encodes the confirmed depth profile, spa size and deck border. A bare
+  `{length, width}` now produces a complete takeoff; `spa: {}` opts a job into a standard spa.
+- **Unit-cost library re-derived** against the corrected 6×6 spa (`calibrate.mjs`).
+- **Lines extend on the rounded quantity**, so the printed numbers multiply out.
+- **UI rebuilt** to match the engine: depth-profile and deck-border inputs, derived build
+  duration (with an explicit override), coverage bars, back-test panel, and a costed Lever-B
+  panel behind the gate toggle. Previously it passed `buildWeeks: 7` from a text box, which
+  silently overrode the derived calendar.
 
 Run the builder locally (module imports need a server, not `file://`):
 

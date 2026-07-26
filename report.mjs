@@ -13,22 +13,26 @@ import { takeoff, fmtMoney, COST_CODES } from './engine.mjs';
 const argv = process.argv.slice(2);
 const flag = (n, d) => { const i = argv.indexOf('--' + n); return i === -1 ? d : argv[i + 1]; };
 
-// Ground truth from reference/whitaker-oasis-quantity-takeoff.md §2–§3, for the check column.
+/**
+ * Ground truth, corrected 2026-07-26. The reference takeoff assumed a 7×7 spa and published
+ * 921 sq ft / 104 LF / 13,222 gal; Travis confirmed 6×6×3.5, which supersedes all of it.
+ */
 const WHITAKER_TRUTH = {
-  'wetted area': [921, 'sq ft'], 'perimeter': [104, 'LF'], 'gallons': [13222, 'gal'],
-  'excavation': [95, 'bank yd³'], 'gunite ordered': [28.3, 'yd³'], 'plaster bags': [44, 'bags'],
-  'rebar steel': [1084, 'lb'],
+  'wetted area': [887, 'sq ft'], 'perimeter': [100, 'LF'], 'gallons': [12881, 'gal'],
+  'excavation': [92.3, 'bank yd³'], 'gunite ordered': [27.3, 'yd³'], 'plaster bags': [43, 'bags'],
+  'rebar steel': [1061, 'lb'],
 };
 
+// `spa: {}` opts in and lets APEX_STANDARDS size it; depth profile and deck derive from standards.
 const SCENARIOS = {
   whitaker: {
     label: 'Whitaker Oasis — 14×24 w/ spa (the reference job)',
     truth: WHITAKER_TRUTH,
-    input: { length: 24, width: 14, depthShallow: 3.5, depthDeep: 6.0, spa: { length: 7, width: 7, depth: 3.5 }, deckSqFt: 400, actualJobCost: 116955.18 },
+    input: { length: 24, width: 14, spa: {}, actualJobCost: 116955.18 },
   },
   sample: {
-    label: 'Sample — 18×36 w/ 8×8 spa, deeper profile, 700 sq ft deck',
-    input: { length: 36, width: 18, depthShallow: 3.5, depthDeep: 7.0, spa: { length: 8, width: 8, depth: 3.75 }, deckSqFt: 700 },
+    label: 'Sample — 18×36 w/ standard spa, deeper profile, derived 4 ft deck',
+    input: { length: 36, width: 18, depthDeep: 7.0, spa: {} },
   },
 };
 
