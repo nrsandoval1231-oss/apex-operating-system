@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Apex — Pool Proposal & Takeoff Builder</title>
+<style>
+  :root{
+    --char:#1B1C1E; --char2:#25272A; --steel:#54585E; --concrete:#E9E5DE; --paper:#F6F4EF;
+    --line:#D4CFC5; --amber:#E0901B; --amber-d:#95560A; --pool:#0E6E7C; --ink:#141517;
+    --ok:#2f8250; --warn:#b5721a; --lowc:#b0472e;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.55 Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  h1,h2,h3{font-family:Oswald,Impact,system-ui,sans-serif;text-transform:uppercase;letter-spacing:.01em;margin:0;font-weight:700;line-height:1}
+  .mono{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace}
+  header{background:var(--char);color:#F4F2EE;padding:18px 22px;display:flex;flex-wrap:wrap;gap:8px 18px;align-items:baseline}
+  header h1{font-size:24px}
+  header .sub{font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--amber)}
+  .wrap{max-width:1240px;margin:0 auto;padding:22px;display:grid;grid-template-columns:340px 1fr;gap:22px;align-items:start}
+  @media(max-width:900px){.wrap{grid-template-columns:1fr}}
+  .panel{background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:18px}
+  .panel h2{font-size:15px;letter-spacing:.06em;color:var(--steel);margin-bottom:14px}
+  label{display:block;font-size:12px;font-weight:600;color:var(--steel);margin:10px 0 4px}
+  input[type=number],input[type=text]{width:100%;padding:9px 10px;border:1.5px solid var(--line);border-radius:8px;font:15px "JetBrains Mono",monospace;background:var(--paper)}
+  input:focus{outline:none;border-color:var(--amber)}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+  .check{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:13px;font-weight:600;color:var(--ink)}
+  .check input{width:16px;height:16px;accent-color:var(--amber)}
+  /* pricing hero */
+  .price-hero{background:var(--char);color:#F4F2EE;border:0}
+  .price-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:8px}
+  @media(max-width:560px){.price-grid{grid-template-columns:1fr 1fr}}
+  .stat b{font-family:Oswald,sans-serif;font-size:26px;display:block;line-height:1.05}
+  .stat span{font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#9E968B}
+  .stat.hi b{color:var(--amber)}
+  .margin-callout{margin-top:14px;background:rgba(224,144,27,.1);border:1px solid rgba(224,144,27,.4);border-radius:9px;padding:12px 14px;font-size:13px;line-height:1.5;color:#E7E3DB}
+  .margin-callout b{color:var(--amber)}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th,td{text-align:left;padding:8px 8px;border-bottom:1px solid #eee;vertical-align:top}
+  th{font:600 11px/1 "JetBrains Mono",monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--steel)}
+  td.num,th.num{text-align:right;font-family:"JetBrains Mono",monospace;white-space:nowrap}
+  tfoot td{font-weight:700;border-top:2px solid var(--ink);border-bottom:0}
+  .badge{display:inline-block;font:600 9.5px/1 "JetBrains Mono",monospace;letter-spacing:.06em;text-transform:uppercase;padding:3px 6px;border-radius:5px;margin-left:6px}
+  .badge.high{background:#e5f0e9;color:var(--ok)}
+  .badge.medium{background:#f3ecdd;color:var(--warn)}
+  .badge.low{background:#f6e4de;color:var(--lowc)}
+  .badge.direct{background:#e7e9ec;color:var(--steel)}
+  .basis{font-size:11.5px;color:var(--steel);margin-top:3px;line-height:1.4}
+  .flag{border-left:3px solid var(--amber);background:#fdf7ee;padding:10px 12px;border-radius:0 8px 8px 0;font-size:12.5px;line-height:1.5;margin-bottom:8px}
+  .flag.info{border-color:var(--pool);background:#eef6f7}
+  .allow-row,.direct-row{display:grid;grid-template-columns:1fr 96px;gap:8px;margin-bottom:6px}
+  .allow-row input,.direct-row input{padding:6px 8px;font-size:13px}
+  small.tag{font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--lowc)}
+  .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  button{font:600 13px Oswald,sans-serif;text-transform:uppercase;letter-spacing:.05em;padding:9px 14px;border-radius:8px;border:1.5px solid var(--line);background:#fff;cursor:pointer}
+  button.primary{background:var(--amber);border-color:var(--amber);color:var(--char)}
+  .note{font-size:11.5px;color:var(--steel);margin-top:6px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Apex — Pool Proposal &amp; Takeoff Builder</h1>
+  <span class="sub">PRD 02 · quantity layer · pools only</span>
+</header>
+
+<div class="wrap">
+  <!-- ───────────── INPUTS ───────────── -->
+  <div>
+    <div class="panel">
+      <h2>Pool</h2>
+      <div class="row">
+        <div><label>Length (ft)</label><input type="number" id="length" value="14" step="0.5"></div>
+        <div><label>Width (ft)</label><input type="number" id="width" value="24" step="0.5"></div>
+      </div>
+      <label>Average depth (ft)</label><input type="number" id="avgDepth" value="4.75" step="0.25">
+      <div class="check"><input type="checkbox" id="hasSpa" checked><label style="margin:0">Include spa</label></div>
+      <div id="spaInputs" class="row3" style="margin-top:8px">
+        <div><label>Spa L</label><input type="number" id="spaL" value="7" step="0.5"></div>
+        <div><label>Spa W</label><input type="number" id="spaW" value="7" step="0.5"></div>
+        <div><label>Spa depth</label><input type="number" id="spaD" value="3.5" step="0.25"></div>
+      </div>
+      <p class="note">Spa is the biggest unknown on Whitaker — dimension it, don't bundle it, or it contaminates unit costs (ref §1).</p>
+    </div>
+
+    <div class="panel">
+      <h2>Fee &amp; calendar</h2>
+      <label>Disclosed cost-plus fee (markup %)</label><input type="number" id="feeRate" value="30" step="1">
+      <div class="row3" style="margin-top:8px">
+        <div><label>Build wks</label><input type="number" id="buildWeeks" value="7"></div>
+        <div><label>Visits/wk</label><input type="number" id="visitsPerWeek" value="3"></div>
+        <div><label>Hrs/visit</label><input type="number" id="hoursPerVisit" value="1.5" step="0.5"></div>
+      </div>
+      <p class="note">Supervision is duration-driven, never a % of cost (Foundation §8).</p>
+    </div>
+
+    <div class="panel">
+      <h2>Direct-entry lines <small class="tag">layout-driven</small></h2>
+      <div id="directLines"></div>
+      <p class="note">Plumbing, equipment, cover, lights, automation — enter from quotes; least parametric.</p>
+    </div>
+
+    <div class="panel">
+      <h2>Allowances <small class="tag">placeholders</small></h2>
+      <div id="allowances"></div>
+      <p class="note">Not takeoff (Foundation §6). Fee is charged on top. Whether it recalculates on actuals is a blocked contract decision.</p>
+    </div>
+
+    <div class="panel">
+      <div class="check"><input type="checkbox" id="includeMissing"><label style="margin:0">Preview missing / Lever-B costs</label></div>
+      <p class="note">Gated on the cost-plus contract review (Foundation §3.1). Preview only — don't bill until the contract defines reimbursable cost.</p>
+      <div class="actions">
+        <button class="primary" id="exportBudget">Export budget (JSON)</button>
+        <button id="exportCsv">Export lines (CSV)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ───────────── OUTPUTS ───────────── -->
+  <div>
+    <div class="panel price-hero">
+      <div class="price-grid">
+        <div class="stat"><b id="o-cost">—</b><span>Job cost (reimbursable)</span></div>
+        <div class="stat hi"><b id="o-fee">—</b><span id="o-fee-label">Fee</span></div>
+        <div class="stat"><b id="o-rev">—</b><span>Customer price</span></div>
+      </div>
+      <div class="margin-callout" id="o-margin"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Customer estimate view <small class="tag" style="color:var(--steel)">what they see</small></h2>
+      <table><thead><tr><th>Cost code</th><th class="num">Extended</th></tr></thead>
+        <tbody id="customerView"></tbody>
+        <tfoot><tr><td>Job cost total</td><td class="num" id="cv-total">—</td></tr></tfoot>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h2>Quantity layer — substantiation <small class="tag" style="color:var(--pool)">the defensible basis</small></h2>
+      <table><thead><tr><th>Line</th><th class="num">Qty</th><th>Unit</th><th class="num">Unit $</th><th class="num">Extended</th></tr></thead>
+        <tbody id="qtyLayer"></tbody></table>
+    </div>
+
+    <div class="panel">
+      <h2>Budget by cost code <small class="tag" style="color:var(--steel)">zero re-entry handoff</small></h2>
+      <table><thead><tr><th>Code</th><th>Category</th><th class="num">Budget</th><th class="num">Crew hrs</th></tr></thead>
+        <tbody id="budgetView"></tbody>
+        <tfoot><tr><td colspan="2">Crew + supervision hours</td><td class="num" id="bv-cost">—</td><td class="num" id="bv-hours">—</td></tr></tfoot>
+      </table>
+      <p class="note" id="hoursNote"></p>
+    </div>
+
+    <div class="panel">
+      <h2>Flags</h2>
+      <div id="flags"></div>
+      <div id="missingBox"></div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { takeoff, COST_CODES, DEFAULT_ALLOWANCES, DIRECT_LINES_SEED, fmtMoney } from './engine.mjs';
+
+const $ = (id) => document.getElementById(id);
+const money = fmtMoney;
+
+// build editable allowance + direct-line rows from the seeds
+DEFAULT_ALLOWANCES.forEach((a, i) => {
+  $('allowances').insertAdjacentHTML('beforeend',
+    `<div class="allow-row"><input type="text" value="${a.name}" data-an="${i}"><input type="number" value="${a.amount}" data-av="${i}"></div>`);
+});
+DIRECT_LINES_SEED.forEach((l, i) => {
+  $('directLines').insertAdjacentHTML('beforeend',
+    `<div class="direct-row"><input type="text" value="${l.name}" data-dn="${i}" title="code ${l.code}"><input type="number" value="${l.extended}" data-dv="${i}"></div>`);
+});
+
+function readInputs() {
+  const hasSpa = $('hasSpa').checked;
+  const allowances = [...$('allowances').querySelectorAll('.allow-row')].map(r => ({
+    name: r.querySelector('[data-an]').value,
+    amount: +r.querySelector('[data-av]').value || 0,
+  }));
+  const directLines = DIRECT_LINES_SEED.map((seed, i) => ({
+    code: seed.code,
+    name: $('directLines').querySelector(`[data-dn="${i}"]`).value,
+    extended: +$('directLines').querySelector(`[data-dv="${i}"]`).value || 0,
+    confidence: 'direct', basis: seed.basis,
+  }));
+  return {
+    length: +$('length').value, width: +$('width').value, avgDepth: +$('avgDepth').value,
+    spa: hasSpa ? { length: +$('spaL').value, width: +$('spaW').value, depth: +$('spaD').value } : null,
+    feeRate: (+$('feeRate').value || 0) / 100,
+    buildWeeks: +$('buildWeeks').value, visitsPerWeek: +$('visitsPerWeek').value, hoursPerVisit: +$('hoursPerVisit').value,
+    allowances, directLines, includeMissing: $('includeMissing').checked,
+  };
+}
+
+let last = null;
+function render() {
+  const t = last = takeoff(readInputs());
+  const p = t.pricing;
+  $('o-cost').textContent = money(p.cost);
+  $('o-fee').textContent = money(p.fee);
+  $('o-fee-label').textContent = `Fee (${(p.feeRate*100).toFixed(0)}% markup)`;
+  $('o-rev').textContent = money(p.revenue);
+  $('o-margin').innerHTML =
+    `A <b>${(p.feeRate*100).toFixed(0)}% fee</b> on cost is a <b>${p.trueMarginPct.toFixed(2)}% gross margin</b> — not ${(p.feeRate*100).toFixed(0)}% `
+    + `(margin = fee ÷ (1+fee), Foundation §1). Commission is paid on this GP and never books to a cost code (§1.4).`;
+
+  // customer view = budget by code, extended only
+  $('customerView').innerHTML = t.budgetByCode.filter(b=>b.extended>0).map(b =>
+    `<tr><td>${b.code} · ${b.name}</td><td class="num">${money(b.extended)}</td></tr>`).join('');
+  if (t.allowanceTotal>0) $('customerView').insertAdjacentHTML('beforeend',
+    `<tr><td>Allowances (**** upgrade)</td><td class="num">${money(t.allowanceTotal)}</td></tr>`);
+  $('cv-total').textContent = money(t.jobCost);
+
+  // quantity layer
+  $('qtyLayer').innerHTML = t.lines.map(l =>
+    `<tr><td>${l.code} · ${l.name}<span class="badge ${l.confidence}">${l.confidence}</span><div class="basis">${l.basis}</div></td>`
+    + `<td class="num">${l.qty}</td><td>${l.unit}</td><td class="num">$${l.unitCost}</td><td class="num">${money(l.extended)}</td></tr>`).join('');
+
+  // budget by code
+  $('budgetView').innerHTML = t.budgetByCode.map(b =>
+    `<tr><td>${b.code}</td><td>${b.name}</td><td class="num">${money(b.extended)}</td><td class="num">${b.crewHours||''}</td></tr>`).join('');
+  $('bv-cost').textContent = money(t.takeoffCost + t.directCost);
+  $('bv-hours').textContent = t.hours.totalHours;
+  $('hoursNote').textContent = `Crew ${t.hours.crewHours} hrs + supervision ${t.hours.supervisionHours} hrs (${$('buildWeeks').value} wk × ${$('visitsPerWeek').value}/wk × ${$('hoursPerVisit').value} hr). Provisional production rates — calibrate against real jobs.`;
+
+  // flags + missing
+  $('flags').innerHTML = t.flags.map(f => `<div class="flag ${f.level==='info'?'info':''}">${f.msg}</div>`).join('');
+  $('missingBox').innerHTML = t.missingCosts.length
+    ? `<table style="margin-top:10px"><thead><tr><th>Tier</th><th>Missing cost (Lever B)</th><th>Note</th></tr></thead><tbody>`
+      + t.missingCosts.map(m=>`<tr><td>${m.tier}</td><td>${m.name}</td><td class="basis">${m.note}</td></tr>`).join('') + `</tbody></table>`
+    : '';
+}
+
+$('hasSpa').addEventListener('change', () => { $('spaInputs').style.display = $('hasSpa').checked ? '' : 'none'; render(); });
+document.querySelectorAll('input').forEach(el => el.addEventListener('input', render));
+
+$('exportBudget').addEventListener('click', () => {
+  const blob = new Blob([JSON.stringify({ budgetByCode: last.budgetByCode, jobCost: last.jobCost, pricing: last.pricing, hours: last.hours, generated: 'apex-proposal-engine' }, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'apex-budget.json'; a.click();
+});
+$('exportCsv').addEventListener('click', () => {
+  const rows = [['code','line','qty','unit','unit_cost','extended','confidence','basis'],
+    ...last.lines.map(l=>[l.code,l.name,l.qty,l.unit,l.unitCost,l.extended,l.confidence,l.basis])];
+  const csv = rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\r\n');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download = 'apex-takeoff.csv'; a.click();
+});
+
+render();
+</script>
+</body>
+</html>
