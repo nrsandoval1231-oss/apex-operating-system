@@ -11,9 +11,54 @@ and the reverse-engineered `reference/whitaker-oasis-quantity-takeoff.md`.
 
 | File | What it is |
 |---|---|
-| `engine.mjs` | Pure, dependency-free takeoff engine: geometry → assemblies → quantities → pricing → budget → hours. Every formula cites its source. |
-| `engine.test.mjs` | 23 checks validating the engine against the real Whitaker numbers. `node engine.test.mjs`. |
+| `engine.mjs` | Pure, dependency-free takeoff engine: geometry → assemblies → quantities → schedule → pricing → budget → hours → Lever B. Every formula cites its source. |
+| `engine.test.mjs` | 44 checks validating the engine against the real Whitaker numbers. `node engine.test.mjs`. |
+| `report.mjs` | CLI takeoff report — the substantiation test made runnable. `node report.mjs whitaker` / `sample` / `18x36 --deep 7 --spa 8x8 --deck 700`. |
 | `index.html` | The interactive builder UI. Live recompute, editable allowances/direct lines, budget + CSV/JSON export. |
+
+## Validation against the reference job
+
+`node report.mjs whitaker` reproduces the reverse-engineered takeoff from geometry alone:
+
+| Measure | Model | Reference | |
+|---|---|---|---|
+| Wetted area | 921 sq ft | 921 | exact |
+| Perimeter | 104 LF | 104 | exact |
+| Water volume | 13,222 gal | 13,222 | exact |
+| Excavation | 94.9 bank yd³ | 95 | 0.1% |
+| Gunite ordered | 28.4 yd³ | 28.3 | 0.4% |
+| Plaster bags | 44 | 44 | exact |
+| Rebar steel | 1,102 lb | 1,084 | 1.7% |
+
+## The number that matters most
+
+**The parametric layer substantiates ~35% of Whitaker's real job cost.** Run the back-test
+(`actualJobCost`) and the model lands at $63,873 against a real $116,955 — a 45% shortfall that
+is *missing input, not model error*. The gap sits in the layout-driven cost codes seeded at $0:
+equipment, plumbing, cover, lights, automation. Milestone 4's "within 10%" gate cannot be met
+until those carry real quotes. `t.coverage` reports this on every run so the shortfall can never
+be mistaken for completeness.
+
+## v0.2 — what changed
+
+- **Depth profile drives geometry.** Pass `depthShallow`/`depthDeep` and average depth plus the
+  floor slope factor are derived. The slope run follows the long axis regardless of which field
+  the dimension was typed into (Whitaker is "14×24" with 14 as the *width*).
+- **Spa excavation is parametric.** Was hardcoded at 11 yd³ — spa dimensions were silently
+  ignored. Now reproduces 11 for Whitaker's 7×7×3.5 and scales for anything else.
+- **Steps and spa seat scale with size** instead of sitting at fixed 50/25 sq ft constants.
+- **Build duration is derived, not typed.** `buildSchedule()` computes the calendar from
+  quantities plus fixed cure/inspection lags; Whitaker lands at 7.9 weeks against the reference's
+  6–8. Supervision hours follow from it, so the Tier 2 allocation basis is defensible rather than
+  asserted. An explicit `buildWeeks` still overrides.
+- **Lever B is quantified, still gated.** `leverBPreview()` prices each missing cost for *this*
+  job — Whitaker recovers ~$10.5k of absorbed cost, ~$13.6k of revenue with the fee on top.
+  Caliche is deliberately a *range*, not a point cost, and is excluded from the totals.
+- **Caliche exposure modelled** (`calicheExposure()`): what fraction of the dig sits below the
+  ~27 in calcic horizon. Not priced into the excavation line — the $58/yd³ seed rate was
+  back-solved from a job that already dug caliche, so a premium on top would double-count.
+- **Deck is a takeoff line** when `deckSqFt` is supplied, instead of hiding in an allowance.
+- **Coverage + back-test** reporting (above).
 
 Run the builder locally (module imports need a server, not `file://`):
 
