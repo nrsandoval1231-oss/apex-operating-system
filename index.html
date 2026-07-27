@@ -73,6 +73,25 @@
   .kpi div{background:var(--paper);border:1px solid var(--line);border-radius:9px;padding:10px 12px}
   .kpi b{display:block;font-family:Oswald,sans-serif;font-size:20px;line-height:1.1}
   .kpi span{font:600 9.5px/1.3 "JetBrains Mono",monospace;letter-spacing:.09em;text-transform:uppercase;color:var(--steel)}
+  /* customer proposal — full-page view, in-document so it needs no popup permission */
+  .proposal-doc{display:none;max-width:720px;margin:0 auto;padding:36px 24px;font:15px/1.6 Georgia,'Times New Roman',serif;color:#1B1C1E}
+  body.proposal-mode > header,body.proposal-mode > .wrap{display:none}
+  body.proposal-mode .proposal-doc{display:block}
+  .proposal-doc h1{font-family:Arial,sans-serif;font-size:22px;text-transform:none;margin:0 0 2px;letter-spacing:.01em}
+  .proposal-doc .sub{font-family:Arial,sans-serif;font-size:12px;color:var(--steel);text-transform:uppercase;letter-spacing:.08em;margin-bottom:22px}
+  .proposal-doc .meta{font-family:Arial,sans-serif;font-size:13px;color:var(--steel);margin-bottom:26px}
+  .proposal-doc .meta b{color:#1B1C1E}
+  .proposal-doc table{width:100%;border-collapse:collapse;margin:18px 0;font-size:15px}
+  .proposal-doc th,.proposal-doc td{text-align:left;padding:8px 4px;border-bottom:1px solid #ddd}
+  .proposal-doc td.num,.proposal-doc th.num{text-align:right;font-variant-numeric:tabular-nums;font-family:inherit;white-space:normal}
+  .proposal-doc tfoot td{font-weight:700;border-top:2px solid #1B1C1E;border-bottom:0}
+  .proposal-doc .total-row td{font-size:18px;padding-top:12px}
+  .proposal-doc .disclaimer{font-family:Arial,sans-serif;font-size:11px;color:#777;margin-top:34px;border-top:1px solid #ddd;padding-top:12px;line-height:1.5}
+  .proposal-doc .actions{margin:0 0 24px}
+  @media print{
+    body.proposal-mode > header,body.proposal-mode > .wrap{display:none !important}
+    .proposal-doc .actions{display:none}
+  }
 </style>
 </head>
 <body>
@@ -127,7 +146,7 @@
     <div class="panel">
       <h2>Direct-entry lines <small class="tag">layout-driven</small></h2>
       <div id="directLines"></div>
-      <p class="note">Plumbing, equipment, cover, lights, automation — enter from quotes. On Whitaker these are roughly half of job cost, so at $0 the proposal is only half built.</p>
+      <p class="note">Equipment, cover, lights, water features, automation, and the code-500 plumber/electrician labor line — enter from quotes. On Whitaker these are roughly half of job cost, so at $0 the proposal is only half built.</p>
     </div>
 
     <div class="panel">
@@ -149,6 +168,18 @@
         <button class="primary" id="exportBudget">Export budget (JSON)</button>
         <button id="exportCsv">Export lines (CSV)</button>
       </div>
+    </div>
+
+    <div class="panel">
+      <h2>Customer proposal</h2>
+      <label>Customer name (optional)</label>
+      <input type="text" id="customerName" placeholder="e.g. Whitaker">
+      <div class="actions">
+        <button class="primary" id="exportProposal">Generate customer proposal</button>
+      </div>
+      <p class="note">Priced estimate only — cost-plus line items, fee and total, formatted to print or save as
+        PDF. <b>Not a contract.</b> It carries none of the true-margin math (Foundation §1) or the reimbursable-cost
+        terms that are still pending the contract review (decision register #1) — those stay internal.</p>
     </div>
   </div>
 
@@ -232,6 +263,8 @@
     </div>
   </div>
 </div>
+
+<div class="proposal-doc" id="proposalDoc"></div>
 
 <script type="module">
 import { takeoff, DEFAULT_ALLOWANCES, DIRECT_LINES_SEED, fmtMoney, deckArea } from './engine.mjs';
@@ -400,6 +433,67 @@ $('exportCsv').addEventListener('click', () => {
     ...last.lines.map(l=>[l.code,l.name,l.qty,l.unit,l.unitCost,l.extended,l.confidence,l.basis])];
   const csv = rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\r\n');
   const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download = 'apex-takeoff.csv'; a.click();
+});
+
+/**
+ * Customer proposal — priced estimate only. Deliberately carries NONE of the internal figures:
+ * no true-margin %, no confidence flags, no basis strings. Just what a customer's cost-plus
+ * estimate actually shows (job cost, disclosed fee, total), same as the real Whitaker PDF.
+ * Explicitly labelled "not a contract" — reimbursable-cost terms are still pending the contract
+ * review (decision register #1), so this can't be the place those terms get decided by default.
+ *
+ * Renders IN this document (toggling `body.proposal-mode`) rather than via window.open — popups
+ * triggered from a click are routinely blocked by browsers (and by this preview sandbox outright,
+ * confirmed testing this), so a same-document view is the reliable path. `window.print()` then
+ * prints just this section; the print stylesheet hides the builder chrome.
+ */
+function proposalHtml() {
+  const t = last, p = t.pricing;
+  const name = $('customerName').value.trim();
+  const hasSpa = $('hasSpa').checked;
+  const length = +$('length').value, width = +$('width').value;
+  const deck = deckArea({ perimeter: t.geometry.pool.perimeter, deckBorderFt: +$('deckBorder').value, deckSqFt: (+$('deckSqFt').value || undefined) });
+  const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+  const lineRows = t.budgetByCode.filter(b => b.extended > 0).map(b =>
+    `<tr><td>${esc(b.name)}</td><td class="num">${money(b.extended)}</td></tr>`).join('');
+  const allowRow = t.allowanceTotal > 0
+    ? `<tr><td>Allowances</td><td class="num">${money(t.allowanceTotal)}</td></tr>` : '';
+
+  return `
+<div class="actions">
+  <button id="proposalBack">← Back to builder</button>
+  <button class="primary" id="proposalPrint">Print / Save as PDF</button>
+</div>
+<h1>Apex Designer Pools</h1>
+<div class="sub">Pool Proposal &amp; Estimate</div>
+<div class="meta">
+  ${name ? `<b>Prepared for:</b> ${esc(name)}<br>` : ''}
+  <b>Date:</b> ${today}<br>
+  <b>Project:</b> ${length}×${width} ft pool${hasSpa ? ' with spa' : ''}, ${deck.sqFt.toFixed(0)} sq ft deck
+</div>
+<table>
+  <thead><tr><th>Item</th><th class="num">Amount</th></tr></thead>
+  <tbody>${lineRows}${allowRow}</tbody>
+  <tfoot>
+    <tr><td>Job cost</td><td class="num">${money(p.cost)}</td></tr>
+    <tr><td>Cost-plus fee (${(p.feeRate * 100).toFixed(0)}%)</td><td class="num">${money(p.fee)}</td></tr>
+    <tr class="total-row"><td>Total price</td><td class="num">${money(p.revenue)}</td></tr>
+  </tfoot>
+</table>
+<div class="disclaimer">
+  This is a preliminary, cost-plus estimate prepared for discussion and is not a binding contract.
+  Final scope, pricing and payment terms are set by Apex's signed agreement. Generated by the Apex
+  Pool Proposal &amp; Takeoff Engine on ${today}.
+</div>`;
+}
+
+$('exportProposal').addEventListener('click', () => {
+  $('proposalDoc').innerHTML = proposalHtml();
+  document.body.classList.add('proposal-mode');
+  window.scrollTo(0, 0);
+  $('proposalDoc').querySelector('#proposalBack').addEventListener('click', () => document.body.classList.remove('proposal-mode'));
+  $('proposalDoc').querySelector('#proposalPrint').addEventListener('click', () => window.print());
 });
 
 render();
