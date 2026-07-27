@@ -4,6 +4,7 @@ import {
 } from './engine.mjs';
 let pass=0, fail=0;
 const near=(a,b,tol)=>Math.abs(a-b)<=tol;
+const r2=(n)=>Math.round(n*100)/100;
 const ok=(n,c,extra='')=>{console.log((c?'PASS':'FAIL')+' '+n+(c?'':'  → '+extra));c?pass++:fail++;};
 
 /**
@@ -129,6 +130,18 @@ ok('two equivalent entries land within 5% on job cost', Math.abs(t.jobCost-c2.jo
 // ── Pricing structure ────────────────────────────────────────────────────────
 ok('fee charged on allowances (jobCost includes allowances)', t.jobCost > t.takeoffCost + t.directCost);
 ok('trueMargin 23.08 at 0.30 fee', near(t.pricing.trueMarginPct,23.08,0.02), String(t.pricing.trueMarginPct));
+
+// The customer's own arithmetic must work: cost + fee = total, exactly, as PRINTED. Regression
+// guard for a job carrying cents — a real invoice line (Whitaker's $14,555.18 cover) used to make
+// the printed figures disagree by $0.82 because cost was unrounded while fee/revenue were not.
+const cents = takeoff({...WHITAKER, directLines:[{code:900,name:'Cover',extended:14555.18,confidence:'direct',basis:'invoice'}]});
+// Compared at 2dp, i.e. as the figures are actually printed — raw float addition of two
+// exact-cent values lands at 109470.62999999999, which is a display non-issue.
+ok('pricing reconciles exactly: cost + fee = revenue',
+  r2(cents.pricing.cost + cents.pricing.fee) === cents.pricing.revenue,
+  `${cents.pricing.cost} + ${cents.pricing.fee} = ${r2(cents.pricing.cost+cents.pricing.fee)} vs ${cents.pricing.revenue}`);
+ok('jobCost keeps the cents its line items carry', near(cents.jobCost, cents.pricing.cost, 0.001), String(cents.jobCost));
+ok('fee is the disclosed rate on the rounded cost', near(cents.pricing.fee, r2(cents.pricing.cost*0.3), 0.005), String(cents.pricing.fee));
 // Concrete Diamonds is superseded once the deck is taken off — otherwise the same decorative
 // concrete is billed as both an allowance and a takeoff line.
 ok('allowances net to 12,000 after supersession', t.allowanceTotal===12000, String(t.allowanceTotal));

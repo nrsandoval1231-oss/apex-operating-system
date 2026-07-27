@@ -4,6 +4,12 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Apex — Pool Proposal & Takeoff Builder</title>
+<!-- Brand faces (Oswald / Inter / JetBrains Mono), matching the approved site mockup. The engine
+     itself stays dependency-free; this is the UI layer, and it degrades to the local fallbacks
+     declared below if there's no network — which is what it did unconditionally before. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
   :root{
     --char:#1B1C1E; --char2:#25272A; --steel:#54585E; --concrete:#E9E5DE; --paper:#F6F4EF;
@@ -73,24 +79,109 @@
   .kpi div{background:var(--paper);border:1px solid var(--line);border-radius:9px;padding:10px 12px}
   .kpi b{display:block;font-family:Oswald,sans-serif;font-size:20px;line-height:1.1}
   .kpi span{font:600 9.5px/1.3 "JetBrains Mono",monospace;letter-spacing:.09em;text-transform:uppercase;color:var(--steel)}
-  /* customer proposal — full-page view, in-document so it needs no popup permission */
-  .proposal-doc{display:none;max-width:720px;margin:0 auto;padding:36px 24px;font:15px/1.6 Georgia,'Times New Roman',serif;color:#1B1C1E}
+  /* ─── Customer proposal ──────────────────────────────────────────────────────
+     A print-first document, not a screen view. Charcoal masthead and amber rule
+     come from the approved site mockup; Designer Pools teal (--pool) carries the
+     spec band, because on this project the QUANTITIES are the pitch — PRD 02's
+     whole thesis is that Apex can prove the number, not just state it. */
+  .proposal-doc{display:none;padding:26px 18px 64px}
+  body.proposal-mode{background:var(--concrete)}
   body.proposal-mode > header,body.proposal-mode > .wrap{display:none}
   body.proposal-mode .proposal-doc{display:block}
-  .proposal-doc h1{font-family:Arial,sans-serif;font-size:22px;text-transform:none;margin:0 0 2px;letter-spacing:.01em}
-  .proposal-doc .sub{font-family:Arial,sans-serif;font-size:12px;color:var(--steel);text-transform:uppercase;letter-spacing:.08em;margin-bottom:22px}
-  .proposal-doc .meta{font-family:Arial,sans-serif;font-size:13px;color:var(--steel);margin-bottom:26px}
-  .proposal-doc .meta b{color:#1B1C1E}
-  .proposal-doc table{width:100%;border-collapse:collapse;margin:18px 0;font-size:15px}
-  .proposal-doc th,.proposal-doc td{text-align:left;padding:8px 4px;border-bottom:1px solid #ddd}
-  .proposal-doc td.num,.proposal-doc th.num{text-align:right;font-variant-numeric:tabular-nums;font-family:inherit;white-space:normal}
-  .proposal-doc tfoot td{font-weight:700;border-top:2px solid #1B1C1E;border-bottom:0}
-  .proposal-doc .total-row td{font-size:18px;padding-top:12px}
-  .proposal-doc .disclaimer{font-family:Arial,sans-serif;font-size:11px;color:#777;margin-top:34px;border-top:1px solid #ddd;padding-top:12px;line-height:1.5}
-  .proposal-doc .actions{margin:0 0 24px}
+  .pd-bar{max-width:820px;margin:0 auto 16px}
+  .pd-sheet{max-width:820px;margin:0 auto;background:#fff;border:1px solid var(--line);
+    box-shadow:0 2px 10px rgba(27,28,30,.08);overflow:hidden;position:relative;
+    font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--ink)}
+
+  /* masthead */
+  .pd-top{background:var(--char);color:#F4F2EE;padding:26px 44px 22px;position:relative}
+  .pd-brand{display:flex;align-items:center;gap:15px}
+  .pd-brand > svg{width:44px;height:44px;flex:none}
+  .pd-wm{font-family:Oswald,Impact,sans-serif;font-weight:700;font-size:31px;letter-spacing:.18em;line-height:1}
+  .pd-tagline{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:8.5px;font-weight:500;
+    letter-spacing:.3em;color:var(--amber);margin-top:4px}
+  .pd-doctype{margin-left:auto;text-align:right}
+  .pd-doctype .l{font-family:Oswald,Impact,sans-serif;font-size:19px;font-weight:600;letter-spacing:.2em;line-height:1}
+  .pd-doctype .r{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:10px;letter-spacing:.12em;color:#9E968B;margin-top:5px}
+  .pd-rule{height:3px;background:var(--amber);margin:22px 0 0}
+  /* auto-fit, not an inline column count — the cell count varies (an unnamed proposal drops
+     "Prepared for") and an inline grid-template would outrank the mobile media query below */
+  .pd-meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:18px;padding-top:16px}
+  .pd-meta span{display:block;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:8.5px;
+    font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:#9E968B;margin-bottom:5px}
+  .pd-meta b{font-family:Oswald,Impact,sans-serif;font-size:16px;font-weight:500;letter-spacing:.03em;color:#F4F2EE}
+
+  /* document body */
+  .pd-body{padding:34px 44px 40px;position:relative;z-index:1}
+  .pd-eyebrow{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:10px;font-weight:500;
+    letter-spacing:.24em;text-transform:uppercase;color:var(--amber-d)}
+  .proposal-doc .pd-h1{font-family:Oswald,Impact,sans-serif;font-weight:700;font-size:40px;line-height:1.02;
+    letter-spacing:.005em;text-transform:uppercase;margin:12px 0 0;color:var(--char)}
+  .proposal-doc .pd-h1 em{font-style:normal;color:var(--pool)}
+  .pd-lede{font-size:14.5px;line-height:1.6;color:var(--steel);margin:12px 0 0;max-width:52ch}
+
+  /* spec band — the signature: what they're actually buying, measured */
+  .pd-specs{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);
+    border:1px solid var(--line);margin:26px 0 6px}
+  .pd-spec{background:#fff;padding:15px 14px;border-top:3px solid var(--pool)}
+  .pd-spec b{display:block;font-family:Oswald,Impact,sans-serif;font-weight:600;font-size:27px;
+    line-height:1;color:var(--char);font-variant-numeric:tabular-nums}
+  .pd-spec span{display:block;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:8.5px;
+    font-weight:500;letter-spacing:.13em;text-transform:uppercase;color:var(--steel);margin-top:7px;line-height:1.45}
+  .pd-specnote{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:9.5px;letter-spacing:.06em;
+    color:var(--steel);margin:0 0 34px}
+
+  /* scope table */
+  .pd-sec{margin-top:34px;padding-bottom:10px;border-bottom:2px solid var(--char)}
+  .proposal-doc table.pd-tbl{width:100%;border-collapse:collapse;margin:0}
+  .pd-tbl td{padding:11px 0;border-bottom:1px solid #EDEAE4;font-size:15px;vertical-align:baseline}
+  .pd-tbl td.n{text-align:right;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:14px;
+    font-variant-numeric:tabular-nums;white-space:nowrap;padding-left:20px}
+  .pd-tbl tr.allow td{color:var(--steel)}
+  .pd-tbl .dag{color:var(--amber-d);font-size:11px;vertical-align:super;margin-left:3px}
+
+  /* totals */
+  .pd-sums{margin-top:2px}
+  .proposal-doc table.pd-sums{width:100%;border-collapse:collapse}
+  .pd-sums td{padding:9px 0;font-size:14.5px;color:var(--steel)}
+  .pd-sums td.n{text-align:right;font-family:"JetBrains Mono",ui-monospace,monospace;
+    font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--ink)}
+  .pd-total{display:flex;align-items:center;justify-content:space-between;gap:20px;
+    background:var(--char);color:#F4F2EE;padding:19px 22px;margin-top:12px}
+  .pd-total span{font-family:Oswald,Impact,sans-serif;font-size:17px;font-weight:500;
+    letter-spacing:.17em;text-transform:uppercase}
+  .pd-total b{font-family:Oswald,Impact,sans-serif;font-size:34px;font-weight:700;line-height:1;
+    color:var(--amber);font-variant-numeric:tabular-nums}
+
+  /* footnotes */
+  .pd-notes{margin-top:26px;border-top:1px solid var(--line);padding-top:16px}
+  .pd-notes p{font-size:12px;line-height:1.65;color:var(--steel);margin:0 0 9px}
+  .pd-notes p:last-child{margin-bottom:0}
+  .pd-notes .dag{color:var(--amber-d);font-weight:600}
+  .pd-fine{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:9.5px;line-height:1.7;
+    letter-spacing:.02em;color:#8A857D;margin-top:18px}
+  .pd-mark{position:absolute;right:-46px;bottom:-56px;width:300px;height:300px;
+    color:var(--char);opacity:.045;pointer-events:none;z-index:0}
+
+  @media(max-width:720px){
+    .pd-top,.pd-body{padding-left:22px;padding-right:22px}
+    .pd-specs{grid-template-columns:repeat(2,1fr)}
+    .pd-meta{gap:12px}
+    .proposal-doc .pd-h1{font-size:31px}
+    .pd-total{flex-direction:column;align-items:flex-start;gap:8px}
+  }
   @media print{
+    @page{margin:11mm}
+    body.proposal-mode{background:#fff}
     body.proposal-mode > header,body.proposal-mode > .wrap{display:none !important}
-    .proposal-doc .actions{display:none}
+    .proposal-doc{padding:0}
+    .pd-bar{display:none}
+    .pd-sheet{max-width:none;border:0;box-shadow:none}
+    /* the charcoal masthead and teal spec rules ARE the document — never let a
+       print dialog's "background graphics" default strip them out */
+    .pd-top,.pd-total,.pd-spec,.pd-rule{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .pd-specs,.pd-total,.pd-notes,.pd-sums{break-inside:avoid}
+    .pd-tbl tr{break-inside:avoid}
   }
 </style>
 </head>
@@ -447,44 +538,104 @@ $('exportCsv').addEventListener('click', () => {
  * confirmed testing this), so a same-document view is the reliable path. `window.print()` then
  * prints just this section; the print stylesheet hides the builder chrome.
  */
+/** Brand lion mark (from the approved site mockup). `mono` flattens it to a silhouette. */
+const lion = (cls, mono) => {
+  const a = mono ? 'currentColor' : '#E0901B';
+  return `<svg class="${cls}" viewBox="0 0 64 64" aria-hidden="true">
+    <path fill="currentColor" d="M32 3 L40 11 L52 9 L49 21 L61 27 L50 33 L54 46 L41 43 L36 55 L32 47 L28 55 L23 43 L10 46 L14 33 L3 27 L15 21 L12 9 L24 11 Z"/>
+    <path fill="${a}" d="M32 20 L38 26 L35 34 L32 30 L29 34 L26 26 Z"/>
+    <circle cx="25" cy="27" r="2.4" fill="${a}"/><circle cx="39" cy="27" r="2.4" fill="${a}"/>
+    <path fill="${a}" d="M27 39 h10 l-5 6 Z"/></svg>`;
+};
+
 function proposalHtml() {
-  const t = last, p = t.pricing;
+  const t = last, p = t.pricing, g = t.geometry;
   const name = $('customerName').value.trim();
   const hasSpa = $('hasSpa').checked;
   const length = +$('length').value, width = +$('width').value;
-  const deck = deckArea({ perimeter: t.geometry.pool.perimeter, deckBorderFt: +$('deckBorder').value, deckSqFt: (+$('deckSqFt').value || undefined) });
-  const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  const deck = deckArea({ perimeter: g.pool.perimeter, deckBorderFt: +$('deckBorder').value, deckSqFt: (+$('deckSqFt').value || undefined) });
+  const d = new Date();
+  const today = d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  const ref = `APX-${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+  const n0 = (n) => Math.round(n).toLocaleString('en-US');
 
-  const lineRows = t.budgetByCode.filter(b => b.extended > 0).map(b =>
-    `<tr><td>${esc(b.name)}</td><td class="num">${money(b.extended)}</td></tr>`).join('');
-  const allowRow = t.allowanceTotal > 0
-    ? `<tr><td>Allowances</td><td class="num">${money(t.allowanceTotal)}</td></tr>` : '';
+  // Meta cells are built as a list so an unnamed proposal doesn't print an empty "Prepared for".
+  const meta = [
+    ...(name ? [['Prepared for', esc(name)]] : []),
+    ['Date', today],
+    ['Project', 'Designer Pools · Lubbock, TX'],
+  ];
+
+  const scopeRows = t.budgetByCode.filter(b => b.extended > 0).map(b =>
+    `<tr><td>${esc(b.name)}</td><td class="n">${money(b.extended)}</td></tr>`).join('');
+  // Allowances are itemised rather than lumped: the customer needs to see WHICH parts of the
+  // price are budgeted placeholders, and it's the line most likely to move before closeout.
+  const allowRows = t.allowances.map(a =>
+    `<tr class="allow"><td>${esc(a.name)}<span class="dag">†</span></td><td class="n">${money(a.amount)}</td></tr>`).join('');
+
+  const spa = hasSpa && g.spa ? `${g.spa.length} × ${g.spa.width}` : null;
+  const specs = [
+    [n0(g.gallons), 'Gallons'],
+    [n0(g.wettedArea), 'Sq ft interior<br>surface'],
+    [n0(g.perimeter), 'LF perimeter'],
+    [n0(deck.sqFt), 'Sq ft decking'],
+  ];
 
   return `
-<div class="actions">
+<div class="pd-bar actions">
   <button id="proposalBack">← Back to builder</button>
   <button class="primary" id="proposalPrint">Print / Save as PDF</button>
 </div>
-<h1>Apex Designer Pools</h1>
-<div class="sub">Pool Proposal &amp; Estimate</div>
-<div class="meta">
-  ${name ? `<b>Prepared for:</b> ${esc(name)}<br>` : ''}
-  <b>Date:</b> ${today}<br>
-  <b>Project:</b> ${length}×${width} ft pool${hasSpa ? ' with spa' : ''}, ${deck.sqFt.toFixed(0)} sq ft deck
-</div>
-<table>
-  <thead><tr><th>Item</th><th class="num">Amount</th></tr></thead>
-  <tbody>${lineRows}${allowRow}</tbody>
-  <tfoot>
-    <tr><td>Job cost</td><td class="num">${money(p.cost)}</td></tr>
-    <tr><td>Cost-plus fee (${(p.feeRate * 100).toFixed(0)}%)</td><td class="num">${money(p.fee)}</td></tr>
-    <tr class="total-row"><td>Total price</td><td class="num">${money(p.revenue)}</td></tr>
-  </tfoot>
-</table>
-<div class="disclaimer">
-  This is a preliminary, cost-plus estimate prepared for discussion and is not a binding contract.
-  Final scope, pricing and payment terms are set by Apex's signed agreement. Generated by the Apex
-  Pool Proposal &amp; Takeoff Engine on ${today}.
+<div class="pd-sheet">
+  <div class="pd-top">
+    <div class="pd-brand">
+      ${lion('', false)}
+      <div>
+        <div class="pd-wm">APEX</div>
+        <div class="pd-tagline">DESIGNER POOLS</div>
+      </div>
+      <div class="pd-doctype">
+        <div class="l">Proposal</div>
+        <div class="r">${ref}</div>
+      </div>
+    </div>
+    <div class="pd-rule"></div>
+    <div class="pd-meta">
+      ${meta.map(([k, v]) => `<div><span>${k}</span><b>${v}</b></div>`).join('')}
+    </div>
+  </div>
+
+  <div class="pd-body">
+    <div class="pd-eyebrow">Your pool, specified</div>
+    <h1 class="pd-h1">${length} × ${width} gunite pool${spa ? `<br><em>with ${spa} spa</em>` : ''}</h1>
+    <p class="pd-lede">${g.pool.depthShallow} ft to ${g.pool.depthDeep} ft depth, finished, filled and started up,
+      with a ${deck.derived ? `${deck.borderFt} ft` : ''} concrete deck${deck.derived ? ' around the full perimeter' : ''}.</p>
+
+    <div class="pd-specs">
+      ${specs.map(([v, l]) => `<div class="pd-spec"><b>${v}</b><span>${l}</span></div>`).join('')}
+    </div>
+    <p class="pd-specnote">Measured from your dimensions — every line below traces back to these numbers.</p>
+
+    <div class="pd-eyebrow pd-sec">Scope &amp; investment</div>
+    <table class="pd-tbl"><tbody>${scopeRows}${allowRows}</tbody></table>
+
+    <table class="pd-sums">
+      <tr><td>Job cost</td><td class="n">${money(p.cost)}</td></tr>
+      <tr><td>Cost-plus fee (${(p.feeRate * 100).toFixed(0)}%)</td><td class="n">${money(p.fee)}</td></tr>
+    </table>
+    <div class="pd-total"><span>Total price</span><b>${money(p.revenue)}</b></div>
+
+    <div class="pd-notes">
+      ${t.allowances.length ? `<p><span class="dag">†</span> <b>Allowance.</b> A budgeted amount for a selection
+        that isn't finalised yet. The final cost is confirmed with you in writing before that work is ordered.</p>` : ''}
+      <p>Work is billed on a cost-plus basis: the cost of the work, plus the disclosed
+        ${(p.feeRate * 100).toFixed(0)}% fee shown above.</p>
+      <p class="pd-fine">This proposal is a preliminary estimate prepared for discussion and is not a binding
+        contract. Final scope, pricing, payment schedule and warranty terms are set out in Apex's signed
+        agreement. Prepared ${today} · Apex Designer Pools · Lubbock, TX · 806.605.0502</p>
+    </div>
+  </div>
+  ${lion('pd-mark', true)}
 </div>`;
 }
 

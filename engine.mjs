@@ -1031,13 +1031,33 @@ export function takeoff(inputs) {
     allowancePctOfCost: jobCost ? allowanceTotal / jobCost : 0,
     takeoffCost: r(takeoffCost),
     directCost: r(directCost),
-    jobCost: r(jobCost),
-    pricing: {
-      ...pricing,
-      fee: r(pricing.fee),
-      revenue: r(pricing.revenue),
-      trueMarginPct: r(pricing.trueMargin * 100, 2),
-    },
+    jobCost: r(jobCost, 2),
+    /**
+     * Cost, fee and total have to reconcile ON THE PAGE — a customer who adds the two figures
+     * printed on their estimate must get the third. So derive the fee from the ROUNDED cost and
+     * the total from both, instead of rounding three independently-computed floats: the old
+     * version spread an unrounded `cost` alongside a whole-dollar `fee`/`revenue`, which on a
+     * job with cents in it (a real invoice line like the $14,555.18 cover) printed
+     * 116,958.18 + 35,087.00 = 152,046.00 and was off by $0.82.
+     *
+     * Same rule the line items already follow — extend on the rounded quantity so the printed
+     * numbers multiply out. Cents are kept rather than rounded away, because entered costs come
+     * off real invoices and the line items above the total still show them.
+     */
+    pricing: (() => {
+      const cost = r(pricing.cost, 2);
+      const fee = r(cost * pricing.feeRate, 2);
+      const revenue = r(cost + fee, 2);
+      return {
+        ...pricing,
+        cost,
+        fee,
+        revenue,
+        grossProfit: fee, // under cost-plus, GP == fee (Foundation §3)
+        trueMargin: revenue ? fee / revenue : 0,
+        trueMarginPct: r(revenue ? (fee / revenue) * 100 : 0, 2),
+      };
+    })(),
     hours,
     schedule,
     caliche,
