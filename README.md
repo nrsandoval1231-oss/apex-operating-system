@@ -12,7 +12,7 @@ and the reverse-engineered `reference/whitaker-oasis-quantity-takeoff.md`.
 | File | What it is |
 |---|---|
 | `engine.mjs` | Pure, dependency-free takeoff engine: geometry → assemblies → quantities → schedule → pricing → budget → hours → Lever B. Every formula cites its source. |
-| `engine.test.mjs` | 44 checks validating the engine against the real Whitaker numbers. `node engine.test.mjs`. |
+| `engine.test.mjs` | 87 checks validating the engine against the real Whitaker numbers. `node engine.test.mjs`. |
 | `report.mjs` | CLI takeoff report — the substantiation test made runnable. `node report.mjs whitaker` / `sample` / `18x36 --deep 7 --spa 8x8`. |
 | `calibrate.mjs` | Back-solves the unit-cost library from his real line dollars. Re-run whenever geometry changes. |
 | `index.html` | The interactive builder UI. Live recompute, derived calendar, coverage, back-test, gated Lever-B panel, CSV/JSON export. |
@@ -69,13 +69,15 @@ something:
 |---|---|---|---|---|
 | 200 | Excavation | $7,000 | $7,000 | exact |
 | 400 | Pool Shell | $16,801 | $16,800 | exact |
-| 800 | Pool Finishes | $20,755 | $20,750 | exact |
+| 700 | Pool Plumbing | $8,101 | $8,100 | exact |
+| 800 | Pool Finishes | $20,750 | $20,750 | exact |
 | 1000 | Pool Deck | $10,001 | $10,000 | exact |
 | 1300 | Additional Upgrades | $7,000 | $7,000 | exact |
-| | **modelled codes** | **$61,557** | **$61,550** | **0.0%** |
+| | **modelled codes** | **$69,653** | **$69,650** | **0.0%** |
 
-Enter his direct-entry lines too and the whole job lands at **$116,961 against $116,955.18** —
-89.8% of job cost substantiated, with only the 14.5% of upgrade allowances carrying no quantity.
+Enter his direct-entry lines too and the whole job lands at **$116,958 against $116,955.18** —
+89.7% of job cost substantiated, with only the 10.3% of remaining allowances carrying no quantity
+(down from 14.5% once the Concrete Diamonds allowance was superseded by the deck takeoff).
 
 Four gaps had to close to get there, all found by the back-test:
 
@@ -90,12 +92,29 @@ Four gaps had to close to get there, all found by the back-test:
 
 ## The number that matters most
 
-**The parametric layer substantiates ~35% of Whitaker's real job cost.** Run the back-test
-(`actualJobCost`) and the model lands at $63,873 against a real $116,955 — a 45% shortfall that
-is *missing input, not model error*. The gap sits in the layout-driven cost codes seeded at $0:
-equipment, plumbing, cover, lights, automation. Milestone 4's "within 10%" gate cannot be met
-until those carry real quotes. `t.coverage` reports this on every run so the shortfall can never
-be mistaken for completeness.
+**The parametric layer substantiates ~49% of Whitaker's real job cost** (59.6% counting the
+tracked allowances). Run the back-test (`actualJobCost`) and the model lands at $69,653 against a
+real $116,955.18 — a 40.4% shortfall that is *missing input, not model error*. The gap now sits in
+the remaining layout-driven cost codes seeded at $0: equipment, cover, lights, water features,
+automation, and code 500's flat "Plumber $5,000" labor line. (Code 700 Pool Plumbing — the other
+half of the plumbing split, $8,100 — is now parametric; see below.) Milestone 4's "within 10%"
+gate cannot be met until the rest carry real quotes. `t.coverage` reports this on every run so the
+shortfall can never be mistaken for completeness.
+
+## Pool plumbing (code 700) is now parametric
+
+Ref §3.6 gives Whitaker's plumbing as six 2 in PVC runs from the equipment pad plus the spa jet
+loop — ~755 LF at $8,100, previously a flat direct-entry $0. `plumbingLine()` derives all six from
+one number: `runToPad` = equipment pad distance (Apex standard, 50 ft — still flagged **inferred**,
+not confirmed) + 5 ft of local routing = 55 LF. Main drain, returns and spa suction/return are each
+an exact multiple of it; skimmers add another 5 ft for the skimmer-box offset; spa jets scale with
+jet count (8, standard spa) × an average per-jet run; the spillway stays a fixed short connector.
+Reproduces Whitaker's 755 LF and $8,101 against $8,100 exactly.
+
+**Still gated the same way as everything else here:** skimmer/drain/return *counts* are seeded from
+this one job, not derived from pool size, so the method is validated, not the counts. Code 500's
+"Plumber $5,000" stays direct-entry — it's a flat labor figure with no component list in the
+reference to derive a rate from, unlike code 700's LF breakdown.
 
 ## v0.2 — what changed
 
@@ -159,8 +178,11 @@ npx serve apex-proposal-engine   # or any static server, then open the printed U
   reimbursable "cost."
 - **Supervision hours** are duration-driven (build weeks × visits × hours), never a % of cost
   (§8). Production rates for crew hours are provisional and need calibration.
-- **Layout-driven cost codes** (plumbing, equipment, cover, lights, automation) are direct-entry
-  lines seeded at $0 — enter them from real quotes. They carry the least parametric confidence.
+- **Layout-driven cost codes** (equipment, cover, lights, water features, automation, and code
+  500's flat "Plumber $5,000" labor line) are direct-entry lines seeded at $0 — enter them from
+  real quotes. They carry the least parametric confidence. Code 700 Pool Plumbing moved out of
+  this list — it's parametric now (pad-distance runs + spa jet loop, ref §3.6), still flagged
+  **low** confidence since the run counts are seeded from one job.
 - **Phase 2 tool choice is deferred** (PRD 02). This is a self-contained tool precisely so it
   doesn't preempt Monday / Airtable / web-app — it can feed any of them (JSON/CSV export).
 

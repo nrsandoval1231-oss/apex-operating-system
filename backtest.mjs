@@ -84,7 +84,9 @@ console.log('       "Concrete Diamonds Budget", a decorative UPGRADE, not base d
 console.log(`\n  Allowances total ${fmtMoney(ALLOWANCE_TOTAL)} (${((ALLOWANCE_TOTAL / JOB_COST) * 100).toFixed(1)}% of job cost), all marked "Upgrade":`);
 console.log('       Concrete Diamonds $5,000 · Turf $5,000 · Fence $7,000');
 console.log('\n  Plumbing is split across two cost codes: 500 Utilities "Plumber" $5,000 and');
-console.log('       700 Pool Plumbing $8,100 = $13,100 total. Neither is parameterised.');
+console.log('       700 Pool Plumbing $8,100 = $13,100 total. 700 is now parametric (pad-distance');
+console.log('       + spa jet loop, ref §3.6); 500\'s "Plumber $5,000" is a flat labor figure with');
+console.log('       no component list, so it stays direct-entry.');
 console.log(`\n  100 Permits is a live line item at ${fmtMoney(0)} — confirmed, still unexplained.`);
 
 console.log('\n' + '='.repeat(84));

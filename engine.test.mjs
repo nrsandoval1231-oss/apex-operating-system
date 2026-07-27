@@ -76,6 +76,15 @@ reproduces('Rebar', 4000);
 reproduces('Pool Deck', 5000);
 reproduces('Forming', 550);
 reproduces('Site Work', 1500);
+reproduces('Pool Plumbing', 8100);
+
+// Plumbing (code 700) — ref §3.6: six pad/spa-driven runs, ~755 LF total on Whitaker.
+ok('plumbing LF ≈ 755 (six runs from the pad + spa jet loop)', near(L('Pool Plumbing').qty,755,1), String(L('Pool Plumbing').qty));
+ok('plumbing confidence flagged low (single job, blended rate)', L('Pool Plumbing').confidence==='low');
+const noSpaPlumb = takeoff({length:24,width:14}).lines.find(l=>l.code===700);
+ok('no-spa job drops the spa suction/return, jet and spillway runs',
+  noSpaPlumb.extra.components.spaSuctionReturnLF===0 && noSpaPlumb.extra.components.spaJetLF===0 && noSpaPlumb.extra.components.spillwayLF===0);
+ok('no-spa plumbing still prices skimmers/drain/returns (pad-driven, spa-independent)', noSpaPlumb.qty===450, String(noSpaPlumb.qty));
 
 // Finishes split into Materials + Labor, matching his estimate line for line (§800).
 const pair = (n, mat, lab) => {
@@ -152,7 +161,7 @@ ok('budget by code produced', t.budgetByCode.length>0);
 const bt = takeoff({...WHITAKER, actualJobCost:T.jobCost});
 ok('back-test measures against ACTUAL job cost', bt.coverage.basis==='actual job cost');
 ok('back-test exposes the unmodelled remainder', bt.backTest.unmodelled>0 && !bt.backTest.withinGate, `${bt.backTest.variancePct}%`);
-ok('coverage flags every unpriced direct line', bt.coverage.unpricedDirectLines.length===8, String(bt.coverage.unpricedDirectLines.length));
+ok('coverage flags every unpriced direct line', bt.coverage.unpricedDirectLines.length===7, String(bt.coverage.unpricedDirectLines.length));
 
 // ── Back-solved residual: sizes the unknown, but makes the gate circular ─────
 const withEq = takeoff({...WHITAKER, actualJobCost:T.jobCost, backSolveResidual:true,

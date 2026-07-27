@@ -109,6 +109,10 @@ export const APEX_STANDARDS = {
   depthDeep: 6.0,
   spa: { length: 6, width: 6, depth: 3.5 }, // always 6×6×3.5 (was assumed 7×7×3.5)
   deckBorderFt: 4, // deck is always a 4 ft border around the pool
+  equipmentPadDistanceFt: 50, // ref §1 — INFERRED from the "Long Plumb $3,000" line, not confirmed
+  spaJetCount: 8, // standard 6×6×3.5 spa (ref §3.6)
+  spaJetRunLF: 17.5, // ref §3.6: his "8 jets × ~20 LF" totalled 140 LF ÷ 8 = 17.5 LF/jet average
+  spillwayRunLF: 55, // ref §3.6 spillway line — a short spa-to-pool connector, not distance-driven
 };
 
 /**
@@ -260,6 +264,7 @@ export const UNIT_COSTS = {
   bondingCopper: { rate: 1.12, unit: '$/LF #8', confidence: 'low', note: 'his $250 line is light — 224 LF of #8 is $230–345 in material alone (ref §500)' },
   fillWater: { rate: 0.012, unit: '$/gal', confidence: 'low', note: 'meter/truck; hard Ogallala water (ref §5)' },
   deckConcrete: { rate: 13.59, unit: '$/sq ft', confidence: 'medium', note: '$5k ÷ 368 sq ft from the 4 ft border rule; inside ref §1000 published $12–18' },
+  plumbingPvc: { rate: 10.73, unit: '$/LF (2 in PVC + fittings, code 700 blended)', confidence: 'low', note: 'his $8,100 code-700 total ÷ 755 LF from the ref §3.6 component list; material, fittings and labor are not separated on the estimate, single job' },
 };
 
 // Production rates for crew hours — PROVISIONAL, needs calibration (PRD 02 §scope expansion).
@@ -731,16 +736,64 @@ function bondingLine(geo) {
 }
 
 /**
- * Cost codes that are layout/spec-driven rather than cleanly parametric (plumbing, equipment,
- * cover, deck, lights, features, automation). Reference treats these as component lists or
- * allowances. Represented as DIRECT-ENTRY lines seeded with Whitaker's figures — flagged so the
- * estimator knows these carry the least parametric confidence and want real numbers.
+ * Pool plumbing (code 700) — reference §3.6: six 2 in PVC runs (skimmers, main drain, returns,
+ * spa suction/return, spa jets, spillway), ~755 LF total on Whitaker at $8,100. Not a full
+ * geometric derivation — skimmer/return/drain COUNTS are seeded from the one job we have, not
+ * scaled off pool size — but the equipment-pad DISTANCE and the spa jet loop now follow the
+ * Apex standards instead of sitting at a flat direct-entry $0.
+ *
+ * `runToPad` reproduces every pad-driven run in §3.6 from a single number: pad distance + 5 ft
+ * of local routing = 55 LF on Whitaker. Main drain, returns and spa suction/return are each an
+ * exact multiple of it (2×, 4×, 2×); skimmers add another 5 ft for the skimmer-box offset (2×60).
+ * This is the METHOD validated on one job, same caveat as every other seed rate here — re-check
+ * once a second job's plumbing is itemised.
+ */
+function plumbingLine(geo, opts) {
+  const padFt = opts.equipmentPadDistanceFt ?? APEX_STANDARDS.equipmentPadDistanceFt;
+  const runToPad = padFt + 5; // Whitaker: 50 ft pad + 5 ft local routing = 55 LF (ref §3.6)
+  const hasSpa = !!geo.spa;
+
+  const skimmerLF = 2 * (runToPad + 5); // 2 skimmers, +5 ft skimmer-box offset → 120 on Whitaker
+  const mainDrainLF = 2 * runToPad; // dual VGB-compliant main drain → 110
+  const returnLF = 4 * runToPad; // 4 return lines → 220
+  const spaSuctionReturnLF = hasSpa ? 2 * runToPad : 0; // suction + return → 110
+  const jetCount = hasSpa ? (opts.spaJets ?? APEX_STANDARDS.spaJetCount) : 0;
+  const spaJetLF = hasSpa ? r(jetCount * APEX_STANDARDS.spaJetRunLF) : 0; // 8 jets → 140
+  const spillwayLF = hasSpa ? APEX_STANDARDS.spillwayRunLF : 0; // 55, fixed connector
+
+  const lf = skimmerLF + mainDrainLF + returnLF + spaSuctionReturnLF + spaJetLF + spillwayLF;
+  const rate = UNIT_COSTS.plumbingPvc.rate;
+  const qty = r(lf);
+  return {
+    code: 700,
+    name: 'Pool Plumbing',
+    qty,
+    unit: 'LF PVC (blended w/ fittings)',
+    unitCost: rate,
+    extended: r(qty * rate),
+    confidence: UNIT_COSTS.plumbingPvc.confidence,
+    basis: `${skimmerLF} skimmer + ${mainDrainLF} main drain + ${returnLF} returns`
+      + (hasSpa ? ` + ${spaSuctionReturnLF} spa suction/return + ${spaJetLF} spa jets + ${spillwayLF} spillway` : '')
+      + ` = ${qty} LF @ $${rate}/LF blended (ref §3.6; pad distance ${padFt} ft)`,
+    extra: { padFt, runToPad, components: { skimmerLF, mainDrainLF, returnLF, spaSuctionReturnLF, spaJetLF, spillwayLF } },
+  };
+}
+
+/**
+ * Cost codes that are layout/spec-driven rather than cleanly parametric (equipment, cover,
+ * lights, features, automation). Reference treats these as component lists or allowances.
+ * Represented as DIRECT-ENTRY lines seeded with Whitaker's figures — flagged so the estimator
+ * knows these carry the least parametric confidence and want real numbers.
+ *
+ * Code 700 (Pool Plumbing) moved OUT of this list — see `plumbingLine()` above. Code 500's
+ * "Plumber $5,000" stays here: the estimate gives it as a flat labor figure with no component
+ * list behind it (unlike code 700's LF breakdown in ref §3.6), so there is nothing to derive a
+ * formula from.
  */
 export const DIRECT_LINES_SEED = [
   { code: 300, name: 'Pool Equipment', extended: 0, confidence: 'direct', basis: 'pump/filter/heater/UV per spec — enter from quote' },
-  { code: 500, name: 'Utilities — Plumber & Electrician', extended: 0, confidence: 'direct', basis: 'Whitaker: Plumber $5,000 + Electrician $3,000. Separate from code 700 Pool Plumbing; bonding labor may sit inside the electrician line (ref §500)' },
+  { code: 500, name: 'Utilities — Plumber & Electrician', extended: 0, confidence: 'direct', basis: 'Whitaker: Plumber $5,000 + Electrician $3,000, flat labor figures with no component list to derive a rate from (ref §500). Separate from code 700 Pool Plumbing, which is now parametric' },
   { code: 600, name: 'Lights', extended: 0, confidence: 'direct', basis: 'fixture count × unit — enter from quote' },
-  { code: 700, name: 'Pool Plumbing', extended: 0, confidence: 'direct', basis: '~755 LF PVC on Whitaker; layout-driven, enter or component-estimate (ref §700)' },
   { code: 900, name: 'Cover', extended: 0, confidence: 'direct', basis: 'encapsulated under-track system; "Gunite Encap Kit" is a real invoice line (ref §900)' },
   { code: 1100, name: 'Water Features', extended: 0, confidence: 'direct', basis: 'spillway/sheer descent per spec — enter from quote' },
   { code: 1200, name: 'Automation', extended: 0, confidence: 'direct', basis: 'controller + valves — enter from quote' },
@@ -898,6 +951,7 @@ export function takeoff(inputs) {
     ...plasterLines(geo),
     bondingLine(geo),
     deckLine(geo, opts),
+    plumbingLine(geo, opts),
   ].filter(Boolean);
 
   const directLines = (inputs.directLines ?? DIRECT_LINES_SEED).map((l) => ({
