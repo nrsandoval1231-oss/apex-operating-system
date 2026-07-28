@@ -15,6 +15,7 @@ Apex has strong architecture, tested prototypes, and a promising field-operation
 See:
 
 - [`docs/status.md`](docs/status.md) — verified current status and launch blockers
+- [`docs/repositories.md`](docs/repositories.md) — private remote and local-source map
 - [`docs/decisions/ADR-0001-system-boundaries.md`](docs/decisions/ADR-0001-system-boundaries.md) — proposed system authorities and boundaries
 - [Unified implementation plan](.hermes/plans/2026-07-28_160832-apex-unified-operating-system.md)
 
