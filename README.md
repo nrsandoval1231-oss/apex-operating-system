@@ -48,7 +48,7 @@ per year while making every customer wait 5.5 weeks longer — which under cost-
 
 - **`apex-website.zip`** — Claude Code-ready build package implementing PRD 01's site half. Includes the approved interactive mockup as the visual spec.
 - **`apex-lead-engine.zip`** — Claude Code-ready n8n package implementing PRD 01's automation half.
-- **`apex-strategy-deck.pptx`** — 13-slide exec strategy and roadmap deck. *The 23% margin finding is deliberately excluded from it.*
+- **`apex-strategy-deck.pptx`** — 20-slide exec strategy and roadmap deck. *The 23% margin finding is deliberately excluded from it.*
 - **`apex-handoff.md`** — full context transfer for a new working session.
 
 ---
