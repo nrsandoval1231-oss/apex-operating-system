@@ -1,0 +1,1048 @@
+/*
+ * Visual style is specified in the PRD:
+ *   paper #F7F6F2, accents #0081AF and #00ABE7
+ *   near-square corners (2px max), hairline rules (1px, low contrast)
+ *   dense technical layout, tight leading, small type, high information density
+ *   monospace for every number, dimension and unit; sans for labels and prose
+ *   one bold moment per sheet, everything else calm
+ */
+
+:root {
+  --paper: #f7f6f2;
+  --ink: #1a1a18;
+  --ink-soft: #6b6a64;
+  --ink-faint: #97958d;
+  --rule: #dedbd2;
+  --rule-strong: #c5c1b4;
+  --accent: #0081af;
+  --accent-light: #00abe7;
+  /* Not in the PRD palette. A failing code check has to read as a stop, and
+     neither accent can carry that. Kept muted so it does not shout on a sheet
+     that is otherwise calm. */
+  --fail: #a3341f;
+  --flag: #8a6a12;
+
+  --mono: ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", Menlo, Consolas, monospace;
+  --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+  --radius: 2px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: #ebe9e3;
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 13px;
+  line-height: 1.35;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* --- sheet ---------------------------------------------------------------- */
+
+.sheet {
+  background: var(--paper);
+  max-width: 1180px;
+  margin: 24px auto;
+  padding: 28px 32px 40px;
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius);
+}
+
+.sheet-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 32px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--rule-strong);
+}
+
+.sheet-title {
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+.sheet-sub {
+  color: var(--ink-soft);
+  font-size: 12px;
+  margin-top: 3px;
+}
+
+.code-basis {
+  text-align: right;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+.code-basis strong {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+/* --- the one bold moment -------------------------------------------------- */
+
+.headline {
+  display: flex;
+  align-items: flex-end;
+  gap: 40px;
+  margin: 22px 0 26px;
+  padding: 18px 22px;
+  background: var(--accent);
+  color: #fff;
+  border-radius: var(--radius);
+}
+
+.headline-figure {
+  font-family: var(--mono);
+  font-size: 42px;
+  line-height: 0.95;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.headline-figure span {
+  font-size: 17px;
+  font-weight: 400;
+  margin-left: 7px;
+  opacity: 0.8;
+}
+
+.headline-label {
+  font-size: 11px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  opacity: 0.85;
+  margin-bottom: 8px;
+}
+
+.headline-secondary {
+  display: flex;
+  gap: 32px;
+  padding-bottom: 3px;
+}
+
+.headline-secondary div {
+  border-left: 1px solid rgba(255, 255, 255, 0.28);
+  padding-left: 14px;
+}
+
+.headline-secondary .v {
+  font-family: var(--mono);
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+}
+
+.headline-secondary .k {
+  font-size: 10px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  opacity: 0.8;
+  margin-bottom: 3px;
+}
+
+/* --- sections ------------------------------------------------------------- */
+
+.section {
+  margin-top: 26px;
+}
+
+.section-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  border-bottom: 1px solid var(--rule-strong);
+  padding-bottom: 4px;
+  margin-bottom: 2px;
+}
+
+.section-head h2 {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0;
+}
+
+.section-head .note {
+  font-size: 11px;
+  color: var(--ink-faint);
+}
+
+.subsection {
+  margin-top: 14px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  padding-bottom: 3px;
+}
+
+/* --- calc table ----------------------------------------------------------- */
+
+table.calcs {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+table.calcs th {
+  font-size: 9.5px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  font-weight: 500;
+  text-align: left;
+  padding: 6px 8px 4px 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+table.calcs td {
+  padding: 5px 8px 5px 0;
+  border-bottom: 1px solid var(--rule);
+  vertical-align: top;
+}
+
+table.calcs tr:last-child td {
+  border-bottom: none;
+}
+
+.col-label {
+  width: 24%;
+}
+.col-formula {
+  width: 26%;
+}
+.col-inputs {
+  width: 32%;
+}
+.col-result {
+  width: 12%;
+  text-align: right;
+}
+.col-unit {
+  width: 6%;
+}
+
+.c-label {
+  font-size: 12px;
+}
+
+.c-source {
+  display: block;
+  font-size: 10px;
+  color: var(--ink-faint);
+  margin-top: 2px;
+}
+
+.c-formula {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-soft);
+  word-break: break-word;
+}
+
+.c-inputs {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--ink-soft);
+  line-height: 1.5;
+}
+
+.c-inputs .sym {
+  color: var(--ink);
+}
+
+.c-inputs .sep {
+  color: var(--ink-faint);
+}
+
+.c-result {
+  font-family: var(--mono);
+  font-size: 13.5px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.c-unit {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-soft);
+  padding-left: 4px;
+}
+
+tr.emphasis .c-result {
+  font-weight: 600;
+}
+
+tr.emphasis .c-label {
+  font-weight: 600;
+}
+
+.c-note {
+  font-size: 10.5px;
+  color: var(--ink-faint);
+  margin-top: 3px;
+  padding-left: 9px;
+  border-left: 1px solid var(--rule-strong);
+}
+
+/* --- code checks ---------------------------------------------------------- */
+
+table.checks {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+table.checks th {
+  font-size: 9.5px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  font-weight: 500;
+  text-align: left;
+  padding: 6px 8px 4px 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+table.checks td {
+  padding: 6px 8px 6px 0;
+  border-bottom: 1px solid var(--rule);
+  vertical-align: top;
+}
+
+.chip {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  padding: 2px 6px;
+  border-radius: var(--radius);
+  border: 1px solid currentColor;
+  min-width: 44px;
+  text-align: center;
+}
+
+.chip.pass {
+  color: var(--accent);
+}
+.chip.fail {
+  color: var(--fail);
+  background: var(--fail);
+  border-color: var(--fail);
+  color: #fff;
+}
+.chip.flag {
+  color: var(--flag);
+}
+.chip.not-applicable,
+.chip.guidance {
+  color: var(--ink-faint);
+}
+
+.check-section {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--ink-soft);
+}
+
+.check-title {
+  font-size: 12px;
+}
+
+.check-limit,
+.check-actual {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--ink-soft);
+}
+
+.check-message {
+  font-size: 11.5px;
+  margin-top: 4px;
+}
+
+tr.is-fail .check-message {
+  color: var(--fail);
+}
+
+.check-path {
+  font-size: 11.5px;
+  margin-top: 4px;
+  padding: 6px 8px;
+  border-left: 2px solid var(--fail);
+  background: rgba(163, 52, 31, 0.05);
+}
+
+.check-path strong {
+  font-weight: 600;
+}
+
+/* --- notes and stops ------------------------------------------------------ */
+
+.notes {
+  margin-top: 12px;
+  font-size: 11.5px;
+  color: var(--ink-soft);
+}
+
+.notes li {
+  margin-bottom: 4px;
+}
+
+.notes-head {
+  font-size: 9.5px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-bottom: 5px;
+}
+
+.stop {
+  margin: 20px 0;
+  padding: 14px 16px;
+  border: 1px solid var(--fail);
+  border-left-width: 3px;
+  border-radius: var(--radius);
+  background: rgba(163, 52, 31, 0.05);
+}
+
+.stop h3 {
+  margin: 0 0 5px;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fail);
+}
+
+.stop p {
+  margin: 0;
+  font-size: 12px;
+}
+
+.warn-note {
+  color: var(--flag);
+}
+
+.footer {
+  margin-top: 30px;
+  padding-top: 10px;
+  border-top: 1px solid var(--rule-strong);
+  font-size: 10.5px;
+  color: var(--ink-faint);
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+/* --- job switcher (dev affordance, not part of the sheet) ----------------- */
+
+.switcher {
+  max-width: 1180px;
+  margin: 20px auto -8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--ink-soft);
+}
+
+.switcher button {
+  font-family: var(--sans);
+  font-size: 11px;
+  padding: 4px 10px;
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius);
+  background: var(--paper);
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.switcher button[aria-pressed='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+/* --- hydraulics runs ------------------------------------------------------ */
+
+.run {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--rule);
+}
+.run:last-of-type { border-bottom: none; }
+
+.run-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+}
+
+.run-v {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+
+.run-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 5px 0 4px;
+}
+
+.run-check {
+  font-size: 10.5px;
+  color: var(--ink-faint);
+}
+
+.run-check b { font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.06em; }
+.run-check.pass b { color: var(--accent); }
+.run-check.flag b { color: var(--flag); }
+.run-check.fail b { color: var(--fail); }
+.run-check.guidance b { color: var(--ink-faint); }
+
+/* --- plan view (step 9) --------------------------------------------------- */
+
+.planview {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: var(--paper);
+}
+
+.pv-water {
+  fill: var(--accent);
+  fill-opacity: 0.16;
+  stroke: var(--accent);
+  stroke-width: 1.5;
+}
+.pv-spa { fill-opacity: 0.28; }
+.pv-damwall { stroke: var(--accent); stroke-width: 3; }
+
+.pv-deck {
+  fill: none;
+  stroke: var(--rule-strong);
+  stroke-width: 1;
+  stroke-dasharray: 6 3;
+}
+.pv-excavation {
+  fill: none;
+  stroke: var(--ink-faint);
+  stroke-width: 1;
+  stroke-dasharray: 2 3;
+}
+
+.pv-house {
+  fill: var(--rule);
+  fill-opacity: 0.55;
+  stroke: var(--rule-strong);
+  stroke-width: 1;
+}
+
+.pv-station { stroke: var(--accent); stroke-width: 0.75; stroke-dasharray: 4 3; opacity: 0.7; }
+.pv-station-label {
+  font-family: var(--sans);
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  fill: var(--ink-faint);
+}
+
+.pv-step, .pv-seat {
+  fill: var(--paper);
+  fill-opacity: 0.75;
+  stroke: var(--accent);
+  stroke-width: 1;
+}
+.pv-step-tread { stroke: var(--accent); stroke-width: 0.75; opacity: 0.75; }
+
+.pv-drain, .pv-skimmer, .pv-return {
+  stroke: var(--accent);
+  stroke-width: 1.25;
+  fill: var(--paper);
+}
+.pv-drain { fill: var(--accent); fill-opacity: 0.55; }
+.pv-skimmer { fill: var(--paper); }
+.pv-return { fill: var(--accent-light); fill-opacity: 0.4; }
+
+.pv-run { fill: none; stroke-width: 1.25; }
+.pv-run-suction { stroke: var(--accent); stroke-dasharray: 7 3; }
+.pv-run-return { stroke: var(--accent-light); }
+
+.pv-pad { fill: none; stroke: var(--ink-soft); stroke-width: 1.25; }
+.pv-pad-item { fill: var(--rule); fill-opacity: 0.7; stroke: var(--ink-soft); stroke-width: 0.75; }
+
+.pv-dim-line { stroke: var(--ink-soft); stroke-width: 0.75; }
+.pv-witness { stroke: var(--ink-faint); stroke-width: 0.5; }
+.pv-dim-arrow { fill: var(--ink-soft); }
+.pv-dim-text {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  fill: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.pv-dim-soft .pv-dim-text { fill: var(--ink-faint); font-size: 8.5px; }
+.pv-dim-setback .pv-dim-line { stroke: var(--accent); }
+.pv-dim-setback .pv-dim-arrow { fill: var(--accent); }
+.pv-dim-setback .pv-dim-text { fill: var(--accent); }
+
+.pv-label {
+  font-family: var(--sans);
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  fill: var(--ink-soft);
+}
+.pv-label-inset {
+  font-family: var(--sans);
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  fill: var(--ink);
+}
+.pv-note { font-family: var(--sans); font-size: 8px; fill: var(--ink-faint); }
+.pv-note-inset { font-family: var(--sans); font-size: 7.5px; fill: var(--ink-soft); }
+.pv-depth {
+  font-family: var(--mono);
+  font-size: 11px;
+  fill: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.pv-depth-soft { font-family: var(--mono); font-size: 9px; fill: var(--ink-faint); }
+
+.pv-scale-fill { fill: var(--ink); }
+.pv-scale-empty { fill: none; stroke: var(--ink); stroke-width: 0.75; }
+.pv-scale-text { font-family: var(--mono); font-size: 8px; fill: var(--ink-soft); }
+.pv-scale-note {
+  font-family: var(--sans);
+  font-size: 7.5px;
+  letter-spacing: 0.07em;
+  fill: var(--ink-faint);
+}
+.pv-hatch { stroke: var(--ink-faint); stroke-width: 0.5; }
+
+.plan-frame {
+  margin: 20px 0 6px;
+  padding: 10px;
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius);
+  background: var(--paper);
+}
+.plan-caption {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  justify-content: space-between;
+  font-size: 10.5px;
+  color: var(--ink-faint);
+  margin-top: 6px;
+}
+
+.pv-pad-number {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 600;
+  fill: var(--ink);
+}
+.pv-dim-violation .pv-dim-line { stroke: var(--fail); stroke-width: 1.25; }
+.pv-dim-violation .pv-dim-arrow { fill: var(--fail); }
+.pv-dim-violation .pv-dim-text { fill: var(--fail); font-weight: 600; }
+.pv-dim-violation .pv-witness { stroke: var(--fail); }
+
+/* --- print (step 10) ------------------------------------------------------ */
+
+/*
+ * Two page sizes in one job: the plan sheet is ANSI B landscape, the takeoff is
+ * letter portrait. Named pages are how CSS expresses that; Chrome supports them
+ * from 110. In a browser that does not, everything falls back to the first
+ * @page size and the plan still prints — at the wrong sheet size, which the
+ * title block's stated scale makes obvious rather than silent.
+ */
+@page plan {
+  size: 17in 11in;
+  margin: 0.5in;
+}
+
+@page sheet {
+  size: letter portrait;
+  margin: 0.6in;
+}
+
+.plan-sheet {
+  page: plan;
+}
+
+.takeoff-body {
+  page: sheet;
+}
+
+@media print {
+  html,
+  body {
+    background: #fff;
+  }
+
+  /* The water fill, the accent rules and the failure colour all carry meaning. */
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .switcher,
+  .print-hide {
+    display: none !important;
+  }
+
+  .sheet {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+  }
+
+  /* Plan on its own sheet, then the takeoff. */
+  .plan-sheet {
+    break-after: page;
+    page-break-after: always;
+    margin: 0;
+    padding: 0;
+    border: none;
+  }
+
+  /*
+   * Printed at a stated architectural scale, not scaled to fit. The width is
+   * computed from the drawing's real extents and set as a custom property by
+   * the sheet; the SVG viewBox does the rest.
+   */
+  .planview {
+    width: var(--plan-print-width) !important;
+    height: auto;
+    max-width: none;
+  }
+
+  .plan-print-title {
+    display: flex;
+  }
+
+  .plan-caption {
+    font-size: 8pt;
+  }
+
+  /* Nothing that reads as a unit should be split across a page break. */
+  .row,
+  .check,
+  .run,
+  .bar,
+  table.calcs tr,
+  table.checks tr,
+  .stop,
+  .headline {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .section {
+    break-inside: auto;
+  }
+
+  .section-head,
+  .subsection {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  body {
+    font-size: 9pt;
+    line-height: 1.3;
+  }
+
+  .c-result {
+    font-size: 9.5pt;
+  }
+
+  a[href]::after {
+    content: '';
+  }
+}
+
+/* Title block strip under the printed plan. Screen keeps it hidden. */
+.plan-print-title {
+  display: none;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 12px;
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid var(--ink);
+  font-size: 8pt;
+}
+
+.plan-print-title .ptb-job {
+  font-weight: 600;
+  font-size: 10pt;
+}
+
+.plan-print-title .ptb-scale {
+  font-family: var(--mono);
+  font-size: 11pt;
+  font-weight: 600;
+}
+
+.plan-print-title .ptb-meta {
+  font-family: var(--mono);
+  font-size: 7.5pt;
+  color: var(--ink-soft);
+  text-align: right;
+  line-height: 1.5;
+}
+
+.print-only {
+  display: none;
+}
+
+/* --- job editor (step 11) -------------------------------------------------- */
+
+.app {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+}
+
+.app-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.editor {
+  position: sticky;
+  top: 0;
+  flex: 0 0 300px;
+  max-height: 100vh;
+  overflow-y: auto;
+  padding: 14px 14px 40px;
+  background: var(--paper);
+  border-right: 1px solid var(--rule-strong);
+}
+
+.editor-closed {
+  flex-basis: auto;
+  max-height: none;
+  overflow: visible;
+  padding-bottom: 14px;
+}
+
+.editor-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--rule-strong);
+}
+
+.editor-head h2 {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.editor button {
+  font-family: var(--sans);
+  font-size: 11px;
+  padding: 4px 9px;
+  min-height: 30px;
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius);
+  background: var(--paper);
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.editor button:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.editor button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.editor button:focus-visible,
+.editor input:focus-visible {
+  outline: 2px solid var(--accent-light);
+  outline-offset: 1px;
+}
+
+.editor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 10px 0;
+}
+
+.editor-messages {
+  margin: 0 0 12px;
+  padding-left: 16px;
+  font-size: 11px;
+}
+
+.editor-messages .msg-error {
+  color: var(--fail);
+}
+.editor-messages .msg-warn {
+  color: var(--flag);
+}
+.editor-messages .msg-ok {
+  color: var(--accent);
+}
+
+.editor-group {
+  margin: 0 0 14px;
+  padding: 0;
+  border: none;
+  border-top: 1px solid var(--rule);
+  padding-top: 8px;
+}
+
+.editor-group legend {
+  padding: 0;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.editor-note {
+  margin: 2px 0 7px;
+  font-size: 10.5px;
+  color: var(--ink-faint);
+}
+
+.editor-field {
+  display: grid;
+  grid-template-columns: 1fr 82px 44px;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.editor-label {
+  font-size: 11.5px;
+}
+
+.editor-unit {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-faint);
+}
+
+.editor input[type='number'],
+.editor input[type='text'] {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  padding: 4px 6px;
+  min-height: 28px;
+  width: 100%;
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius);
+  background: var(--paper);
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.editor-field-bool {
+  grid-template-columns: 18px 1fr;
+}
+
+.editor-field-bool input {
+  width: auto;
+  min-height: auto;
+}
+
+.soil-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr 24px;
+  gap: 4px;
+  align-items: end;
+  margin-bottom: 6px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.soil-row label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.soil-row label span {
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.soil-row > input[type='text'] {
+  grid-column: 1 / -1;
+}
+
+.soil-row button {
+  min-height: 28px;
+  padding: 0;
+}
+
+.editor-add {
+  width: 100%;
+}
+
+.switcher-edited {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--flag);
+}
+
+@media (max-width: 900px) {
+  .app {
+    display: block;
+  }
+  .editor {
+    position: static;
+    max-height: none;
+    border-right: none;
+    border-bottom: 1px solid var(--rule-strong);
+  }
+}
