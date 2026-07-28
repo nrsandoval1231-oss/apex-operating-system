@@ -111,8 +111,14 @@
     font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:#9E968B;margin-bottom:5px}
   .pd-meta b{font-family:Oswald,Impact,sans-serif;font-size:16px;font-weight:500;letter-spacing:.03em;color:#F4F2EE}
 
-  /* document body */
-  .pd-body{padding:34px 44px 40px;position:relative;z-index:1}
+  /* cover + document body */
+  .pd-cover,.pd-body{padding:34px 44px 40px;position:relative;z-index:1}
+  .pd-plan{margin:24px 0 0;background:#fff;border:1px solid var(--line);padding:16px 12px 10px}
+  .pd-plan svg{display:block;margin:0 auto;max-width:100%;height:auto}
+  .pd-plancap{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:9px;letter-spacing:.1em;
+    text-transform:uppercase;color:#8A857D;text-align:center;margin:10px 0 0}
+  /* running head — orients page 2 in print, where the masthead doesn't repeat */
+  .pd-runhead{display:none}
   .pd-eyebrow{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:10px;font-weight:500;
     letter-spacing:.24em;text-transform:uppercase;color:var(--amber-d)}
   .proposal-doc .pd-h1{font-family:Oswald,Impact,sans-serif;font-weight:700;font-size:40px;line-height:1.02;
@@ -132,7 +138,7 @@
     color:var(--steel);margin:0 0 34px}
 
   /* scope table */
-  .pd-sec{margin-top:34px;padding-bottom:10px;border-bottom:2px solid var(--char)}
+  .pd-sec-rule{border-bottom:2px solid var(--char);margin-top:10px}
   .proposal-doc table.pd-tbl{width:100%;border-collapse:collapse;margin:0}
   .pd-tbl td{padding:11px 0;border-bottom:1px solid #EDEAE4;font-size:15px;vertical-align:baseline}
   .pd-tbl td.n{text-align:right;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:14px;
@@ -179,9 +185,16 @@
     .pd-sheet{max-width:none;border:0;box-shadow:none}
     /* the charcoal masthead and teal spec rules ARE the document — never let a
        print dialog's "background graphics" default strip them out */
-    .pd-top,.pd-total,.pd-spec,.pd-rule{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-    .pd-specs,.pd-total,.pd-notes,.pd-sums{break-inside:avoid}
+    .pd-top,.pd-total,.pd-spec,.pd-rule,.pd-plan{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .pd-specs,.pd-total,.pd-notes,.pd-sums,.pd-plan{break-inside:avoid}
     .pd-tbl tr{break-inside:avoid}
+    /* the drawing gets the cover to itself; scope and money start a clean page */
+    .pd-cover{break-after:page}
+    .pd-runhead{display:flex;justify-content:space-between;align-items:baseline;gap:16px;
+      border-bottom:1px solid var(--line);padding-bottom:9px;margin-bottom:24px}
+    .pd-runhead b{font-family:Oswald,Impact,sans-serif;font-weight:600;font-size:14px;letter-spacing:.15em}
+    .pd-runhead span{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:9.5px;
+      letter-spacing:.1em;color:var(--steel)}
   }
 </style>
 </head>
@@ -548,6 +561,95 @@ const lion = (cls, mono) => {
     <path fill="${a}" d="M27 39 h10 l-5 6 Z"/></svg>`;
 };
 
+/** Feet as a builder would letter it: 24 → 24'-0", 3.5 → 3'-6". */
+function ftIn(v) {
+  const f = Math.floor(v), i = Math.round((v - f) * 12);
+  return i === 12 ? `${f + 1}'-0"` : `${f}'-${i}"`;
+}
+
+/**
+ * Plan view of the pool, drawn from the SAME geometry that drives the price.
+ *
+ * This is the cover's whole argument: a competitor sends a lump sum, Apex sends a measured
+ * drawing whose dimensions are the ones every line item was computed from. So it is generated,
+ * never illustrated — change length × width and the drawing, the quantities and the money all
+ * move together. Deliberately drafting-style rather than a rendered pool: the brand is
+ * "gets it done", and a scale plan reads as competence where a glossy render reads as sales.
+ *
+ * The deck band is drawn as a uniform border offset around the POOL rectangle, which is exactly
+ * what deckArea() models (w·P + 4w²) — so the drawn area and the quoted sq ft are the same thing.
+ */
+function poolPlanSvg({ length, width, spa, borderFt, depthShallow, depthDeep }) {
+  const long = Math.max(length, width), short = Math.min(length, width);
+  const hasSpa = !!spa;
+  const spaL = hasSpa ? spa.length : 0, spaW = hasSpa ? spa.width : 0;
+
+  // Scale so the drawing renders at its natural size — never upscaled, or the labels scale too.
+  const gutL = 46, gutB = 36, gutT = hasSpa ? 24 : 14, gutR = 14;
+  const rightFt = hasSpa ? spaL + borderFt : borderFt; // spa runs past the deck, so it sets the edge
+  const totalFt = borderFt + long + rightFt;
+  const S = Math.min(18, Math.max(9, (690 - gutL - gutR) / totalFt));
+  const deck = borderFt * S, pw = long * S, ph = short * S;
+  const ox = gutL + deck, oy = gutT + deck;
+  const W = gutL + deck + pw + rightFt * S + gutR, H = gutT + deck + ph + deck + gutB;
+
+  const CH = '#1B1C1E', ST = '#54585E', LN = '#D4CFC5', WATER = '#DCEBED', SPA = '#C7DEE1', POOL = '#0E6E7C';
+  const t = (x, y, s, o = {}) => `<text x="${x}" y="${y}" font-family="JetBrains Mono,ui-monospace,monospace" `
+    + `font-size="${o.size || 9.5}" fill="${o.fill || ST}" text-anchor="${o.anchor || 'middle'}" `
+    + `letter-spacing=".06em"${o.rot ? ` transform="rotate(-90 ${x} ${y})"` : ''}>${s}</text>`;
+  // Dimension line with end ticks, the way a takeoff sheet letters it.
+  const dimH = (x1, x2, y, label) => `<g stroke="${ST}" stroke-width=".75">`
+    + `<line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}"/><line x1="${x1}" y1="${y - 4}" x2="${x1}" y2="${y + 4}"/>`
+    + `<line x1="${x2}" y1="${y - 4}" x2="${x2}" y2="${y + 4}"/></g>`
+    + `<rect x="${(x1 + x2) / 2 - 26}" y="${y - 7}" width="52" height="13" fill="#fff"/>` + t((x1 + x2) / 2, y + 3.5, label);
+  const dimV = (y1, y2, x, label) => `<g stroke="${ST}" stroke-width=".75">`
+    + `<line x1="${x}" y1="${y1}" x2="${x}" y2="${y2}"/><line x1="${x - 4}" y1="${y1}" x2="${x + 4}" y2="${y1}"/>`
+    + `<line x1="${x - 4}" y1="${y2}" x2="${x + 4}" y2="${y2}"/></g>`
+    + `<rect x="${x - 7}" y="${(y1 + y2) / 2 - 26}" width="13" height="52" fill="#fff"/>` + t(x + 3.5, (y1 + y2) / 2, label, { rot: 1 });
+
+  const spaY = oy + (ph - spaW * S) / 2, sy = (ph - spaW * S) / 2;
+  /**
+   * Deck outline: a uniform border offset around the pool AND the spa, since that is what
+   * actually gets poured — a spa left hanging off the edge of the decking reads as a drafting
+   * mistake and costs the drawing its credibility. Traced as one rectilinear path so no internal
+   * seam shows through. The deck sq ft quoted in the spec band is deckArea()'s pool-border
+   * figure; this outline is illustrative of layout, which is what the caption disclaims.
+   */
+  const nests = hasSpa && sy > 0 && sy + spaW * S < ph; // spa shorter than the pool is wide
+  const X0 = ox - deck, X1 = ox + pw + deck, X2 = ox + pw + spaL * S + deck;
+  const Y0 = oy - deck, Y1 = oy + ph + deck;
+  const deckPath = nests
+    ? `M${r2(X0)},${r2(Y0)} H${r2(X1)} V${r2(oy + sy - deck)} H${r2(X2)} V${r2(oy + sy + spaW * S + deck)} H${r2(X1)} V${r2(Y1)} H${r2(X0)} Z`
+    : `M${r2(X0)},${r2(Y0)} H${r2(hasSpa ? X2 : X1)} V${r2(Y1)} H${r2(X0)} Z`;
+  return `<svg width="${r2(W)}" height="${r2(H)}" viewBox="0 0 ${r2(W)} ${r2(H)}" role="img" `
+    + `aria-label="Plan view of a ${long} by ${short} foot pool${hasSpa ? ` with a ${spaL} by ${spaW} foot spa` : ''} and a ${borderFt} foot deck border">`
+    // deck
+    + `<path d="${deckPath}" fill="#EFECE6" stroke="${LN}" stroke-width="1"/>`
+    // spa (drawn under the pool edge so the shared wall reads as one line)
+    + (hasSpa ? `<rect x="${r2(ox + pw)}" y="${r2(spaY)}" width="${r2(spaL * S)}" height="${r2(spaW * S)}" fill="${SPA}" stroke="${CH}" stroke-width="1.4"/>`
+      + `<line x1="${r2(ox + pw)}" y1="${r2(spaY + 6)}" x2="${r2(ox + pw)}" y2="${r2(spaY + spaW * S - 6)}" stroke="${POOL}" stroke-width="3"/>`
+      + t(ox + pw + (spaL * S) / 2, gutT - 9, `SPA ${spaL}&#215;${spaW}`, { size: 9, fill: POOL }) : '')
+    // water
+    + `<rect x="${r2(ox)}" y="${r2(oy)}" width="${r2(pw)}" height="${r2(ph)}" fill="${WATER}" stroke="${CH}" stroke-width="1.6"/>`
+    // waterline tile band, inset half a foot
+    + `<rect x="${r2(ox + S * 0.5)}" y="${r2(oy + S * 0.5)}" width="${r2(pw - S)}" height="${r2(ph - S)}" fill="none" stroke="${POOL}" stroke-width=".6" opacity=".55"/>`
+    // entry steps, shallow end
+    + `<g stroke="${POOL}" stroke-width=".9" opacity=".75">`
+    + [1.2, 2.4, 3.6].map((d) => `<line x1="${r2(ox + d * S)}" y1="${r2(oy + 2)}" x2="${r2(ox + d * S)}" y2="${r2(oy + ph - 2)}"/>`).join('')
+    + `</g>`
+    // depth profile along the swim axis
+    + `<line x1="${r2(ox + 5 * S)}" y1="${r2(oy + ph / 2)}" x2="${r2(ox + pw - S)}" y2="${r2(oy + ph / 2)}" stroke="${POOL}" stroke-width=".7" stroke-dasharray="4 3" opacity=".6"/>`
+    + t(ox + 4.4 * S, oy + ph / 2 - 6, ftIn(depthShallow), { size: 9, fill: POOL, anchor: 'start' })
+    + t(ox + pw - S, oy + ph / 2 - 6, ftIn(depthDeep), { size: 9, fill: POOL, anchor: 'end' })
+    // dimensions
+    + dimH(ox, ox + pw, oy + ph + deck + 20, ftIn(long))
+    + dimV(oy, oy + ph, ox - deck - 20, ftIn(short))
+    + dimH(ox - deck, ox, oy - deck - 7, ftIn(borderFt))
+    + t(ox + pw / 2, oy + ph + deck - 7, `${borderFt} FT DECK`, { size: 8.5, fill: '#8A857D' })
+    + `</svg>`;
+}
+const r2 = (n) => Math.round(n * 10) / 10;
+
 function proposalHtml() {
   const t = last, p = t.pricing, g = t.geometry;
   const name = $('customerName').value.trim();
@@ -605,18 +707,28 @@ function proposalHtml() {
     </div>
   </div>
 
-  <div class="pd-body">
+  <div class="pd-cover">
     <div class="pd-eyebrow">Your pool, specified</div>
     <h1 class="pd-h1">${length} × ${width} gunite pool${spa ? `<br><em>with ${spa} spa</em>` : ''}</h1>
     <p class="pd-lede">${g.pool.depthShallow} ft to ${g.pool.depthDeep} ft depth, finished, filled and started up,
       with a ${deck.derived ? `${deck.borderFt} ft` : ''} concrete deck${deck.derived ? ' around the full perimeter' : ''}.</p>
 
+    <div class="pd-plan">
+      ${poolPlanSvg({ length, width, spa: hasSpa ? g.spa : null, borderFt: deck.borderFt ?? 4,
+        depthShallow: g.pool.depthShallow, depthDeep: g.pool.depthDeep })}
+      <p class="pd-plancap">Plan view · drawn to proportion from your dimensions · not a construction drawing</p>
+    </div>
+
     <div class="pd-specs">
       ${specs.map(([v, l]) => `<div class="pd-spec"><b>${v}</b><span>${l}</span></div>`).join('')}
     </div>
-    <p class="pd-specnote">Measured from your dimensions — every line below traces back to these numbers.</p>
+    <p class="pd-specnote">Measured from your dimensions — every line in this proposal traces back to these numbers.</p>
+  </div>
 
-    <div class="pd-eyebrow pd-sec">Scope &amp; investment</div>
+  <div class="pd-body">
+    <div class="pd-runhead"><b>APEX</b><span>Proposal ${ref}${name ? ' · ' + esc(name) : ''}</span></div>
+    <div class="pd-eyebrow">Scope &amp; investment</div>
+    <div class="pd-sec-rule"></div>
     <table class="pd-tbl"><tbody>${scopeRows}${allowRows}</tbody></table>
 
     <table class="pd-sums">
