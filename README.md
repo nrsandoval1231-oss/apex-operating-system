@@ -38,13 +38,13 @@ Website lead
 
 | Component | Purpose | Phase 0 status |
 |---|---|---|
-| `apex-website/apex-website` | Public marketing site and tagged lead capture | Builds; active uncommitted launch work; not launched |
+| `apex-website/apex-website` | Public marketing site and tagged lead capture | Check/build pass; launch work preserved; not launched |
 | `apex-lead-engine/apex-lead-engine` | n8n intake and job-status workflow source | Source exists; intake inactive; speed-to-lead not built |
 | `apex-proposal-engine` | Quantity-to-price proposal prototype | 90 checks pass; input and calibration defects block production use |
-| `Apex Designer` | Technical pool/spa plan and materials takeoff | 299 tests pass; correctness defects block field/material use |
+| `Apex Designer` | Technical pool/spa plan and materials takeoff | 305 tests pass; correctness defects block field/material use |
 | `gate-v3.jsx` | Field command-center prototype | Product mockup; no persistence/backend/audit yet |
 | `apex-prds/apex-prds` | Foundation, decisions, and product requirements | Strong but contains stale/open decisions presented elsewhere as settled |
-| `apex-decks` | Strategy and pitch-deck generators | Generated artifacts exist; validation claims require correction |
+| `apex-decks` | Strategy and pitch-deck generators | Claims corrected; generated packages structurally validate |
 | `Apex Lead Engine` | Detached n8n workflow export/status snapshot | Historical/operational export; not an independent source of truth |
 
 Each existing Git component remains an independent repository during Phase 0. The root repository preserves the system-level plans and non-repository artifacts. A later approved migration will import component histories into the target monorepo rather than copying files blindly.

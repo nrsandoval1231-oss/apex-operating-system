@@ -39,7 +39,7 @@ Phase 0 goals:
 - Pure TypeScript calculation engine separated from React UI
 - Formula/input/unit/result `Calc` primitive
 - Strict TypeScript configuration
-- 299 engine tests previously verified passing
+- 305 engine tests verified passing on 2026-07-28
 - Production build and standalone artifact generation previously verified
 - No production dependency vulnerabilities in the most recent audit
 
@@ -88,9 +88,9 @@ Phase 0 goals:
 
 **Current working state**
 
-- Phase 4 was committed locally on 2026-07-28.
-- Additional launch/preflight/redirect/legal-footer work is currently dirty and untracked.
-- Current working state was preserved before Phase 0 repository operations.
+- Phase 4 and Phase 5 launch-preparation work were committed on 2026-07-28.
+- Local Hermes attachment artifacts are ignored rather than committed.
+- Local and private-remote `main` heads were verified to match.
 
 **Launch blockers**
 
@@ -175,9 +175,28 @@ The following claims must not be reused without correction:
 - Claims that all repositories are clean
 - Commission decisions presented as settled before recorded approval
 
-## Baseline verification
+## Baseline verification — 2026-07-28
 
-Phase 0 baseline commands and exact current outputs will be recorded here after remote preservation and dirty-state checkpointing are complete.
+| Component | Commands | Result |
+|---|---|---|
+| Designer | `npm test` | 9/9 files and **305/305 tests passed** |
+| Designer | `npm run build` | TypeScript check and Vite production build passed |
+| Designer | `npm audit --omit=dev` | **0 vulnerabilities** |
+| Proposal | `node engine.test.mjs` | **90/90 checks passed** |
+| Proposal | `node backtest.mjs` | Executed; whole-job model remains **40.4% / $47,302 short** because direct-entry scope is unmodelled |
+| Proposal | `node report.mjs whitaker` | Executed; coverage and blocking warnings rendered |
+| Website | `npm run check` | 0 errors, 0 warnings, 2 TypeScript deprecation hints |
+| Website | `npm run check:images` | Completed; **9 photography slots remain unfilled** |
+| Website | `npm run build` | Static production build passed; five pages plus robots and sitemap emitted |
+| Website | `npm audit --omit=dev --audit-level=high` | **3 high and 1 moderate** vulnerability; breaking Astro upgrade required |
+| Decks | `node --check strategy-deck.js` and `node --check pitch-deck.js` | Passed |
+| Decks | `npm audit --omit=dev --audit-level=high` | **0 vulnerabilities** after adding the lockfile |
+| Decks | regenerate both PPTX files | Completed |
+| Decks | Office package validator | Both PPTX files passed structural/package validation |
+
+An additional temporary Phase 0 verification script passed **75 targeted assertions** covering backup checksums, ZIP integrity, all six Git bundles, deck claim corrections, generated deck contents/slide counts, Office package structure, ignore rules, dependency audit, and whitespace hygiene. This was ad-hoc verification, not a substitute for the component suites above. The script was removed after execution.
+
+PowerPoint visual rendering was not completed because the headless COM export approval timed out. Structural validation passed, but slide-level visual QA remains pending before the corrected decks are used externally.
 
 ## Next controlled milestone
 
