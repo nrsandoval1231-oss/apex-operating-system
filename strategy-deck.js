@@ -192,7 +192,7 @@ const note = (s, text) => s.addText(text, {
   const s = pres.addSlide();
   s.background = { color: C.paper };
   kicker(s, 'FINDING 02  ·  THE PROOF');
-  title(s, 'It reproduces your estimate exactly');
+  title(s, 'The calibration replay is internally traceable');
 
   const hdr = (t, al) => ({ text: t, options: { fontFace: BODY, fontSize: 11, bold: true, color: C.white, fill: { color: C.char }, align: al || 'left', valign: 'middle', margin: 0.08 } });
   const cel = (t, al, bold, col) => ({ text: t, options: { fontFace: BODY, fontSize: 12.5, bold: !!bold, color: col || C.char, align: al || 'left', valign: 'middle', margin: 0.08 } });
@@ -201,10 +201,11 @@ const note = (s, text) => s.addText(text, {
     [hdr('Cost code'), hdr('Model', 'right'), hdr('Your estimate', 'right'), hdr('Variance', 'right')],
     [cel('200  Excavation'), cel('$7,000', 'right'), cel('$7,000', 'right'), cel('exact', 'right', true, C.ok)],
     [cel('400  Pool Shell Construction'), cel('$16,801', 'right'), cel('$16,800', 'right'), cel('exact', 'right', true, C.ok)],
+    [cel('700  Pool Plumbing'), cel('$8,101', 'right'), cel('$8,100', 'right'), cel('exact', 'right', true, C.ok)],
     [cel('800  Pool Finishes'), cel('$20,750', 'right'), cel('$20,750', 'right'), cel('exact', 'right', true, C.ok)],
     [cel('1000  Pool Deck'), cel('$10,001', 'right'), cel('$10,000', 'right'), cel('exact', 'right', true, C.ok)],
     [cel('1300  Additional Upgrades'), cel('$7,000', 'right'), cel('$7,000', 'right'), cel('exact', 'right', true, C.ok)],
-    [cel('Total, modelled codes', 'left', true), cel('$61,552', 'right', true), cel('$61,550', 'right', true), cel('0.0%', 'right', true, C.ok)],
+    [cel('Total, modelled codes', 'left', true), cel('$69,653', 'right', true), cel('$69,650', 'right', true), cel('calibrated', 'right', true, C.amber)],
   ];
   s.addTable(rows, {
     x: M, y: 1.85, w: 7.9, colW: [3.4, 1.5, 1.7, 1.3], rowH: 0.46,
@@ -219,9 +220,8 @@ const note = (s, text) => s.addText(text, {
     x: 9.2, y: 2.47, w: 3.1, h: 0.3, fontFace: BODY, fontSize: 12, color: C.mute, margin: 0, valign: 'top',
   });
   s.addText(
-    'Built from dimensions alone, then checked against the real estimate line by line.\n\n' +
-    'Not fitted to the answer — derived, then compared. Six of your finishes lines, ' +
-    'the excavation, the shell and the deck all land on the dollar.',
+    'Whitaker seeded the current unit rates, so this is a calibration replay — not an independent validation.\n\n' +
+    'It proves the formulas, quantities and line extensions are traceable. Predictive accuracy still requires a second completed job the model has never seen.',
     { x: 9.2, y: 2.95, w: 3.15, h: 2.2, fontFace: BODY, fontSize: 12, color: C.concrete, margin: 0, lineSpacing: 16, valign: 'top' },
   );
   note(s, 'The same model then priced a 15 × 30 with a spa from nothing but those two dimensions.');
@@ -232,7 +232,7 @@ const note = (s, text) => s.addText(text, {
   const s = pres.addSlide();
   s.background = { color: C.paper };
   kicker(s, 'WHAT THAT PROVES');
-  title(s, 'Your pricing instincts are already right');
+  title(s, 'The seeded rates pass a reasonableness check');
 
   const stats = [
     ['$439.56', 'per yd³ of gunite', 'Published range $350–600'],
@@ -257,9 +257,9 @@ const note = (s, text) => s.addText(text, {
     x: M, y: 4.55, w: W, h: 0.45, fontFace: HEAD, fontSize: 24, bold: true, color: C.char, margin: 0, valign: 'top',
   });
   s.addText(
-    'Every rate we back-solved from your estimate lands inside published industry ranges. ' +
-    'The numbers in your head are well calibrated — they simply cannot transfer to anyone else, ' +
-    'scale past what you personally price, or be shown to a customer who asks.',
+    'Every rate back-solved from the Whitaker estimate lands inside the cited published ranges. ' +
+    'That is a useful reasonableness check, not proof of predictive accuracy. The next step is to ' +
+    'test the frozen model against a completed job it did not calibrate.',
     { x: M, y: 5.1, w: 9.6, h: 1.3, fontFace: BODY, fontSize: 14, color: C.steel, margin: 0, lineSpacing: 20, valign: 'top' },
   );
 }

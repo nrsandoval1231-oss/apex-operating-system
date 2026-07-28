@@ -118,18 +118,19 @@ const tick = (s, x, y) => s.addShape(pres.ShapeType.ellipse, {
   const hdr = (t, al) => ({ text: t, options: { fontFace: BODY, fontSize: 10.5, bold: true, color: C.white, fill: { color: C.char }, align: al || 'left', valign: 'middle', margin: 0.07 } });
   const cel = (t, al, bold, col) => ({ text: t, options: { fontFace: BODY, fontSize: 12, bold: !!bold, color: col || C.char, align: al || 'left', valign: 'middle', margin: 0.07 } });
   s.addTable([
-    [hdr('Checked against your estimate'), hdr('Model', 'right'), hdr('Yours', 'right'), hdr('', 'right')],
+    [hdr('Calibration replay'), hdr('Model', 'right'), hdr('Yours', 'right'), hdr('', 'right')],
     [cel('200  Excavation'), cel('$7,000', 'right'), cel('$7,000', 'right'), cel('exact', 'right', true, C.ok)],
     [cel('400  Pool shell'), cel('$16,801', 'right'), cel('$16,800', 'right'), cel('exact', 'right', true, C.ok)],
+    [cel('700  Pool plumbing'), cel('$8,101', 'right'), cel('$8,100', 'right'), cel('exact', 'right', true, C.ok)],
     [cel('800  Pool finishes'), cel('$20,750', 'right'), cel('$20,750', 'right'), cel('exact', 'right', true, C.ok)],
     [cel('1000  Pool deck'), cel('$10,001', 'right'), cel('$10,000', 'right'), cel('exact', 'right', true, C.ok)],
-    [cel('Total', 'left', true), cel('$61,552', 'right', true), cel('$61,550', 'right', true), cel('0.0%', 'right', true, C.ok)],
+    [cel('Modelled codes total', 'left', true), cel('$69,653', 'right', true), cel('$69,650', 'right', true), cel('calibrated', 'right', true, C.amber)],
   ], {
     x: 6.5, y: 1.95, w: 6.1, colW: [2.7, 1.15, 1.15, 1.1], rowH: 0.46,
     border: { type: 'solid', color: C.line, pt: 0.75 }, fill: { color: C.white },
   });
-  s.addText('Built from the dimensions alone, then compared — not fitted to the answer.', {
-    x: 6.5, y: 4.9, w: 6.1, h: 0.5, fontFace: BODY, fontSize: 12, italic: true, color: C.steel, margin: 0, valign: 'top',
+  s.addText('Whitaker seeded the current rates. This replay proves arithmetic traceability — predictive accuracy still requires a second completed job.', {
+    x: 6.5, y: 5.35, w: 6.1, h: 0.62, fontFace: BODY, fontSize: 10.5, italic: true, color: C.steel, margin: 0, lineSpacing: 13, valign: 'top',
   });
 
   card(s, M, 6.11, W, 0.95, C.concrete);
