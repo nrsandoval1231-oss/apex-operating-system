@@ -22,3 +22,6 @@ npm-debug.log*
 *.log
 .DS_Store
 Thumbs.db
+
+# local agent/session artifacts
+.hermes/
