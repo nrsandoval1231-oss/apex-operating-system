@@ -11,7 +11,10 @@
     "preview": "astro preview",
     "astro": "astro",
     "check": "astro check",
-    "check:images": "node scripts/check-images.mjs"
+    "check:images": "node scripts/check-images.mjs",
+    "preflight": "node scripts/preflight.mjs",
+    "redirects:generate": "node scripts/generate-redirects.mjs",
+    "redirects:verify": "node scripts/verify-redirects.mjs"
   },
   "dependencies": {
     "@astrojs/react": "^4.4.2",

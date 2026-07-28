@@ -49,6 +49,25 @@ export const site = {
  */
 export const ogImageUrl = envOr('PUBLIC_OG_IMAGE', '');
 
+/**
+ * Legal page destinations, rendered as real links in the footer (Phase 5).
+ *
+ * These are env-driven and default to the pages' CURRENT home on `apexcoatinglbk.com`,
+ * because that is where they actually live today — this repo has no legal routes and must
+ * not invent legal text. Two things depend on the privacy policy being genuinely reachable:
+ * TCPA (the reason consent is per-vertical) and A2P 10DLC registration, where carriers
+ * reject campaigns whose linked policy 404s.
+ *
+ * TODO(BLOCKED: D-03): if `apexcoatinglbk.com` is wildcard-redirected to /coating at cutover
+ * (see config/redirects.json), these URLs start 301-ing into a sales page. Either exclude
+ * the legal paths from that wildcard, or rebuild the policies on the canonical domain and
+ * repoint these. Decide before DNS — see docs/launch-checklist.md.
+ */
+export const legalUrls = {
+  privacy: envOr('PUBLIC_PRIVACY_URL', 'https://apexcoatinglbk.com/privacy-policy'),
+  terms: envOr('PUBLIC_TERMS_URL', 'https://apexcoatinglbk.com/terms-and-conditions'),
+} as const;
+
 /** True when this is a real production build (gates live vs test webhook — Phase 3). */
 export const isProduction = site.env === 'production';
 

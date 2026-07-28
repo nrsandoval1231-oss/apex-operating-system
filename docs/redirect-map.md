@@ -93,7 +93,17 @@ Suggested destination logic for a WordPress inventory, to be confirmed against t
 
 ## Step 4 — Implementation, by host
 
-The deploy target is not yet fixed (`CLAUDE.md`: Hostinger, or Vercel/Netlify). The map above is the source; the file below is generated from it. **Do not hand-maintain both.**
+**The machine-readable source is [`config/redirects.json`](../config/redirects.json).** The tables above are the human explanation of it; that file is what the tooling reads. Fill `pages[]` there, not here.
+
+```bash
+npm run redirects:generate -- --strict
+```
+
+writes `build/redirects/_redirects`, `vercel.redirects.json`, and `.htaccess` — one per candidate host. `--strict` refuses to generate while the canonical domain is null (D-03) or the page list is empty (D-01), and it also rejects self-redirects, duplicate rules, non-301 statuses, and A→B→C chains.
+
+Output lands in `build/redirects/` (gitignored), not `public/`, so production redirects can never end up inside a preview build.
+
+The deploy target is not yet fixed (`CLAUDE.md`: Hostinger, or Vercel/Netlify), which is exactly why all three formats are generated from one source. **Do not hand-maintain any of them.**
 
 **Netlify / Hostinger static** — `public/_redirects`:
 
@@ -113,13 +123,19 @@ The deploy target is not yet fixed (`CLAUDE.md`: Hostinger, or Vercel/Netlify). 
 Redirect 301 /old-path /pools
 ```
 
-No redirect file is committed yet, deliberately: shipping one built against a guessed domain would create redirect loops the moment D-03 resolves differently.
+No *generated* redirect file is committed, deliberately: shipping one built against a guessed domain would create redirect loops the moment D-03 resolves differently.
 
 ---
 
 ## Step 5 — Verification (AC-7.1 / AC-7.2)
 
-Before announcing cutover, and again 24h after:
+Automated, against a live host:
+
+```bash
+npm run redirects:verify -- --base https://CANONICAL-DOMAIN
+```
+
+Run it against staging before DNS, against production immediately after, and again 24h later. It asserts points 1–6 below. The rest are manual.
 
 1. Every URL in the Step 1 inventory returns **301 → 200**, in one hop. Two-hop chains (`http://old` → `https://old` → `https://new`) leak a measurable amount of equity and are avoidable by ordering the rules correctly.
 2. No redirect returns 302. A temporary redirect tells Google to keep the old URL indexed.

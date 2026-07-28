@@ -1,9 +1,14 @@
 ---
 /**
  * Footer.astro — brand, contact (from env), and the four-vertical accent line.
- * Copy from content/site-copy.ts; contact from site config.
+ * Copy from content/site-copy.ts; contact and legal destinations from site config.
+ *
+ * Phase 5: the legal line is real links, not text. A site that captures SMS consent needs a
+ * reachable privacy policy — it is a carrier requirement for A2P 10DLC registration, not a
+ * formality. URLs are env-driven and currently point at where the policies actually live
+ * (apexcoatinglbk.com); see the D-03 note in lib/site.ts before that domain is redirected.
  */
-import { site } from '@lib/site';
+import { site, legalUrls } from '@lib/site';
 import { footer } from '@content/site-copy';
 import LionMark from './LionMark.astro';
 ---
@@ -31,7 +36,26 @@ import LionMark from './LionMark.astro';
     </div>
     <div class="foot-bottom">
       <span>{footer.copyright}</span>
-      <span>{footer.legalLinks}</span>
+      <span class="legal">
+        <a href={legalUrls.privacy}>{footer.privacyLabel}</a>
+        <span aria-hidden="true">·</span>
+        <a href={legalUrls.terms}>{footer.termsLabel}</a>
+      </span>
     </div>
   </div>
 </footer>
+
+<style>
+  .legal {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  /* The footer's small text is #948d83 on #141517 — already tuned to clear AA (AC-6.4).
+     Underline the legal links so they read as links at 11px, where colour alone is a weak
+     affordance and these two specifically must be findable. */
+  .legal a {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+</style>

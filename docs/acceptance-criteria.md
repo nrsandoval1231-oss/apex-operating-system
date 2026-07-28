@@ -60,9 +60,23 @@ Added with the pages themselves — the PRD required per-vertical SEO and per-ve
 
 ## AC-7 · Migration safety (Phase 5, gated)
 
-- [ ] **AC-7.1** Every URL from the old site maps to a new URL or an intentional 301. No orphaned rankings.
-- [ ] **AC-7.2** The two legacy domains 301 to the canonical domain once D-03 is resolved.
-- [ ] **AC-7.3** Access to domain/hosting/GTM/GA4/Meta is confirmed transferred (D-01) before DNS cutover.
+The *checks* are built and runnable (`npm run redirects:verify -- --base https://DOMAIN`); the *inputs* are blocked. None of these can pass until a human closes D-01 and D-03 — see `docs/launch-checklist.md`.
+
+- [ ] **AC-7.1** Every URL from the old site maps to a new URL or an intentional 301. No orphaned rankings. *(BLOCKED: D-01. `config/redirects.json` `pages[]` is empty — the old-URL inventory needs Search Console + GA4 access. The verifier fails loudly on an empty map rather than reporting a vacuous pass.)*
+- [ ] **AC-7.2** The two legacy domains 301 to the canonical domain once D-03 is resolved. *(BLOCKED: D-03. Both wildcard rules are written and generate correctly; they have no destination until the canonical domain is chosen.)*
+- [ ] **AC-7.3** Access to domain/hosting/GTM/GA4/Meta is confirmed transferred (D-01) before DNS cutover. *(BLOCKED: D-01. Checklist table in `docs/launch-checklist.md` Step 1.)*
+
+## AC-10 · Launch tooling (Phase 5)
+
+Added with the tooling. These verify the *machinery* is correct, independent of whether the blocked inputs have arrived.
+
+- [x] **AC-10.1** `npm run preflight` FAILS a build that would ship `robots.txt: Disallow: /`, and PASSES one built with `PUBLIC_ENV=production`. *(Verified both directions.)*
+- [x] **AC-10.2** `preflight` fails a build whose output still references the test lead webhook (Hard rule 6 / AC-1.7). *(Verified — caught on the default dev build.)*
+- [x] **AC-10.3** `preflight` fails on a duplicate or missing `<title>`/description/canonical, or on any page without exactly one `<h1>`.
+- [x] **AC-10.4** `redirects:generate --strict` refuses to emit while the canonical domain is null or the page map is empty, and rejects self-redirects, duplicate rules, non-301 statuses, and redirect chains.
+- [x] **AC-10.5** `redirects:verify` asserts single-hop 301s to live 200s, and fails on a `Disallow: /` robots.txt or an empty redirect map. *(Verified against the dev server: 6/8, failing exactly on the two expected conditions.)*
+- [x] **AC-10.6** Generated redirect files land in gitignored `build/redirects/`, never in `public/`, so production redirects cannot ship inside a preview build.
+- [x] **AC-10.7** The footer links to a real privacy policy and terms URL (env-driven), not plain text — required for A2P 10DLC registration given the site captures SMS consent.
 
 ## AC-9 · Imagery (D-20)
 

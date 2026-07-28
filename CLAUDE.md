@@ -41,6 +41,16 @@ The palette is approximated from Apex's charcoal-lion identity. If the maintaine
 
 ---
 
+## Before any production deploy
+
+```bash
+PUBLIC_ENV=production npm run build && npm run preflight
+```
+
+`preflight` fails the build if it would ship `Disallow: /`, still point at the test lead
+webhook, or carry duplicate/missing SEO heads. A build that is wrong in these ways looks
+completely normal in a browser — that is the whole reason the script exists.
+
 ## What "done" means
 
 Work is not done until it passes `docs/acceptance-criteria.md`. Those are written as checkable assertions. Run them (or walk the manual checklist) before reporting a task complete. If you added a feature with no corresponding acceptance criterion, add one.
@@ -52,6 +62,8 @@ Work is not done until it passes `docs/acceptance-criteria.md`. Those are writte
 - `docs/acceptance-criteria.md` — pass/fail assertions; definition of done
 - `docs/decisions.md` — locked decisions and `⚠ BLOCKED` gates that need a human
 - `docs/redirect-map.md` — old→new URL parity plan for cutover (Phase 4/5; BLOCKED on D-03)
+- `docs/launch-checklist.md` — the Phase 5 cutover runbook: access, DNS, verification, rollback
+- `config/redirects.json` — machine-readable redirect map; `npm run redirects:generate` emits the host files
 - `.env.example` — every credential the build needs. Copy to `.env` before starting.
 - `reference/apex-mockup.html` — the approved visual + interaction spec. Open it. The final build should match its layout, copy, and the capture-panel behavior. It is vanilla HTML; your job is to rebuild it in the stack above, not to ship it as-is.
 

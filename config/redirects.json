@@ -1,0 +1,47 @@
+{
+  "$comment": [
+    "THE redirect map. Single source of truth for cutover (AC-7.1, AC-7.2).",
+    "",
+    "`npm run redirects:generate` reads this file and writes the host-specific redirect",
+    "files. Never hand-edit those outputs — edit here and regenerate, or the two will",
+    "drift and the drift will only surface as lost rankings weeks after launch.",
+    "",
+    "`npm run redirects:verify -- --base https://DOMAIN` hits every `from` live and asserts",
+    "a single-hop 301 to a 200. Run it against staging before DNS, and against production",
+    "immediately after.",
+    "",
+    "STATUS: the `pages` array is EMPTY and that is not an oversight — it cannot be filled",
+    "from inside this repo. It requires the old-URL inventory described in Step 1 of",
+    "docs/redirect-map.md (crawl + Search Console + GA4 + old sitemap), and Search Console",
+    "and GA4 access are BLOCKED on D-01. Launching with `pages` empty throws away every",
+    "ranking the old site holds.",
+    "",
+    "TODO(BLOCKED: D-01): fill `pages` from the old-URL inventory.",
+    "TODO(BLOCKED: D-03): set `canonicalDomain` — every rule below is written against it."
+  ],
+
+  "canonicalDomain": null,
+
+  "legacyDomains": [
+    {
+      "domain": "apexdesignandrenovation.com",
+      "to": "/renovation",
+      "note": "Wildcard. Sends the visitor to the vertical the domain represents, not to the four-way router they already answered by typing this domain. Applied LAST — any deep page of this domain that ranks individually gets its own row in `pages` first."
+    },
+    {
+      "domain": "apexcoatinglbk.com",
+      "to": "/coating",
+      "note": "Wildcard, same rule. NOTE: this domain currently hosts the legal pages (privacy/terms) — confirm where those live post-cutover before wildcarding it, or the SMS-consent privacy policy 302s into a sales page. See docs/launch-checklist.md."
+    }
+  ],
+
+  "pages": [],
+
+  "$pagesSchema": {
+    "$comment": "Shape of each entry in `pages`. Paths are site-relative, leading slash, verbatim from the old site INCLUDING any trailing slash.",
+    "from": "/old-path/",
+    "to": "/pools",
+    "status": 301,
+    "note": "optional — why this destination"
+  }
+}

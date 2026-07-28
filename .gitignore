@@ -1,6 +1,10 @@
 # build output
 dist/
 .output/
+# generated redirect files (scripts/generate-redirects.mjs) — config/redirects.json is the
+# committed source; the host-specific outputs are built at deploy time so a stale copy can
+# never ship, and so production redirects never end up inside a preview build.
+build/
 
 # dependencies
 node_modules/

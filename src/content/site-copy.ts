@@ -50,5 +50,12 @@ export const footer = {
   verticalsLine: 'POOLS · COATING · RENOVATION · SERVICE',
   financing: 'Financing via Lyon Financial',
   copyright: '© Apex 2026 · All rights reserved',
-  legalLinks: 'Privacy Policy · Terms & Conditions',
+  /**
+   * Labels only. The DESTINATIONS come from env (PUBLIC_PRIVACY_URL / PUBLIC_TERMS_URL) —
+   * see lib/site.ts. Phase 5 turned these from plain text into real links: the site collects
+   * SMS consent, and carriers require a reachable privacy policy that names SMS before an
+   * A2P 10DLC campaign is approved. The old text-only version satisfied nothing.
+   */
+  privacyLabel: 'Privacy Policy',
+  termsLabel: 'Terms & Conditions',
 } as const;
