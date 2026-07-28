@@ -1,0 +1,17 @@
+﻿{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "proposal-engine",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["-y", "serve", "apex-proposal-engine", "-l", "4173"],
+      "port": 4173
+    },
+    {
+      "name": "apex-website",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--prefix", "apex-website/apex-website"],
+      "port": 4321
+    }
+  ]
+}
