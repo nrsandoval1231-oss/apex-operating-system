@@ -12,9 +12,9 @@ and the reverse-engineered `reference/whitaker-oasis-quantity-takeoff.md`.
 | File | What it is |
 |---|---|
 | `engine.mjs` | Pure, dependency-free takeoff engine: geometry → assemblies → quantities → schedule → pricing → budget → hours → Lever B. Every formula cites its source. |
-| `engine.test.mjs` | 87 checks validating the engine against the real Whitaker numbers. `node engine.test.mjs`. |
+| `engine.test.mjs` | 90 checks covering formulas, invariants, calibration fixtures, coverage, and circularity warnings. `node engine.test.mjs`. |
 | `report.mjs` | CLI takeoff report — the substantiation test made runnable. `node report.mjs whitaker` / `sample` / `18x36 --deep 7 --spa 8x8`. |
-| `calibrate.mjs` | Back-solves the unit-cost library from his real line dollars. Re-run whenever geometry changes. |
+| `calibrate.mjs` | **Disabled for pricing decisions pending repair.** The current script mixes unlike labor/material bases and can produce unsafe rate guidance. |
 | `index.html` | The interactive builder UI. Live recompute, derived calendar, coverage, back-test, gated Lever-B panel, CSV/JSON export. |
 
 ## Apex build standards (confirmed 2026-07-26)
@@ -58,12 +58,13 @@ Coping $7,550 · Deck $5,000 · Plaster $8,750. Lines extend on the **rounded** 
 `qty × unit cost = extended` exactly — otherwise the substantiation test fails on the customer's
 own arithmetic.
 
-## Milestone 4 — the back-test passes
+## Calibration replay — not independent validation
 
 `node backtest.mjs` compares the model against **his real estimate, line for line**
 (`whitaker-actual.mjs`, extracted from the customer PDF; all 13 section subtotals and the grand
-total reconcile, which is what verifies the read). Nothing is back-solved, so the gate means
-something:
+total reconcile, which verifies the read). Whitaker also seeded the current unit rates, so the
+modelled-code match is a calibration replay. It proves arithmetic traceability but does **not**
+prove predictive accuracy:
 
 | Code | Category | Model | Actual | |
 |---|---|---|---|---|
@@ -73,11 +74,12 @@ something:
 | 800 | Pool Finishes | $20,750 | $20,750 | exact |
 | 1000 | Pool Deck | $10,001 | $10,000 | exact |
 | 1300 | Additional Upgrades | $7,000 | $7,000 | exact |
-| | **modelled codes** | **$69,653** | **$69,650** | **0.0%** |
+| | **modelled codes** | **$69,653** | **$69,650** | **calibrated** |
 
-Enter his direct-entry lines too and the whole job lands at **$116,958 against $116,955.18** —
-89.7% of job cost substantiated, with only the 10.3% of remaining allowances carrying no quantity
-(down from 14.5% once the Concrete Diamonds allowance was superseded by the deck takeoff).
+The model currently reaches **$69,653 against $116,955.18**. Its parametric takeoff substantiates
+49.3% of the reference job and tracked allowances add 10.3%; **$47,302 / 40.4% remains unmodelled**
+in direct-entry cost codes seeded at zero. The whole-job Milestone 4 gate therefore fails until
+those codes carry real quotes. A second completed job is required for independent validation.
 
 Four gaps had to close to get there, all found by the back-test:
 
