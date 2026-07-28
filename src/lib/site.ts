@@ -39,6 +39,16 @@ export const site = {
   ),
 } as const;
 
+/**
+ * Site-relative path to the social share image (og:image / twitter:image).
+ *
+ * Empty by default and BLOCKED on D-20 — there is no approved photography, and a broken or
+ * placeholder OG image gets cached by every social scraper that touches a link. BaseLayout
+ * omits the image tags entirely while this is empty, which degrades cleanly to a text card.
+ * TODO(BLOCKED: D-20): set PUBLIC_OG_IMAGE (1200×630) once real imagery exists.
+ */
+export const ogImageUrl = envOr('PUBLIC_OG_IMAGE', '');
+
 /** True when this is a real production build (gates live vs test webhook — Phase 3). */
 export const isProduction = site.env === 'production';
 

@@ -2,13 +2,17 @@
 /**
  * Header.astro — sticky nav: brand, phone (from env), and a Get a Quote CTA.
  * Contact details come from site config (env), never hardcoded.
+ *
+ * Phase 4: the brand links to `/`, not `#top` — the site is multi-page now, and on a vertical
+ * landing page the logo must take you home. `#quote` stays an anchor because every page,
+ * including each vertical page, renders its own quote section.
  */
 import { site } from '@lib/site';
 import LionMark from './LionMark.astro';
 ---
 <header>
   <div class="wrap nav">
-    <a class="brand" href="#top" aria-label="Apex Gets It Done — home">
+    <a class="brand" href="/" aria-label="Apex Gets It Done — home">
       <LionMark size={38} class="lion" />
       <div>
         <div class="wm">APEX</div>

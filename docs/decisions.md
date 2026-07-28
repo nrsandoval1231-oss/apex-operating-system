@@ -10,6 +10,8 @@ Two kinds of entries: **LOCKED** (settled — build to these, don't relitigate) 
 
 **D-04 · Astro + React islands.** Rationale in `CLAUDE.md`. Confirm with maintainer only if there's a reason it can't deploy to their environment.
 
+**D-04a · `@astrojs/react` is pinned to the v4 line, to match Astro 4.** The repo had `@astrojs/react@6`, which targets Astro 5. The mismatch broke `astro dev` completely — Vite fell through to esbuild's TypeScript loader on `.astro` files and every route 500'd with `Expected "}" but found ":"`. `astro build` happened to still work, which is why it went unnoticed through Phases 1–3. v4 is the newest line that supports both Astro 4 and React 19 (v3 caps at React 18). This is a compatibility repair, not a stack change — Astro 4 + React islands is unchanged per D-04. *If the maintainer wants to move to Astro 5, that is a separate, deliberate upgrade.*
+
 **D-05 · Site hands off to n8n; owns nothing downstream.** No CRM writes, no auto-response, no Meta conversion from the site. Scope ends at the webhook.
 
 **D-06 · Consent is per-vertical and captured verbatim.** Non-negotiable for TCPA. See AC-3.

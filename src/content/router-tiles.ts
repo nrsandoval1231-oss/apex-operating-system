@@ -14,8 +14,13 @@ export interface RouterTile {
   readonly vertical: Vertical;
   /** Small caps subtitle under the tile title, e.g. "Build · Remodel · Feature". */
   readonly subtitle: string;
-  /** In-page anchor to the vertical's section. Relative — D-03 canonical domain is BLOCKED. */
-  readonly href: string;
+  /*
+   * NOTE — there is deliberately no `href` field. Phase 4 gave every vertical its own landing
+   * page, and a tile's destination is now derived in Hero.astro as `/${cfg.slug}` from
+   * verticals.ts. Storing the URL here would be a second list to keep in sync with the slugs,
+   * and its failure mode — a tile silently pointing at the wrong vertical — is exactly the
+   * routing bug this site exists to eliminate.
+   */
   /** Call-to-action label on the tile. */
   readonly cta: string;
   /** Image manifest slot rendered behind the tile. */
@@ -27,28 +32,24 @@ export const ROUTER_TILES: Readonly<Record<Vertical, RouterTile>> = {
   'Designer Pools': {
     vertical: 'Designer Pools',
     subtitle: 'Build · Remodel · Feature',
-    href: '#pools',
     cta: 'Explore',
     image: 'tile-pools',
   },
   'Concrete Coating': {
     vertical: 'Concrete Coating',
     subtitle: 'Garages · Patios · Shops',
-    href: '#more',
     cta: 'Explore',
     image: 'tile-coating',
   },
   'Design & Renovation': {
     vertical: 'Design & Renovation',
     subtitle: 'Kitchen · Bath · Additions',
-    href: '#more',
     cta: 'Explore',
     image: 'tile-renovation',
   },
   'Pool Service': {
     vertical: 'Pool Service',
     subtitle: 'Clean · Repair · Maintain',
-    href: '#more',
     cta: 'Explore',
     image: 'tile-service',
   },

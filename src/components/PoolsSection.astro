@@ -36,8 +36,11 @@ const cfg = getVerticalConfig(pools.vertical);
 
         <div class="badge disp">{pools.warrantyBadge} <b>{pools.warrantyEmphasis}</b></div>
         <div class="fin">{pools.financing}</div>
-        <div style="margin-top:26px">
+        <div class="pool-cta">
           <a class="btn" href="#quote" data-preselect={pools.vertical}>{pools.cta}</a>
+          {/* Phase 4 internal link into the Designer Pools landing page — the deeper,
+              indexable version of this section (process, FAQ, service area). */}
+          <a class="pool-more" href={`/${cfg.slug}`}>See how we build pools &rarr;</a>
         </div>
       </div>
 
@@ -47,3 +50,24 @@ const cfg = getVerticalConfig(pools.vertical);
     </div>
   </div>
 </section>
+
+<style>
+  .pool-cta {
+    margin-top: 26px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 22px;
+  }
+  .pool-more {
+    font-family: Oswald, sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 14px;
+    color: var(--pool);
+    border-bottom: 1.5px solid transparent;
+  }
+  .pool-more:hover {
+    border-bottom-color: var(--pool);
+  }
+</style>

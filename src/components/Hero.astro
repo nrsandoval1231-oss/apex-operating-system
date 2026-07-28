@@ -6,6 +6,11 @@
  * token (VERTICAL_CONFIG.accentVar) and carrying content from ROUTER_TILES. The vertical
  * name is rendered as the exact enum string (AC-2.4). Each tile carries `data-preselect`
  * with the exact vertical so Phase 3 can pre-select it in the quote form (AC-2.2).
+ *
+ * Phase 4: a tile now links to that vertical's LANDING PAGE (`/${cfg.slug}`) instead of an
+ * in-page anchor. The destination is derived from the slug in verticals.ts, never stored
+ * alongside the tile copy — one list of URLs, so a tile cannot drift onto the wrong vertical.
+ * The tile still sets the preselect, so a visitor who lands on /pools finds the form ready.
  */
 import { hero } from '@content/site-copy';
 import { VERTICAL_LIST } from '@content/verticals';
@@ -42,7 +47,7 @@ import ImageSlot from './ImageSlot.astro';
             <li>
               <a
                 class="tile"
-                href={tile.href}
+                href={`/${cfg.slug}`}
                 style={`--tint:var(${cfg.accentVar})`}
                 data-preselect={cfg.vertical}
               >

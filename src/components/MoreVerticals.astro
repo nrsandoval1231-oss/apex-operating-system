@@ -36,7 +36,14 @@ import ImageSlot from './ImageSlot.astro';
               </ul>
               <div class="foot">
                 <span class="minibadge">{card.minibadge}</span>
-                <a class="tlink" href="#quote" data-preselect={card.vertical}>{card.cta}</a>
+                {/* Phase 4: the card's own quote CTA still jumps to the form on this page
+                    (pre-selecting the vertical), while "Details" hands the visitor to that
+                    vertical's landing page — the internal link that makes those pages
+                    reachable and crawlable from the home page. */}
+                <span class="vlinks">
+                  <a class="tlink" href={`/${cfg.slug}`}>Details</a>
+                  <a class="tlink" href="#quote" data-preselect={card.vertical}>{card.cta}</a>
+                </span>
               </div>
             </div>
           </article>
@@ -45,3 +52,11 @@ import ImageSlot from './ImageSlot.astro';
     </div>
   </div>
 </section>
+
+<style>
+  .vlinks {
+    display: inline-flex;
+    align-items: center;
+    gap: 18px;
+  }
+</style>

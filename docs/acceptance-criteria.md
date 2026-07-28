@@ -34,11 +34,12 @@ Definition of done. Written as pass/fail assertions. A task is not complete unti
 
 ## AC-5 · Performance + SEO
 
-- [ ] **AC-5.1** Lighthouse Performance ≥ 90 and SEO ≥ 95 on the home page, mobile.
-- [ ] **AC-5.2** Each vertical page has a unique `<title>`, meta description, and OG tags.
-- [ ] **AC-5.3** Exactly one `<h1>` per page; heading order is not skipped.
-- [ ] **AC-5.4** `sitemap.xml` and `robots.txt` exist and reference the canonical domain.
-- [ ] **AC-5.5** `lead_submit` fires to GA4/GTM with `vertical` and `source` parameters on a real submit.
+- [ ] **AC-5.1** Lighthouse Performance ≥ 90 and SEO ≥ 95 on the home page, mobile. *(Not yet measured — needs a served build.)*
+- [x] **AC-5.2** Each vertical page has a unique `<title>`, meta description, and OG tags. *(Verified against `dist/` — 5 pages, 5 distinct titles/descriptions/canonicals. `og:image` is intentionally absent until D-20 resolves; the card degrades to `summary`.)*
+- [x] **AC-5.3** Exactly one `<h1>` per page; heading order is not skipped. *(Verified: `h1=1` on all 5 built pages.)*
+- [x] **AC-5.4** `sitemap.xml` and `robots.txt` exist and reference the canonical domain. *(Both generated from `PUBLIC_SITE_URL`. Note the domain itself is still BLOCKED on D-03.)*
+- [ ] **AC-5.5** `lead_submit` fires to GA4/GTM with `vertical` and `source` parameters on a real submit. *(Push is wired in QuoteForm and the dataLayer stub always renders; end-to-end confirmation needs a real container — gated on D-01.)*
+- [x] **AC-5.6** A non-production build loads **no** tag container and serves `robots.txt` with `Disallow: /`. *(Verified both ways: default build has 0 `googletagmanager` references and disallows crawling; a `PUBLIC_ENV=production` build emits the GTM snippet, the `<noscript>` iframe, and `Allow: /` + the sitemap reference.)*
 
 ## AC-6 · Accessibility floor
 
@@ -46,6 +47,16 @@ Definition of done. Written as pass/fail assertions. A task is not complete unti
 - [ ] **AC-6.2** Form inputs have associated labels; the service selector is operable by keyboard and screen reader.
 - [ ] **AC-6.3** `prefers-reduced-motion` is respected (no animation when set).
 - [ ] **AC-6.4** Color contrast meets WCAG AA for text.
+
+## AC-8 · Vertical landing pages (Phase 4)
+
+Added with the pages themselves — the PRD required per-vertical SEO and per-vertical ad landing, which a single-page site cannot provide.
+
+- [x] **AC-8.1** A route exists at `/pools`, `/coating`, `/renovation`, `/service`, generated from `VERTICAL_LIST` — adding a vertical to the enum produces its page, sitemap entry, and schema without a second edit.
+- [ ] **AC-8.2** Landing on a vertical page opens the quote form with **that** vertical already selected, before any click (AC-2.2), and the selection is still changeable (AC-2.3). *(Partially verified. Confirmed in a live dev server that `/coating` sets `window.__apexPreselect === "Concrete Coating"` in markup order **before** the island, which is the input QuoteForm reads on mount. The final hop — the mounted form reflecting it — could NOT be exercised: the preview browser pane runs with `document.visibilityState === "hidden"`, so the `client:visible` IntersectionObserver never fires and the island never hydrates. Verify manually in a real browser, or with the Playwright test below, before calling this done.)*
+- [x] **AC-8.3** Each vertical page's visible FAQ and its `FAQPage` JSON-LD are generated from the same content object — they cannot drift apart.
+- [x] **AC-8.4** Exactly one `LocalBusiness` node exists across the whole site (home page); vertical pages emit `Service` nodes that reference it by `@id`.
+- [x] **AC-8.5** Every vertical page is reachable from the home page by a crawlable `<a href>` — router tile and, for the three shallow verticals, a "Details" link on the card.
 
 ## AC-7 · Migration safety (Phase 5, gated)
 
@@ -80,5 +91,19 @@ test('lead payload is complete and correctly tagged', async ({ page }) => {
   expect(body.consent_text).toContain('Apex Concrete Coating');
   expect(body.phone).toBe('8065550142');
   expect(body.lead_id).toBeTruthy();
+});
+
+// AC-8.2 — the check the preview pane cannot run (client:visible needs a visible viewport).
+test('a vertical landing page opens with its own vertical pre-selected', async ({ page }) => {
+  await page.goto('/coating');
+  await page.getByRole('button', { name: 'Get my quote →' }).scrollIntoViewIfNeeded();
+  await expect(page.getByRole('button', { name: 'Concrete Coating' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  await expect(page.locator('.consent')).toContainText('Apex Concrete Coating');
+  // ...and it is still changeable (AC-2.3).
+  await page.getByRole('button', { name: 'Pool Service' }).click();
+  await expect(page.locator('.consent')).toContainText('Apex Pool Service');
 });
 ```

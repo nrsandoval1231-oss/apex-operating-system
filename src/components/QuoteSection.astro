@@ -7,17 +7,44 @@
  *
  * Webhook + contact come from site config (env). Hard rule 6 / AC-1.7: leadWebhookUrl resolves
  * to the TEST endpoint unless PUBLIC_ENV=production.
+ *
+ * Phase 4: `preselect` lets a vertical landing page open with its own vertical already chosen
+ * (AC-2.2) without requiring a click. It is set BEFORE the island hydrates, which is why it is
+ * an `is:inline` script in markup order rather than a component prop — the island reads
+ * window.__apexPreselect on mount. The user can still change the selection (AC-2.3).
  */
 import { sections } from '@content/site-copy';
 import { site, leadWebhookUrl } from '@lib/site';
+import { isVertical, type Vertical } from '@content/verticals';
 import QuoteForm from './QuoteForm.tsx';
+
+interface Props {
+  /** Vertical to pre-select on page load. Omit on the home page (no vertical implied yet). */
+  preselect?: Vertical;
+  /** Override the section heading — vertical pages ask a narrower question. */
+  heading?: string;
+  lead?: string;
+}
+
+const { preselect, heading, lead } = Astro.props;
+
+// Fail loud rather than silently mis-tagging a lead: an invalid preselect would ship a form
+// whose vertical doesn't match the page it's on (Hard rule 1 / AC-2.4).
+if (preselect !== undefined && !isVertical(preselect)) {
+  throw new Error(`QuoteSection preselect is not a valid vertical: ${JSON.stringify(preselect)}`);
+}
 ---
+{preselect && (
+  <script is:inline define:vars={{ preselect }}>
+    window.__apexPreselect = preselect;
+  </script>
+)}
 <section id="quote">
   <div class="wrap">
     <div class="sec-head">
       <p class="eyebrow">{sections.quote.eyebrow}</p>
-      <h2>{sections.quote.heading}</h2>
-      <p class="lead">{sections.quote.lead}</p>
+      <h2>{heading ?? sections.quote.heading}</h2>
+      <p class="lead">{lead ?? sections.quote.lead}</p>
     </div>
 
     <div class="qgrid">

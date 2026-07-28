@@ -51,6 +51,7 @@ Work is not done until it passes `docs/acceptance-criteria.md`. Those are writte
 - `docs/data-contract.md` — the lead object schema and attribution capture rules (the spine)
 - `docs/acceptance-criteria.md` — pass/fail assertions; definition of done
 - `docs/decisions.md` — locked decisions and `⚠ BLOCKED` gates that need a human
+- `docs/redirect-map.md` — old→new URL parity plan for cutover (Phase 4/5; BLOCKED on D-03)
 - `.env.example` — every credential the build needs. Copy to `.env` before starting.
 - `reference/apex-mockup.html` — the approved visual + interaction spec. Open it. The final build should match its layout, copy, and the capture-panel behavior. It is vanilla HTML; your job is to rebuild it in the stack above, not to ship it as-is.
 
