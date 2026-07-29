@@ -51,17 +51,109 @@ export const COST_CODES = [
   { code: 9999, name: 'Unallocated residual', status: 'residual' },
 ];
 
+const isFiniteNumber = (value) => typeof value === 'number' && Number.isFinite(value);
+const positive = (value) => isFiniteNumber(value) && value > 0;
+const nonNegative = (value) => isFiniteNumber(value) && value >= 0;
+
+export class ProposalInputError extends Error {
+  constructor(errors) {
+    super(`Proposal input refused:\n- ${errors.join('\n- ')}`);
+    this.name = 'ProposalInputError';
+    this.errors = errors;
+  }
+}
+
+/** Validate every customer- or estimator-entered value before geometry or money is calculated. */
+export function validateProposalInputs(inputs) {
+  const errors = [];
+  if (!inputs || typeof inputs !== 'object' || Array.isArray(inputs)) {
+    return ['inputs must be an object.'];
+  }
+
+  if (!positive(inputs.length)) errors.push('length must be a positive finite number.');
+  if (!positive(inputs.width)) errors.push('width must be a positive finite number.');
+
+  if (inputs.avgDepth != null && !positive(inputs.avgDepth)) errors.push('avgDepth must be a positive finite number.');
+  if (inputs.depthShallow != null && !positive(inputs.depthShallow)) errors.push('depthShallow must be a positive finite number.');
+  if (inputs.depthDeep != null && !positive(inputs.depthDeep)) errors.push('depthDeep must be a positive finite number.');
+  if (inputs.depthShallow != null && inputs.depthDeep != null && inputs.depthDeep < inputs.depthShallow) {
+    errors.push('depthDeep must be greater than or equal to depthShallow.');
+  }
+
+  if (inputs.spa != null) {
+    for (const key of ['length', 'width', 'depth']) {
+      const value = inputs.spa[key] ?? APEX_STANDARDS.spa[key];
+      if (!positive(value)) errors.push(`spa.${key} must be a positive finite number.`);
+    }
+    if (inputs.spa.seatArea != null && !nonNegative(inputs.spa.seatArea)) {
+      errors.push('spa.seatArea must be a non-negative finite number.');
+    }
+  }
+
+  for (const key of ['stepsArea', 'deckBorderFt', 'deckSqFt', 'equipmentPadDistanceFt', 'buildWeeks', 'visitsPerWeek', 'hoursPerVisit']) {
+    if (inputs[key] != null && !nonNegative(inputs[key])) errors.push(`${key} must be a non-negative finite number.`);
+  }
+  if (inputs.feeRate != null && !nonNegative(inputs.feeRate)) errors.push('feeRate must be a non-negative finite number.');
+  if (inputs.actualJobCost != null && !positive(inputs.actualJobCost)) errors.push('actualJobCost must be a positive finite number.');
+
+  if (inputs.directLines != null) {
+    if (!Array.isArray(inputs.directLines)) {
+      errors.push('directLines must be a list.');
+    } else {
+      inputs.directLines.forEach((line, index) => {
+        if (!line || typeof line !== 'object') {
+          errors.push(`directLines[${index}] must be an object.`);
+          return;
+        }
+        if (!isFiniteNumber(line.code)) errors.push(`directLines[${index}].code must be a finite number.`);
+        if (typeof line.name !== 'string' || !line.name.trim()) errors.push(`directLines[${index}].name is required.`);
+        if (!nonNegative(line.extended)) errors.push(`directLines[${index}].extended must be a non-negative finite number.`);
+        if (line.scopeStatus != null && !['quoted', 'not-applicable', 'unresolved'].includes(line.scopeStatus)) {
+          errors.push(`directLines[${index}].scopeStatus must be quoted, not-applicable, or unresolved.`);
+        }
+      });
+    }
+  }
+
+  if (inputs.allowances != null) {
+    if (!Array.isArray(inputs.allowances)) {
+      errors.push('allowances must be a list.');
+    } else {
+      inputs.allowances.forEach((allowance, index) => {
+        if (!allowance || typeof allowance !== 'object') {
+          errors.push(`allowances[${index}] must be an object.`);
+          return;
+        }
+        if (typeof allowance.name !== 'string' || !allowance.name.trim()) errors.push(`allowances[${index}].name is required.`);
+        if (!nonNegative(allowance.amount)) errors.push(`allowances[${index}].amount must be a non-negative finite number.`);
+      });
+    }
+  }
+
+  return errors;
+}
+
+const refuseIfInvalid = (errors) => {
+  if (errors.length) throw new ProposalInputError(errors);
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Pricing — Foundation §1. Markup, not margin.
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** Gross margin implied by a cost-plus FEE (markup) rate. 0.30 → 0.2308 (Foundation §1). */
 export function marginFromFee(feeRate) {
+  refuseIfInvalid(nonNegative(feeRate) ? [] : ['feeRate must be a non-negative finite number.']);
   return feeRate / (1 + feeRate);
 }
 
 /** The disclosed FEE rate needed to net a target true margin. 0.30 margin → 0.4286 fee. */
 export function feeForMargin(targetMargin) {
+  refuseIfInvalid(
+    isFiniteNumber(targetMargin) && targetMargin >= 0 && targetMargin < 1
+      ? []
+      : ['targetMargin must be a finite number from 0 (inclusive) to 1 (exclusive).'],
+  );
   return targetMargin / (1 - targetMargin);
 }
 
@@ -70,6 +162,10 @@ export function feeForMargin(targetMargin) {
  * fee is charged on — Foundation §6). Returns the customer-facing revenue and the TRUE margin.
  */
 export function price(cost, feeRate) {
+  const errors = [];
+  if (!nonNegative(cost)) errors.push('cost must be a non-negative finite number.');
+  if (!nonNegative(feeRate)) errors.push('feeRate must be a non-negative finite number.');
+  refuseIfInvalid(errors);
   const fee = cost * feeRate;
   const revenue = cost + fee;
   return {
@@ -126,6 +222,11 @@ export const APEX_STANDARDS = {
  * independent check on the 4 ft rule. An explicit `deckSqFt` still overrides.
  */
 export function deckArea({ perimeter, deckBorderFt, deckSqFt }) {
+  const errors = [];
+  if (!nonNegative(perimeter)) errors.push('perimeter must be a non-negative finite number.');
+  if (deckSqFt != null && !nonNegative(deckSqFt)) errors.push('deckSqFt must be a non-negative finite number.');
+  if (deckBorderFt != null && !nonNegative(deckBorderFt)) errors.push('deckBorderFt must be a non-negative finite number.');
+  refuseIfInvalid(errors);
   if (deckSqFt != null) return { sqFt: deckSqFt, derived: false, borderFt: null };
   const w = deckBorderFt ?? APEX_STANDARDS.deckBorderFt;
   return { sqFt: w * perimeter + 4 * w ** 2, derived: true, borderFt: w };
@@ -150,6 +251,16 @@ export function poolGeometry({
   stepsArea,
   slopeFactor,
 }) {
+  const errors = [];
+  if (!positive(length)) errors.push('length must be a positive finite number.');
+  if (!positive(width)) errors.push('width must be a positive finite number.');
+  if (avgDepth != null && !positive(avgDepth)) errors.push('avgDepth must be a positive finite number.');
+  if (depthShallow != null && !positive(depthShallow)) errors.push('depthShallow must be a positive finite number.');
+  if (depthDeep != null && !positive(depthDeep)) errors.push('depthDeep must be a positive finite number.');
+  if (depthShallow != null && depthDeep != null && depthDeep < depthShallow) errors.push('depthDeep must be greater than or equal to depthShallow.');
+  if (stepsArea != null && !nonNegative(stepsArea)) errors.push('stepsArea must be a non-negative finite number.');
+  if (slopeFactor != null && !positive(slopeFactor)) errors.push('slopeFactor must be a positive finite number.');
+  refuseIfInvalid(errors);
   // Apex builds the same 3.5 → 6.0 ft slope on every pool, so a bare length × width is a
   // complete depth spec. An explicit avgDepth or profile still wins.
   if (avgDepth == null && depthShallow == null && depthDeep == null) {
@@ -199,6 +310,12 @@ export function spaGeometry({
   depth = APEX_STANDARDS.spa.depth,
   seatArea,
 }) {
+  const errors = [];
+  if (!positive(length)) errors.push('spa.length must be a positive finite number.');
+  if (!positive(width)) errors.push('spa.width must be a positive finite number.');
+  if (!positive(depth)) errors.push('spa.depth must be a positive finite number.');
+  if (seatArea != null && !nonNegative(seatArea)) errors.push('spa.seatArea must be a non-negative finite number.');
+  refuseIfInvalid(errors);
   const surfaceArea = length * width;
   const perimeter = 2 * (length + width);
   // Bench seat wraps most of the spa: calibrated to Whitaker (25 sq ft ÷ 49 = 0.51).
@@ -237,7 +354,8 @@ export function combinedGeometry(inputs) {
 // Editable: this is what Phase 1 freezes and an owner maintains.
 // ─────────────────────────────────────────────────────────────────────────────
 /**
- * RE-DERIVED 2026-07-26 against the confirmed 6×6 spa (`node calibrate.mjs`).
+ * HISTORICALLY RE-DERIVED 2026-07-26 against the confirmed 6×6 spa. The replay
+ * script is now fail-closed because one fitted job cannot authorize pricing.
  *
  * These are not quoted rates — they are Whitaker's dollars ÷ the quantity this engine computes,
  * so that qty × rate reproduces the figure the customer actually saw. The reference takeoff
@@ -800,6 +918,34 @@ export const DIRECT_LINES_SEED = [
   { code: 1300, name: 'Additional Upgrades', extended: 0, confidence: 'direct', basis: 'catch-all on his estimate — itemise before trusting it' },
 ];
 
+/** Separate internal draft math from a proposal that is safe to issue to a customer. */
+export function proposalIssueGate({ directLines, allowances, backSolveResidual = false }) {
+  const blockers = [];
+  const unresolved = directLines.filter((line) =>
+    line.code !== 9999 &&
+    line.scopeStatus !== 'not-applicable' &&
+    !(positive(line.extended) && (line.scopeStatus == null || line.scopeStatus === 'quoted')),
+  );
+  if (unresolved.length) {
+    blockers.push({
+      code: 'direct-scope-unresolved',
+      message: `${unresolved.length} direct-entry scope line(s) need a real quote or an explicit not-applicable decision: ${unresolved.map((line) => line.name).join(', ')}.`,
+      lineCodes: unresolved.map((line) => line.code),
+    });
+  }
+  if (backSolveResidual || directLines.some((line) => line.code === 9999)) {
+    blockers.push({
+      code: 'back-solved-residual',
+      message: 'A back-solved residual is calibration evidence, not customer scope. Remove it before issuing a proposal.',
+    });
+  }
+  const warnings = [];
+  if (allowances.some((allowance) => allowance.amount > 0)) {
+    warnings.push('This proposal contains allowances. They must stay visibly identified as placeholders.');
+  }
+  return Object.freeze({ canIssue: blockers.length === 0, blockers: Object.freeze(blockers), warnings: Object.freeze(warnings) });
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Supervision — Foundation §8: DURATION-driven, never a % of job cost.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -936,6 +1082,7 @@ export function crewCapacity({ crewDaysPerJob, minCycleWeeks, maxConcurrent = 6,
  * @param inputs.includeMissing               — false; Lever B costs are GATED on contract review
  */
 export function takeoff(inputs) {
+  refuseIfInvalid(validateProposalInputs(inputs));
   const opts = { avgDepth: 4.75, ...inputs };
   const geo = combinedGeometry(opts);
 
@@ -1020,6 +1167,11 @@ export function takeoff(inputs) {
     budget[l.code].extended += l.extended || 0;
     budget[l.code].crewHours += l.crewHours || 0;
   }
+  const proposalGate = proposalIssueGate({
+    directLines,
+    allowances,
+    backSolveResidual: !!opts.backSolveResidual,
+  });
 
   return {
     inputs: opts,
@@ -1116,8 +1268,51 @@ export function takeoff(inputs) {
         }
       : null,
     supersededAllowances,
+    proposalGate,
     flags: buildFlags(allowances, allowanceTotal, jobCost, parametricLines, directLines, supersededAllowances),
   };
+}
+
+const deepFreeze = (value) => {
+  if (value && typeof value === 'object' && !Object.isFrozen(value)) {
+    Object.freeze(value);
+    Object.values(value).forEach(deepFreeze);
+  }
+  return value;
+};
+
+/** Create the customer-safe, immutable issue payload only after every release blocker clears. */
+export function finalizeProposal(result) {
+  if (!result?.proposalGate?.canIssue) {
+    const messages = result?.proposalGate?.blockers?.map((blocker) => blocker.message) ?? ['No proposal issue gate was evaluated.'];
+    throw new ProposalInputError(messages);
+  }
+  return deepFreeze({
+    status: 'issued',
+    issuedAt: new Date().toISOString(),
+    dimensions: {
+      pool: {
+        lengthFt: result.inputs.length,
+        widthFt: result.inputs.width,
+        shallowDepthFt: result.geometry.pool.depthShallow,
+        deepDepthFt: result.geometry.pool.depthDeep,
+      },
+      spa: result.geometry.spa
+        ? { lengthFt: result.geometry.spa.length, widthFt: result.geometry.spa.width, depthFt: result.geometry.spa.depth }
+        : null,
+    },
+    costCodes: result.budgetByCode
+      .filter((line) => line.extended > 0)
+      .map((line) => ({ code: line.code, name: line.name, amount: line.extended })),
+    allowances: result.allowances.map((allowance) => ({ name: allowance.name, amount: allowance.amount })),
+    totals: {
+      cost: result.pricing.cost,
+      feeRate: result.pricing.feeRate,
+      fee: result.pricing.fee,
+      total: result.pricing.revenue,
+    },
+    warnings: result.proposalGate.warnings,
+  });
 }
 
 function codeName(code) {

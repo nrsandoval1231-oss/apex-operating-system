@@ -1,11 +1,13 @@
 import {
   takeoff, marginFromFee, feeForMargin, price, poolGeometry, spaGeometry, combinedGeometry,
-  deckArea, APEX_STANDARDS,
+  deckArea, APEX_STANDARDS, DIRECT_LINES_SEED, validateProposalInputs, finalizeProposal,
 } from './engine.mjs';
+import { spawnSync } from 'node:child_process';
 let pass=0, fail=0;
 const near=(a,b,tol)=>Math.abs(a-b)<=tol;
 const r2=(n)=>Math.round(n*100)/100;
 const ok=(n,c,extra='')=>{console.log((c?'PASS':'FAIL')+' '+n+(c?'':'  → '+extra));c?pass++:fail++;};
+const throws=(fn)=>{try{fn();return false;}catch{return true;}};
 
 /**
  * GROUND TRUTH — Whitaker Oasis, corrected 2026-07-26.
@@ -29,6 +31,25 @@ const wp = price(T.jobCost, 0.30);
 ok('Whitaker revenue ≈ 152,041.73', near(wp.revenue, T.revenue, 0.5), wp.revenue.toFixed(2));
 ok('Whitaker fee ≈ 35,086.55', near(wp.fee, T.fee, 0.5), wp.fee.toFixed(2));
 ok('Whitaker true margin ≈ 23.08%', near(wp.trueMargin*100, 23.08, 0.02), (wp.trueMargin*100).toFixed(2));
+ok('negative cost is rejected', throws(()=>price(-1,0.3)));
+ok('negative fee is rejected', throws(()=>price(100,-0.01)));
+ok('a target margin at or above 100% is rejected', throws(()=>feeForMargin(1)));
+
+// ── Safety boundary — impossible inputs never reach pricing ─────────────────
+const invalidInputs = [
+  ['zero pool length', {length:0,width:14}],
+  ['negative pool width', {length:24,width:-14}],
+  ['inverted depth profile', {length:24,width:14,depthShallow:7,depthDeep:3.5}],
+  ['negative fee', {length:24,width:14,feeRate:-0.1}],
+  ['negative direct-entry cost', {length:24,width:14,directLines:[{code:300,name:'Equipment',extended:-1}]}],
+  ['negative allowance', {length:24,width:14,allowances:[{name:'Fence',amount:-1}]}],
+  ['impossible spa dimension', {length:24,width:14,spa:{length:0,width:6,depth:3.5}}],
+];
+for (const [name,input] of invalidInputs) {
+  const errors = validateProposalInputs(input);
+  ok(`${name} reports a validation error`, errors.length>0, errors.join('; '));
+  ok(`${name} is refused by takeoff`, throws(()=>takeoff(input)));
+}
 
 // ── Apex build standards (confirmed by Travis) ───────────────────────────────
 ok('standard depth profile is 3.5 → 6.0', APEX_STANDARDS.depthShallow===3.5 && APEX_STANDARDS.depthDeep===6.0);
@@ -68,7 +89,8 @@ ok('rebar steel ≈ 1,061 lb', near(L('Rebar').qty,T.rebarLb,10), String(L('Reba
 ok('deck line derived from the border rule', L('Pool Deck').qty===T.deckSqFt && L('Pool Deck').extra.derived);
 ok('rebar exposes LF #3 allocation basis', L('Rebar').allocationBasis?.metric==='LF #3 bar');
 
-// Unit costs are back-solved so qty × rate reproduces his actual line dollars (calibrate.mjs).
+// Historic seed costs are back-solved so qty × rate reproduces his actual line dollars.
+// calibrate.mjs is intentionally disabled; this remains replay evidence, not pricing authority.
 const reproduces = (name, dollars, tol=25) => ok(`reproduces his $${dollars.toLocaleString()} ${name} line`, near(L(name).extended,dollars,tol), fmt(L(name).extended));
 const fmt = (n)=>'$'+n.toLocaleString();
 reproduces('Excavation', 5500);
@@ -185,6 +207,20 @@ ok('residual is excluded from substantiated direct cost', withEq.coverage.direct
 ok('residual counted as unsubstantiated, not coverage', withEq.coverage.residual>0 && withEq.coverage.unsubstantiatedPct>40, `${withEq.coverage.unsubstantiatedPct}%`);
 ok('residual raises a warn flag', withEq.flags.some(f=>f.level==='warn'&&f.msg.includes('BACK-SOLVED RESIDUAL')));
 ok('no residual line when back-solve is off', !takeoff({...WHITAKER,actualJobCost:T.jobCost}).directLines.some(l=>l.code===9999));
+
+// ── Customer-issue gate ──────────────────────────────────────────────────────
+ok('the default draft is blocked while direct-entry scope is unresolved',
+  t.proposalGate.canIssue===false && t.proposalGate.blockers.some(b=>b.code==='direct-scope-unresolved'));
+ok('a blocked draft cannot be finalized', throws(()=>finalizeProposal(t)));
+const ready = takeoff({
+  ...WHITAKER,
+  directLines: DIRECT_LINES_SEED.map((line)=>({...line,extended:1000,scopeStatus:'quoted'})),
+});
+ok('explicitly quoted direct-entry scope clears the issue gate', ready.proposalGate.canIssue===true, ready.proposalGate.blockers.map(b=>b.message).join('; '));
+const issued = finalizeProposal(ready);
+ok('finalization returns an immutable customer-safe payload', issued.status==='issued' && Object.isFrozen(issued));
+const calibration = spawnSync(process.execPath,['calibrate.mjs'],{encoding:'utf8'});
+ok('unsafe calibration script is fail-closed', calibration.status!==0 && `${calibration.stdout}${calibration.stderr}`.includes('DISABLED'));
 
 console.log(`\n${pass} pass / ${fail} fail`);
 process.exit(fail?1:0);

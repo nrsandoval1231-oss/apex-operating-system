@@ -58,8 +58,12 @@
   .basis{font-size:11.5px;color:var(--steel);margin-top:3px;line-height:1.4}
   .flag{border-left:3px solid var(--amber);background:#fdf7ee;padding:10px 12px;border-radius:0 8px 8px 0;font-size:12.5px;line-height:1.5;margin-bottom:8px}
   .flag.info{border-color:var(--pool);background:#eef6f7}
-  .allow-row,.direct-row{display:grid;grid-template-columns:1fr 96px;gap:8px;margin-bottom:6px}
+  .allow-row{display:grid;grid-template-columns:1fr 96px;gap:8px;margin-bottom:6px}
+  .direct-row{display:grid;grid-template-columns:1fr 96px 58px;gap:8px;margin-bottom:6px;align-items:center}
   .allow-row input,.direct-row input{padding:6px 8px;font-size:13px}
+  .direct-na{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--steel)}
+  .direct-na input{width:auto;margin:0}
+  button:disabled{opacity:.45;cursor:not-allowed}
   small.tag{font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--lowc)}
   .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
   button{font:600 13px Oswald,sans-serif;text-transform:uppercase;letter-spacing:.05em;padding:9px 14px;border-radius:8px;border:1.5px solid var(--line);background:#fff;cursor:pointer}
@@ -281,6 +285,7 @@
       <div class="actions">
         <button class="primary" id="exportProposal">Generate customer proposal</button>
       </div>
+      <div id="proposalGate" class="flag"></div>
       <p class="note">Priced estimate only — cost-plus line items, fee and total, formatted to print or save as
         PDF. <b>Not a contract.</b> It carries none of the true-margin math (Foundation §1) or the reimbursable-cost
         terms that are still pending the contract review (decision register #1) — those stay internal.</p>
@@ -371,7 +376,7 @@
 <div class="proposal-doc" id="proposalDoc"></div>
 
 <script type="module">
-import { takeoff, DEFAULT_ALLOWANCES, DIRECT_LINES_SEED, fmtMoney, deckArea } from './engine.mjs';
+import { takeoff, finalizeProposal, DEFAULT_ALLOWANCES, DIRECT_LINES_SEED, fmtMoney, deckArea } from './engine.mjs';
 
 const $ = (id) => document.getElementById(id);
 const money = fmtMoney;
@@ -383,7 +388,7 @@ DEFAULT_ALLOWANCES.forEach((a, i) => {
 });
 DIRECT_LINES_SEED.forEach((l, i) => {
   $('directLines').insertAdjacentHTML('beforeend',
-    `<div class="direct-row"><input type="text" value="${esc(l.name)}" data-dn="${i}" title="code ${l.code}"><input type="number" value="${l.extended}" data-dv="${i}"></div>`);
+    `<div class="direct-row"><input type="text" value="${esc(l.name)}" data-dn="${i}" title="code ${l.code}"><input type="number" value="${l.extended}" data-dv="${i}"><label class="direct-na"><input type="checkbox" data-dna="${i}">N/A</label></div>`);
 });
 
 function readInputs() {
@@ -395,12 +400,17 @@ function readInputs() {
     name: r.querySelector('[data-an]').value,
     amount: +r.querySelector('[data-av]').value || 0,
   }));
-  const directLines = DIRECT_LINES_SEED.map((seed, i) => ({
-    code: seed.code,
-    name: $('directLines').querySelector(`[data-dn="${i}"]`).value,
-    extended: +$('directLines').querySelector(`[data-dv="${i}"]`).value || 0,
-    confidence: 'direct', basis: seed.basis,
-  }));
+  const directLines = DIRECT_LINES_SEED.map((seed, i) => {
+    const extended = +$('directLines').querySelector(`[data-dv="${i}"]`).value || 0;
+    const notApplicable = $('directLines').querySelector(`[data-dna="${i}"]`).checked;
+    return {
+      code: seed.code,
+      name: $('directLines').querySelector(`[data-dn="${i}"]`).value,
+      extended,
+      scopeStatus: notApplicable ? 'not-applicable' : extended > 0 ? 'quoted' : 'unresolved',
+      confidence: 'direct', basis: seed.basis,
+    };
+  });
   const exactDeck = +$('deckSqFt').value || 0;
   const actual = +$('actualJobCost').value || 0;
   return {
@@ -420,8 +430,23 @@ function readInputs() {
 
 let last = null;
 function render() {
-  const t = last = takeoff(readInputs());
+  let t;
+  try {
+    t = last = takeoff(readInputs());
+  } catch (error) {
+    last = null;
+    $('exportProposal').disabled = true;
+    $('proposalGate').className = 'flag';
+    $('proposalGate').textContent = error instanceof Error ? error.message : String(error);
+    return;
+  }
   const p = t.pricing;
+
+  $('exportProposal').disabled = !t.proposalGate.canIssue;
+  $('proposalGate').className = `flag ${t.proposalGate.canIssue ? 'info' : ''}`;
+  $('proposalGate').textContent = t.proposalGate.canIssue
+    ? 'Ready to issue: all direct-entry scope is quoted or explicitly marked not applicable.'
+    : `BLOCKED: ${t.proposalGate.blockers.map((blocker) => blocker.message).join(' ')}`;
 
   $('o-cost').textContent = money(p.cost);
   $('o-fee').textContent = money(p.fee);
@@ -752,6 +777,7 @@ function proposalHtml() {
 }
 
 $('exportProposal').addEventListener('click', () => {
+  finalizeProposal(last); // engine-level fail-closed guard; the disabled button is not authority
   $('proposalDoc').innerHTML = proposalHtml();
   document.body.classList.add('proposal-mode');
   window.scrollTo(0, 0);

@@ -12,9 +12,9 @@ and the reverse-engineered `reference/whitaker-oasis-quantity-takeoff.md`.
 | File | What it is |
 |---|---|
 | `engine.mjs` | Pure, dependency-free takeoff engine: geometry → assemblies → quantities → schedule → pricing → budget → hours → Lever B. Every formula cites its source. |
-| `engine.test.mjs` | 90 checks covering formulas, invariants, calibration fixtures, coverage, and circularity warnings. `node engine.test.mjs`. |
+| `engine.test.mjs` | 112 checks covering formulas, input refusal, issue gating, calibration fixtures, coverage, and circularity warnings. `node engine.test.mjs`. |
 | `report.mjs` | CLI takeoff report — the substantiation test made runnable. `node report.mjs whitaker` / `sample` / `18x36 --deep 7 --spa 8x8`. |
-| `calibrate.mjs` | **Disabled for pricing decisions pending repair.** The current script mixes unlike labor/material bases and can produce unsafe rate guidance. |
+| `calibrate.mjs` | **Intentionally fail-closed.** It exits non-zero and explains why a one-job fitted replay cannot produce pricing guidance. |
 | `index.html` | The interactive builder UI. Live recompute, derived calendar, coverage, back-test, gated Lever-B panel, CSV/JSON export. |
 
 ## Apex build standards (confirmed 2026-07-26)
@@ -30,7 +30,8 @@ Three assumptions became known values, so a proposal now needs only **length × 
 The spa correction is load-bearing. The reference takeoff published 921 sq ft / 104 LF /
 13,222 gal from a 7×7 spa it flagged as "the biggest single unknown." The real 6×6 cuts wetted
 area 3.7% and perimeter 3.8% — and since every unit cost is *back-solved* from his dollars ÷ our
-quantity, **the whole library had to be re-derived** (`node calibrate.mjs`). Gunite went
+quantity, **the whole library was historically re-derived**. `calibrate.mjs` is now fail-closed;
+it cannot be used to change pricing guidance. Gunite went
 $424 → $440/yd³, plaster $85 → $87/bag. Both still land inside published ranges, which is the
 cross-check that the correction didn't break anything.
 
@@ -143,7 +144,8 @@ reference to derive a rate from, unlike code 700's LF breakdown.
 
 - `APEX_STANDARDS` encodes the confirmed depth profile, spa size and deck border. A bare
   `{length, width}` now produces a complete takeoff; `spa: {}` opts a job into a standard spa.
-- **Unit-cost library re-derived** against the corrected 6×6 spa (`calibrate.mjs`).
+- **Unit-cost library historically re-derived** against the corrected 6×6 spa. The old
+  calibration command is disabled because it is not independent validation.
 - **Lines extend on the rounded quantity**, so the printed numbers multiply out.
 - **UI rebuilt** to match the engine: depth-profile and deck-border inputs, derived build
   duration (with an explicit override), coverage bars, back-test panel, and a costed Lever-B
@@ -165,6 +167,14 @@ npx serve apex-proposal-engine   # or any static server, then open the printed U
    fee/GP separate from job cost so this can't happen by accident.
 
 ## Deliberately provisional / gated (do not treat as final)
+
+- **Impossible input is refused before arithmetic.** Zero/negative dimensions, inverted depth
+  profiles, negative fees, negative direct costs, and negative allowances throw a structured
+  input error rather than producing a plausible-looking estimate.
+- **Customer proposal issuance is a separate gate.** Internal draft math may continue while
+  direct-entry scope is unresolved, but customer generation stays disabled until every such
+  line has either a real quote or an explicit not-applicable decision. A back-solved residual
+  always blocks issuance.
 
 - **Unit-cost library** (`UNIT_COSTS` in `engine.mjs`) is seeded from ONE job (Whitaker) and the
   spa contaminates every line because it wasn't dimensioned separately. It's the **method**
