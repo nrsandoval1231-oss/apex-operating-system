@@ -41,6 +41,13 @@ The palette is approximated from Apex's charcoal-lion identity. If the maintaine
 
 ---
 
+## Running it locally
+
+```bash
+npm run dev     # http://localhost:4321
+npm test        # 82 acceptance assertions, desktop + mobile
+```
+
 ## Before any production deploy
 
 ```bash
@@ -53,7 +60,9 @@ completely normal in a browser — that is the whole reason the script exists.
 
 ## What "done" means
 
-Work is not done until it passes `docs/acceptance-criteria.md`. Those are written as checkable assertions. Run them (or walk the manual checklist) before reporting a task complete. If you added a feature with no corresponding acceptance criterion, add one.
+Work is not done until it passes `docs/acceptance-criteria.md`. Most of those are now automated in `tests/` — run `npm test` before reporting a task complete, and walk the manual checklist for the rest. If you added a feature with no corresponding acceptance criterion, add one, and add a test for it.
+
+**Testing gotcha:** the quote form is a `client:visible` React island, and Astro server-renders it. The full form markup — including `aria-pressed` on the service buttons — exists before hydration, so a click can land on inert HTML and vanish. Use `openQuoteForm()` from `tests/helpers.ts`, which waits for `astro-island:not([ssr])`.
 
 ## Map
 

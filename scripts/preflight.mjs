@@ -175,17 +175,31 @@ if (/googletagmanager\.com/.test(homeHtml)) {
 /* --------------------------------------------------------------- 6. imagery (D-20) */
 
 const unfilled = (allHtml.match(/data-image-unfilled="true"/g) || []).length;
+const stock = (allHtml.match(/data-stock="true"/g) || []).length;
+
 if (unfilled > 0) {
-  const msg = `${unfilled} unfilled image placeholder(s) in the built pages`;
+  const msg = `${unfilled} blank image placeholder(s) in the built pages`;
   const why =
-    'D-20 photography is unresolved. These render as visibly-labeled placeholders — honest, ' +
-    'but they are the primary conversion asset for a considered purchase at pool prices. ' +
+    'These render as visibly-labeled grey slots. Fill them in src/content/images.ts. ' +
     'Pass --allow-placeholders to ship anyway.';
   if (allowPlaceholders) warn(msg, why);
   else block(msg, why);
-} else {
-  pass('every image slot is filled');
 }
+
+if (stock > 0) {
+  const msg = `${stock} image(s) are licensed STOCK photos, not Apex's work (D-20)`;
+  const why =
+    'They are correctly captioned — no alt text claims Apex did this work — so this is not a ' +
+    'misrepresentation. It is a conversion problem: real project photography is the primary ' +
+    'asset for a considered purchase at pool prices, and a local buyer recognises stock. ' +
+    'Note the owner portrait especially: it is a photo of a stranger, and the alt text was ' +
+    'deliberately made generic so it does not name Travis. Pass --allow-placeholders to ship.';
+  if (allowPlaceholders) warn(msg, why);
+  else block(msg, why);
+}
+
+if (!unfilled && !stock) pass('every image is real Apex photography');
+else if (!unfilled) pass('no blank image slots (all filled, some with stock)');
 
 /* ------------------------------------------------------------------ 7. social card */
 

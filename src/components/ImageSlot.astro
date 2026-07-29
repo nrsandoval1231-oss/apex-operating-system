@@ -31,6 +31,13 @@ const style = `aspect-ratio:${slot.ratio};`;
 ---
 {slot.src ? (
   <div class={wrapperClass} style={style}>
+    {/*
+      `data-stock` marks a licensed stand-in rather than real Apex work (D-20). It is
+      intentionally an attribute and NOT a visible badge: this build gets shown to the client,
+      and a watermark across every photo would read as unfinished rather than as honest. The
+      guard is `npm run preflight`, which counts these and warns before any launch — see the
+      note on `stock` in content/images.ts.
+    */}
     <img
       src={slot.src}
       srcset={slot.srcset}
@@ -38,6 +45,7 @@ const style = `aspect-ratio:${slot.ratio};`;
       alt={altText}
       loading={loading}
       decoding="async"
+      data-stock={slot.stock ? 'true' : undefined}
     />
   </div>
 ) : (

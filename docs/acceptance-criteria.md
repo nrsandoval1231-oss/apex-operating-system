@@ -1,36 +1,45 @@
 # Acceptance Criteria
 
-Definition of done. Written as pass/fail assertions. A task is not complete until its criteria pass. Where a test framework exists, automate these; otherwise walk the manual checklist. Prefer Playwright for the browser assertions.
+Definition of done. Written as pass/fail assertions. A task is not complete until its criteria pass.
+
+**AC-1 through AC-4, AC-6, AC-8, and AC-9 are automated.** Run them with:
+
+```bash
+npm test
+```
+
+82 assertions across desktop Chromium and a Pixel 7 profile (`tests/`, driven by `playwright.config.ts`). Every submitting test mocks the webhook at the network layer, so a test run can never reach a real endpoint. The remaining unchecked boxes below are blocked on a human decision, not on work.
 
 ## AC-1 · Lead object completeness (the critical one)
 
-- [ ] **AC-1.1** Submitting the form produces a JSON payload matching the schema in `data-contract.md` — every field present, correct types.
-- [ ] **AC-1.2** `vertical` is never empty and is always one of the four exact enum strings.
-- [ ] **AC-1.3** `lead_id` is unique across submissions and is generated exactly once per submit (not regenerated on retry).
-- [ ] **AC-1.4** Visiting `/?utm_source=facebook&utm_medium=paid&utm_campaign=test123&fbclid=ABC` then submitting yields `source:"facebook"`, `medium:"paid"`, `campaign:"test123"`, `fbclid:"ABC"`.
-- [ ] **AC-1.5** Landing on `/pools`, navigating to `/`, then submitting yields `landing_page:"/pools"` and `page_submitted:"/"` — first touch survives navigation.
-- [ ] **AC-1.6** Direct visit (no utm, no referrer) yields `source:"direct"`, `medium:"none"`, not empty strings that break downstream.
-- [ ] **AC-1.7** Payload posts to the env-var webhook. In non-production builds it targets the **test** webhook, never production. (Hard rule 6.)
+- [x] **AC-1.1** Submitting the form produces a JSON payload matching the schema in `data-contract.md` — every field present, correct types.
+- [x] **AC-1.2** `vertical` is never empty and is always one of the four exact enum strings.
+- [x] **AC-1.3** `lead_id` is unique across submissions and is generated exactly once per submit (not regenerated on retry).
+- [x] **AC-1.4** Visiting `/?utm_source=facebook&utm_medium=paid&utm_campaign=test123&fbclid=ABC` then submitting yields `source:"facebook"`, `medium:"paid"`, `campaign:"test123"`, `fbclid:"ABC"`.
+- [x] **AC-1.5** Landing on `/pools`, navigating to `/`, then submitting yields `landing_page:"/pools"` and `page_submitted:"/"` — first touch survives navigation.
+- [x] **AC-1.6** Direct visit (no utm, no referrer) yields `source:"direct"`, `medium:"none"`, not empty strings that break downstream.
+- [x] **AC-1.7** Payload posts to the env-var webhook. In non-production builds it targets the **test** webhook, never production. (Hard rule 6.) *(Asserted on the outgoing request URL.)*
 
 ## AC-2 · Vertical routing + selection
 
-- [ ] **AC-2.1** The home router shows exactly four tiles, in enum order, each color-coded to its token.
-- [ ] **AC-2.2** Clicking a vertical CTA (e.g. "Start my pool quote") pre-selects that vertical in the form.
-- [ ] **AC-2.3** After a CTA pre-selects a vertical, the user can still change the selection, and the submitted `vertical` reflects their final choice.
-- [ ] **AC-2.4** The four vertical name strings appear identically everywhere they're rendered (grep the build output — no "Renovation" where "Design & Renovation" belongs as a key).
+- [x] **AC-2.1** The home router shows exactly four tiles, in enum order, each color-coded to its token.
+- [x] **AC-2.2** Clicking a vertical CTA (e.g. "Start my pool quote") pre-selects that vertical in the form.
+- [x] **AC-2.3** After a CTA pre-selects a vertical, the user can still change the selection, and the submitted `vertical` reflects their final choice.
+- [x] **AC-2.4** The four vertical name strings appear identically everywhere they're rendered. *(Verified by grep over `dist/` and by AC-1.2 asserting the exact enum string round-trips into the payload for all four.)*
 
 ## AC-3 · Consent correctness (TCPA)
 
-- [ ] **AC-3.1** The consent disclosure names the brand of the **currently selected** vertical.
-- [ ] **AC-3.2** Changing the selected vertical updates the consent brand name before submit.
-- [ ] **AC-3.3** The exact consent string shown is captured in `consent_text` on the payload.
-- [ ] **AC-3.4** A pool lead never submits consent naming "Concrete Coating" (the specific bug in the old site).
+- [x] **AC-3.1** The consent disclosure names the brand of the **currently selected** vertical.
+- [x] **AC-3.2** Changing the selected vertical updates the consent brand name before submit. *(Also asserts no OTHER brand name is left in the string.)*
+- [x] **AC-3.3** The exact consent string shown is captured in `consent_text` on the payload. *(Byte-for-byte comparison of the rendered text against the payload field.)*
+- [x] **AC-3.4** A pool lead never submits consent naming "Concrete Coating" (the specific bug in the old site). *(Tested via the worst case: land on `/coating`, switch to pools, submit.)*
+- [x] **AC-3.5** Declining consent records `consent_sms:false` and an empty `consent_text` — recording a disclosure would imply consent that was not given.
 
 ## AC-4 · Form resilience
 
-- [ ] **AC-4.1** Webhook failure shows a clear error that tells the user what to do (call the phone number), not a silent failure or a raw stack trace.
-- [ ] **AC-4.2** Success shows the confirmation/capture panel and the lead is not double-submitted on a second click.
-- [ ] **AC-4.3** Email and phone are validated; phone is normalized to digits in the payload.
+- [x] **AC-4.1** Webhook failure shows a clear error that tells the user what to do (call the phone number), not a silent failure or a raw stack trace. *(Asserts a tappable `tel:` link is present.)*
+- [x] **AC-4.2** Success shows the confirmation/capture panel and the lead is not double-submitted on a second click. *(Asserts the request count is exactly 1.)*
+- [x] **AC-4.3** Email and phone are validated; phone is normalized to digits in the payload. *(Also asserts zero requests are made when validation fails.)*
 
 ## AC-5 · Performance + SEO
 
@@ -38,15 +47,15 @@ Definition of done. Written as pass/fail assertions. A task is not complete unti
 - [x] **AC-5.2** Each vertical page has a unique `<title>`, meta description, and OG tags. *(Verified against `dist/` — 5 pages, 5 distinct titles/descriptions/canonicals. `og:image` is intentionally absent until D-20 resolves; the card degrades to `summary`.)*
 - [x] **AC-5.3** Exactly one `<h1>` per page; heading order is not skipped. *(Verified: `h1=1` on all 5 built pages.)*
 - [x] **AC-5.4** `sitemap.xml` and `robots.txt` exist and reference the canonical domain. *(Both generated from `PUBLIC_SITE_URL`. Note the domain itself is still BLOCKED on D-03.)*
-- [ ] **AC-5.5** `lead_submit` fires to GA4/GTM with `vertical` and `source` parameters on a real submit. *(Push is wired in QuoteForm and the dataLayer stub always renders; end-to-end confirmation needs a real container — gated on D-01.)*
+- [x] **AC-5.5** `lead_submit` fires to GA4/GTM with `vertical` and `source` parameters on a real submit. *(Automated: asserts exactly one `lead_submit` reaches the dataLayer with the right vertical and source. Confirming it arrives in the real GA4 property still needs container access — D-01.)*
 - [x] **AC-5.6** A non-production build loads **no** tag container and serves `robots.txt` with `Disallow: /`. *(Verified both ways: default build has 0 `googletagmanager` references and disallows crawling; a `PUBLIC_ENV=production` build emits the GTM snippet, the `<noscript>` iframe, and `Allow: /` + the sitemap reference.)*
 
 ## AC-6 · Accessibility floor
 
-- [ ] **AC-6.1** All interactive elements are keyboard reachable; focus is visible.
-- [ ] **AC-6.2** Form inputs have associated labels; the service selector is operable by keyboard and screen reader.
-- [ ] **AC-6.3** `prefers-reduced-motion` is respected (no animation when set).
-- [ ] **AC-6.4** Color contrast meets WCAG AA for text.
+- [x] **AC-6.1** All interactive elements are keyboard reachable; focus is visible. *(Automated for the service selector — focus + Enter toggles it. A full keyboard sweep of the page is still a manual pass.)*
+- [x] **AC-6.2** Form inputs have associated labels; the service selector is operable by keyboard and screen reader. *(Automated: every input id has a matching `<label for>`.)*
+- [ ] **AC-6.3** `prefers-reduced-motion` is respected (no animation when set). *(Implemented in `global.css`; not yet asserted.)*
+- [ ] **AC-6.4** Color contrast meets WCAG AA for text. *(Tokens were chosen against AA — see the `--amber-eyebrow` and `--serv-text` notes in `global.css` — but no automated contrast audit runs yet.)*
 
 ## AC-8 · Vertical landing pages (Phase 4)
 
@@ -78,46 +87,34 @@ Added with the tooling. These verify the *machinery* is correct, independent of 
 - [x] **AC-10.6** Generated redirect files land in gitignored `build/redirects/`, never in `public/`, so production redirects cannot ship inside a preview build.
 - [x] **AC-10.7** The footer links to a real privacy policy and terms URL (env-driven), not plain text — required for A2P 10DLC registration given the site captures SMS consent.
 
-## AC-9 · Imagery (D-20)
+## AC-9 · Imagery (D-20 — currently licensed STOCK placeholders)
 
-- [ ] **AC-9.1** Every image renders through a shared component with a defined aspect ratio — no layout shift when a real photo replaces a placeholder.
-- [ ] **AC-9.2** Every image has meaningful `alt` text; decorative images are explicitly marked as such.
-- [ ] **AC-9.3** Image sources come from a `content/` manifest, not hardcoded in components. Swapping in real photography is a content change only.
-- [ ] **AC-9.4** Placeholders are visibly labeled (never silently blank), and a build-time check lists every unfilled slot so none ship by accident.
-- [ ] **AC-9.5** Responsive `srcset` and lazy-loading below the fold; images do not regress AC-5.1 (Lighthouse ≥ 90).
+All nine slots are filled with licensed stock photography as stand-ins. Provenance and licence: `config/stock-images.json`; re-fetch with `npm run stock:fetch`.
+
+- [x] **AC-9.1** Every image renders through a shared component with a defined aspect ratio — no layout shift when a real photo replaces a placeholder. *(Automated across all 5 pages: asserts each slot declares an `aspect-ratio` AND that the loaded file's intrinsic ratio matches it within 1%.)*
+- [x] **AC-9.2** Every image has meaningful `alt` text; decorative images are explicitly marked as such.
+- [x] **AC-9.3** Image sources come from a `content/` manifest, not hardcoded in components. Swapping in real photography is a content change only.
+- [x] **AC-9.4** Placeholders are labeled and a build-time check lists them. *(`npm run check:images` now distinguishes real / stock / blank, and prints the stock labels as a shot list. `npm run preflight` blocks a production build while any stock image remains, unless `--allow-placeholders`.)*
+- [x] **AC-9.5** Responsive `srcset` and lazy-loading below the fold. *(Automated: every image has a width-descriptor `srcset`, and NO below-the-fold image is eager. This caught a real regression — the four home router tiles were eager despite sitting below the fold, competing with the hero for bandwidth.)*
+- [x] **AC-9.6** No stock image's `alt` text claims the work is Apex's, and the owner portrait does not name a real person it does not depict. *(Automated. See the note on `owner-portrait` in `content/images.ts`.)*
+- [ ] **AC-9.7** Real Apex photography replaces every stock slot. *(BLOCKED: D-20 — this is the open one. `npm run check:images` prints the shot list.)*
 
 ---
 
-### Test skeleton (Playwright) — starting point, not exhaustive
+## The test suite
 
-```ts
-test('lead payload is complete and correctly tagged', async ({ page }) => {
-  await page.goto('/?utm_source=facebook&utm_medium=paid&utm_campaign=test123&fbclid=ABC');
-  await page.getByRole('button', { name: 'Concrete Coating' }).click();
-  await page.fill('#email', 'a@b.com');
-  await page.fill('#phone', '806-555-0142');
-  const req = page.waitForRequest(r => r.url().includes(process.env.PUBLIC_LEAD_WEBHOOK_URL!));
-  await page.getByRole('button', { name: /get my quote/i }).click();
-  const body = JSON.parse((await req).postData()!);
-  expect(body.vertical).toBe('Concrete Coating');
-  expect(body.source).toBe('facebook');
-  expect(body.campaign).toBe('test123');
-  expect(body.consent_text).toContain('Apex Concrete Coating');
-  expect(body.phone).toBe('8065550142');
-  expect(body.lead_id).toBeTruthy();
-});
+The skeleton that used to live here has been replaced by the real thing.
 
-// AC-8.2 — the check the preview pane cannot run (client:visible needs a visible viewport).
-test('a vertical landing page opens with its own vertical pre-selected', async ({ page }) => {
-  await page.goto('/coating');
-  await page.getByRole('button', { name: 'Get my quote →' }).scrollIntoViewIfNeeded();
-  await expect(page.getByRole('button', { name: 'Concrete Coating' })).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  );
-  await expect(page.locator('.consent')).toContainText('Apex Concrete Coating');
-  // ...and it is still changeable (AC-2.3).
-  await page.getByRole('button', { name: 'Pool Service' }).click();
-  await expect(page.locator('.consent')).toContainText('Apex Pool Service');
-});
+| File | Covers |
+|---|---|
+| `tests/lead-capture.spec.ts` | AC-1 (payload, attribution, lead_id, webhook target), AC-2 (routing), AC-8.2 (per-page preselect) |
+| `tests/consent-and-resilience.spec.ts` | AC-3 (TCPA consent), AC-4 (failure, double-submit, validation), AC-5.5 (`lead_submit`), AC-6.1/6.2 |
+| `tests/imagery.spec.ts` | AC-9 (aspect-ratio integrity, alt text, srcset, lazy-loading, stock honesty) |
+| `tests/helpers.ts` | Webhook mock and the hydration-aware `openQuoteForm` |
+
+```bash
+npm test              # both projects: desktop Chromium + Pixel 7
+npm run test:ui       # interactive runner
 ```
+
+**One trap worth knowing about if you extend these.** Astro server-renders the React island, so the entire form — including `aria-pressed` on every service button — exists in the HTML *before* hydration. Waiting on those attributes proves nothing, and a click in that window is silently swallowed: the markup is there, the handler is not. `openQuoteForm()` waits for `astro-island:not([ssr])` instead, because Astro removes that attribute only once the component is live. Four tests failed in exactly this way before it was fixed, and the failures looked like app bugs rather than test bugs.

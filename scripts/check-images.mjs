@@ -19,6 +19,7 @@ const source = readFileSync(manifestPath, 'utf8');
 // Match each slot object: `'id': { ... }` up to the closing brace of that object.
 const slotRe = /'([\w-]+)':\s*\{([^}]*)\}/g;
 const unfilled = [];
+const stock = [];
 let total = 0;
 let m;
 while ((m = slotRe.exec(source)) !== null) {
@@ -27,26 +28,36 @@ while ((m = slotRe.exec(source)) !== null) {
   if (!/\bsrc:\s*/.test(body)) continue;
   total += 1;
   const labelMatch = body.match(/label:\s*'([^']*)'/);
-  if (/\bsrc:\s*null\b/.test(body)) {
-    unfilled.push({ id, label: labelMatch ? labelMatch[1] : '' });
-  }
+  const label = labelMatch ? labelMatch[1] : '';
+  if (/\bsrc:\s*null\b/.test(body)) unfilled.push({ id, label });
+  else if (/\bstock:\s*true\b/.test(body)) stock.push({ id, label });
 }
 
-console.log(`\nApex image manifest — ${total} slot(s), ${unfilled.length} unfilled.\n`);
+const real = total - unfilled.length - stock.length;
+console.log(
+  `\nApex image manifest — ${total} slot(s): ${real} real, ${stock.length} stock, ${unfilled.length} blank.\n`,
+);
+
 if (unfilled.length) {
-  console.log('Unfilled placeholder slots (D-20 photography pending):');
-  for (const s of unfilled) {
-    console.log(`  • ${s.id.padEnd(18)} ${s.label}`);
-  }
-  console.log(
-    '\nThese render as visibly-labeled placeholders. Fill `src` (+ optional `srcset`)',
-  );
-  console.log('in src/content/images.ts to swap in a real photo — no layout change.\n');
-} else {
-  console.log('All slots filled. ✔\n');
+  console.log('Blank slots (render as labeled grey boxes):');
+  for (const s of unfilled) console.log(`  • ${s.id.padEnd(18)} ${s.label}`);
+  console.log('');
 }
 
-if (strict && unfilled.length) {
-  console.error(`check-images: ${unfilled.length} unfilled slot(s) — failing (--strict).`);
+if (stock.length) {
+  // The labels double as the shot list — each says what real photo should replace the stock.
+  console.log('Stock placeholders — the shot list for a real photo session (D-20):');
+  for (const s of stock) console.log(`  • ${s.id.padEnd(18)} ${s.label}`);
+  console.log('\nProvenance and licence: config/stock-images.json');
+  console.log('Replacing one is a content change only: drop the file in, update `src`/`srcset`,');
+  console.log('set `stock: false`, and rewrite `alt` to describe the actual job.\n');
+}
+
+if (!unfilled.length && !stock.length) console.log('Every slot holds real Apex photography. ✔\n');
+
+// --strict is the launch gate: neither a blank slot nor a stock stand-in should ship silently.
+const outstanding = unfilled.length + stock.length;
+if (strict && outstanding) {
+  console.error(`check-images: ${outstanding} slot(s) not real photography — failing (--strict).`);
   process.exit(1);
 }

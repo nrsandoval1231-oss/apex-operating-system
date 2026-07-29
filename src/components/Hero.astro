@@ -52,7 +52,15 @@ import ImageSlot from './ImageSlot.astro';
                 data-preselect={cfg.vertical}
               >
                 <span class="band"></span>
-                <ImageSlot id={tile.image} loading="eager" sizes="(max-width:860px) 50vw, 25vw" />
+                {/*
+                  Lazy, despite these being the site's primary conversion element. The tiles
+                  sit BELOW the fold at every viewport we target — the hero copy, subhead, and
+                  stat strip come first — so eager-loading four images here made them compete
+                  with the hero for bandwidth and pushed out LCP (AC-5.1). Caught by the AC-9.5
+                  test. In practice Chrome begins fetching a lazy image well before it enters
+                  the viewport, so there is no pop-in on scroll.
+                */}
+                <ImageSlot id={tile.image} sizes="(max-width:860px) 50vw, 25vw" />
                 <h3>{cfg.vertical}</h3>
                 <div class="sub">{tile.subtitle}</div>
                 <div class="go">{tile.cta} &rarr;</div>

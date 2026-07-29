@@ -1,0 +1,118 @@
+{
+  "$comment": [
+    "Provenance record for the STOCK placeholder photography (D-20, option c).",
+    "",
+    "These are stand-ins so the site can be shown and reviewed with real imagery instead of",
+    "grey boxes. They are NOT Apex's work, and nothing on the site claims they are — every",
+    "alt text below describes the photo generically, and each slot carries `stock: true` in",
+    "src/content/images.ts so `npm run preflight` warns about them before any real launch.",
+    "",
+    "Source: Unsplash. The Unsplash License permits commercial use, free of charge, with no",
+    "attribution required (attribution is appreciated, and the photographer is recorded below",
+    "regardless). It does NOT permit compiling a competing stock-photo service, which is not",
+    "what this is. https://unsplash.com/license",
+    "",
+    "WHY THIS FILE EXISTS: six months from now, nobody will remember where a JPEG in",
+    "public/ came from or whether it was licensed. Provenance for third-party media belongs",
+    "in the repo, next to the media.",
+    "",
+    "Re-download everything with: npm run stock:fetch",
+    "",
+    "TODO(D-20): every entry here is a placeholder. Replacing one with real Apex photography",
+    "is a content change only - drop the file in, update src/content/images.ts, delete the",
+    "entry here. No layout changes (AC-9.1, AC-9.3)."
+  ],
+
+  "license": {
+    "name": "Unsplash License",
+    "url": "https://unsplash.com/license",
+    "commercialUse": true,
+    "attributionRequired": false
+  },
+
+  "outputDir": "public/images/stock",
+
+  "$imageFields": {
+    "slot": "the image-manifest slot id in src/content/images.ts this fills",
+    "unsplashId": "the images.unsplash.com/photo-... identifier",
+    "ratio": "aspect ratio the file is cropped to — MUST match the slot's ratio or the swap shifts layout",
+    "widths": "the widths downloaded, emitted as a srcset (AC-9.5)",
+    "describes": "what the photo actually shows — this becomes the alt text, and it must not claim the work is Apex's"
+  },
+
+  "images": [
+    {
+      "slot": "tile-pools",
+      "unsplashId": "photo-1716801408923-c2149294dad2",
+      "credit": "Iain / Unsplash",
+      "ratio": "4:3",
+      "widths": [800, 1600],
+      "describes": "An illuminated backyard swimming pool photographed from above at night"
+    },
+    {
+      "slot": "pools-hero",
+      "unsplashId": "photo-1764419737670-5e63f20c5493",
+      "credit": "Matthew Dlr / Unsplash",
+      "ratio": "4:5",
+      "widths": [800, 1400],
+      "describes": "A lit swimming pool in the backyard of a home at night"
+    },
+    {
+      "slot": "tile-coating",
+      "unsplashId": "photo-1763238273638-3264cf27298a",
+      "credit": "Unsplash",
+      "ratio": "4:3",
+      "widths": [800, 1600],
+      "describes": "Sunlight reflecting off a polished concrete floor indoors"
+    },
+    {
+      "slot": "card-coating",
+      "unsplashId": "photo-1772300704502-410f0fbd43bb",
+      "credit": "Unsplash",
+      "ratio": "16:9",
+      "widths": [800, 1600],
+      "describes": "A large open interior with a polished concrete floor"
+    },
+    {
+      "slot": "tile-renovation",
+      "unsplashId": "photo-1682888813913-e13f18692019",
+      "credit": "Unsplash",
+      "ratio": "4:3",
+      "widths": [800, 1600],
+      "describes": "A renovated kitchen with a stone island and white cabinetry"
+    },
+    {
+      "slot": "card-renovation",
+      "unsplashId": "photo-1502005097973-6a7082348e28",
+      "credit": "Unsplash",
+      "ratio": "16:9",
+      "widths": [800, 1600],
+      "describes": "A kitchen with a wooden island and cabinetry beside a glass door"
+    },
+    {
+      "slot": "tile-service",
+      "unsplashId": "photo-1774109556498-652c0458d4af",
+      "credit": "Unsplash",
+      "ratio": "4:3",
+      "widths": [800, 1600],
+      "describes": "A person cleaning a swimming pool with a long-handled pole"
+    },
+    {
+      "slot": "card-service",
+      "unsplashId": "photo-1766302524567-36ec1759fef3",
+      "credit": "Unsplash",
+      "ratio": "16:9",
+      "widths": [800, 1600],
+      "describes": "A person servicing the edge of a swimming pool"
+    },
+    {
+      "slot": "owner-portrait",
+      "unsplashId": "photo-1672748341520-6a839e6c05bb",
+      "credit": "Unsplash",
+      "ratio": "4:3",
+      "widths": [800, 1400],
+      "describes": "A contractor in a hard hat and work jacket on a job site",
+      "$note": "DELIBERATELY GENERIC. The slot's original alt named Travis Bouffard, a real person. A stock photo of a stranger presented as the named founder is a different and worse claim than a generic pool photo, so the alt text was rewritten to describe the photo rather than identify anyone. Restore the naming only when a real photo of Travis replaces this."
+    }
+  ]
+}

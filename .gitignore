@@ -25,3 +25,9 @@ Thumbs.db
 
 # local agent/session artifacts
 .hermes/
+
+# playwright
+test-results/
+playwright-report/
+blob-report/
+.playwright/
