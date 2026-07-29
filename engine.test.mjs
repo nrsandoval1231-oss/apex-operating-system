@@ -92,12 +92,13 @@ const authorized = productionTakeoff({
 const AL = (n) => authorized.lines.find(l=>l.name.includes(n));
 ok('approved Designer quantities replace Proposal geometry as pricing authority',
   AL('Excavation').qty===95.5 &&
-  AL('Gunite').qty===28.4 &&
+  AL('Pool Shell — Gunite').qty===28.4 &&
   AL('Rebar').qty===1105 &&
+  AL('Pool Shell — Forming').qty===109 &&
+  AL('Pool Deck').qty===401 &&
   AL('Plaster / Labor').qty===901 &&
   AL('Tile / Labor').qty===101 &&
   AL('Coping / Materials').qty===107.06 &&
-  AL('Pool Deck').qty===401 &&
   AL('Pool Plumbing').qty===812,
   authorized.lines.map((line)=>`${line.name}:${line.qty}`).join('; '));
 const authorityOnly = productionTakeoff({
