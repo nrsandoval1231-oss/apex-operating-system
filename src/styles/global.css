@@ -217,11 +217,6 @@ header {
 
 /* --- hero --- */
 .hero { position: relative; background: var(--char); color: #f4f2ee; overflow: hidden; }
-/* With the video behind it, the decorative colour glows would sit ON TOP of real footage and
-   muddy it. The scrim in HeroVideo.astro handles contrast instead. */
-.hero.has-video::before { display: none; }
-.hero.has-video .grain { opacity: 0.25; }
-.hero.has-video .hero-in { position: relative; z-index: 1; }
 .hero::before {
   content: '';
   position: absolute;
