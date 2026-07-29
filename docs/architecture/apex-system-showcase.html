@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Apex Operating System — What We Built</title>
+<style>
+  :root{
+    --paper:#f4f4f1;--card:#ffffff;--ink:#15181b;--body:#454b51;--mute:#7c838b;--rule:#deded7;
+    --deep:#0081af;--mid:#00abe7;--sand:#f5e4c8;--gold:#b8842c;--gate:#c81e2a;--gate-soft:#fff0f1;
+    --green:#147a50;--green-soft:#edf8f3;--char:#202428;--shadow:0 18px 55px rgba(21,24,27,.09);
+    --sans:"Space Grotesk","Segoe UI",Arial,sans-serif;--mono:"JetBrains Mono","Cascadia Mono",Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth;background:var(--paper)}
+  body{margin:0;color:var(--ink);font-family:var(--sans);background:var(--paper);line-height:1.45}
+  a{color:inherit}
+  button{font:inherit}
+  .wrap{width:min(1180px,calc(100% - 40px));margin:auto}
+  .topbar{position:sticky;top:0;z-index:30;background:rgba(244,244,241,.93);backdrop-filter:blur(12px);border-bottom:1px solid rgba(21,24,27,.08)}
+  .topbar-inner{height:68px;display:flex;align-items:center;justify-content:space-between;gap:20px}
+  .brand{display:flex;align-items:center;gap:13px;font-weight:800;letter-spacing:-.03em}
+  .brandmark{width:34px;height:34px;background:var(--ink);color:white;display:grid;place-items:center;font-family:var(--mono);font-size:11px;clip-path:polygon(0 0,100% 0,100% 72%,72% 100%,0 100%)}
+  .phase{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--mute);padding-left:13px;border-left:1px solid var(--rule)}
+  nav{display:flex;gap:6px}
+  nav a{text-decoration:none;font-size:13px;font-weight:650;color:var(--body);padding:10px 13px;border-radius:7px}
+  nav a:hover,nav a.active{background:var(--card);color:var(--ink);box-shadow:0 1px 0 rgba(21,24,27,.08)}
+
+  .hero{padding:84px 0 62px;border-bottom:1px solid var(--rule);overflow:hidden;position:relative}
+  .hero:after{content:"";position:absolute;right:-110px;top:38px;width:430px;height:430px;border:1px solid rgba(0,129,175,.16);border-radius:50%;box-shadow:0 0 0 54px rgba(0,129,175,.035),0 0 0 108px rgba(0,129,175,.025);pointer-events:none}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--deep);font-weight:700}
+  h1{font-size:clamp(48px,7.8vw,94px);line-height:.94;letter-spacing:-.065em;max-width:970px;margin:18px 0 24px;font-weight:780;text-wrap:balance}
+  h1 .red{color:var(--gate)}
+  .lede{font-size:clamp(18px,2vw,24px);max-width:760px;color:var(--body);letter-spacing:-.02em;margin:0}
+  .proofline{display:flex;flex-wrap:wrap;gap:9px;margin-top:34px;position:relative;z-index:2}
+  .proofline span{background:var(--card);border:1px solid var(--rule);border-radius:100px;padding:8px 12px;font-family:var(--mono);font-size:10px;color:var(--body)}
+  .proofline b{color:var(--green)}
+
+  section{padding:86px 0;border-bottom:1px solid var(--rule)}
+  .section-head{display:grid;grid-template-columns:1fr 1.2fr;gap:60px;margin-bottom:44px;align-items:end}
+  h2{font-size:clamp(34px,5vw,60px);line-height:1;letter-spacing:-.055em;margin:10px 0 0;text-wrap:balance}
+  .section-copy{font-size:18px;color:var(--body);margin:0;max-width:620px}
+
+  .system-shell{background:var(--char);border-radius:18px;padding:28px;box-shadow:var(--shadow);overflow:hidden;position:relative}
+  .system-shell:before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);background-size:28px 28px;pointer-events:none}
+  .system-label{color:#8e989f;font-family:var(--mono);font-size:9px;letter-spacing:.18em;text-transform:uppercase;margin-bottom:18px;position:relative}
+  .system-grid{position:relative;display:grid;grid-template-columns:1fr 42px 1fr 54px 1.12fr 54px 1fr;align-items:stretch;gap:0}
+  .lane{display:grid;gap:12px}
+  .node{min-height:112px;border:1px solid #475058;background:#292f34;border-radius:11px;padding:18px;color:white;position:relative}
+  .node .type{font-family:var(--mono);font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:#96a1a8;margin-bottom:11px}
+  .node h3{font-size:19px;margin:0 0 5px;letter-spacing:-.025em}
+  .node p{font-size:12px;color:#bcc5ca;margin:0}
+  .node.blue{border-color:#1887ad;background:#123844}.node.blue .type{color:#6bd2f3}
+  .node.gold{border-color:#9f762f;background:#3d3222}.node.gold .type{color:#e5bf75}
+  .node.green{border-color:#2f8e69;background:#19392e}.node.green .type{color:#7ed4b2}
+  .node.gate{background:var(--gate);border-color:#f35e68;min-height:236px;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 0 0 5px rgba(200,30,42,.13)}
+  .node.gate .type{color:#ffc6c9}.node.gate h3{font-size:34px;line-height:1;letter-spacing:-.045em}.node.gate p{color:#ffe9ea;font-size:13px;max-width:230px}
+  .gate-actions{display:grid;gap:7px;margin-top:20px}
+  .gate-actions span{font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.08em;padding:7px 8px;border:1px solid rgba(255,255,255,.24);border-radius:5px}
+  .arrow{display:grid;place-items:center;color:#7f8a91;font-size:24px;position:relative}
+  .arrow:after{content:"";height:1px;background:#68737a;width:100%;position:absolute;top:50%;left:0}
+  .arrow span{background:var(--char);z-index:1;padding:3px}
+  .spine{position:relative;margin-top:22px;border:1px solid #4f5960;border-radius:11px;background:#20262a;padding:17px 20px;display:flex;justify-content:space-between;align-items:center;gap:18px;color:white}
+  .spine strong{font-size:14px}.spine small{font-family:var(--mono);font-size:9px;color:#9aa4aa;text-transform:uppercase;letter-spacing:.08em}
+  .spine-items{display:flex;flex-wrap:wrap;gap:7px;justify-content:flex-end}
+  .spine-items span{font-family:var(--mono);font-size:9px;padding:6px 8px;border-radius:5px;background:#2d3439;color:#cbd2d6}
+
+  .gate-focus{display:grid;grid-template-columns:.8fr 1.2fr;gap:30px}
+  .gate-statement{background:var(--gate);color:white;border-radius:16px;padding:38px;min-height:520px;display:flex;flex-direction:column;justify-content:space-between}
+  .gate-statement .num{font-family:var(--mono);font-size:11px;color:#ffc5c9;letter-spacing:.12em;text-transform:uppercase}
+  .gate-statement blockquote{font-size:clamp(34px,4.4vw,58px);line-height:1.01;letter-spacing:-.055em;margin:24px 0;text-wrap:balance;font-weight:750}
+  .gate-statement p{font-size:15px;color:#ffe6e8;max-width:420px}
+  .decision-queue{background:var(--card);border:1px solid var(--rule);border-radius:16px;overflow:hidden}
+  .queue-head{padding:25px 28px;border-bottom:1px solid var(--rule);display:flex;justify-content:space-between;align-items:center}
+  .queue-head h3{margin:0;font-size:21px;letter-spacing:-.03em}.queue-head span{font-family:var(--mono);font-size:9px;color:var(--gate);text-transform:uppercase;letter-spacing:.1em}
+  .decision{display:grid;grid-template-columns:48px 1fr auto;gap:16px;align-items:center;padding:22px 28px;border-bottom:1px solid var(--rule)}
+  .decision:last-child{border-bottom:0}.decision .icon{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:var(--gate-soft);color:var(--gate);font-family:var(--mono);font-weight:800}
+  .decision h4{margin:0 0 4px;font-size:15px}.decision p{margin:0;color:var(--mute);font-size:12px}.decision .tag{font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.08em;border-radius:100px;padding:7px 9px;background:var(--paper);white-space:nowrap}
+  .decision:nth-child(3) .icon{background:#fff6e6;color:var(--gold)}.decision:nth-child(4) .icon{background:#ebf7fb;color:var(--deep)}.decision:nth-child(5) .icon{background:var(--green-soft);color:var(--green)}
+
+  .lifecycle{display:grid;grid-template-columns:repeat(7,1fr);gap:0;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)}
+  .stage{padding:24px 15px 26px;border-right:1px solid var(--rule);position:relative;min-height:190px;background:rgba(255,255,255,.35)}
+  .stage:last-child{border-right:0}.stage .step{font-family:var(--mono);font-size:10px;color:var(--mute)}
+  .stage h3{font-size:16px;margin:30px 0 8px;letter-spacing:-.025em}.stage p{font-size:11px;color:var(--mute);margin:0}.stage:before{content:"";position:absolute;top:52px;left:15px;width:9px;height:9px;border-radius:50%;background:var(--deep);box-shadow:0 0 0 5px var(--paper)}
+  .stage:after{content:"";position:absolute;top:56px;left:28px;right:-1px;height:1px;background:var(--deep)}
+  .stage:last-child:after{display:none}.stage.gate-stage{background:var(--gate-soft)}.stage.gate-stage:before{background:var(--gate)}.stage.gate-stage:after{background:var(--gate)}
+
+  .phase-grid{display:grid;grid-template-columns:1fr 1fr;gap:28px}
+  .proof{background:var(--card);border:1px solid var(--rule);border-radius:14px;padding:30px}
+  .proof h3{margin:0 0 22px;font-size:22px;letter-spacing:-.035em}
+  .metric{display:flex;justify-content:space-between;align-items:baseline;padding:14px 0;border-top:1px solid var(--rule);gap:20px}
+  .metric span{font-size:13px;color:var(--body)}.metric b{font-family:var(--mono);font-size:13px;color:var(--green);white-space:nowrap}
+  .proof.caution .metric b{color:var(--gold)}
+  .commitment{margin-top:28px;background:var(--ink);color:white;border-radius:14px;padding:28px;display:grid;grid-template-columns:1fr auto;gap:25px;align-items:center}
+  .commitment h3{margin:0 0 5px;font-size:20px}.commitment p{margin:0;color:#b9c0c5;font-size:13px}.commitment .status{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.1em;padding:10px 13px;border-radius:100px;background:#27312d;color:#83dab7}
+
+  .pilot{background:var(--ink);color:white}
+  .pilot .eyebrow{color:#65cff2}.pilot h2{max-width:800px}.pilot .section-copy{color:#b8c0c5}
+  .pilot-flow{margin-top:50px;display:grid;gap:10px;counter-reset:pilot}
+  .pilot-item{counter-increment:pilot;display:grid;grid-template-columns:52px 1fr auto;gap:18px;align-items:center;border:1px solid #414a50;background:#20262a;border-radius:10px;padding:18px 20px}
+  .pilot-item:before{content:counter(pilot,decimal-leading-zero);font-family:var(--mono);font-size:11px;color:#70d3f2}.pilot-item h3{margin:0;font-size:16px}.pilot-item p{margin:2px 0 0;color:#98a3aa;font-size:12px}.pilot-item .owner{font-family:var(--mono);font-size:9px;color:#bbc4c9;text-transform:uppercase;letter-spacing:.08em}
+  .pilot-item.gate-pilot{border-color:#db4b55;background:#3a2326}.pilot-item.gate-pilot:before{color:#ff8991}.pilot-item.gate-pilot .owner{color:#ffc2c6}
+
+  footer{padding:34px 0 50px;color:var(--mute);font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.1em}
+  .footer-inner{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
+
+  @media(max-width:900px){
+    nav{display:none}.section-head,.gate-focus,.phase-grid{grid-template-columns:1fr}.system-grid{grid-template-columns:1fr;gap:10px}.arrow{height:28px;transform:rotate(90deg)}.node.gate{min-height:260px}.spine{align-items:flex-start;flex-direction:column}.spine-items{justify-content:flex-start}.lifecycle{grid-template-columns:1fr}.stage{border-right:0;border-bottom:1px solid var(--rule);min-height:auto;padding-left:70px}.stage:before{left:28px;top:31px}.stage:after{top:44px;bottom:-1px;left:32px;width:1px;height:auto;right:auto}.stage h3{margin:0 0 6px}.pilot-item{grid-template-columns:42px 1fr}.pilot-item .owner{grid-column:2}.hero{padding-top:56px}}
+  @media(max-width:560px){.wrap{width:min(100% - 24px,1180px)}.phase{display:none}.hero{padding-bottom:46px}section{padding:62px 0}.system-shell{padding:16px;border-radius:12px}.gate-statement{padding:28px;min-height:430px}.decision{grid-template-columns:42px 1fr;padding:18px}.decision .tag{grid-column:2;justify-self:start}.commitment{grid-template-columns:1fr}.pilot-item{padding:16px}}
+  @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="wrap topbar-inner">
+    <div class="brand"><div class="brandmark">APX</div><span>Apex Operating System</span><span class="phase">Phase 0 · protected</span></div>
+    <nav aria-label="Showcase sections">
+      <a href="#system">System</a><a href="#gate">Gate</a><a href="#proof">Proof</a><a href="#pilot">Pilot</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<section class="hero" id="top">
+  <div class="wrap">
+    <div class="eyebrow">What we built together</div>
+    <h1>One business.<br>One job truth.<br><span class="red">Gate at the center.</span></h1>
+    <p class="lede">Apex is no longer a pile of good ideas. It is a defined operating system connecting the first website click to the final job reconciliation.</p>
+    <div class="proofline" aria-label="Phase zero proof">
+      <span><b>7</b> private repositories</span><span><b>395</b> verified engine checks</span><span><b>0</b> Designer vulnerabilities</span><span><b>1</b> canonical lifecycle</span><span><b>175</b> files preserved</span>
+    </div>
+  </div>
+</section>
+
+<section id="system">
+  <div class="wrap">
+    <div class="section-head">
+      <div><div class="eyebrow">01 · The operating system</div><h2>Purpose-built surfaces. Shared truth underneath.</h2></div>
+      <p class="section-copy">We kept the strongest tools separate where the work is genuinely different—and unified the identifiers, contracts, calculations, and events that must never disagree.</p>
+    </div>
+
+    <div class="system-shell" role="img" aria-label="Apex system architecture from website to accounting, with Gate at the center and a shared data spine beneath">
+      <div class="system-label">Apex OS · operational topology</div>
+      <div class="system-grid">
+        <div class="lane">
+          <article class="node blue"><div class="type">Acquire</div><h3>Website</h3><p>Tagged leads, vertical intent, consent, attribution.</p></article>
+          <article class="node blue"><div class="type">Accept</div><h3>Lead Engine</h3><p>Validation, atomic intake, routing, response.</p></article>
+        </div>
+        <div class="arrow" aria-hidden="true"><span>›</span></div>
+        <div class="lane">
+          <article class="node gold"><div class="type">Price</div><h3>Proposal</h3><p>Versioned scope, cost codes, rates, allowances.</p></article>
+          <article class="node gold"><div class="type">Measure</div><h3>Designer</h3><p>Authoritative geometry, quantities, transparent Calc records.</p></article>
+        </div>
+        <div class="arrow" aria-hidden="true"><span>›</span></div>
+        <article class="node gate"><div><div class="type">Operate</div><h3>GATE</h3><p>The daily command center for exceptions, evidence, hold points, crews, inspections, and release decisions.</p></div><div class="gate-actions"><span>Evidence before action</span><span>Signatures become events</span><span>Draws follow real completion</span></div></article>
+        <div class="arrow" aria-hidden="true"><span>›</span></div>
+        <div class="lane">
+          <article class="node green"><div class="type">Explain</div><h3>Customer View</h3><p>Six safe milestones, approved photos, clear next steps.</p></article>
+          <article class="node green"><div class="type">Settle</div><h3>QuickBooks</h3><p>Invoices, payments, expenses, actual costs.</p></article>
+        </div>
+      </div>
+      <div class="spine"><div><small>Canonical operational spine</small><br><strong>Lead ID → Proposal revision → Job ID → Takeoff revision → Gate event → Reconciliation</strong></div><div class="spine-items"><span>Postgres</span><span>Zod contracts</span><span>Auth + roles</span><span>Event history</span><span>Photo evidence</span></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="gate">
+  <div class="wrap">
+    <div class="section-head">
+      <div><div class="eyebrow">02 · The center of gravity</div><h2>Gate runs the day—not the database.</h2></div>
+      <p class="section-copy">Gate does not try to replace every specialist tool. It shows the owner the few decisions, conflicts, and irreversible hold points that can change a job’s outcome today.</p>
+    </div>
+    <div class="gate-focus">
+      <article class="gate-statement">
+        <div class="num">Product thesis</div>
+        <blockquote>What needs my decision before money, time, or quality is lost?</blockquote>
+        <p>That question becomes the home screen. Everything moving normally stays quiet. Exceptions rise to the top.</p>
+      </article>
+      <div class="decision-queue">
+        <div class="queue-head"><h3>Things need you</h3><span>Exception queue</span></div>
+        <article class="decision"><div class="icon">!</div><div><h4>Pre-gunite gate is blocked</h4><p>Pressure evidence expires before Tuesday’s crew arrival.</p></div><span class="tag">Hold point</span></article>
+        <article class="decision"><div class="icon">I</div><div><h4>Inspection must be requested</h4><p>Call today or the shell schedule moves.</p></div><span class="tag">Deadline</span></article>
+        <article class="decision"><div class="icon">↔</div><div><h4>Gunite crew is double-booked</h4><p>One assignment must move before dispatch.</p></div><span class="tag">Conflict</span></article>
+        <article class="decision"><div class="icon">$</div><div><h4>Draw 4 is eligible</h4><p>The signed gate created the billing event.</p></div><span class="tag">Release</span></article>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section aria-labelledby="lifecycle-title">
+  <div class="wrap">
+    <div class="section-head">
+      <div><div class="eyebrow">03 · The lifecycle</div><h2 id="lifecycle-title">No re-keying. No identity resets.</h2></div>
+      <p class="section-copy">The same job story moves forward through versioned records. External tools keep their jobs, but they do not get to invent competing truth.</p>
+    </div>
+  </div>
+  <div class="lifecycle">
+    <article class="stage"><span class="step">01</span><h3>Lead accepted</h3><p>Attribution and consent preserved.</p></article>
+    <article class="stage"><span class="step">02</span><h3>Proposal revised</h3><p>Every commercial change versioned.</p></article>
+    <article class="stage"><span class="step">03</span><h3>Job ID minted</h3><p>One business identity from contract forward.</p></article>
+    <article class="stage"><span class="step">04</span><h3>Takeoff attached</h3><p>Measured quantities feed pricing.</p></article>
+    <article class="stage gate-stage"><span class="step">05</span><h3>Gate signed</h3><p>Evidence and authority frozen.</p></article>
+    <article class="stage"><span class="step">06</span><h3>Draw released</h3><p>Billing follows physical completion.</p></article>
+    <article class="stage"><span class="step">07</span><h3>Reconciled</h3><p>Estimate learns from actual cost.</p></article>
+  </div>
+</section>
+
+<section id="proof">
+  <div class="wrap">
+    <div class="section-head">
+      <div><div class="eyebrow">04 · Phase 0 proof</div><h2>We protected the ideas before connecting them.</h2></div>
+      <p class="section-copy">The first deliverable was trust: version control, verified baselines, honest claims, and explicit launch blockers. Nothing important now depends on one laptop folder staying lucky.</p>
+    </div>
+    <div class="phase-grid">
+      <article class="proof"><h3>Protected and verified</h3>
+        <div class="metric"><span>Private component repositories</span><b>7 / 7 synced</b></div>
+        <div class="metric"><span>Designer tests</span><b>305 / 305</b></div>
+        <div class="metric"><span>Proposal checks</span><b>90 / 90</b></div>
+        <div class="metric"><span>Phase 0 focused verification</span><b>35 / 35</b></div>
+        <div class="metric"><span>Preserved working-tree files</span><b>175</b></div>
+      </article>
+      <article class="proof caution"><h3>Honest launch boundaries</h3>
+        <div class="metric"><span>Proposal whole-job gap</span><b>40.4% unmodelled</b></div>
+        <div class="metric"><span>Website photography</span><b>9 slots open</b></div>
+        <div class="metric"><span>Website dependency audit</span><b>3 high · 1 moderate</b></div>
+        <div class="metric"><span>Designer safety defects</span><b>Blocked from field use</b></div>
+        <div class="metric"><span>Gate persistence/backend</span><b>Prototype only</b></div>
+      </article>
+    </div>
+    <div class="commitment"><div><h3>Green tests are evidence—not permission to overclaim.</h3><p>Calibration is labeled calibration. Mockups are labeled mockups. Safety-sensitive conclusions fail closed until their evidence is real.</p></div><span class="status">Phase 0 posture</span></div>
+  </div>
+</section>
+
+<section class="pilot" id="pilot">
+  <div class="wrap">
+    <div class="section-head">
+      <div><div class="eyebrow">05 · The first real proof</div><h2>One controlled job. End to end.</h2></div>
+      <p class="section-copy">The next milestone is not another mockup. It is one real identity moving through the full system with durable timestamps and no manual re-entry.</p>
+    </div>
+    <div class="pilot-flow">
+      <article class="pilot-item"><div><h3>Website accepts one tagged lead</h3><p>Duplicate submissions return the original record.</p></div><span class="owner">Website + API</span></article>
+      <article class="pilot-item"><div><h3>Response and routing are recorded</h3><p>No promise of speed without a timestamped delivery event.</p></div><span class="owner">n8n adapter</span></article>
+      <article class="pilot-item"><div><h3>Signed contract creates one Job ID</h3><p>Every downstream record inherits it.</p></div><span class="owner">Office</span></article>
+      <article class="pilot-item"><div><h3>Versioned takeoff attaches to the job</h3><p>Only the reconciled quantity engine may publish physical facts.</p></div><span class="owner">Designer</span></article>
+      <article class="pilot-item gate-pilot"><div><h3>Pre-gunite gate captures evidence and signature</h3><p>Required checks, freshness windows, signer, and plan revision become immutable.</p></div><span class="owner">Gate</span></article>
+      <article class="pilot-item"><div><h3>Draw and customer milestone advance</h3><p>Two safe projections from the same signed event.</p></div><span class="owner">QuickBooks + Customer</span></article>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer><div class="wrap footer-inner"><span>Apex Operating System · Phase 0</span><span>Built together · 2026-07-28</span></div></footer>
+<script>
+  const links=[...document.querySelectorAll('nav a')];
+  const sections=links.map(a=>document.querySelector(a.getAttribute('href'))).filter(Boolean);
+  const observer=new IntersectionObserver(entries=>{
+    const visible=entries.filter(e=>e.isIntersecting).sort((a,b)=>b.intersectionRatio-a.intersectionRatio)[0];
+    if(!visible)return;
+    links.forEach(a=>a.classList.toggle('active',a.getAttribute('href')==='#'+visible.target.id));
+  },{rootMargin:'-20% 0px -65% 0px',threshold:[0,.2,.5]});
+  sections.forEach(section=>observer.observe(section));
+  if(location.hash){
+    const target=document.querySelector(location.hash);
+    if(target)requestAnimationFrame(()=>{
+      document.documentElement.style.scrollBehavior='auto';
+      target.scrollIntoView({block:'start'});
+      document.documentElement.style.removeProperty('scroll-behavior');
+    });
+  }
+</script>
+</body>
+</html>
