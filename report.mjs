@@ -8,7 +8,7 @@
  *   node report.mjs sample           # a different pool, to show the method generalizes
  *   node report.mjs 18x36 --deep 7 --spa 8x8 --deck 700
  */
-import { takeoff, fmtMoney, COST_CODES, DIRECT_LINES_SEED } from './engine.mjs';
+import { legacyReplayTakeoff as takeoff, fmtMoney, COST_CODES, DIRECT_LINES_SEED } from './engine.mjs';
 import { SECTION_TOTAL } from './whitaker-actual.mjs';
 
 /**

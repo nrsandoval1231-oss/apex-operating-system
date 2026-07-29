@@ -5,7 +5,7 @@
  *
  *   node backtest.mjs
  */
-import { takeoff, fmtMoney, COST_CODES } from './engine.mjs';
+import { legacyReplayTakeoff as takeoff, fmtMoney, COST_CODES } from './engine.mjs';
 import { WHITAKER_ESTIMATE, JOB_COST, ALLOWANCE_TOTAL, DISCLOSED } from './whitaker-actual.mjs';
 
 const t = takeoff({ length: 24, width: 14, spa: {} });

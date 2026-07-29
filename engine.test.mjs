@@ -1,13 +1,15 @@
 import {
-  takeoff, marginFromFee, feeForMargin, price, poolGeometry, spaGeometry, combinedGeometry,
+  takeoff as productionTakeoff, legacyReplayTakeoff, marginFromFee, feeForMargin, price, poolGeometry, spaGeometry, combinedGeometry,
   deckArea, APEX_STANDARDS, DIRECT_LINES_SEED, validateProposalInputs, finalizeProposal,
 } from './engine.mjs';
+import { approvedTakeoffFixture, APPROVED_TAKEOFF_IDS } from './approved-takeoff.fixture.mjs';
 import { spawnSync } from 'node:child_process';
 let pass=0, fail=0;
 const near=(a,b,tol)=>Math.abs(a-b)<=tol;
 const r2=(n)=>Math.round(n*100)/100;
 const ok=(n,c,extra='')=>{console.log((c?'PASS':'FAIL')+' '+n+(c?'':'  → '+extra));c?pass++:fail++;};
 const throws=(fn)=>{try{fn();return false;}catch{return true;}};
+const takeoff = legacyReplayTakeoff;
 
 /**
  * GROUND TRUTH — Whitaker Oasis, corrected 2026-07-26.
@@ -81,6 +83,32 @@ const t = takeoff(WHITAKER);
 const L = (n) => t.lines.find(l=>l.name.includes(n));
 // Finishes bill as separate Materials/Labor lines (matching his estimate), so sum the pair.
 const LS = (n) => t.lines.filter(l=>l.name.includes(n)).reduce((s,l)=>s+l.extended,0);
+const authorized = productionTakeoff({
+  ...WHITAKER,
+  jobId: APPROVED_TAKEOFF_IDS.jobId,
+  currentApprovedRevisionId: APPROVED_TAKEOFF_IDS.revisionId,
+  approvedTakeoffRevision: approvedTakeoffFixture(),
+});
+const AL = (n) => authorized.lines.find(l=>l.name.includes(n));
+ok('approved Designer quantities replace Proposal geometry as pricing authority',
+  AL('Excavation').qty===95.5 &&
+  AL('Gunite').qty===28.4 &&
+  AL('Rebar').qty===1105 &&
+  AL('Plaster / Labor').qty===901 &&
+  AL('Tile / Labor').qty===101 &&
+  AL('Coping / Materials').qty===107.06 &&
+  AL('Pool Deck').qty===401 &&
+  AL('Pool Plumbing').qty===812,
+  authorized.lines.map((line)=>`${line.name}:${line.qty}`).join('; '));
+const authorityOnly = productionTakeoff({
+  jobId: APPROVED_TAKEOFF_IDS.jobId,
+  currentApprovedRevisionId: APPROVED_TAKEOFF_IDS.revisionId,
+  approvedTakeoffRevision: approvedTakeoffFixture(),
+});
+ok('approved revision pricing never needs Proposal geometry inputs',
+  authorityOnly.lines.find((line)=>line.name==='Excavation')?.qty===95.5 &&
+  authorityOnly.lines.find((line)=>line.name.includes('Gunite'))?.qty===28.4,
+  authorityOnly.lines.map((line)=>`${line.name}:${line.qty}`).join('; '));
 ok('excavation ≈ 92.3 bank yd³', near(L('Excavation').qty,T.excavation,0.5), String(L('Excavation').qty));
 ok('gunite ordered ≈ 27.3 yd³', near(L('Gunite').qty,T.gunite,0.3), String(L('Gunite').qty));
 ok('plaster labor qty = wetted area ≈ 887 sq ft', near(L('Plaster / Labor').qty,T.wetted,1), String(L('Plaster / Labor').qty));
@@ -212,13 +240,29 @@ ok('no residual line when back-solve is off', !takeoff({...WHITAKER,actualJobCos
 ok('the default draft is blocked while direct-entry scope is unresolved',
   t.proposalGate.canIssue===false && t.proposalGate.blockers.some(b=>b.code==='direct-scope-unresolved'));
 ok('a blocked draft cannot be finalized', throws(()=>finalizeProposal(t)));
-const ready = takeoff({
+const commercialReadyWithoutRevision = takeoff({
   ...WHITAKER,
+  directLines: DIRECT_LINES_SEED.map((line)=>({...line,extended:1000,scopeStatus:'quoted'})),
+});
+ok('commercially complete pricing remains blocked without an approved Designer revision',
+  commercialReadyWithoutRevision.proposalGate.canIssue===false &&
+  commercialReadyWithoutRevision.proposalGate.blockers.some((b)=>b.code==='approved-takeoff-required'));
+const ready = productionTakeoff({
+  ...WHITAKER,
+  jobId: APPROVED_TAKEOFF_IDS.jobId,
+  currentApprovedRevisionId: APPROVED_TAKEOFF_IDS.revisionId,
+  approvedTakeoffRevision: approvedTakeoffFixture(),
   directLines: DIRECT_LINES_SEED.map((line)=>({...line,extended:1000,scopeStatus:'quoted'})),
 });
 ok('explicitly quoted direct-entry scope clears the issue gate', ready.proposalGate.canIssue===true, ready.proposalGate.blockers.map(b=>b.message).join('; '));
 const issued = finalizeProposal(ready);
 ok('finalization returns an immutable customer-safe payload', issued.status==='issued' && Object.isFrozen(issued));
+ok('issued proposal is immutably pinned to its approved revision with readable quantity explanations',
+  issued.jobId===APPROVED_TAKEOFF_IDS.jobId &&
+  issued.approvedTakeoff.revisionId===APPROVED_TAKEOFF_IDS.revisionId &&
+  issued.measuredQuantityExplanations.length>0 &&
+  issued.measuredQuantityExplanations.every((entry)=>entry.code && entry.calcId && entry.explanation) &&
+  !JSON.stringify(issued).includes(APPROVED_TAKEOFF_IDS.userId));
 const calibration = spawnSync(process.execPath,['calibrate.mjs'],{encoding:'utf8'});
 ok('unsafe calibration script is fail-closed', calibration.status!==0 && `${calibration.stdout}${calibration.stderr}`.includes('DISABLED'));
 

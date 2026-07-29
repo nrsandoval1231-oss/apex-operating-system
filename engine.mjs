@@ -26,6 +26,8 @@
  * re-derived from 5–10 completed jobs (PRD 02 Milestone 1) and owner-maintained (Phase 1).
  */
 
+import { readApprovedQuantityAuthority } from './approved-takeoff.mjs';
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Cost codes — Foundation §4 (his order and naming; the missing ones are additive)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -70,8 +72,13 @@ export function validateProposalInputs(inputs) {
     return ['inputs must be an object.'];
   }
 
-  if (!positive(inputs.length)) errors.push('length must be a positive finite number.');
-  if (!positive(inputs.width)) errors.push('width must be a positive finite number.');
+  const hasApprovedQuantitySource = inputs.approvedTakeoffRevision != null;
+  if (!hasApprovedQuantitySource || inputs.length != null) {
+    if (!positive(inputs.length)) errors.push('length must be a positive finite number.');
+  }
+  if (!hasApprovedQuantitySource || inputs.width != null) {
+    if (!positive(inputs.width)) errors.push('width must be a positive finite number.');
+  }
 
   if (inputs.avgDepth != null && !positive(inputs.avgDepth)) errors.push('avgDepth must be a positive finite number.');
   if (inputs.depthShallow != null && !positive(inputs.depthShallow)) errors.push('depthShallow must be a positive finite number.');
@@ -897,6 +904,86 @@ function plumbingLine(geo, opts) {
   };
 }
 
+function approvedGeometryProjection(authority, opts) {
+  const pool = {
+    length: opts.length ?? null,
+    width: opts.width ?? null,
+    depthShallow: opts.depthShallow ?? APEX_STANDARDS.depthShallow,
+    depthDeep: opts.depthDeep ?? APEX_STANDARDS.depthDeep,
+  };
+  const spa = opts.spa
+    ? {
+        length: opts.spa.length ?? APEX_STANDARDS.spa.length,
+        width: opts.spa.width ?? APEX_STANDARDS.spa.width,
+        depth: opts.spa.depth ?? APEX_STANDARDS.spa.depth,
+      }
+    : null;
+  return {
+    pool,
+    spa,
+    gallons: authority.get('pool.water-volume').value,
+    wettedArea: authority.get('pool.wetted-area').value,
+    perimeter: authority.get('pool.waterline-perimeter').value,
+    copingPerimeter: authority.get('finishes.coping-ordered-length').value,
+  };
+}
+
+function approvedQuantityPricingLines(authority, opts) {
+  const make = ({ code, name, quantityCode, unit, costKey, translate, crewRate, extra }) => {
+    const quantity = authority.get(quantityCode);
+    const qty = translate ? translate(quantity) : quantity.value;
+    const unitCost = opts.deckRate != null && quantityCode === 'yard.deck-area'
+      ? opts.deckRate
+      : UNIT_COSTS[costKey].rate;
+    return {
+      code,
+      name,
+      qty,
+      unit,
+      unitCost,
+      extended: r(qty * unitCost),
+      confidence: UNIT_COSTS[costKey].confidence,
+      basis: `${quantity.value} ${quantity.unit} from approved Designer revision ${authority.revisionId}; Calc ${quantity.calcId}`
+        + (qty !== quantity.value ? `; commercial conversion = ${qty} ${unit}` : ''),
+      ...(crewRate ? { crewHours: r(quantity.value * crewRate, 1) } : {}),
+      ...(extra ? { extra: extra(quantity, qty) } : {}),
+      quantityAuthority: Object.freeze({
+        revisionId: authority.revisionId,
+        quantityModelVersion: authority.quantityModelVersion,
+        code: quantityCode,
+        calcId: quantity.calcId,
+        value: quantity.value,
+        unit: quantity.unit,
+      }),
+    };
+  };
+
+  return [
+    make({ code: 200, name: 'Excavation', quantityCode: 'excavation.bank-volume', unit: 'bank yd³', costKey: 'excavation', crewRate: PRODUCTION.excavationHrsPerYd3 }),
+    make({ code: 200, name: 'Excavation — Site Work & Haul-off', quantityCode: 'excavation.spoil-haul-volume', unit: 'loose yd³', costKey: 'siteWork' }),
+    make({ code: 400, name: 'Pool Shell — Rebar', quantityCode: 'shell.reinforcing-steel-weight', unit: 'lb steel', costKey: 'rebarInstalled', crewRate: PRODUCTION.rebarTieHrsPerLb }),
+    make({ code: 400, name: 'Pool Shell — Forming', quantityCode: 'shell.forming-perimeter', unit: 'LF perimeter', costKey: 'forming' }),
+    make({ code: 400, name: 'Pool Shell — Gunite', quantityCode: 'shell.gunite-ordered-volume', unit: 'yd³ paid', costKey: 'gunite', crewRate: PRODUCTION.guniteHrsPerYd3 }),
+    make({ code: 800, name: 'Pool Finishes — Tile / Materials', quantityCode: 'finishes.tile-ordered-area', unit: 'sq ft', costKey: 'tileMaterial' }),
+    make({ code: 800, name: 'Pool Finishes — Tile / Labor', quantityCode: 'finishes.tile-net-length', unit: 'LF waterline', costKey: 'tileLabor' }),
+    make({ code: 800, name: 'Pool Finishes — Coping / Materials', quantityCode: 'finishes.coping-ordered-length', unit: 'LF', costKey: 'copingMaterial' }),
+    make({ code: 800, name: 'Pool Finishes — Coping / Labor', quantityCode: 'finishes.coping-ordered-length', unit: 'LF', costKey: 'copingLabor' }),
+    make({
+      code: 800,
+      name: 'Pool Finishes — Plaster / Materials',
+      quantityCode: 'finishes.plaster-ordered-area',
+      unit: 'bags',
+      costKey: 'plasterMaterial',
+      translate: (quantity) => Math.ceil(quantity.value / 23),
+      extra: (_quantity, bags) => ({ bags }),
+    }),
+    make({ code: 800, name: 'Pool Finishes — Plaster / Labor', quantityCode: 'finishes.plaster-net-area', unit: 'sq ft wetted', costKey: 'plasterLabor', crewRate: PRODUCTION.plasterHrsPerSqFt }),
+    make({ code: 500, name: 'Utilities — Bonding', quantityCode: 'utilities.bonding-conductor-length', unit: 'LF #8 Cu', costKey: 'bondingCopper' }),
+    make({ code: 1000, name: 'Pool Deck — Decorative Concrete', quantityCode: 'yard.deck-area', unit: 'sq ft', costKey: 'deckConcrete', crewRate: PRODUCTION.deckHrsPerSqFt, extra: () => ({ derived: false, borderFt: null }) }),
+    make({ code: 700, name: 'Pool Plumbing', quantityCode: 'plumbing.developed-run-length', unit: 'LF PVC (blended w/ fittings)', costKey: 'plumbingPvc' }),
+  ];
+}
+
 /**
  * Cost codes that are layout/spec-driven rather than cleanly parametric (equipment, cover,
  * lights, features, automation). Reference treats these as component lists or allowances.
@@ -919,8 +1006,14 @@ export const DIRECT_LINES_SEED = [
 ];
 
 /** Separate internal draft math from a proposal that is safe to issue to a customer. */
-export function proposalIssueGate({ directLines, allowances, backSolveResidual = false }) {
+export function proposalIssueGate({ directLines, allowances, approvedTakeoffRevisionId, backSolveResidual = false }) {
   const blockers = [];
+  if (!approvedTakeoffRevisionId) {
+    blockers.push({
+      code: 'approved-takeoff-required',
+      message: 'Customer issuance requires pricing pinned to the current approved Designer takeoff revision.',
+    });
+  }
   const unresolved = directLines.filter((line) =>
     line.code !== 9999 &&
     line.scopeStatus !== 'not-applicable' &&
@@ -1081,25 +1174,38 @@ export function crewCapacity({ crewDaysPerJob, minCycleWeeks, maxConcurrent = 6,
  * @param inputs.buildWeeks/.visitsPerWeek/.hoursPerVisit — supervision calendar
  * @param inputs.includeMissing               — false; Lever B costs are GATED on contract review
  */
-export function takeoff(inputs) {
+function buildTakeoff(inputs) {
   refuseIfInvalid(validateProposalInputs(inputs));
   const opts = { avgDepth: 4.75, ...inputs };
-  const geo = combinedGeometry(opts);
+  const quantityAuthority = opts.approvedTakeoffRevision
+    ? readApprovedQuantityAuthority(opts.approvedTakeoffRevision, {
+        jobId: opts.jobId,
+        currentApprovedRevisionId: opts.currentApprovedRevisionId,
+      })
+    : null;
+  const geo = quantityAuthority
+    ? approvedGeometryProjection(quantityAuthority, opts)
+    : combinedGeometry(opts);
 
-  const excavation = excavationLine(geo, opts);
-  const parametricLines = [
-    excavation,
-    siteWorkLine(excavation),
-    rebarLine(geo),
-    formingLine(geo),
-    guniteLine(geo),
-    ...tileLine(geo),
-    ...copingLine(geo),
-    ...plasterLines(geo),
-    bondingLine(geo),
-    deckLine(geo, opts),
-    plumbingLine(geo, opts),
-  ].filter(Boolean);
+  let parametricLines;
+  if (quantityAuthority) {
+    parametricLines = approvedQuantityPricingLines(quantityAuthority, opts);
+  } else {
+    const excavation = excavationLine(geo, opts);
+    parametricLines = [
+      excavation,
+      siteWorkLine(excavation),
+      rebarLine(geo),
+      formingLine(geo),
+      guniteLine(geo),
+      ...tileLine(geo),
+      ...copingLine(geo),
+      ...plasterLines(geo),
+      bondingLine(geo),
+      deckLine(geo, opts),
+      plumbingLine(geo, opts),
+    ].filter(Boolean);
+  }
 
   const directLines = (inputs.directLines ?? DIRECT_LINES_SEED).map((l) => ({
     qty: null,
@@ -1170,12 +1276,15 @@ export function takeoff(inputs) {
   const proposalGate = proposalIssueGate({
     directLines,
     allowances,
+    approvedTakeoffRevisionId: quantityAuthority?.revisionId,
     backSolveResidual: !!opts.backSolveResidual,
   });
 
   return {
     inputs: opts,
     geometry: geo,
+    approvedTakeoffRevisionId: quantityAuthority?.revisionId ?? null,
+    quantityModelVersion: quantityAuthority?.quantityModelVersion ?? null,
     lines: parametricLines,
     directLines,
     allowances,
@@ -1273,6 +1382,20 @@ export function takeoff(inputs) {
   };
 }
 
+export function takeoff(inputs) {
+  if (!inputs?.approvedTakeoffRevision) {
+    throw new Error('Production pricing requires the current approved Designer takeoff revision.');
+  }
+  return buildTakeoff(inputs);
+}
+
+export function legacyReplayTakeoff(inputs) {
+  if (inputs?.approvedTakeoffRevision) {
+    throw new Error('Approved Designer revisions must use the production takeoff path, not legacy replay.');
+  }
+  return buildTakeoff(inputs);
+}
+
 const deepFreeze = (value) => {
   if (value && typeof value === 'object' && !Object.isFrozen(value)) {
     Object.freeze(value);
@@ -1290,6 +1413,11 @@ export function finalizeProposal(result) {
   return deepFreeze({
     status: 'issued',
     issuedAt: new Date().toISOString(),
+    jobId: result.inputs.jobId,
+    approvedTakeoff: {
+      revisionId: result.approvedTakeoffRevisionId,
+      quantityModelVersion: result.quantityModelVersion,
+    },
     dimensions: {
       pool: {
         lengthFt: result.inputs.length,
@@ -1305,6 +1433,19 @@ export function finalizeProposal(result) {
       .filter((line) => line.extended > 0)
       .map((line) => ({ code: line.code, name: line.name, amount: line.extended })),
     allowances: result.allowances.map((allowance) => ({ name: allowance.name, amount: allowance.amount })),
+    measuredQuantityExplanations: result.lines
+      .filter((line) => line.quantityAuthority)
+      .map((line) => ({
+        costCode: line.code,
+        line: line.name,
+        code: line.quantityAuthority.code,
+        sourceQuantity: line.quantityAuthority.value,
+        sourceUnit: line.quantityAuthority.unit,
+        calcId: line.quantityAuthority.calcId,
+        pricedQuantity: line.qty,
+        pricedUnit: line.unit,
+        explanation: line.basis,
+      })),
     totals: {
       cost: result.pricing.cost,
       feeRate: result.pricing.feeRate,

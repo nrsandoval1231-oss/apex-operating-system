@@ -7,7 +7,7 @@
  *
  *   node crew.mjs [pool dims, default 24x14]
  */
-import { takeoff, crewCapacity } from './engine.mjs';
+import { legacyReplayTakeoff as takeoff, crewCapacity } from './engine.mjs';
 
 const dims = (process.argv[2] || '24x14').split('x').map(Number);
 const t = takeoff({ length: Math.max(...dims), width: Math.min(...dims), spa: {} });
