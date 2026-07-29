@@ -15,6 +15,9 @@ and the reverse-engineered `reference/whitaker-oasis-quantity-takeoff.md`.
 | `engine.test.mjs` | 112 checks covering formulas, input refusal, issue gating, calibration fixtures, coverage, and circularity warnings. `node engine.test.mjs`. |
 | `report.mjs` | CLI takeoff report — the substantiation test made runnable. `node report.mjs whitaker` / `sample` / `18x36 --deep 7 --spa 8x8`. |
 | `calibrate.mjs` | **Intentionally fail-closed.** It exits non-zero and explains why a one-job fitted replay cannot produce pricing guidance. |
+| `evidence/whitaker/*.json` | Hash-pinned transcription of the quoted estimate and the completed-job transaction report, stored as integer cents. |
+| `whitaker-evidence.mjs` | Fails closed unless all estimate sections, 61 transactions, fee math, payments, and remaining balance reconcile. |
+| `whitaker-evidence.test.mjs` | 11 source-evidence and authority-boundary checks. `node whitaker-evidence.test.mjs`. |
 | `index.html` | The interactive builder UI. Live recompute, derived calendar, coverage, back-test, gated Lever-B panel, CSV/JSON export. |
 
 ## Apex build standards (confirmed 2026-07-26)
@@ -61,8 +64,8 @@ own arithmetic.
 
 ## Calibration replay — not independent validation
 
-`node backtest.mjs` compares the model against **his real estimate, line for line**
-(`whitaker-actual.mjs`, extracted from the customer PDF; all 13 section subtotals and the grand
+`node backtest.mjs` compares the model against **his quoted estimate, line for line**
+(`whitaker-actual.mjs` is a legacy filename for that estimate; all 13 section subtotals and the grand
 total reconcile, which verifies the read). Whitaker also seeded the current unit rates, so the
 modelled-code match is a calibration replay. It proves arithmetic traceability but does **not**
 prove predictive accuracy:
@@ -78,9 +81,27 @@ prove predictive accuracy:
 | | **modelled codes** | **$69,653** | **$69,650** | **calibrated** |
 
 The model currently reaches **$69,653 against $116,955.18**. Its parametric takeoff substantiates
-49.3% of the reference job and tracked allowances add 10.3%; **$47,302 / 40.4% remains unmodelled**
-in direct-entry cost codes seeded at zero. The whole-job Milestone 4 gate therefore fails until
+49.3% of the quoted job-cost estimate and tracked allowances add 10.3%; **$47,302 / 40.4% remains
+unmodelled in the draft** in direct-entry cost codes seeded at zero. The whole-estimate Milestone 4 gate therefore fails until
 those codes carry real quotes. A second completed job is required for independent validation.
+
+## Quoted estimate versus completed-job costs
+
+The newly supplied completed-job transaction report is now transcribed separately from the quote.
+`node whitaker-evidence.test.mjs` verifies the source hashes and exact arithmetic:
+
+| Measure | Quoted estimate | Completed-job report | Variance |
+|---|---:|---:|---:|
+| Job cost / pool expenses | $116,955.18 | $104,602.12 | −$12,353.06 (−10.56%) |
+| 30% contractor fee | $35,086.55 | $31,380.64 | −$3,705.91 |
+| Customer total | $152,041.73 | $135,982.76 | −$16,058.97 (−10.56%) |
+
+The report also reconciles five payments totaling **$121,155.83** plus a **$14,826.93** remaining
+balance to the **$135,982.76** actual cost-plus total. This is valuable same-job estimate-to-actual
+evidence, but all 61 transactions remain deliberately unclassified by cost code. No fuzzy text
+matching is allowed to convert descriptions such as “equipment” or “material” into production
+pricing authority. An owner-reviewed classification is required before category variance analysis.
+The documents still do not independently validate Designer quantities or justify rate calibration.
 
 Four gaps had to close to get there, all found by the back-test:
 
@@ -95,9 +116,9 @@ Four gaps had to close to get there, all found by the back-test:
 
 ## The number that matters most
 
-**The parametric layer substantiates ~49% of Whitaker's real job cost** (59.6% counting the
-tracked allowances). Run the back-test (`actualJobCost`) and the model lands at $69,653 against a
-real $116,955.18 — a 40.4% shortfall that is *missing input, not model error*. The gap now sits in
+**The parametric layer substantiates ~49% of Whitaker's quoted job-cost estimate** (59.6% counting
+the tracked allowances). Run the calibration replay (`actualJobCost` retains its legacy API name)
+and the model lands at $69,653 against the quoted $116,955.18 — a 40.4% draft-scope gap. The gap now sits in
 the remaining layout-driven cost codes seeded at $0: equipment, cover, lights, water features,
 automation, and code 500's flat "Plumber $5,000" labor line. (Code 700 Pool Plumbing — the other
 half of the plumbing split, $8,100 — is now parametric; see below.) Milestone 4's "within 10%"

@@ -1,13 +1,12 @@
 /**
- * backtest.mjs — model vs his real estimate, by cost code (PRD 02 Milestone 4).
+ * backtest.mjs — model vs his quoted customer estimate, by cost code (PRD 02 Milestone 4).
  *
- * The gate is "within 10%". This is the first run where that means anything: the actual line
- * schedule is known, so nothing is back-solved and nothing is circular.
+ * This is a calibration replay, not predictive validation: the estimate seeded the current rates.
  *
  *   node backtest.mjs
  */
 import { takeoff, fmtMoney, COST_CODES } from './engine.mjs';
-import { WHITAKER_ACTUAL, JOB_COST, ALLOWANCE_TOTAL, DISCLOSED } from './whitaker-actual.mjs';
+import { WHITAKER_ESTIMATE, JOB_COST, ALLOWANCE_TOTAL, DISCLOSED } from './whitaker-actual.mjs';
 
 const t = takeoff({ length: 24, width: 14, spa: {} });
 
@@ -32,15 +31,15 @@ const pad = (s, n) => String(s).padEnd(n);
 const num = (n) => fmtMoney(n).padStart(13);
 
 console.log('\n' + '='.repeat(84));
-console.log('  WHITAKER OASIS — MODEL vs ACTUAL, BY COST CODE');
+console.log('  WHITAKER OASIS — MODEL vs QUOTED ESTIMATE, BY COST CODE');
 console.log('='.repeat(84));
-console.log('  code  category                    model         actual      variance   note');
+console.log('  code  category                    model       estimate      variance   note');
 console.log('-'.repeat(84));
 
 let modelled = 0, actualModelled = 0;
 const gaps = [];
 
-for (const sec of WHITAKER_ACTUAL) {
+for (const sec of WHITAKER_ESTIMATE) {
   const actual = sec.lines.reduce((s, l) => s + l.amount, 0);
   const model = modelByCode[sec.code] ?? 0;
   const covered = model > 0;
@@ -62,8 +61,8 @@ console.log(`  ${pad('', 5)} ${pad('JOB COST', 24)} ${num(t.jobCost)} ${num(JOB_
 console.log(`  ${pad('', 5)} ${pad('modelled codes only', 24)} ${num(modelled)} ${num(actualModelled)} ${num(modelled - actualModelled)}   ${(((modelled - actualModelled) / actualModelled) * 100).toFixed(1)}%`);
 
 const gate = Math.abs((modelled - actualModelled) / actualModelled) <= 0.1;
-console.log(`\n  MILESTONE 4 GATE (within 10%, modelled codes): ${gate ? '✓ PASS' : '✗ FAIL'}  `
-  + `${(((modelled - actualModelled) / actualModelled) * 100).toFixed(1)}%`);
+console.log(`\n  CALIBRATION REPLAY CHECK (within 10%, modelled codes): ${gate ? '✓ PASS' : '✗ FAIL'}  `
+  + `${(((modelled - actualModelled) / actualModelled) * 100).toFixed(1)}%  — not predictive validation`);
 
 console.log('\n' + '='.repeat(84));
 console.log('  WHAT THE MODEL DOES NOT ACCOUNT FOR');
@@ -76,7 +75,7 @@ for (const g of gaps) {
 console.log('\n' + '='.repeat(84));
 console.log('  STRUCTURAL FINDINGS');
 console.log('='.repeat(84));
-const deck = WHITAKER_ACTUAL.find((s) => s.code === 1000);
+const deck = WHITAKER_ESTIMATE.find((s) => s.code === 1000);
 console.log(`  1000 Pool Deck is ${fmtMoney(deck.lines.reduce((s, l) => s + l.amount, 0))} and 100% upgrade budgets —`);
 console.log('       there is NO deck construction line anywhere on the estimate. The 4 ft border');
 console.log('       concrete is either unpriced or buried. The $13.59/sq ft seed was derived from');

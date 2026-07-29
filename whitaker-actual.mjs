@@ -1,5 +1,9 @@
 /**
- * whitaker-actual.mjs — Whitaker Oasis, his real estimate, line for line.
+ * whitaker-actual.mjs — Whitaker Oasis, the quoted customer estimate, line for line.
+ *
+ * LEGACY FILENAME: this is not the completed-job transaction report. The actual-cost source is
+ * captured separately in `evidence/whitaker/actual-costs.json` and reconciled by
+ * `whitaker-evidence.mjs`.
  *
  * Source: the customer-facing PDF ("Whitaker Oasis · 14x24 Size Pool w/ Spa"), extracted
  * 2026-07-26. The label glyphs came through a subset font encoding and were reconstructed
@@ -9,10 +13,11 @@
  *   0 + 7,000 + 11,500 + 16,800 + 8,000 + 2,500 + 8,100 + 20,750 + 14,555.18
  *     + 10,000 + 5,950 + 4,800 + 7,000 = 116,955.18   ✓
  *
- * This supersedes guesses. Run `node backtest.mjs` for model vs actual by cost code.
+ * This supersedes guesses about the quoted estimate. Run `node backtest.mjs` for model vs quoted
+ * estimate by cost code.
  */
 
-export const WHITAKER_ACTUAL = [
+export const WHITAKER_ESTIMATE = [
   { code: 100, section: 'Permits', lines: [
     { name: 'Permits', amount: 0 }, // live line item, $0.00 — the long-standing anomaly (ref §5.6)
   ]},
@@ -87,13 +92,16 @@ export const WHITAKER_ACTUAL = [
   ]},
 ];
 
-export const SECTION_TOTAL = (code) =>
-  WHITAKER_ACTUAL.find((s) => s.code === code).lines.reduce((t, l) => t + l.amount, 0);
+// Compatibility alias for earlier scripts. New code must use WHITAKER_ESTIMATE.
+export const WHITAKER_ACTUAL = WHITAKER_ESTIMATE;
 
-export const JOB_COST = WHITAKER_ACTUAL.reduce(
+export const SECTION_TOTAL = (code) =>
+  WHITAKER_ESTIMATE.find((s) => s.code === code).lines.reduce((t, l) => t + l.amount, 0);
+
+export const JOB_COST = WHITAKER_ESTIMATE.reduce(
   (t, s) => t + s.lines.reduce((u, l) => u + l.amount, 0), 0);
 
-export const ALLOWANCE_TOTAL = WHITAKER_ACTUAL.reduce(
+export const ALLOWANCE_TOTAL = WHITAKER_ESTIMATE.reduce(
   (t, s) => t + s.lines.filter((l) => l.allowance).reduce((u, l) => u + l.amount, 0), 0);
 
 // Published on the estimate.
