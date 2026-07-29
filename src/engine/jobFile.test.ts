@@ -117,6 +117,48 @@ describe('what it refuses to load', () => {
     expect(validateJob(bad).join(' ')).toMatch(/307\.2\.2\.2/);
   });
 
+  it('refuses malformed nested records before any calculation can read them', () => {
+    const malformed = [
+      {
+        path: 'pool.steps[0].id',
+        job: { ...STANDARD_MODEL, pool: { ...STANDARD_MODEL.pool, steps: [{}] } },
+      },
+      {
+        path: 'pool.seats[0].kind',
+        job: { ...STANDARD_MODEL, pool: { ...STANDARD_MODEL.pool, seats: [{}] } },
+      },
+      {
+        path: 'spa.lengthFt',
+        job: { ...STANDARD_MODEL, spa: {} },
+      },
+      {
+        path: 'hydraulics.runs[0].lengthFt',
+        job: { ...STANDARD_MODEL, hydraulics: { ...STANDARD_MODEL.hydraulics!, runs: [{}] } },
+      },
+      {
+        path: 'equipment.gas.connectedLoad[0].btuPerHour',
+        job: {
+          ...STANDARD_MODEL,
+          equipment: {
+            ...STANDARD_MODEL.equipment!,
+            gas: { ...STANDARD_MODEL.equipment!.gas!, connectedLoad: [{}] },
+          },
+        },
+      },
+    ];
+
+    for (const sample of malformed) {
+      const errors = validateJob(sample.job);
+      expect(errors.join(' '), sample.path).toContain(sample.path);
+      const parsed = parseJob(JSON.stringify({
+        apexDesignerJob: JOB_FILE_VERSION,
+        savedFrom: 'test',
+        job: sample.job,
+      }));
+      expect(parsed.ok, sample.path).toBe(false);
+    }
+  });
+
   it('collects every problem rather than stopping at the first', () => {
     const errs = validateJob({ jurisdiction: 'Lubbock, TX' });
     expect(errs.length).toBeGreaterThan(2);

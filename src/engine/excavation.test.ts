@@ -19,13 +19,14 @@ import type { Job } from './types.ts';
 const close = (actual: number, expected: number, tol = 0.01) =>
   expect(Math.abs(actual - expected)).toBeLessThanOrEqual(tol);
 
-const geom = computeGeometry(STANDARD_MODEL);
-const run = (job: Job = STANDARD_MODEL) => {
+const POOL_ONLY: Job = { ...STANDARD_MODEL, spa: undefined };
+const geom = computeGeometry(POOL_ONLY);
+const run = (job: Job = POOL_ONLY) => {
   const g = computeGeometry(job);
   return computeExcavation(job, g.segments, g.totalVolumeCf.value, g.totalWettedArea.value);
 };
 const x = computeExcavation(
-  STANDARD_MODEL,
+  POOL_ONLY,
   geom.segments,
   geom.totalVolumeCf.value,
   geom.totalWettedArea.value,
@@ -35,7 +36,17 @@ describe('excavation envelope', () => {
   it('length = 30 + 2 x (0.5 + 1.0) = 33 ft', () => close(x.excavationLength.value, 33));
   it('width = 15 + 2 x (0.5 + 1.0) = 18 ft', () => close(x.excavationWidth.value, 18));
   it('max cut = 0.5 + 6 + 0.5 + 0.5 = 7.5 ft below grade', () => close(x.maxCutDepth.value, 7.5));
-  it('total cut = 201.25 sf x 18 ft = 3622.5 cf', () => close(x.totalCutCf.value, 3622.5));
+  it('adds the attached spa cut beyond the pool excavation envelope', () => {
+    const withSpa = run(STANDARD_MODEL);
+    const withoutSpa = run();
+    // Deep-end attachment: the pool over-dig already covers the shared-edge strip.
+    // Additional cut = spa outward run 6 x expanded width (6 + 2 x 1.5) x cut depth 5.
+    close(withSpa.attachedSpaCutCf!.value, 270);
+    close(withSpa.totalCutCf.value - withoutSpa.totalCutCf.value, 270);
+  });
+  it('total attached-spa cut = pool cut 3622.5 cf + spa cut 270 cf', () => {
+    close(run(STANDARD_MODEL).totalCutCf.value, 3892.5);
+  });
 
   it('the cut is deeper than the water everywhere — shell and over-dig are additive', () => {
     for (const s of x.cutSegments) {
@@ -74,7 +85,7 @@ describe('three volume states, never conflated', () => {
 
   it('still swells each layer on its own factor when a job is layered', () => {
     const layered = run({
-      ...STANDARD_MODEL,
+      ...POOL_ONLY,
       excavation: {
         ...STANDARD_MODEL.excavation,
         soilLayers: [
@@ -98,24 +109,24 @@ describe('backfill balance and haul', () => {
     expect(x.spoilHaulLooseCy.unit).toBe('LCY');
   });
 
-  it('void = 3622.5 - 2110.5 water - 507.08 shell = 1004.92 cf = 37.22 CCY', () => {
-    close(x.backfillVoidCf.value, 1004.922, 0.01);
-    close(x.backfillCompactedCy.value, 37.219, 0.001);
+  it('void = 3622.5 - 1984.5 water - 447.08 shell = 1190.92 cf = 44.11 CCY', () => {
+    close(x.backfillVoidCf.value, 1190.922, 0.01);
+    close(x.backfillCompactedCy.value, 44.108, 0.001);
   });
 
-  it('haul = 167.71 total LCY - 53.48 LCY consumed as backfill = 114.23 LCY', () => {
-    close(x.backfillLooseCy.value, 53.476, 0.01);
-    close(x.spoilHaulLooseCy.value, 114.2323, 0.01);
+  it('haul = 167.71 total LCY - 63.37 LCY consumed as backfill = 104.33 LCY', () => {
+    close(x.backfillLooseCy.value, 63.3739, 0.01);
+    close(x.spoilHaulLooseCy.value, 104.3344, 0.01);
   });
 
-  it('truck count rounds up: ceil(114.23 / 12) = 10 loads', () => {
-    expect(x.truckCount.value).toBe(10);
+  it('truck count rounds up: ceil(104.33 / 12) = 9 loads', () => {
+    expect(x.truckCount.value).toBe(9);
   });
 
   it('one cubic yard over a truckload is still another truck', () => {
     const tiny = run({
-      ...STANDARD_MODEL,
-      excavation: { ...STANDARD_MODEL.excavation, truckCapacityLcy: 114.2323 / 2 - 0.001 },
+      ...POOL_ONLY,
+      excavation: { ...STANDARD_MODEL.excavation, truckCapacityLcy: x.spoilHaulLooseCy.value / 2 - 0.001 },
     });
     expect(tiny.truckCount.value).toBe(3);
   });
@@ -128,14 +139,14 @@ describe('backfill balance and haul', () => {
 describe('layered profile is required — no single soil type, no defaulted caliche', () => {
   it('rejects an empty soil profile', () => {
     expect(() =>
-      run({ ...STANDARD_MODEL, excavation: { ...STANDARD_MODEL.excavation, soilLayers: [] } }),
+      run({ ...POOL_ONLY, excavation: { ...STANDARD_MODEL.excavation, soilLayers: [] } }),
     ).toThrow(ExcavationInputError);
   });
 
   it('rejects a layer with no swell factor rather than defaulting one', () => {
     expect(() =>
       run({
-        ...STANDARD_MODEL,
+        ...POOL_ONLY,
         excavation: {
           ...STANDARD_MODEL.excavation,
           soilLayers: [
@@ -155,7 +166,7 @@ describe('layered profile is required — no single soil type, no defaulted cali
   it('rejects non-contiguous layers', () => {
     expect(() =>
       run({
-        ...STANDARD_MODEL,
+        ...POOL_ONLY,
         excavation: {
           ...STANDARD_MODEL.excavation,
           soilLayers: [
@@ -170,7 +181,7 @@ describe('layered profile is required — no single soil type, no defaulted cali
   it('rejects a profile that does not reach the bottom of the cut', () => {
     expect(() =>
       run({
-        ...STANDARD_MODEL,
+        ...POOL_ONLY,
         excavation: {
           ...STANDARD_MODEL.excavation,
           soilLayers: [
@@ -192,11 +203,11 @@ describe('layered profile is required — no single soil type, no defaulted cali
       { name: 'Caprock', topDepthFt: 1, thicknessFt: Infinity, swellFactor: 0.3, compactionYield: 0.85 },
     ];
     const deepCaliche = run({
-      ...STANDARD_MODEL,
+      ...POOL_ONLY,
       excavation: { ...STANDARD_MODEL.excavation, soilLayers: base },
     });
     const shallowCaliche = run({
-      ...STANDARD_MODEL,
+      ...POOL_ONLY,
       excavation: { ...STANDARD_MODEL.excavation, soilLayers: shallower },
     });
     close(shallowCaliche.totalBankCy.value, deepCaliche.totalBankCy.value, 0.0001);

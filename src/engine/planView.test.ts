@@ -79,6 +79,17 @@ describe('the drawing traces to the job', () => {
     expect(plan.svg).toContain(`2 outlets @ 3'-0" apart`);
   });
 
+  it('extends excavation and deck outlines around an attached spa', () => {
+    expect(plan.svg).toContain('pv-spa-excavation');
+    expect(plan.svg).toContain('pv-spa-deck');
+    const inset = renderPlanView({
+      ...STANDARD_MODEL,
+      spa: { ...STANDARD_MODEL.spa!, insetIntoPool: true },
+    });
+    expect(inset.svg).not.toContain('pv-spa-excavation');
+    expect(inset.svg).not.toContain('pv-spa-deck');
+  });
+
   it('draws a symbol per skimmer and per return branch', () => {
     const skimmers = STANDARD_MODEL.hydraulics!.runs.filter((r) => r.role === 'skimmer');
     const returns = STANDARD_MODEL.hydraulics!.runs.filter((r) => r.role === 'return-branch');

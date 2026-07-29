@@ -204,6 +204,8 @@ function runDeeperThan(segments: readonly ProfileSegment[], h: number): number {
 export interface StructureQuantities {
   readonly detail: StandardDetail;
   readonly envelope: EnvelopeMatch;
+  /** Floor and three exterior walls of a deep-end attached spa; dam wall is separate. */
+  readonly attachedSpaDevelopedArea?: Calc;
   readonly developedArea: Calc;
   readonly shellVolume: Calc;
   readonly coveVolume: Calc;
@@ -272,9 +274,9 @@ export function computeStructure(
   const sectionArea = crossSectionArea(segments);
   const perimeter = 2 * (job.pool.lengthFt + W);
 
-  const developedArea = calc({
-    id: 'str.developedArea',
-    label: 'Developed shell area (floor, side walls, end walls)',
+  const poolDevelopedArea = calc({
+    id: 'str.poolDevelopedArea',
+    label: 'Pool developed shell area (floor, side walls, end walls)',
     formula: 'A_dev = (W x L_slant) + (2 x A_sec) + (W x d_sh) + (W x d_dp)',
     unit: 'sf',
     inputs: [
@@ -287,6 +289,39 @@ export function computeStructure(
     compute: ({ W, L_slant, A_sec, d_sh, d_dp }) =>
       W! * L_slant! + 2 * A_sec! + W! * d_sh! + W! * d_dp!,
     notes: ['Step and bench faces are not shot as separate shell area; they are formed within it.'],
+  });
+
+  const attachedSpa = job.spa?.attachedToPool === true && job.spa.insetIntoPool !== true
+    ? job.spa
+    : undefined;
+  const attachedSpaDevelopedArea = attachedSpa
+    ? calc({
+        id: 'str.spa.attachedDevelopedArea',
+        label: 'Attached spa shell area (floor and three exterior walls)',
+        formula: 'A_spa = L x W + d x (W + 2 x L)',
+        unit: 'sf',
+        inputs: [
+          inp('L', 'Spa outward run from shared pool wall', attachedSpa.lengthFt, 'ft'),
+          inp('W', 'Spa width along shared pool wall', attachedSpa.widthFt, 'ft'),
+          inp('d', 'Spa water depth', attachedSpa.depthFt, 'ft'),
+        ],
+        compute: ({ L, W, d }) => L! * W! + d! * (W! + 2 * L!),
+        notes: [
+          'The shared pool edge is the dam wall and is taken off separately, so this shell area includes only the spa floor and three exterior walls.',
+        ],
+      })
+    : undefined;
+
+  const developedArea = calc({
+    id: 'str.developedArea',
+    label: 'Total developed shell area',
+    formula: attachedSpaDevelopedArea ? 'A_dev = A_pool + A_spa' : 'A_dev = A_pool',
+    unit: 'sf',
+    inputs: [
+      fromCalc('A_pool', poolDevelopedArea),
+      ...(attachedSpaDevelopedArea ? [fromCalc('A_spa', attachedSpaDevelopedArea)] : []),
+    ],
+    compute: ({ A_pool, A_spa }) => A_pool! + (A_spa ?? 0),
   });
 
   const shellVolume = calc({
@@ -538,6 +573,7 @@ export function computeStructure(
     quantities: {
       detail,
       envelope: selection.match,
+      ...(attachedSpaDevelopedArea ? { attachedSpaDevelopedArea } : {}),
       developedArea,
       shellVolume,
       coveVolume,

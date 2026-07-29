@@ -178,8 +178,79 @@ export function validateJob(value: unknown): string[] {
         if (!isNum(p[k]) || (p[k] as number) < 0) e.push(`pool.profile.${k} must be a number of 0 or more.`);
       }
     }
-    if (!Array.isArray(pool['steps'])) e.push('pool.steps must be a list (it may be empty).');
-    if (!Array.isArray(pool['seats'])) e.push('pool.seats must be a list (it may be empty).');
+    const steps = pool['steps'];
+    if (!Array.isArray(steps)) {
+      e.push('pool.steps must be a list (it may be empty).');
+    } else {
+      steps.forEach((step, i) => {
+        const path = `pool.steps[${i}]`;
+        if (!isRec(step)) {
+          e.push(`${path} is not an object.`);
+          return;
+        }
+        if (typeof step['id'] !== 'string' || !step['id']) e.push(`${path}.id is missing.`);
+        if (!isNum(step['treadCount']) || !Number.isInteger(step['treadCount']) || step['treadCount'] <= 0) {
+          e.push(`${path}.treadCount must be a positive integer.`);
+        }
+        for (const key of ['treadRunIn', 'treadWidthIn', 'floorDepthFt']) {
+          if (!isNum(step[key]) || step[key] <= 0) e.push(`${path}.${key} must be a positive number.`);
+        }
+        const risers = step['riserHeightsIn'];
+        if (!Array.isArray(risers) || risers.some((r) => !isNum(r) || r < 0)) {
+          e.push(`${path}.riserHeightsIn must be a list of non-negative numbers.`);
+        }
+        if (typeof step['isRequiredEntryExit'] !== 'boolean') {
+          e.push(`${path}.isRequiredEntryExit must be true or false.`);
+        }
+      });
+    }
+
+    const seats = pool['seats'];
+    if (!Array.isArray(seats)) {
+      e.push('pool.seats must be a list (it may be empty).');
+    } else {
+      seats.forEach((seat, i) => {
+        const path = `pool.seats[${i}]`;
+        if (!isRec(seat)) {
+          e.push(`${path} is not an object.`);
+          return;
+        }
+        if (typeof seat['id'] !== 'string' || !seat['id']) e.push(`${path}.id is missing.`);
+        if (!['bench', 'swimout', 'tanningLedge'].includes(String(seat['kind']))) {
+          e.push(`${path}.kind must be bench, swimout, or tanningLedge.`);
+        }
+        for (const key of [
+          'depthBelowWaterlineIn',
+          'surfaceDepthIn',
+          'surfaceWidthIn',
+          'leadingEdgeLengthFt',
+          'floorDepthFt',
+        ]) {
+          if (!isNum(seat[key]) || seat[key] < 0) e.push(`${path}.${key} must be a non-negative number.`);
+        }
+        if (typeof seat['isRequiredEntryExit'] !== 'boolean') {
+          e.push(`${path}.isRequiredEntryExit must be true or false.`);
+        }
+      });
+    }
+  }
+
+  const spa = job['spa'];
+  if (spa !== undefined) {
+    if (!isRec(spa)) {
+      e.push('spa must be an object when present.');
+    } else {
+      for (const key of ['lengthFt', 'widthFt', 'depthFt', 'damWallThicknessIn']) {
+        if (!isNum(spa[key]) || spa[key] <= 0) e.push(`spa.${key} must be a positive number.`);
+      }
+      if (!isNum(spa['damWallHeightFt']) || spa['damWallHeightFt'] < 0) {
+        e.push('spa.damWallHeightFt must be a non-negative number.');
+      }
+      if (typeof spa['attachedToPool'] !== 'boolean') e.push('spa.attachedToPool must be true or false.');
+      if (spa['insetIntoPool'] !== undefined && typeof spa['insetIntoPool'] !== 'boolean') {
+        e.push('spa.insetIntoPool must be true or false when present.');
+      }
+    }
   }
 
   const site = job['site'];
@@ -238,9 +309,68 @@ export function validateJob(value: unknown): string[] {
           'hydraulics.mainDrains.count is under 2. Dual suction outlets are mandatory and the tool will not load a single-outlet job.',
         );
       }
-      if (!Array.isArray(hyd['runs'])) e.push('hydraulics.runs must be a list.');
+      const runs = hyd['runs'];
+      if (!Array.isArray(runs)) {
+        e.push('hydraulics.runs must be a list.');
+      } else {
+        runs.forEach((run, i) => {
+          const path = `hydraulics.runs[${i}]`;
+          if (!isRec(run)) {
+            e.push(`${path} is not an object.`);
+            return;
+          }
+          if (typeof run['id'] !== 'string' || !run['id']) e.push(`${path}.id is missing.`);
+          if (typeof run['label'] !== 'string' || !run['label']) e.push(`${path}.label is missing.`);
+          if (!['suction-branch', 'suction-trunk', 'skimmer', 'return-trunk', 'return-branch', 'spa-jet'].includes(String(run['role']))) {
+            e.push(`${path}.role is invalid.`);
+          }
+          if (!isNum(run['lengthFt']) || run['lengthFt'] < 0) e.push(`${path}.lengthFt must be a non-negative number.`);
+          if (!Array.isArray(run['fittings'])) e.push(`${path}.fittings must be a list.`);
+          const basis = run['flowBasis'];
+          if (basis !== 'full-system' && (!isRec(basis) || !isNum(basis['dividedBy']) || basis['dividedBy'] <= 0)) {
+            e.push(`${path}.flowBasis must be full-system or carry a positive dividedBy value.`);
+          }
+        });
+      }
       if (!isNum(hyd['turnoverHours']) || (hyd['turnoverHours'] as number) <= 0) {
         e.push('hydraulics.turnoverHours must be a positive number.');
+      }
+    }
+  }
+
+  const equipment = job['equipment'];
+  if (equipment !== undefined) {
+    if (!isRec(equipment)) {
+      e.push('equipment must be an object when present.');
+    } else {
+      const gas = equipment['gas'];
+      if (gas !== undefined) {
+        if (!isRec(gas)) {
+          e.push('equipment.gas must be an object when present.');
+        } else {
+          if (!['natural-gas', 'propane'].includes(String(gas['fuel']))) e.push('equipment.gas.fuel is invalid.');
+          for (const key of ['heaterBtuPerHour', 'runLengthFt', 'fittingEquivalentLengthFt']) {
+            if (!isNum(gas[key]) || gas[key] < 0) e.push(`equipment.gas.${key} must be a non-negative number.`);
+          }
+          const loads = gas['connectedLoad'];
+          if (!Array.isArray(loads)) {
+            e.push('equipment.gas.connectedLoad must be a list.');
+          } else {
+            loads.forEach((load, i) => {
+              const path = `equipment.gas.connectedLoad[${i}]`;
+              if (!isRec(load)) {
+                e.push(`${path} is not an object.`);
+                return;
+              }
+              if (typeof load['label'] !== 'string' || !load['label']) e.push(`${path}.label is missing.`);
+              if (!isNum(load['btuPerHour']) || load['btuPerHour'] < 0) {
+                e.push(`${path}.btuPerHour must be a non-negative number.`);
+              }
+              if (typeof load['isNew'] !== 'boolean') e.push(`${path}.isNew must be true or false.`);
+            });
+          }
+          if (!Array.isArray(gas['capacityTable'])) e.push('equipment.gas.capacityTable must be a list.');
+        }
       }
     }
   }

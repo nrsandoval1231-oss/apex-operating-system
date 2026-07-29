@@ -18,7 +18,7 @@ JSON save/load)** are complete. Every step in the PRD's build order is done.
 ```bash
 npm install
 npm run dev     # takeoff sheet at localhost:5173
-npm test        # 305 tests
+npm test        # 311 tests
 npm run takeoff # same numbers, headless, for reconciliation
 ```
 
@@ -86,7 +86,17 @@ src/ui/              step 3 — the takeoff sheet
   done at a compliant design flow.
 - **Gas is a demand calculation, never a design.** Total connected load governs,
   not the heater alone. Meter capacity is a required input the tool cannot know.
-  The NFPA 54/58 capacity tables are not built in — no table, no pipe size.
+  The NFPA 54/58 capacity tables are not built in — no table, no pipe size. Size
+  selection is independent of row order, and a run beyond the entered table
+  fails closed rather than reusing a shorter terminal row.
+- **An attached spa is not free material.** Its excavation outside the pool
+  envelope, shell area, and plan-view excavation/deck outlines are separate,
+  traceable lines. The shared dam wall remains separate from the three exterior
+  spa walls.
+- **Safety failures roll up to the sheet.** Hydraulic hard failures, gas meter or
+  intended-size failures, and impossible pad runs set the takeoff's global
+  failure state; they cannot remain red inside a module while the sheet appears
+  clear.
 - **A cover used as the barrier must be ASTM F1346 listed.** Lubbock amended
   305.1 lets a powered safety cover exempt the pool from barrier sections 305.2
   through 305.7, so the listing is load-bearing: without it the job has no
@@ -99,8 +109,9 @@ src/ui/              step 3 — the takeoff sheet
   violates the 1:1 rule is drawn in the failure colour and labelled with the
   depth it would need. A plan that draws a violation as an ordinary dimension is
   how it gets built that way.
-- **A job file is refused, not repaired.** `parseJob` validates before returning
-  and reports every problem at once. A file with no version, a newer format, a
+- **A job file is refused, not repaired.** `parseJob` validates nested steps,
+  seats, spa geometry, hydraulic runs, and gas loads before returning, and
+  reports every problem at once. A file with no version, a newer format, a
   different jurisdiction or a single suction outlet does not load. Infinity on
   the bottom soil layer survives the round trip; the pump is stored by id and
   re-resolved, so manufacturer data is never frozen into a saved job.
@@ -142,9 +153,9 @@ visible rather than silent.
 | Section area | 137.50 sf |
 | Water volume | 2,110.5 cf = 15,787.6 gal |
 | Wetted area | 1,014.16 sf |
-| Total cut | 3,622.5 cf = 134.17 BCY |
-| Loose, at Lubbock's 25% swell | 167.71 LCY |
-| Haul | 114.23 LCY = 10 loads |
+| Total cut, pool + attached spa | 3,892.5 cf = 144.17 BCY |
+| Loose, at Lubbock's 25% swell | 180.21 LCY |
+| Haul | 112.36 LCY = 10 loads |
 
 ## Open — data still needed
 
@@ -169,15 +180,12 @@ bar, 12 in bond beam, and the envelope — depth 3–8 ft, plan up to 45 x 20 ft
 loam over caliche. The rest was filled in on instruction and is listed in
 `assumedFields`, printed on every sheet so the two never look alike.
 
-Still open to redline: bond beam reinforcement is 4 x #3 (the PRD reference is
-4 x #4), stress-point spacing 8 in over a 2 ft zone, and no pier schedule.
+Still open to redline: bond beam reinforcement is 4 x #4, stress-point spacing
+8 in over a 2 ft zone, and no pier schedule.
 
-## Open — blocks the step 2 checkpoint
+## Open — blocks quantity-authority approval
 
-The PRD's checkpoint is reconciling excavation against a hand calc from a real
-Lubbock job. Two inputs are placeholders until that happens:
-
-1. **Caliche swell factor** (currently 0.45) and **depth to caliche**
-   (currently 3 ft). Both are marked as placeholders in `standardModel.ts`.
-2. **Shell thickness** (currently 6 in) comes from the standard detail, which is
-   step 4. The backfill line uses it as a placeholder and says so on the sheet.
+The engine is safer but is not yet the approved quantity authority. It still
+needs a line-by-line reconciliation against controlled real jobs, an approved
+attached-spa reinforcement/detail interpretation, measured compaction yield,
+and replacement of every equipment-loss and existing-appliance placeholder.

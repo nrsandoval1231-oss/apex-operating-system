@@ -38,6 +38,8 @@ export interface ExcavationResult {
   readonly excavationLength: Calc;
   readonly excavationWidth: Calc;
   readonly maxCutDepth: Calc;
+  /** Additional excavation outside the pool envelope for a deep-end attached spa. */
+  readonly attachedSpaCutCf?: Calc;
   readonly totalCutCf: Calc;
   readonly layers: readonly LayerVolumes[];
   readonly totalBankCy: Calc;
@@ -115,6 +117,16 @@ export function computeExcavation(
 
   const cutSegments = buildCutSegments(waterSegments, params);
   const notes: string[] = [];
+  const attachedSpa = job.spa?.attachedToPool === true && job.spa.insetIntoPool !== true
+    ? job.spa
+    : undefined;
+  const excavationExtensionFt = params.shellThicknessFt + params.overDigHorizontalFt;
+  const attachedSpaCutDepthFt = attachedSpa
+    ? params.freeboardFt + attachedSpa.depthFt + params.shellThicknessFt + params.overDigFloorFt
+    : 0;
+  const attachedSpaAdditionalPlanAreaSf = attachedSpa
+    ? attachedSpa.lengthFt * (attachedSpa.widthFt + 2 * excavationExtensionFt)
+    : 0;
 
   const excavationLength = calc({
     id: 'exc.length',
@@ -142,25 +154,28 @@ export function computeExcavation(
     compute: ({ W, t_shell, o_h }) => W! + 2 * (t_shell! + o_h!),
   });
 
-  const maxCut = maxDepth(cutSegments);
+  const poolMaxCut = maxDepth(cutSegments);
+  const maxCut = Math.max(poolMaxCut, attachedSpaCutDepthFt);
   const maxCutDepth = calc({
     id: 'exc.maxDepth',
     label: 'Maximum cut depth below grade',
-    formula: 'D_max = f + d_dp + t_shell + o_f',
+    formula: attachedSpa ? 'D_max = MAX(D_pool, D_spa)' : 'D_max = f + d_dp + t_shell + o_f',
     unit: 'ft',
     inputs: [
       inp('f', 'Freeboard, grade to waterline', params.freeboardFt, 'ft'),
       inp('d_dp', 'Deep water depth', job.pool.profile.deepDepth, 'ft'),
       inp('t_shell', 'Shell thickness', params.shellThicknessFt, 'ft'),
       inp('o_f', 'Floor over-dig', params.overDigFloorFt, 'ft'),
+      ...(attachedSpa ? [inp('D_spa', 'Attached spa cut depth', attachedSpaCutDepthFt, 'ft')] : []),
     ],
-    compute: ({ f, d_dp, t_shell, o_f }) => f! + d_dp! + t_shell! + o_f!,
+    compute: ({ f, d_dp, t_shell, o_f, D_spa }) =>
+      Math.max(f! + d_dp! + t_shell! + o_f!, D_spa ?? 0),
   });
 
   const cutSectionArea = crossSectionArea(cutSegments);
-  const totalCutCf = calc({
-    id: 'exc.totalCut',
-    label: 'Total cut volume',
+  const poolCutCf = calc({
+    id: 'exc.poolCut',
+    label: 'Pool cut volume',
     formula: 'V_cut = A_sec,exc x W_exc',
     unit: 'cf',
     inputs: [
@@ -171,6 +186,38 @@ export function computeExcavation(
     notes: ['Vertical sidewalls assumed. No benching, sloping, or shoring allowance — that is a means-and-methods call, not a takeoff number.'],
   });
 
+  const attachedSpaCutCf = attachedSpa
+    ? calc({
+        id: 'exc.spa.attachedCut',
+        label: 'Attached spa cut beyond the pool excavation envelope',
+        formula: 'V_spa,add = L_spa x (W_spa + 2 x e) x D_spa',
+        unit: 'cf',
+        inputs: [
+          inp('L_spa', 'Spa outward run from shared pool wall', attachedSpa.lengthFt, 'ft'),
+          inp('W_spa', 'Spa width along shared pool wall', attachedSpa.widthFt, 'ft'),
+          inp('e', 'Shell plus horizontal over-dig on each exposed side', excavationExtensionFt, 'ft'),
+          inp('D_spa', 'Spa cut depth below grade', attachedSpaCutDepthFt, 'ft'),
+        ],
+        compute: ({ L_spa, W_spa, e, D_spa }) => L_spa! * (W_spa! + 2 * e!) * D_spa!,
+        notes: [
+          'The attached spa is centered on the pool deep-end wall, matching the plan view. The pool excavation already contains the shared-edge over-dig strip, so only the spa outward run is additive.',
+        ],
+      })
+    : undefined;
+
+  const totalCutCf = calc({
+    id: 'exc.totalCut',
+    label: 'Total cut volume',
+    formula: attachedSpaCutCf ? 'V_cut = V_pool + V_spa,add' : 'V_cut = V_pool',
+    unit: 'cf',
+    inputs: [
+      fromCalc('V_pool', poolCutCf),
+      ...(attachedSpaCutCf ? [fromCalc('V_spa,add', attachedSpaCutCf)] : []),
+    ],
+    compute: ({ V_pool, 'V_spa,add': V_spa }) => V_pool! + (V_spa ?? 0),
+    notes: ['Vertical sidewalls assumed. No benching, sloping, or shoring allowance — that is a means-and-methods call, not a takeoff number.'],
+  });
+
   // --- per layer ------------------------------------------------------------
 
   const layers: LayerVolumes[] = [];
@@ -178,19 +225,26 @@ export function computeExcavation(
     const lo = layer.topDepthFt;
     const hi = Math.min(layer.topDepthFt + layer.thicknessFt, maxCut);
     const bandArea = hi > lo ? integrateDepthBand(cutSegments, lo, hi) : 0;
+    const attachedSpaBandDepthFt = attachedSpa
+      ? Math.max(0, Math.min(hi, attachedSpaCutDepthFt) - lo)
+      : 0;
+    const attachedSpaBandCutCf = attachedSpaAdditionalPlanAreaSf * attachedSpaBandDepthFt;
 
     const cutCf = calc({
       id: `exc.layer.${slug(layer.name)}.cut`,
       label: `${layer.name} — cut volume`,
-      formula: 'V = W_exc x INTEGRAL clamp(d(x) - z_top, 0, t_layer) dx',
+      formula: attachedSpa
+        ? 'V = W_exc x INTEGRAL clamp(d(x) - z_top, 0, t_layer) dx + V_spa,band'
+        : 'V = W_exc x INTEGRAL clamp(d(x) - z_top, 0, t_layer) dx',
       unit: 'cf',
       inputs: [
         fromCalc('W_exc', excavationWidth),
         inp('z_top', 'Depth to top of layer', lo, 'ft'),
         inp('t_layer', 'Layer thickness within the cut', hi - lo, 'ft'),
         inp('A_band', 'Section area of the cut inside this layer', bandArea, 'sf'),
+        ...(attachedSpa ? [inp('V_spa,band', 'Attached spa cut inside this layer', attachedSpaBandCutCf, 'cf')] : []),
       ],
-      compute: ({ A_band, W_exc }) => A_band! * W_exc!,
+      compute: ({ A_band, W_exc, 'V_spa,band': V_spa }) => A_band! * W_exc! + (V_spa ?? 0),
       notes: [
         'Integrated analytically over the piecewise-linear cut profile — the sloped transition only reaches this layer over part of its run.',
       ],
@@ -345,6 +399,7 @@ export function computeExcavation(
     excavationLength,
     excavationWidth,
     maxCutDepth,
+    ...(attachedSpaCutCf ? { attachedSpaCutCf } : {}),
     totalCutCf,
     layers,
     totalBankCy,

@@ -167,6 +167,21 @@ export interface GasResult {
   readonly notes: readonly string[];
 }
 
+/** Parse labels such as "1 in", "1 1/4 in", and "3/4 in" for deterministic size ordering. */
+function nominalSizeInches(label: string): number {
+  const parts = label.toLowerCase().replace(/in(?:ches)?\.?/g, '').trim().split(/\s+/);
+  let total = 0;
+  for (const part of parts) {
+    if (/^\d+(?:\.\d+)?$/.test(part)) {
+      total += Number(part);
+      continue;
+    }
+    const fraction = part.match(/^(\d+)\/(\d+)$/);
+    if (fraction) total += Number(fraction[1]) / Number(fraction[2]);
+  }
+  return total > 0 ? total : Number.POSITIVE_INFINITY;
+}
+
 export function computeGasDemand(gas: GasParams): GasResult {
   const notes: string[] = [];
   const perCf = BTU_PER_CF[gas.fuel];
@@ -278,11 +293,17 @@ export function computeGasDemand(gas: GasParams): GasResult {
       bySize.set(row.sizeLabel, list);
     }
     let chosen: string | null = null;
-    for (const [size, rows] of bySize) {
+    let anySizeCoversLength = false;
+    const sizesSmallestFirst = [...bySize.entries()].sort(
+      ([a], [b]) => nominalSizeInches(a) - nominalSizeInches(b) || a.localeCompare(b),
+    );
+    for (const [size, rows] of sizesSmallestFirst) {
       const sorted = [...rows].sort((a, b) => a.lengthFt - b.lengthFt);
-      const row = sorted.find((r) => r.lengthFt >= L) ?? sorted[sorted.length - 1];
+      const row = sorted.find((r) => r.lengthFt >= L);
+      if (row) anySizeCoversLength = true;
       if (row && row.capacityCfh >= need) {
-        if (chosen === null) chosen = size;
+        chosen = size;
+        break;
       }
     }
     referenceSize = chosen
@@ -296,8 +317,10 @@ export function computeGasDemand(gas: GasParams): GasResult {
       : {
           sizeLabel: null,
           message:
-            `No size in the entered table carries ${need.toFixed(1)} cfh at ${L.toFixed(1)} ft. ` +
-            'Either the table does not go far enough or the run needs to be shortened, split, or run at higher pressure.',
+            (anySizeCoversLength
+              ? `No size in the entered table carries ${need.toFixed(1)} cfh at ${L.toFixed(1)} ft. `
+              : `The entered table does not extend to ${L.toFixed(1)} ft for any size. `) +
+            'The run must be checked against a table row at or beyond its full developed length; never reuse a shorter terminal row.',
         };
   }
 
@@ -318,12 +341,15 @@ export function computeGasDemand(gas: GasParams): GasResult {
     const rows = gas.capacityTable
       .filter((r) => r.sizeLabel === gas.intendedSizeLabel)
       .sort((a, b) => a.lengthFt - b.lengthFt);
-    const row = rows.find((r) => r.lengthFt >= developedLength.value) ?? rows[rows.length - 1];
+    const row = rows.find((r) => r.lengthFt >= developedLength.value);
     if (!row) {
       intendedSize = {
         label: gas.intendedSizeLabel,
         status: 'unverified',
-        message: `${gas.intendedSizeLabel} is the size normally run, but the entered table has no rows for it.`,
+        message:
+          rows.length === 0
+            ? `${gas.intendedSizeLabel} is the size normally run, but the entered table has no rows for it.`
+            : `${gas.intendedSizeLabel} is the size normally run, but the entered table for that size does not extend to the ${developedLength.value.toFixed(1)} ft developed length. A shorter terminal row is not reused.`,
       };
     } else if (row.capacityCfh >= totalConnectedLoadCfh.value) {
       intendedSize = {

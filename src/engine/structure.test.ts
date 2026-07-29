@@ -156,11 +156,16 @@ describe('quantities, once a detail covers the job', () => {
 
   it('produces quantities', () => expect(q).not.toBeNull());
 
-  // Developed area = 15 x 30.2215 + 2 x 137.5 + 15 x 3.5 + 15 x 6 = 870.82 sf.
-  it('developed shell area = 870.82 sf', () => close(q!.developedArea.value, 870.822, 0.01));
+  // Pool developed area = 15 x 30.2215 + 2 x 137.5 + 15 x 3.5 + 15 x 6 = 870.82 sf.
+  it('develops the attached spa floor and three exterior walls from the same detail', () => {
+    // Spa floor 6 x 6 + three exterior walls (6 + 6 + 6) x 3.5 = 99 sf.
+    close(q!.attachedSpaDevelopedArea!.value, 99, 0.01);
+    close(q!.developedArea.value, 969.822, 0.01);
+  });
 
-  // 870.822 x 0.5 ft = 435.41 cf
-  it('shell gunite net = 435.41 cf at a 6 in shell', () => close(q!.shellVolume.value, 435.411, 0.01));
+  it('shell gunite net includes the 99 sf attached spa shell at 6 in', () => {
+    close(q!.shellVolume.value, 484.911, 0.01);
+  });
 
   // 0.5 x 0.5^2 x 90 = 11.25 cf
   it('cove fillet = 11.25 cf', () => close(q!.coveVolume.value, 11.25));
@@ -172,7 +177,7 @@ describe('quantities, once a detail covers the job', () => {
   it('spa dam wall = 4.5 cf', () => close(q!.damWallVolume!.value, 4.5));
 
   it('rebound is a separate line, never folded into net', () => {
-    close(q!.gunite.net.value, 435.411 + 11.25 + 45 + 4.5, 0.01);
+    close(q!.gunite.net.value, q!.shellVolume.value + 11.25 + 45 + 4.5, 0.01);
     close(q!.gunite.waste.value, q!.gunite.net.value * 0.15, 0.01);
     close(q!.gunite.ordered.value, q!.gunite.net.value * 1.15, 0.01);
     expect(q!.gunite.waste.id).not.toBe(q!.gunite.net.id);

@@ -317,11 +317,27 @@ describe('the supplied sizing table, against real loads', () => {
     expect(eq.gas!.referenceSize.sizeLabel).toBe('1 1/2 in');
   });
 
-  it('picks the smallest size that carries the load, not the first that fits', () => {
+  it('picks the smallest size that carries the load, independent of table row order', () => {
+    const rows = [
+      { sizeLabel: '1 1/2 in', lengthFt: 90, capacityCfh: 490 },
+      { sizeLabel: '1 in', lengthFt: 90, capacityCfh: 160 },
+      { sizeLabel: '1 1/4 in', lengthFt: 90, capacityCfh: 320 },
+    ];
     const small = computeGasDemand(
-      gasWith({ connectedLoad: [{ label: 'Heater', btuPerHour: 120000, isNew: true }] }),
+      gasWith({
+        connectedLoad: [{ label: 'Heater', btuPerHour: 120000, isNew: true }],
+        capacityTable: rows,
+      }),
     );
-    // 120 cfh at 90 ft: 1 in carries 160, so 1 in wins over 1 1/4 in.
+    // 120 cfh at 90 ft: 1 in carries 160, so 1 in wins even though 1 1/2 is first.
     expect(small.referenceSize.sizeLabel).toBe('1 in');
+  });
+
+  it('fails closed when the developed length is beyond every entered table row', () => {
+    const overlong = computeGasDemand(gasWith({ runLengthFt: 1000, fittingEquivalentLengthFt: 0 }));
+    expect(overlong.referenceSize.sizeLabel).toBeNull();
+    expect(overlong.referenceSize.message).toMatch(/does not extend/i);
+    expect(overlong.intendedSize.status).toBe('unverified');
+    expect(overlong.intendedSize.message).toMatch(/does not extend/i);
   });
 });

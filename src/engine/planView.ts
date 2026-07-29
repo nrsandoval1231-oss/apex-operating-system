@@ -181,10 +181,22 @@ export function renderPlanView(job: Job, targetWidthPx = 1040): PlanViewResult {
   parts.push(
     `<rect class="pv-excavation" x="${n(x(-over))}" y="${n(y(-over))}" width="${n(s(L + 2 * over))}" height="${n(s(W + 2 * over))}"/>`,
   );
+  if (spa && !spa.insetIntoPool) {
+    const sy0 = (W - spaW) / 2;
+    parts.push(
+      `<rect class="pv-excavation pv-spa-excavation" x="${n(x(L))}" y="${n(y(sy0 - over))}" width="${n(s(spaL + over))}" height="${n(s(spaW + 2 * over))}"/>`,
+    );
+  }
   if (deckW > 0) {
     parts.push(
       `<rect class="pv-deck" x="${n(x(-deckW))}" y="${n(y(-deckW))}" width="${n(s(L + 2 * deckW))}" height="${n(s(W + 2 * deckW))}"/>`,
     );
+    if (spa && !spa.insetIntoPool) {
+      const sy0 = (W - spaW) / 2;
+      parts.push(
+        `<rect class="pv-deck pv-spa-deck" x="${n(x(L))}" y="${n(y(sy0 - deckW))}" width="${n(s(spaL + deckW))}" height="${n(s(spaW + 2 * deckW))}"/>`,
+      );
+    }
   }
 
   // --- water ---------------------------------------------------------------
