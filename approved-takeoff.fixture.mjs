@@ -1,3 +1,5 @@
+import { calculateQuantityPayloadSha256 } from './approved-takeoff.mjs';
+
 const IDS = Object.freeze({
   jobId: 'job_01ARZ3NDEKTSV4RRFFQ69G5FAW',
   revisionId: 'revision_01ARZ3NDEKTSV4RRFFQ69G5FAX',
@@ -38,6 +40,7 @@ export function approvedTakeoffFixture(overrides = {}) {
     engineVersion: 'designer-0.1.0',
     jobInputSha256: 'a'.repeat(64),
     calcLedgerSha256: 'b'.repeat(64),
+    quantityPayloadSha256: calculateQuantityPayloadSha256(quantities),
     quantityModelVersion: 'designer-quantity-v2',
     createdAt: '2026-07-29T12:00:00.000Z',
     createdBy: IDS.userId,

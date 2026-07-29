@@ -261,6 +261,8 @@ ok('finalization returns an immutable customer-safe payload', issued.status==='i
 ok('issued proposal is immutably pinned to its approved revision with readable quantity explanations',
   issued.jobId===APPROVED_TAKEOFF_IDS.jobId &&
   issued.approvedTakeoff.revisionId===APPROVED_TAKEOFF_IDS.revisionId &&
+  issued.approvedTakeoff.quantityPayloadSha256===ready.inputs.approvedTakeoffRevision.quantityPayloadSha256 &&
+  /^[a-f0-9]{64}$/.test(issued.approvedTakeoff.quantityPayloadSha256) &&
   issued.measuredQuantityExplanations.length>0 &&
   issued.measuredQuantityExplanations.every((entry)=>entry.code && entry.calcId && entry.explanation) &&
   !JSON.stringify(issued).includes(APPROVED_TAKEOFF_IDS.userId));

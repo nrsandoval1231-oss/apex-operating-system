@@ -950,6 +950,7 @@ function approvedQuantityPricingLines(authority, opts) {
       quantityAuthority: Object.freeze({
         revisionId: authority.revisionId,
         quantityModelVersion: authority.quantityModelVersion,
+        quantityPayloadSha256: authority.quantityPayloadSha256,
         code: quantityCode,
         calcId: quantity.calcId,
         value: quantity.value,
@@ -1285,6 +1286,7 @@ function buildTakeoff(inputs) {
     geometry: geo,
     approvedTakeoffRevisionId: quantityAuthority?.revisionId ?? null,
     quantityModelVersion: quantityAuthority?.quantityModelVersion ?? null,
+    quantityPayloadSha256: quantityAuthority?.quantityPayloadSha256 ?? null,
     lines: parametricLines,
     directLines,
     allowances,
@@ -1417,6 +1419,7 @@ export function finalizeProposal(result) {
     approvedTakeoff: {
       revisionId: result.approvedTakeoffRevisionId,
       quantityModelVersion: result.quantityModelVersion,
+      quantityPayloadSha256: result.quantityPayloadSha256,
     },
     dimensions: {
       pool: {

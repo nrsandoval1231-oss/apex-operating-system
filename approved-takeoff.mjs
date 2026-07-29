@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+
 const deepFreeze = (value) => {
   if (value && typeof value === 'object' && !Object.isFrozen(value)) {
     Object.freeze(value);
@@ -25,6 +27,24 @@ export const AUTHORITATIVE_QUANTITY_UNITS = Object.freeze({
   'plumbing.developed-run-length': 'lf',
   'utilities.bonding-conductor-length': 'lf',
 });
+
+const QUANTITY_PAYLOAD_DIGEST_SCHEMA = 'apex-approved-quantity-payload-v1';
+
+export function serializeQuantityPayload(quantities) {
+  quantities.forEach((quantity, index) => {
+    if (!Number.isFinite(quantity.value) || quantity.value < 0) {
+      throw new TypeError(`Quantity fact ${index} must carry a finite non-negative value.`);
+    }
+  });
+  return JSON.stringify({
+    schema: QUANTITY_PAYLOAD_DIGEST_SCHEMA,
+    quantities: quantities.map((quantity) => [quantity.code, quantity.value, quantity.unit, quantity.calcId]),
+  });
+}
+
+export function calculateQuantityPayloadSha256(quantities) {
+  return createHash('sha256').update(serializeQuantityPayload(quantities), 'utf8').digest('hex');
+}
 
 export function readApprovedQuantityAuthority(revision, context = {}) {
   if (revision?.status !== 'approved') {
@@ -56,10 +76,15 @@ export function readApprovedQuantityAuthority(revision, context = {}) {
     }
     byCode.set(quantity.code, quantity);
   }
+  if (!/^[a-f0-9]{64}$/.test(revision.quantityPayloadSha256 ?? '')
+      || revision.quantityPayloadSha256 !== calculateQuantityPayloadSha256(revision.quantities)) {
+    throw new Error('Approved Designer quantity payload SHA-256 does not match its ordered quantity facts.');
+  }
   return deepFreeze({
     revisionId: revision.revisionId,
     jobId: revision.jobId,
     quantityModelVersion: revision.quantityModelVersion,
+    quantityPayloadSha256: revision.quantityPayloadSha256,
     get(code) {
       const quantity = byCode.get(code);
       if (!quantity) throw new Error(`Approved Designer revision is missing required quantity: ${code}`);
