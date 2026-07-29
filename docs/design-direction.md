@@ -165,7 +165,42 @@ Items 3–5 were found by tests written during this pass; item 1 was found by pr
 
 ## 7 · Open
 
-- **D-20 photography.** Nine stock stand-ins. Real project photography is the single biggest available lift to this page — a local buyer recognises stock, and pools is a considered purchase at pool prices. `npm run check:images` prints the shot list.
-- **AC-6.4 colour contrast.** Every sage pairing introduced in §1a was measured against AA before it shipped (5.58 / 4.89 / 6.13 / 9.75 / 8.56 / 10.45 : 1), but there is still no automated audit that would catch a future regression. Worth adding.
+- **D-20 photography.** Eight stock stand-ins remain (the owner portrait is now real). Real project photography is the single biggest available lift to this page — a local buyer recognises stock, and pools is a considered purchase at pool prices. `npm run check:images` prints the shot list.
+- **AC-6.4 colour contrast.** Every sage pairing was measured against AA before it shipped (§1a, §2a), but there is still no automated audit that would catch a future regression. Worth adding.
 - **An SVG or EPS of the logo.** The supplied PNG is correct and 2x, so it is crisp everywhere it currently appears, but a vector has no ceiling and would drop ~10 KB.
-- **A second signature moment**, if the site ever needs one — from §3's vocabulary, not from a stock effect.
+- **A Lyon Financial partner/referral URL.** `PUBLIC_FINANCING_URL` currently points at Lyon's public site and attributes the referral to nobody.
+- **Naming the second person** in the owner portrait, if they're happy to appear — the alt text names only Travis until then.
+
+---
+
+## 8 · Parked ideas
+
+Not scheduled. Recorded so they don't have to be re-derived, with enough detail to act on.
+
+### 8.1 · The CSS-only motion pass — *parked 2026-07-29, ready to build*
+
+**Roughly an hour, fully reversible, no dependencies.** The goal is "expensive site" polish without contradicting §4's motion policy — no Lenis, no GSAP, no Three.js, no runtime.
+
+Three effects, in priority order:
+
+1. **Scroll reveals.** Sections fade and rise ~16 px as they enter. Use `IntersectionObserver` with a `.is-in` class, or CSS `animation-timeline: view()` where supported. Reuse the existing `rise` keyframes so it matches the hero's easing rather than inventing a second motion language.
+2. **Parallax on the pools hero image.** The single tallest image on the page and the highest-ticket vertical. `transform: translate3d()` driven by a scroll listener — `transform` only, never `top`/`margin`.
+3. **A slight 3D tilt on the four router tiles** as the pointer moves — `rotateX/rotateY` of 2–4°, `perspective` on the container. Pointer-only; must be inert on touch, where it would fight the tap.
+
+**Non-negotiable constraints** (these are what make it safe, not garnish):
+
+- Written as progressive enhancement inside `@media (prefers-reduced-motion: no-preference)`. Content must be fully visible and correctly positioned with every effect switched off — see §4 for the bug that rule exists to prevent.
+- `transform` and `opacity` only. Never animate layout properties on scroll.
+- Extend `tests/reduced-motion.spec.ts` to cover the new elements, and re-check that no below-the-fold image becomes eager (AC-9.5).
+- **Max one signature motion per screen** (§4). If the tiles tilt *and* the section reveals *and* the hero parallaxes in one viewport, remove one.
+
+**Do not let this grow into a motion framework.** If it needs a library, it has stopped being this idea.
+
+### 8.2 · 3D that would actually sell — *speculative*
+
+Distinct from 8.1, and a much larger piece of work. Ambient WebGL was rejected in §4 and stays rejected; this is the opposite case — 3D doing sales work rather than decoration:
+
+- **A pool configurator** — shape, size, spa, decking — that ends by pre-filling the quote form with the configuration. It would earn its payload because a pool is a considered purchase people want to *see* before committing, and it would feed the lead spine rather than sitting beside it.
+- **A backyard before/after slider.** Cheaper, and needs no 3D at all — worth trying first, and it is gated on the same thing everything else is: real project photography (D-20).
+
+Both are only worth costing once there is real photography and real lead volume to justify the build.
