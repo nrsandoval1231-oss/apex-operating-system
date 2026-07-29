@@ -66,7 +66,9 @@ export async function openQuoteForm(page: Page) {
    * Astro's runtime stamps `ssr` on <astro-island> and removes it once the component is
    * hydrated, so its ABSENCE is the real signal.
    */
-  await expect(page.locator('astro-island:not([ssr])').first()).toBeAttached();
+  // Generous timeout on purpose: hydration waits on the page's images and module graph, and
+  // on a dev server under parallel load that is the slowest thing in the suite.
+  await expect(page.locator('astro-island:not([ssr])').first()).toBeAttached({ timeout: 20_000 });
   return submit;
 }
 
