@@ -50,20 +50,6 @@ export const site = {
 export const ogImageUrl = envOr('PUBLIC_OG_IMAGE', '');
 
 /**
- * Legal page destinations, rendered as real links in the footer (Phase 5).
- *
- * These are env-driven and default to the pages' CURRENT home on `apexcoatinglbk.com`,
- * because that is where they actually live today — this repo has no legal routes and must
- * not invent legal text. Two things depend on the privacy policy being genuinely reachable:
- * TCPA (the reason consent is per-vertical) and A2P 10DLC registration, where carriers
- * reject campaigns whose linked policy 404s.
- *
- * TODO(BLOCKED: D-03): if `apexcoatinglbk.com` is wildcard-redirected to /coating at cutover
- * (see config/redirects.json), these URLs start 301-ing into a sales page. Either exclude
- * the legal paths from that wildcard, or rebuild the policies on the canonical domain and
- * repoint these. Decide before DNS — see docs/launch-checklist.md.
- */
-/**
  * Financing partner destination (Lyon Financial).
  *
  * Financing was named in three places on the site — the footer, the pools section, and the
@@ -78,9 +64,29 @@ export const ogImageUrl = envOr('PUBLIC_OG_IMAGE', '');
  */
 export const financingUrl = envOr('PUBLIC_FINANCING_URL', 'https://www.lyonfinancial.net/');
 
+/**
+ * Legal page destinations, rendered as real links in the footer.
+ *
+ * Defaults point at where these pages ACTUALLY live, which a crawl of the live site
+ * (2026-07-29) put on the MAIN domain — not on `apexcoatinglbk.com` as `docs/decisions.md`
+ * D-03 had recorded. That note was wrong and is corrected there. This repo has no legal
+ * routes and must not invent legal text.
+ *
+ * ⚠ THESE URLS DIE AT CUTOVER. They are pages on the very site this project replaces, so the
+ * moment DNS points at the new build they 404 and the footer links break. Two things then
+ * fail at once: the links, and A2P 10DLC registration — carriers require a reachable privacy
+ * policy naming SMS, and TCPA is the reason consent is per-vertical in the first place.
+ *
+ * The fix is to rebuild both as routes here, copying the text VERBATIM from the live pages
+ * (legal copy is not something to paraphrase or regenerate), then repoint these at internal
+ * paths. Tracked in config/redirects.json → `$legalGap` and docs/launch-checklist.md.
+ */
 export const legalUrls = {
-  privacy: envOr('PUBLIC_PRIVACY_URL', 'https://apexcoatinglbk.com/privacy-policy'),
-  terms: envOr('PUBLIC_TERMS_URL', 'https://apexcoatinglbk.com/terms-and-conditions'),
+  privacy: envOr(
+    'PUBLIC_PRIVACY_URL',
+    'https://apexgetsitdone.com/privacy-policy-apex-designer-pools/',
+  ),
+  terms: envOr('PUBLIC_TERMS_URL', 'https://apexgetsitdone.com/terms-and-conditions/'),
 } as const;
 
 /** True when this is a real production build (gates live vs test webhook — Phase 3). */

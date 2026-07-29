@@ -10,13 +10,17 @@
     "a single-hop 301 to a 200. Run it against staging before DNS, and against production",
     "immediately after.",
     "",
-    "STATUS: the `pages` array is EMPTY and that is not an oversight — it cannot be filled",
-    "from inside this repo. It requires the old-URL inventory described in Step 1 of",
-    "docs/redirect-map.md (crawl + Search Console + GA4 + old sitemap), and Search Console",
-    "and GA4 access are BLOCKED on D-01. Launching with `pages` empty throws away every",
-    "ranking the old site holds.",
+    "STATUS: `pages` is now populated from the LIVE site's own Yoast sitemap",
+    "(apexgetsitdone.com/page-sitemap.xml, crawled 2026-07-29). That is the whole indexable",
+    "surface: 7 URLs. No Search Console or GA4 access was needed for this part, so the map is",
+    "no longer empty and no longer blocked on D-01 for its main body.",
     "",
-    "TODO(BLOCKED: D-01): fill `pages` from the old-URL inventory.",
+    "WHAT IS STILL MISSING, and why D-01 still matters: a sitemap lists what the CMS believes",
+    "exists. It does NOT list orphaned URLs that still rank — old WordPress ?p= permalinks,",
+    "attachment pages, category/tag archives, or anything unlinked but indexed. Those only",
+    "surface in Search Console and GA4. Expect a handful; add them as rows when access lands.",
+    "",
+    "TODO(D-01): reconcile against Search Console 'Pages' + GA4 last-12-months before cutover.",
     "TODO(BLOCKED: D-03): set `canonicalDomain` — every rule below is written against it."
   ],
 
@@ -35,7 +39,51 @@
     }
   ],
 
-  "pages": [],
+  "pages": [
+    {
+      "from": "/designer-pools/",
+      "to": "/pools",
+      "status": 301,
+      "note": "Direct equivalent. The new page is deeper than the old one (FAQ, service area, pre-selected quote form)."
+    },
+    {
+      "from": "/concrete-coating/",
+      "to": "/coating",
+      "status": 301,
+      "note": "Direct equivalent."
+    },
+    {
+      "from": "/design-and-renovation/",
+      "to": "/renovation",
+      "status": 301,
+      "note": "Direct equivalent."
+    },
+    {
+      "from": "/about-apex/",
+      "to": "/",
+      "status": 301,
+      "note": "No standalone About page on the new site — the owner section lives on the home page. Redirecting to an anchor (/#owner) is pointless because Google resolves it to '/' anyway. If this URL turns out to hold real rankings in Search Console, build a proper /about page and repoint this row rather than leaving it collapsed into the home page."
+    },
+    {
+      "from": "/terms-and-conditions/",
+      "to": "/terms",
+      "status": 301,
+      "note": "BLOCKED — /terms does not exist on the new site yet. See $legalGap below."
+    },
+    {
+      "from": "/privacy-policy-apex-designer-pools/",
+      "to": "/privacy",
+      "status": 301,
+      "note": "BLOCKED — /privacy does not exist on the new site yet. See $legalGap below. Note the old URL says 'designer-pools' while the page TITLE says 'Apex Concrete Coating' — the same per-vertical brand mismatch this rebuild exists to eliminate. Do not carry that error across."
+    }
+  ],
+
+  "$legalGap": {
+    "problem": "The live site has two indexed legal pages on apexgetsitdone.com — /terms-and-conditions/ and /privacy-policy-apex-designer-pools/. The new site has NO legal routes; its footer links out to apexcoatinglbk.com. At cutover both live URLs 404 and the footer points off-domain.",
+    "why it matters": "Beyond the dead URLs: the site captures SMS consent, and carriers require a reachable privacy policy naming SMS for A2P 10DLC registration. This is the same gap that made the footer links a fix earlier, one level deeper.",
+    "correction": "docs/decisions.md D-03 records the legal pages as living on apexcoatinglbk.com. The crawl shows they are on the MAIN domain. That note is wrong and is corrected there.",
+    "fix": "Rebuild both pages as routes on the new site, with the text copied verbatim from the live pages — legal copy is not something to paraphrase or regenerate. Then point PUBLIC_PRIVACY_URL / PUBLIC_TERMS_URL at the new internal paths and unblock the two rows above."
+  },
 
   "$pagesSchema": {
     "$comment": "Shape of each entry in `pages`. Paths are site-relative, leading slash, verbatim from the old site INCLUDING any trailing slash.",
