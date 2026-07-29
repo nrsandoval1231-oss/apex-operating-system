@@ -50,7 +50,8 @@ export const pools: PoolsContent = {
   ],
   warrantyBadge: '7-Year Pool',
   warrantyEmphasis: 'Warranty',
-  financing: '// Financing available through Lyon Financial',
+  // The leading "// " is rendered by the component, outside the link text.
+  financing: 'Financing available through Lyon Financial',
   cta: 'Start my pool quote',
   image: 'pools-hero',
 };

@@ -63,6 +63,21 @@ export const ogImageUrl = envOr('PUBLIC_OG_IMAGE', '');
  * the legal paths from that wildcard, or rebuild the policies on the canonical domain and
  * repoint these. Decide before DNS — see docs/launch-checklist.md.
  */
+/**
+ * Financing partner destination (Lyon Financial).
+ *
+ * Financing was named in three places on the site — the footer, the pools section, and the
+ * pools FAQ — and in none of them was it ever a link. That is a real conversion gap, not a
+ * cosmetic one: on a six-figure pool build, "can I afford this" is the objection that stops
+ * the quote, and the answer was a dead string.
+ *
+ * TODO: Apex almost certainly has a PARTNER or referral URL from Lyon rather than the plain
+ * marketing site — often a co-branded application form, and usually one that attributes the
+ * referral back to the dealer. Get that link and put it here; the default below is the
+ * public site and attributes nothing.
+ */
+export const financingUrl = envOr('PUBLIC_FINANCING_URL', 'https://www.lyonfinancial.net/');
+
 export const legalUrls = {
   privacy: envOr('PUBLIC_PRIVACY_URL', 'https://apexcoatinglbk.com/privacy-policy'),
   terms: envOr('PUBLIC_TERMS_URL', 'https://apexcoatinglbk.com/terms-and-conditions'),

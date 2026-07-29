@@ -57,11 +57,23 @@ That is worth stating plainly, because the lesson generalises: the cliché audit
 
 A straight find-and-replace was not an option — raw sage is **1.59:1 on paper**, unusable as text. So the accents were split by *job*, and each colour has a rule:
 
-- **SAGE is brand.** Eyebrows, the hero accent phrase, warranty badges, guarantee stats, hover states, the capture panel's cursor. `--sage` on dark surfaces (9.75:1 on charcoal); `--sage-ink` `#2F6B68` for small text on light ones (5.58:1 paper · 4.89:1 concrete · 6.13:1 white — all AA).
-- **AMBER is action, and nothing else.** Quote buttons, focus rings, input focus, the checkbox, the error-state phone link. It is not in the identity, so it earns its place by doing a job: it is the highest-contrast "act now" colour available on a charcoal page, and this site exists to capture leads.
-- **One documented exception:** star ratings stay amber. Gold stars are a review convention that reads as *rating*, not as brand colour.
+- **SAGE is brand *and* the call to action.** Eyebrows, the hero accent phrase, warranty badges, guarantee stats, hover states, the capture panel's cursor — and every button.
+- **AMBER is interaction feedback and alerts.** Four jobs only: focus rings, the consent checkbox's checked state, the phone link in the form's error state, and star ratings.
+- **One of those is load-bearing.** Now that buttons are sage, a sage focus ring would be invisible against them. Amber is what keeps keyboard focus legible on a sage control — that is why it survives at all, not sentiment.
+- **Star ratings** are the documented exception: gold stars read as a *rating* convention, not as brand colour.
 
-**The test for drift:** if amber ever appears somewhere you don't click, it has drifted. Use sage.
+**The test for drift:** if amber appears somewhere you don't click, it has drifted. Use sage.
+
+### The button has two surfaces, and it must
+
+Full brand sage is only **1.39:1 against `--concrete`** and **1.59:1 against `--paper`**. WCAG 1.4.11 asks 3:1 for a UI component's boundary, so a single sage button fails on every light section — it visually stops being a button. The fix is not a border; it is a second surface:
+
+| Context | Fill | Text | Shape contrast |
+|---|---|---|---|
+| Light sections (default) | `--sage-ink` `#2F6B68` | `--paper` | 4.89:1 concrete · 5.58:1 paper |
+| Dark sections (header, hero, vhero, #quote) | `--sage` | `--char` | 9.75:1 |
+
+Ghost buttons follow the same split for the same reason. **Do not "simplify" this back to one button** — the light-background case is the one that silently fails, and it's where the pools and owner CTAs live.
 
 ---
 

@@ -16,29 +16,32 @@
   /* =========================================================================
      BRAND vs ACTION — the two-accent system. Read this before using either.
 
-     SAGE is the brand. Sampled from the supplied logo (Apex-Site-Logo-2x.png),
-     which is 56.6% #A1CCCA plus charcoal and white. It carries identity:
-     eyebrows, the hero accent phrase, brand moments, hover states.
+     SAGE is the brand AND the call to action. Sampled from the supplied logo
+     (Apex-Site-Logo-2x.png), which is 56.6% #A1CCCA plus charcoal and white.
+     It carries identity and every button: eyebrows, the hero accent phrase,
+     brand moments, hover states, and the quote CTAs.
 
-     AMBER is action, and nothing else. It survives only on things you click to
-     convert — the quote buttons, focus rings, form affordances — because it is
-     the highest-contrast "act now" colour available on a charcoal page and this
-     site exists to capture leads. Amber is NOT in the real identity, so it earns
-     its place by doing a job. If it ever appears somewhere decorative again, it
-     has drifted: use sage.
+     AMBER is interaction feedback and alerts — NOT brand, and no longer the
+     CTA colour. It survives on exactly four jobs:
+       · focus rings (skip link, outlines, input focus). This one is load-bearing:
+         the buttons are sage now, so a sage focus ring would be invisible against
+         them. Amber is what makes keyboard focus legible on a sage control.
+       · the checked state of the consent checkbox
+       · the phone link in the form's error state, where urgency is the point
+       · star ratings — a review convention that reads as "rating", not as brand
 
-     Star ratings keep amber as well. Gold stars are a review convention that
-     reads as "rating", not as a brand statement.
+     If amber shows up anywhere else, it has drifted. Use sage.
      ========================================================================= */
   --sage: #a1ccca;        /* brand accent — for DARK backgrounds (9.75:1 on --char) */
+  --sage-d: #8ab8b6;      /* button hover — still 7.9:1 against the charcoal button text */
   /* Darkened brand sage for small text on LIGHT backgrounds. Raw --sage is 1.59:1
      on paper and completely unusable as text; this clears AA everywhere it is used
      (5.58:1 paper · 4.89:1 concrete · 6.13:1 white). */
   --sage-ink: #2f6b68;
   --brand-char: #383c3d;  /* the logo's own charcoal — lighter/cooler than --char */
 
-  --amber: #e0901b;       /* ACTION only — CTAs, focus, form affordances */
-  --amber-d: #c67a0c;     /* button hover */
+  --amber: #e0901b;       /* INTERACTION & ALERTS only — see the note above */
+  --amber-d: #c67a0c;
   /* vertical identities */
   --pool: #0e6e7c;
   --coat: #46586b;
@@ -130,8 +133,14 @@ input:focus-visible,
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: var(--amber);
-  color: #1b1c1e;
+  /* DEFAULT = the LIGHT-background button: deep sage fill, paper text.
+     Brand sage at full strength is only 1.39:1 against --concrete and 1.59:1 against
+     --paper. That is not a subtle preference — WCAG 1.4.11 wants 3:1 for a UI component's
+     boundary, and below that the button visually stops being a button on every light
+     section (pools, owner, the service cards). The deep variant clears it at 4.89 / 5.58:1
+     while keeping the same hue. Dark surfaces flip to full sage below. */
+  background: var(--sage-ink);
+  color: var(--paper);
   font-family: Oswald, sans-serif;
   font-weight: 600;
   text-transform: uppercase;
@@ -143,9 +152,43 @@ input:focus-visible,
   cursor: pointer;
   transition: transform 0.15s, background 0.15s;
 }
-.btn:hover { background: var(--amber-d); transform: translateY(-1px); }
-.btn.ghost { background: transparent; color: #f6f4ef; border: 1.5px solid #4a4e53; }
-.btn.ghost:hover { border-color: var(--amber); color: var(--amber); }
+.btn:hover { background: #245451; transform: translateY(-1px); }
+
+/* On DARK surfaces the relationship inverts: full brand sage reads at 9.75:1 against
+   charcoal, and the deep variant would sink into the background instead. */
+header .btn,
+.hero .btn,
+.vhero .btn,
+#quote .btn {
+  background: var(--sage);
+  color: var(--char);
+}
+header .btn:hover,
+.hero .btn:hover,
+.vhero .btn:hover,
+#quote .btn:hover {
+  background: var(--sage-d);
+}
+
+/* Ghost = the quiet secondary action. Same light/dark split as the solid button, for the
+   same reason: full sage as ghost TEXT on paper is 1.59:1, i.e. an invisible hover state. */
+.btn.ghost { background: transparent; color: var(--ink); border: 1.5px solid var(--line); }
+.btn.ghost:hover { border-color: var(--sage-ink); color: var(--sage-ink); background: transparent; }
+
+header .btn.ghost,
+.hero .btn.ghost,
+.vhero .btn.ghost,
+#quote .btn.ghost {
+  color: #f6f4ef;
+  border-color: #4a4e53;
+}
+header .btn.ghost:hover,
+.hero .btn.ghost:hover,
+.vhero .btn.ghost:hover,
+#quote .btn.ghost:hover {
+  border-color: var(--sage);
+  color: var(--sage);
+}
 
 /* --- header --- */
 header {

@@ -14,7 +14,10 @@ import ImageSlot from './ImageSlot.astro';
       <h2>{owner.name}<br /><span class="owner-sub">{owner.title}</span></h2>
       <p class="lead" style="margin-top:16px">{owner.bio}</p>
       <div style="margin-top:22px">
-        <a class="btn ghost" href="#quote" style="color:var(--ink);border-color:var(--line)">{owner.cta}</a>
+        {/* The inline colour overrides that used to be here are gone — .btn.ghost now
+            defaults to the light-background treatment, so the override was both redundant
+            and, being inline, unbeatable by the hover rule. The hover state was dead. */}
+        <a class="btn ghost" href="#quote">{owner.cta}</a>
       </div>
     </div>
   </div>

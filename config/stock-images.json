@@ -104,15 +104,14 @@
       "ratio": "16:9",
       "widths": [800, 1600],
       "describes": "A person servicing the edge of a swimming pool"
-    },
+    }
+  ],
+
+  "$retired": [
     {
       "slot": "owner-portrait",
-      "unsplashId": "photo-1672748341520-6a839e6c05bb",
-      "credit": "Unsplash",
-      "ratio": "4:3",
-      "widths": [800, 1400],
-      "describes": "A contractor in a hard hat and work jacket on a job site",
-      "$note": "DELIBERATELY GENERIC. The slot's original alt named Travis Bouffard, a real person. A stock photo of a stranger presented as the named founder is a different and worse claim than a generic pool photo, so the alt text was rewritten to describe the photo rather than identify anyone. Restore the naming only when a real photo of Travis replaces this."
+      "was": "photo-1672748341520-6a839e6c05bb",
+      "note": "REPLACED with a real photograph of Travis supplied by the maintainer (public/images/team/). The first slot on the site to hold genuine Apex photography. Kept as a record of what was here, and so the stock file isn't re-fetched over it — `npm run stock:fetch` no longer downloads this slot."
     }
   ]
 }

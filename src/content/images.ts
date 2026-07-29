@@ -160,33 +160,42 @@ export const IMAGE_MANIFEST = {
   },
 
   /*
-   * Owner section portrait.
+   * Owner section portrait — REAL, supplied by the maintainer. The first slot on this site to
+   * hold genuine Apex photography rather than a stand-in, so the naming is now restored: it
+   * was deliberately generic while a stock stranger occupied it, because naming a real person
+   * as the subject of a photo that isn't them is a false claim about an identifiable
+   * individual on his own company's website.
    *
-   * The alt text here USED to read "Travis Bouffard, founder of Apex, on a job site". It no
-   * longer does, and that is deliberate: the photo is a stock image of a stranger. Naming a
-   * real person as the subject of a photograph that is not them is a materially different
-   * claim from a generic pool photo — it is a false statement about an identifiable
-   * individual, on his own company's website.
+   * The alt names Travis and stops there. A second person appears in the photograph and is not
+   * identified — I can't verify who they are, and asserting a relationship ("his wife") would
+   * be inventing a fact about a real person. If the maintainer confirms who it is and that
+   * they're happy to appear, extend the alt then.
    *
-   * When a real photo of Travis lands, restore the naming. Until then this stays generic.
+   * Cropped from a 1080² original to exactly 4:3 with no upscaling, so it drops into the slot
+   * with zero layout shift (AC-9.1).
    */
   'owner-portrait': {
     id: 'owner-portrait',
-    alt: 'A contractor in a hard hat and work jacket on a job site',
-    label: 'REPLACE · Travis on a job site — REAL portrait required',
+    alt: 'Travis Bouffard, founder of Apex',
+    label: 'Travis — founder',
     ratio: '4 / 3',
     tone: 'owner',
-    src: '/images/stock/owner-portrait-1400.jpg',
-    srcset:
-      '/images/stock/owner-portrait-800.jpg 800w, /images/stock/owner-portrait-1400.jpg 1400w',
-    stock: true,
+    src: '/images/team/travis-960.jpg',
+    srcset: '/images/team/travis-640.jpg 640w, /images/team/travis-960.jpg 960w',
   },
 } as const satisfies Record<string, ImageSlot>;
 
-/** Slots still holding stock imagery rather than real Apex work (D-20). */
-export const STOCK_SLOTS: readonly ImageSlot[] = Object.values(IMAGE_MANIFEST).filter(
-  (slot) => slot.stock === true,
-);
+/**
+ * Slots still holding stock imagery rather than real Apex work (D-20).
+ *
+ * Widened to ImageSlot[] first: `as const` narrows each entry to its exact literal shape, so
+ * once a slot drops the `stock` flag entirely — as owner-portrait did when the real photo of
+ * Travis arrived — the property stops existing on part of the union and the filter no longer
+ * type-checks. The optional `stock?` on ImageSlot is the intended contract.
+ */
+export const STOCK_SLOTS: readonly ImageSlot[] = (
+  Object.values(IMAGE_MANIFEST) as readonly ImageSlot[]
+).filter((slot) => slot.stock === true);
 
 export type ImageSlotId = keyof typeof IMAGE_MANIFEST;
 

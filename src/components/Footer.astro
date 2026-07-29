@@ -8,7 +8,7 @@
  * formality. URLs are env-driven and currently point at where the policies actually live
  * (apexcoatinglbk.com); see the D-03 note in lib/site.ts before that domain is redirected.
  */
-import { site, legalUrls } from '@lib/site';
+import { site, legalUrls, financingUrl } from '@lib/site';
 import { footer } from '@content/site-copy';
 import Logo from './Logo.astro';
 ---
@@ -27,7 +27,7 @@ import Logo from './Logo.astro';
         <a href={`tel:${site.phoneE164}`}>{site.phoneDisplay}</a><br />
         <a href={`mailto:${site.contactEmail}`}>{site.contactEmail}</a><br />
         {site.city}<br />
-        // {footer.financing}
+        // <a class="fin-link" href={financingUrl} target="_blank" rel="noopener">{footer.financing}</a>
       </div>
     </div>
     <div class="foot-bottom">
@@ -60,6 +60,10 @@ import Logo from './Logo.astro';
      Underline the legal links so they read as links at 11px, where colour alone is a weak
      affordance and these two specifically must be findable. */
   .legal a {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .fin-link {
     text-decoration: underline;
     text-underline-offset: 3px;
   }

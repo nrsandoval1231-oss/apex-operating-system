@@ -5,6 +5,7 @@
  * verticals single source of truth. The CTA carries data-preselect for Phase 3 (AC-2.2).
  */
 import { pools } from '@content/pools';
+import { financingUrl } from '@lib/site';
 import { getVerticalConfig } from '@content/verticals';
 import ImageSlot from './ImageSlot.astro';
 
@@ -35,7 +36,12 @@ const cfg = getVerticalConfig(pools.vertical);
         </div>
 
         <div class="badge disp">{pools.warrantyBadge} <b>{pools.warrantyEmphasis}</b></div>
-        <div class="fin">{pools.financing}</div>
+        {/* Financing sits directly under the warranty badge and above the CTA on purpose:
+            this is where price anxiety peaks on the highest-ticket vertical, and it was
+            previously dead text. */}
+        <div class="fin">
+          // <a class="fin-link" href={financingUrl} target="_blank" rel="noopener">{pools.financing}</a>
+        </div>
         <div class="pool-cta">
           <a class="btn" href="#quote" data-preselect={pools.vertical}>{pools.cta}</a>
           {/* Phase 4 internal link into the Designer Pools landing page — the deeper,
@@ -74,5 +80,12 @@ const cfg = getVerticalConfig(pools.vertical);
   }
   .pool-more:hover {
     border-bottom-color: var(--pool);
+  }
+  .fin-link {
+    border-bottom: 1px solid var(--line);
+  }
+  .fin-link:hover {
+    color: var(--sage-ink);
+    border-bottom-color: var(--sage-ink);
   }
 </style>
