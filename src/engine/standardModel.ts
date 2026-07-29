@@ -64,9 +64,9 @@ export const STANDARD_MODEL: Job = {
     foundationDescription: 'house slab foundation',
   },
   excavation: {
-    overDigHorizontalFt: 1.0, // PRD open question 1 default
-    overDigFloorFt: 0.5, // equal to shell thickness, per the same default
-    shellThicknessFt: 0.5, // 6 in — subordinate to the standard detail (step 4)
+    shellThicknessFt: 0.5, // 6 in total offset from finished waterline/floor
+    bondBeamFormOffsetFt: 1.0, // 12 in total offset, bond-beam zone only
+    bondBeamDepthFt: 1.0, // 12 in bond-beam depth from the stored Apex detail
     freeboardFt: 0.5, // 6 in grade to waterline
     truckCapacityLcy: 12, // PRD default, editable, always rounds up
     // ONE layer, because that is how the number is actually used: Lubbock digs

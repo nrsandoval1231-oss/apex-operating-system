@@ -2,12 +2,14 @@
  * Excavation engine.
  *
  * Hand check for the standard model, worked independently:
- *   ext   = t_shell 0.5 + o_h 1.0                    = 1.5 ft each side
- *   L_exc = 30 + 3 = 33 ft,  W_exc = 15 + 3 = 18 ft
- *   k     = freeboard 0.5 + shell 0.5 + floor o-dig 0.5 = 1.5 ft added to every depth
- *   cut profile: 1.5@5.0 | 10@5.0 | 14: 5.0->7.5 | 6@7.5 | 1.5@7.5
- *   A_sec = 7.5 + 50 + 87.5 + 45 + 11.25            = 201.25 sf
- *   V_cut = 201.25 x 18                             = 3622.5 cf = 134.17 BCY
+ *   shell offset = 0.5 ft from the finished waterline/floor
+ *   L_exc,shell = 30 + 1 = 31 ft, W_exc,shell = 15 + 1 = 16 ft
+ *   k = freeboard 0.5 + shell 0.5 = 1.0 ft added to every water depth
+ *   base cut profile: 0.5@4.5 | 10@4.5 | 14: 4.5->7 | 6@7 | 0.5@7
+ *   A_sec = 2.25 + 45 + 80.5 + 42 + 3.5 = 173.25 sf
+ *   base shell cut = 173.25 x 16 = 2772 cf
+ *   bond-beam-only cut = [(32 x 17) - (31 x 16)] x 1 = 48 cf
+ *   total cut = 2820 cf = 104.44 BCY
  */
 
 import { describe, expect, it } from 'vitest';
@@ -33,19 +35,20 @@ const x = computeExcavation(
 );
 
 describe('excavation envelope', () => {
-  it('length = 30 + 2 x (0.5 + 1.0) = 33 ft', () => close(x.excavationLength.value, 33));
-  it('width = 15 + 2 x (0.5 + 1.0) = 18 ft', () => close(x.excavationWidth.value, 18));
-  it('max cut = 0.5 + 6 + 0.5 + 0.5 = 7.5 ft below grade', () => close(x.maxCutDepth.value, 7.5));
+  it('ordinary shell length = 30 + 2 x 0.5 = 31 ft', () => close(x.excavationLength.value, 31));
+  it('ordinary shell width = 15 + 2 x 0.5 = 16 ft', () => close(x.excavationWidth.value, 16));
+  it('max cut = 0.5 + 6 + 0.5 = 7 ft below grade', () => close(x.maxCutDepth.value, 7));
   it('adds the attached spa cut beyond the pool excavation envelope', () => {
     const withSpa = run(STANDARD_MODEL);
     const withoutSpa = run();
     // Deep-end attachment: the pool over-dig already covers the shared-edge strip.
-    // Additional cut = spa outward run 6 x expanded width (6 + 2 x 1.5) x cut depth 5.
-    close(withSpa.attachedSpaCutCf!.value, 270);
-    close(withSpa.totalCutCf.value - withoutSpa.totalCutCf.value, 270);
+    // Full-depth spa cut = 6 x (6 + 2 x 0.5) x 4.5 = 189 cf.
+    // Its bond-beam top band adds another 6 cf versus the pool-only envelope.
+    close(withSpa.attachedSpaCutCf!.value, 189);
+    close(withSpa.totalCutCf.value - withoutSpa.totalCutCf.value, 195);
   });
-  it('total attached-spa cut = pool cut 3622.5 cf + spa cut 270 cf', () => {
-    close(run(STANDARD_MODEL).totalCutCf.value, 3892.5);
+  it('total attached-spa cut = pool 2820 cf + spa/base-and-bond-beam 195 cf', () => {
+    close(run(STANDARD_MODEL).totalCutCf.value, 3015);
   });
 
   it('the cut is deeper than the water everywhere — shell and over-dig are additive', () => {
@@ -55,14 +58,46 @@ describe('excavation envelope', () => {
   });
 });
 
+describe('field overdig regions', () => {
+  const fieldRuleJob = {
+    ...POOL_ONLY,
+    excavation: {
+      ...POOL_ONLY.excavation,
+      bondBeamFormOffsetFt: 1,
+      bondBeamDepthFt: 1,
+    },
+  } as Job;
+  const corrected = run(fieldRuleJob) as ReturnType<typeof run> & {
+    readonly bondBeamOverdigCutCf: { readonly value: number };
+    readonly bondBeamFormPerimeter: { readonly value: number };
+  };
+
+  it('uses the 6-inch shell thickness as the ordinary full-depth offset', () => {
+    close(corrected.excavationLength.value, 31);
+    close(corrected.excavationWidth.value, 16);
+    close(corrected.maxCutDepth.value, 7);
+  });
+
+  it('applies the 12-inch offset only through the bond-beam zone', () => {
+    // Outer bond-beam rectangle 32x17 minus ordinary shell rectangle 31x16,
+    // through the 1 ft bond-beam depth: (544 - 496) x 1 = 48 cf.
+    close(corrected.bondBeamOverdigCutCf.value, 48);
+    close(corrected.totalCutCf.value, 2820);
+  });
+
+  it('measures forming on the outer 12-inch bond-beam form line', () => {
+    close(corrected.bondBeamFormPerimeter.value, 98);
+  });
+});
+
 describe('three volume states, never conflated', () => {
   // Lubbock is figured at 25% swell across the whole cut, so the standard model
   // carries one layer. The per-layer machinery is exercised further down.
-  it('one layer covering the whole cut: 134.17 BCY -> 167.71 LCY at 25%', () => {
+  it('one layer covering the whole cut: 104.44 BCY -> 130.56 LCY at 25%', () => {
     expect(x.layers).toHaveLength(1);
     const l = x.layers[0]!;
-    close(l.bankCy.value, 134.1667);
-    close(l.looseCy.value, 167.7083);
+    close(l.bankCy.value, 104.4444);
+    close(l.looseCy.value, 130.5556);
     expect(l.bankCy.unit).toBe('BCY');
     expect(l.looseCy.unit).toBe('LCY');
   });
@@ -78,9 +113,9 @@ describe('three volume states, never conflated', () => {
     close(sum, x.totalCutCf.value, 0.0001);
   });
 
-  it('total = 134.17 BCY / 167.71 LCY', () => {
-    close(x.totalBankCy.value, 134.1667);
-    close(x.totalLooseCy.value, 167.7083);
+  it('total = 104.44 BCY / 130.56 LCY', () => {
+    close(x.totalBankCy.value, 104.4444);
+    close(x.totalLooseCy.value, 130.5556);
   });
 
   it('still swells each layer on its own factor when a job is layered', () => {
@@ -96,8 +131,8 @@ describe('three volume states, never conflated', () => {
       },
     });
     expect(layered.layers).toHaveLength(3);
-    // 44 x 1.15 + 22 x 1.30 + 68.1667 x 1.185 = 50.6 + 28.6 + 80.78
-    close(layered.totalLooseCy.value, 44 * 1.15 + 22 * 1.3 + 68.1667 * 1.185, 0.01);
+    // The bond-beam-only 48 cf sits entirely in the first layer.
+    close(layered.totalLooseCy.value, 124.5311, 0.01);
     // The hole is the hole: layering never moves the bank volume.
     close(layered.totalBankCy.value, x.totalBankCy.value, 0.0001);
   });
@@ -109,18 +144,18 @@ describe('backfill balance and haul', () => {
     expect(x.spoilHaulLooseCy.unit).toBe('LCY');
   });
 
-  it('void = 3622.5 - 1984.5 water - 447.08 shell = 1190.92 cf = 44.11 CCY', () => {
-    close(x.backfillVoidCf.value, 1190.922, 0.01);
-    close(x.backfillCompactedCy.value, 44.108, 0.001);
+  it('void = 2820 cut - water - shell = 388.42 cf = 14.39 CCY', () => {
+    close(x.backfillVoidCf.value, 388.422, 0.01);
+    close(x.backfillCompactedCy.value, 14.386, 0.001);
   });
 
-  it('haul = 167.71 total LCY - 63.37 LCY consumed as backfill = 104.33 LCY', () => {
-    close(x.backfillLooseCy.value, 63.3739, 0.01);
-    close(x.spoilHaulLooseCy.value, 104.3344, 0.01);
+  it('haul = 130.56 total LCY - 20.67 LCY consumed as backfill = 109.89 LCY', () => {
+    close(x.backfillLooseCy.value, 20.6695, 0.01);
+    close(x.spoilHaulLooseCy.value, 109.886, 0.01);
   });
 
-  it('truck count rounds up: ceil(104.33 / 12) = 9 loads', () => {
-    expect(x.truckCount.value).toBe(9);
+  it('truck count rounds up: ceil(109.89 / 12) = 10 loads', () => {
+    expect(x.truckCount.value).toBe(10);
   });
 
   it('one cubic yard over a truckload is still another truck', () => {

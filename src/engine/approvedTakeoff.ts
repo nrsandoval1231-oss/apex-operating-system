@@ -28,7 +28,7 @@ export interface ExportedAuthoritativeQuantity {
 }
 
 export interface DesignerQuantityPayload {
-  readonly quantityModelVersion: 'designer-quantity-v1';
+  readonly quantityModelVersion: 'designer-quantity-v2';
   readonly quantities: readonly ExportedAuthoritativeQuantity[];
   readonly calcLedger: readonly Calc[];
 }
@@ -70,7 +70,6 @@ export function exportDesignerQuantityPayload(takeoff: TakeoffResult): DesignerQ
     compute: (values) => values.P_waterline! + values.LF_offset! + values.LF_jumpers!,
     source: 'NEC 680.26 bonding layout basis',
   });
-
   const measured: Array<readonly [CanonicalQuantityCode, Calc]> = [
     ['pool.water-volume', takeoff.geometry.totalVolumeGal],
     ['pool.wetted-area', takeoff.geometry.totalWettedArea],
@@ -80,7 +79,7 @@ export function exportDesignerQuantityPayload(takeoff: TakeoffResult): DesignerQ
     ['excavation.spoil-haul-volume', takeoff.excavation.spoilHaulLooseCy],
     ['shell.gunite-ordered-volume', takeoff.structure.quantities.guniteCy],
     ['shell.reinforcing-steel-weight', takeoff.structure.quantities.barWeight],
-    ['shell.forming-perimeter', takeoff.geometry.waterlinePerimeter],
+    ['shell.forming-perimeter', takeoff.excavation.bondBeamFormPerimeter],
     ['utilities.bonding-conductor-length', bondingConductorLength],
   ];
 
@@ -115,7 +114,7 @@ export function exportDesignerQuantityPayload(takeoff: TakeoffResult): DesignerQ
   });
 
   return deepFreeze({
-    quantityModelVersion: 'designer-quantity-v1',
+    quantityModelVersion: 'designer-quantity-v2',
     quantities,
     calcLedger: [...ledgerById.values()],
   });

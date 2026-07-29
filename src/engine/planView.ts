@@ -132,7 +132,7 @@ export function renderPlanView(job: Job, targetWidthPx = 1040): PlanViewResult {
   const spa = job.spa;
   const deckW = job.deck?.widthFt ?? 0;
   const setback = job.site.distanceToFoundationFt;
-  const over = job.excavation.shellThicknessFt + job.excavation.overDigHorizontalFt;
+  const over = job.excavation.bondBeamFormOffsetFt;
 
   // --- extents, in feet, before scaling ------------------------------------
   const spaW = spa ? spa.widthFt : 0;

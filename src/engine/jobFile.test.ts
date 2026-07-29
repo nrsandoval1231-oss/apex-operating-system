@@ -63,6 +63,25 @@ describe('round trip', () => {
     expect(JSON.parse(serializeJob(STANDARD_MODEL)).apexDesignerJob).toBe(JOB_FILE_VERSION);
   });
 
+  it('migrates version 1 global overdig files to the confirmed two-region field rule', () => {
+    const legacy = JSON.parse(serializeJob(STANDARD_MODEL));
+    legacy.apexDesignerJob = 1;
+    delete legacy.job.excavation.bondBeamFormOffsetFt;
+    delete legacy.job.excavation.bondBeamDepthFt;
+    legacy.job.excavation.overDigHorizontalFt = 1;
+    legacy.job.excavation.overDigFloorFt = 0.5;
+
+    const result = parseJob(JSON.stringify(legacy));
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.job.excavation).toMatchObject({
+      shellThicknessFt: 0.5,
+      bondBeamFormOffsetFt: 1,
+      bondBeamDepthFt: 1,
+    });
+    expect(result.warnings.some((warning) => /two-region.*overdig/i.test(warning))).toBe(true);
+  });
+
   it('names the file after the job', () => {
     expect(jobFileName(STANDARD_MODEL)).toMatch(/\.apex\.json$/);
     expect(jobFileName({ ...STANDARD_MODEL, name: 'Smith / 15x30 — deep' })).toBe('smith-15x30-deep.apex.json');

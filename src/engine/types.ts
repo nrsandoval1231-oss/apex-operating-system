@@ -142,15 +142,12 @@ export interface SoilLayer {
 }
 
 export interface ExcavationParams {
-  /** Horizontal over-dig beyond the exterior gunite face. ft. PRD default 1.0. */
-  readonly overDigHorizontalFt: number;
-  /**
-   * Floor over-dig below the exterior gunite face. ft.
-   * PRD default: equal to shell thickness.
-   */
-  readonly overDigFloorFt: number;
-  /** Shell thickness from the standard detail. ft. */
+  /** Ordinary shell offset from the finished waterline/floor surface. ft. Apex field rule: 0.5. */
   readonly shellThicknessFt: number;
+  /** Outer bond-beam form line offset from the finished waterline. ft. Apex field rule: 1.0. */
+  readonly bondBeamFormOffsetFt: number;
+  /** Vertical depth of the wider bond-beam excavation zone from grade. ft. */
+  readonly bondBeamDepthFt: number;
   /** Top of bond beam above the waterline. ft. */
   readonly freeboardFt: number;
   /** Haul truck capacity. LCY. PRD default 12, always rounds up. */

@@ -23,7 +23,7 @@ import { findPumpModel } from './pumpCatalog.ts';
 import type { Job } from './types.ts';
 
 /** Bumped when the shape changes in a way an older file cannot satisfy. */
-export const JOB_FILE_VERSION = 1;
+export const JOB_FILE_VERSION = 2;
 
 const INFINITY_SENTINEL = '__Infinity__';
 
@@ -102,6 +102,7 @@ export function parseJob(text: string): ParseResult {
   }
 
   const restored = fromWire(body as Record<string, unknown>, warnings);
+  if (version === 1) migrateVersion1Overdig(restored, warnings);
   const errors = validateJob(restored);
   if (errors.length > 0) return { ok: false, errors };
 
@@ -137,6 +138,25 @@ function fromWire(body: Record<string, unknown>, warnings: string[]): unknown {
   }
 
   return job;
+}
+
+function migrateVersion1Overdig(job: unknown, warnings: string[]): void {
+  if (typeof job !== 'object' || job === null) return;
+  const excavation = (job as Record<string, unknown>)['excavation'];
+  if (typeof excavation !== 'object' || excavation === null) return;
+  const values = excavation as Record<string, unknown>;
+
+  // Version 1 incorrectly treated 12 in as a global offset beyond the shell.
+  // That unsafe value cannot be carried forward as though it described either
+  // of the now-explicit field regions.
+  values['shellThicknessFt'] = 0.5;
+  values['bondBeamFormOffsetFt'] = 1;
+  values['bondBeamDepthFt'] = 1;
+  delete values['overDigHorizontalFt'];
+  delete values['overDigFloorFt'];
+  warnings.push(
+    'Migrated version 1 excavation to the confirmed two-region overdig rule: 6 in ordinary shell offset; 12 in bond-beam form offset through a 12 in depth.',
+  );
 }
 
 // --- validation -------------------------------------------------------------
@@ -266,7 +286,7 @@ export function validateJob(value: unknown): string[] {
   if (!isRec(exc)) {
     e.push('excavation is missing.');
   } else {
-    for (const k of ['overDigHorizontalFt', 'overDigFloorFt', 'shellThicknessFt', 'freeboardFt', 'truckCapacityLcy']) {
+    for (const k of ['shellThicknessFt', 'bondBeamFormOffsetFt', 'bondBeamDepthFt', 'freeboardFt', 'truckCapacityLcy']) {
       if (!isNum(exc[k])) e.push(`excavation.${k} must be a number.`);
     }
     const layers = exc['soilLayers'];

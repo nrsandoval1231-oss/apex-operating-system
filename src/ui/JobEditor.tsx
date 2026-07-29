@@ -103,9 +103,9 @@ const GROUPS: readonly Group[] = [
   {
     title: 'Excavation',
     fields: [
-      { path: 'excavation.overDigHorizontalFt', label: 'Over-dig, horizontal', unit: 'ft', step: 0.25 },
-      { path: 'excavation.overDigFloorFt', label: 'Over-dig, floor', unit: 'ft', step: 0.25 },
-      { path: 'excavation.shellThicknessFt', label: 'Shell thickness', unit: 'ft', step: 0.0417 },
+      { path: 'excavation.shellThicknessFt', label: 'Shell offset from finished surface', unit: 'ft', step: 0.0417 },
+      { path: 'excavation.bondBeamFormOffsetFt', label: 'Bond-beam form offset', unit: 'ft', step: 0.0833 },
+      { path: 'excavation.bondBeamDepthFt', label: 'Bond-beam excavation depth', unit: 'ft', step: 0.0833 },
       { path: 'excavation.freeboardFt', label: 'Freeboard, grade to waterline', unit: 'ft', step: 0.25 },
       { path: 'excavation.truckCapacityLcy', label: 'Haul truck capacity', unit: 'LCY', step: 1 },
     ],

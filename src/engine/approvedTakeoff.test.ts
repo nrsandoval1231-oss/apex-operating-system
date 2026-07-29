@@ -24,6 +24,20 @@ describe('approved quantity export boundary', () => {
     expect(byCode.get('shell.reinforcing-steel-weight')?.value).toBe(
       takeoff.structure.outcome === 'quantities' ? takeoff.structure.quantities.barWeight.value : -1,
     );
+    const forming = byCode.get('shell.forming-perimeter');
+    const waterline = byCode.get('pool.waterline-perimeter');
+    expect(forming?.value).toBe(takeoff.excavation.bondBeamFormPerimeter.value);
+    expect(forming?.value).not.toBe(waterline?.value);
+    expect(forming?.calcId).not.toBe(waterline?.calcId);
+    expect(payload.calcLedger.find((entry) => entry.id === forming?.calcId)).toMatchObject({
+      label: 'Bond-beam form perimeter',
+      formula: 'P_form = P_exc,bond-beam',
+      unit: 'ft',
+    });
+    const bankVolume = byCode.get('excavation.bank-volume');
+    expect(payload.calcLedger.find((entry) => entry.id === bankVolume?.calcId)?.notes?.join(' ')).toMatch(
+      /6 in full-depth shell.*12 in bond-beam-only/i,
+    );
     expect(byCode.get('finishes.plaster-net-area')?.value).toBe(takeoff.finishes?.plasterSf.net.value);
     expect(byCode.get('yard.deck-area')?.value).toBe(takeoff.yard?.deckArea.value);
     expect(byCode.get('plumbing.developed-run-length')?.value).toBe(

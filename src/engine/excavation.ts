@@ -40,6 +40,10 @@ export interface ExcavationResult {
   readonly maxCutDepth: Calc;
   /** Additional excavation outside the pool envelope for a deep-end attached spa. */
   readonly attachedSpaCutCf?: Calc;
+  /** Extra top-band cut between the 6 in shell envelope and 12 in bond-beam form line. */
+  readonly bondBeamOverdigCutCf: Calc;
+  /** Linear feet of the outer 12 in bond-beam form line. */
+  readonly bondBeamFormPerimeter: Calc;
   readonly totalCutCf: Calc;
   readonly layers: readonly LayerVolumes[];
   readonly totalBankCy: Calc;
@@ -57,16 +61,16 @@ export interface ExcavationResult {
  * Build the excavation depth profile from the water profile.
  *
  * Cut depth at any station = freeboard (grade to waterline) + water depth
- * + shell thickness + floor over-dig. The plan footprint is extended past each
- * end wall by the shell thickness plus the horizontal over-dig, and those
- * extensions carry the cut depth of the wall they sit outside.
+ * + shell thickness. The ordinary full-depth footprint is offset by the 6 in
+ * shell thickness. The wider 12 in bond-beam zone is added separately so it can
+ * never be applied through the full shell depth.
  */
 export function buildCutSegments(
   waterSegments: readonly ProfileSegment[],
   params: ExcavationParams,
 ): ProfileSegment[] {
-  const k = params.freeboardFt + params.shellThicknessFt + params.overDigFloorFt;
-  const ext = params.shellThicknessFt + params.overDigHorizontalFt;
+  const k = params.freeboardFt + params.shellThicknessFt;
+  const ext = params.shellThicknessFt;
 
   const first = waterSegments[0];
   const last = waterSegments[waterSegments.length - 1];
@@ -114,15 +118,24 @@ export function computeExcavation(
 ): ExcavationResult {
   const params = job.excavation;
   validateLayers(params.soilLayers);
+  if (!(params.shellThicknessFt > 0)) {
+    throw new ExcavationInputError('Shell thickness must be greater than zero.');
+  }
+  if (!(params.bondBeamFormOffsetFt >= params.shellThicknessFt)) {
+    throw new ExcavationInputError('Bond-beam form offset cannot be inside the ordinary shell excavation.');
+  }
+  if (!(params.bondBeamDepthFt > 0)) {
+    throw new ExcavationInputError('Bond-beam excavation depth must be greater than zero.');
+  }
 
   const cutSegments = buildCutSegments(waterSegments, params);
   const notes: string[] = [];
   const attachedSpa = job.spa?.attachedToPool === true && job.spa.insetIntoPool !== true
     ? job.spa
     : undefined;
-  const excavationExtensionFt = params.shellThicknessFt + params.overDigHorizontalFt;
+  const excavationExtensionFt = params.shellThicknessFt;
   const attachedSpaCutDepthFt = attachedSpa
-    ? params.freeboardFt + attachedSpa.depthFt + params.shellThicknessFt + params.overDigFloorFt
+    ? params.freeboardFt + attachedSpa.depthFt + params.shellThicknessFt
     : 0;
   const attachedSpaAdditionalPlanAreaSf = attachedSpa
     ? attachedSpa.lengthFt * (attachedSpa.widthFt + 2 * excavationExtensionFt)
@@ -131,27 +144,25 @@ export function computeExcavation(
   const excavationLength = calc({
     id: 'exc.length',
     label: 'Excavation length at grade',
-    formula: 'L_exc = L + 2 x (t_shell + o_h)',
+    formula: 'L_exc,shell = L + 2 x t_shell',
     unit: 'ft',
     inputs: [
       inp('L', 'Pool length', job.pool.lengthFt, 'ft'),
       inp('t_shell', 'Shell thickness', params.shellThicknessFt, 'ft'),
-      inp('o_h', 'Horizontal over-dig beyond the exterior gunite face', params.overDigHorizontalFt, 'ft'),
     ],
-    compute: ({ L, t_shell, o_h }) => L! + 2 * (t_shell! + o_h!),
+    compute: ({ L, t_shell }) => L! + 2 * t_shell!,
   });
 
   const excavationWidth = calc({
     id: 'exc.width',
     label: 'Excavation width at grade',
-    formula: 'W_exc = W + 2 x (t_shell + o_h)',
+    formula: 'W_exc,shell = W + 2 x t_shell',
     unit: 'ft',
     inputs: [
       inp('W', 'Pool width', job.pool.widthFt, 'ft'),
       inp('t_shell', 'Shell thickness', params.shellThicknessFt, 'ft'),
-      inp('o_h', 'Horizontal over-dig beyond the exterior gunite face', params.overDigHorizontalFt, 'ft'),
     ],
-    compute: ({ W, t_shell, o_h }) => W! + 2 * (t_shell! + o_h!),
+    compute: ({ W, t_shell }) => W! + 2 * t_shell!,
   });
 
   const poolMaxCut = maxDepth(cutSegments);
@@ -159,17 +170,16 @@ export function computeExcavation(
   const maxCutDepth = calc({
     id: 'exc.maxDepth',
     label: 'Maximum cut depth below grade',
-    formula: attachedSpa ? 'D_max = MAX(D_pool, D_spa)' : 'D_max = f + d_dp + t_shell + o_f',
+    formula: attachedSpa ? 'D_max = MAX(D_pool, D_spa)' : 'D_max = f + d_dp + t_shell',
     unit: 'ft',
     inputs: [
       inp('f', 'Freeboard, grade to waterline', params.freeboardFt, 'ft'),
       inp('d_dp', 'Deep water depth', job.pool.profile.deepDepth, 'ft'),
       inp('t_shell', 'Shell thickness', params.shellThicknessFt, 'ft'),
-      inp('o_f', 'Floor over-dig', params.overDigFloorFt, 'ft'),
       ...(attachedSpa ? [inp('D_spa', 'Attached spa cut depth', attachedSpaCutDepthFt, 'ft')] : []),
     ],
-    compute: ({ f, d_dp, t_shell, o_f, D_spa }) =>
-      Math.max(f! + d_dp! + t_shell! + o_f!, D_spa ?? 0),
+    compute: ({ f, d_dp, t_shell, D_spa }) =>
+      Math.max(f! + d_dp! + t_shell!, D_spa ?? 0),
   });
 
   const cutSectionArea = crossSectionArea(cutSegments);
@@ -205,17 +215,64 @@ export function computeExcavation(
       })
     : undefined;
 
+  const planAreaAtOffset = (offsetFt: number) =>
+    (job.pool.lengthFt + 2 * offsetFt) * (job.pool.widthFt + 2 * offsetFt) +
+    (attachedSpa ? attachedSpa.lengthFt * (attachedSpa.widthFt + 2 * offsetFt) : 0);
+  const shellExcavationPlanAreaSf = planAreaAtOffset(params.shellThicknessFt);
+  const bondBeamExcavationPlanAreaSf = planAreaAtOffset(params.bondBeamFormOffsetFt);
+  const bondBeamExtraPlanAreaSf = bondBeamExcavationPlanAreaSf - shellExcavationPlanAreaSf;
+
+  const bondBeamOverdigCutCf = calc({
+    id: 'exc.bondBeam.extraCut',
+    label: 'Bond-beam-only overdig volume',
+    formula: 'V_bb,extra = (A_exc,bb - A_exc,shell) x D_bb',
+    unit: 'cf',
+    inputs: [
+      inp('A_exc,bb', 'Plan area at 12 in bond-beam form offset', bondBeamExcavationPlanAreaSf, 'sf'),
+      inp('A_exc,shell', 'Plan area at 6 in ordinary shell offset', shellExcavationPlanAreaSf, 'sf'),
+      inp('D_bb', 'Bond-beam excavation depth', params.bondBeamDepthFt, 'ft'),
+    ],
+    compute: (values) => (values['A_exc,bb']! - values['A_exc,shell']!) * values.D_bb!,
+    notes: [
+      'The 12 in form offset applies only through the bond-beam depth. The full-depth shell remains at the 6 in offset.',
+    ],
+  });
+
+  const bondBeamFormPerimeter = calc({
+    id: 'exc.bondBeam.formPerimeter',
+    label: 'Bond-beam form perimeter',
+    formula: 'P_form = P_exc,bond-beam',
+    unit: 'ft',
+    inputs: [
+      inp('L', 'Finished pool length', job.pool.lengthFt, 'ft'),
+      inp('W', 'Finished pool width', job.pool.widthFt, 'ft'),
+      inp('o_bb', 'Bond-beam form offset from finished waterline', params.bondBeamFormOffsetFt, 'ft'),
+      ...(attachedSpa ? [inp('L_spa', 'Attached spa outward run', attachedSpa.lengthFt, 'ft')] : []),
+    ],
+    compute: ({ L, W, o_bb, L_spa }) => 2 * (L! + 2 * o_bb! + W! + 2 * o_bb!) + 2 * (L_spa ?? 0),
+    notes: [
+      'Measures the outer form line at the 12 in bond-beam offset. An externally attached spa adds its two outward side runs; the shared wall and far wall replace equal lengths.',
+    ],
+  });
+
   const totalCutCf = calc({
     id: 'exc.totalCut',
     label: 'Total cut volume',
-    formula: attachedSpaCutCf ? 'V_cut = V_pool + V_spa,add' : 'V_cut = V_pool',
+    formula: attachedSpaCutCf
+      ? 'V_cut = V_pool,shell + V_spa,shell + V_bb,extra'
+      : 'V_cut = V_pool,shell + V_bb,extra',
     unit: 'cf',
     inputs: [
       fromCalc('V_pool', poolCutCf),
       ...(attachedSpaCutCf ? [fromCalc('V_spa,add', attachedSpaCutCf)] : []),
+      fromCalc('V_bb,extra', bondBeamOverdigCutCf),
     ],
-    compute: ({ V_pool, 'V_spa,add': V_spa }) => V_pool! + (V_spa ?? 0),
-    notes: ['Vertical sidewalls assumed. No benching, sloping, or shoring allowance — that is a means-and-methods call, not a takeoff number.'],
+    compute: ({ V_pool, 'V_spa,add': V_spa, 'V_bb,extra': V_bondBeam }) =>
+      V_pool! + (V_spa ?? 0) + V_bondBeam!,
+    notes: [
+      'Vertical sidewalls assumed. No benching, sloping, or shoring allowance — that is a means-and-methods call, not a takeoff number.',
+      'The wider 12 in excavation is isolated to the bond-beam depth; ordinary shell excavation uses the 6 in offset.',
+    ],
   });
 
   // --- per layer ------------------------------------------------------------
@@ -229,13 +286,15 @@ export function computeExcavation(
       ? Math.max(0, Math.min(hi, attachedSpaCutDepthFt) - lo)
       : 0;
     const attachedSpaBandCutCf = attachedSpaAdditionalPlanAreaSf * attachedSpaBandDepthFt;
+    const bondBeamBandDepthFt = Math.max(0, Math.min(hi, params.bondBeamDepthFt) - lo);
+    const bondBeamBandCutCf = bondBeamExtraPlanAreaSf * bondBeamBandDepthFt;
 
     const cutCf = calc({
       id: `exc.layer.${slug(layer.name)}.cut`,
       label: `${layer.name} — cut volume`,
       formula: attachedSpa
-        ? 'V = W_exc x INTEGRAL clamp(d(x) - z_top, 0, t_layer) dx + V_spa,band'
-        : 'V = W_exc x INTEGRAL clamp(d(x) - z_top, 0, t_layer) dx',
+        ? 'V = W_exc x INTEGRAL clamp(d(x) - z_top, 0, t_layer) dx + V_spa,band + V_bb,band'
+        : 'V = W_exc x INTEGRAL clamp(d(x) - z_top, 0, t_layer) dx + V_bb,band',
       unit: 'cf',
       inputs: [
         fromCalc('W_exc', excavationWidth),
@@ -243,8 +302,10 @@ export function computeExcavation(
         inp('t_layer', 'Layer thickness within the cut', hi - lo, 'ft'),
         inp('A_band', 'Section area of the cut inside this layer', bandArea, 'sf'),
         ...(attachedSpa ? [inp('V_spa,band', 'Attached spa cut inside this layer', attachedSpaBandCutCf, 'cf')] : []),
+        inp('V_bb,band', 'Bond-beam-only cut inside this layer', bondBeamBandCutCf, 'cf'),
       ],
-      compute: ({ A_band, W_exc, 'V_spa,band': V_spa }) => A_band! * W_exc! + (V_spa ?? 0),
+      compute: ({ A_band, W_exc, 'V_spa,band': V_spa, 'V_bb,band': V_bondBeam }) =>
+        A_band! * W_exc! + (V_spa ?? 0) + V_bondBeam!,
       notes: [
         'Integrated analytically over the piecewise-linear cut profile — the sloped transition only reaches this layer over part of its run.',
       ],
@@ -288,6 +349,9 @@ export function computeExcavation(
     unit: 'BCY',
     inputs: layers.map((l, i) => inp(`BCY_${i + 1}`, l.layer.name, l.bankCy.value, 'BCY')),
     compute: (v) => Object.values(v).reduce((a, b) => a + b, 0),
+    notes: [
+      'Every layer includes the 6 in full-depth shell excavation plus the 12 in bond-beam-only offset within the top bond-beam depth.',
+    ],
   });
 
   const totalLooseCy = calc({
@@ -400,6 +464,8 @@ export function computeExcavation(
     excavationWidth,
     maxCutDepth,
     ...(attachedSpaCutCf ? { attachedSpaCutCf } : {}),
+    bondBeamOverdigCutCf,
+    bondBeamFormPerimeter,
     totalCutCf,
     layers,
     totalBankCy,
