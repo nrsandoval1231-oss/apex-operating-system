@@ -13,6 +13,7 @@
     "check": "astro check",
     "check:images": "node scripts/check-images.mjs",
     "stock:fetch": "node scripts/fetch-stock-images.mjs",
+    "frames:extract": "node scripts/extract-hero-frames.mjs",
     "preflight": "node scripts/preflight.mjs",
     "test": "playwright test",
     "test:ui": "playwright test --ui",

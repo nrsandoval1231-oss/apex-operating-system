@@ -1,0 +1,147 @@
+---
+/**
+ * HeroVideo.astro — Apex's own footage behind the hero, as progressive enhancement.
+ *
+ * WHY THIS IS THE ONE EXCEPTION to the motion policy in docs/design-direction.md §4, which
+ * rejects Lenis/GSAP/Three.js: those add a runtime to produce effects that say nothing about
+ * Apex. This adds no runtime and shows real completed work — a lit pool at night and a
+ * flake-coated floor. It is content, not decoration, and content is exactly what this site
+ * has been short of.
+ *
+ * HOW IT DIFFERS FROM THE LIVE SITE'S VERSION, which does the same thing badly:
+ *
+ *   live: <video preload="auto" autoplay playsinline loop muted>  — no poster, no dimensions
+ *
+ *   · No poster at all, so nothing renders until 2.23 MB has arrived and LCP waits on it.
+ *   · preload="auto" fetches the whole file immediately, competing with everything else.
+ *   · No width/height, so the box has no reserved size.
+ *   · playsinline with no gate, so phones on cellular pay the full 2.23 MB.
+ *   · Then a 64% black gradient is laid over it, discarding most of what was paid for.
+ *
+ * Here the POSTER is the hero — a real still, ~41 KB, painted immediately and sufficient on
+ * its own. The video is attached only after `load`, only on a wide viewport, only when the
+ * connection isn't metered or slow, and never under prefers-reduced-motion. If any of those
+ * fail the page is complete and correct with a still image; nothing is missing, it just
+ * doesn't move.
+ */
+import { heroVideo } from '@content/images';
+
+interface Props {
+  /** Overlay opacity at the top/bottom of the gradient. Tuned for text contrast. */
+  class?: string;
+}
+const { class: className } = Astro.props;
+---
+<div class:list={['hero-video', className]} aria-hidden="true">
+  <img
+    class="hero-video-poster"
+    src={heroVideo.poster}
+    srcset={heroVideo.posterSrcset}
+    sizes="100vw"
+    alt=""
+    width="1280"
+    height="720"
+    fetchpriority="high"
+    decoding="async"
+  />
+  <video
+    class="hero-video-el"
+    muted
+    loop
+    playsinline
+    preload="none"
+    poster={heroVideo.poster}
+    width="1280"
+    height="720"
+    data-src={heroVideo.src}></video>
+  <div class="hero-video-scrim"></div>
+</div>
+
+<script>
+  /*
+   * Attach the video only when it is genuinely worth the bytes. Every check below is a
+   * reason NOT to spend a visitor's data on decoration:
+   *   · reduced motion — an autoplaying background is exactly what that setting is for
+   *   · narrow viewport — phones are the majority here and the poster already tells the story
+   *   · saveData / 2g / 3g — rural West Texas connections are a real part of this audience
+   * The <video> has preload="none" and no src until this runs, so failing any check costs
+   * literally zero bytes.
+   */
+  function initHeroVideo() {
+    const wrap = document.querySelector<HTMLElement>('.hero-video');
+    const video = wrap?.querySelector<HTMLVideoElement>('.hero-video-el');
+    if (!wrap || !video) return;
+
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (window.matchMedia('(max-width: 860px)').matches) return;
+
+    const conn = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } })
+      .connection;
+    if (conn?.saveData) return;
+    if (conn?.effectiveType && /(^|-)(2g|3g)$/.test(conn.effectiveType)) return;
+
+    const src = video.dataset.src;
+    if (!src) return;
+    video.src = src;
+
+    // Only cross-fade once there are actual frames to show, so the swap is never a flash
+    // of empty box over a perfectly good poster.
+    video.addEventListener(
+      'playing',
+      () => wrap.classList.add('is-playing'),
+      { once: true },
+    );
+    video.play().catch(() => {
+      /* Autoplay refused (some power-saving modes). The poster stays; nothing to do. */
+    });
+  }
+
+  // After load, not on DOMContentLoaded: the video must never compete with the hero image,
+  // the fonts, or the quote form island for bandwidth.
+  if (document.readyState === 'complete') initHeroVideo();
+  else window.addEventListener('load', initHeroVideo, { once: true });
+</script>
+
+<style>
+  .hero-video {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    z-index: 0;
+  }
+  .hero-video-poster,
+  .hero-video-el {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .hero-video-el {
+    opacity: 0;
+    transition: opacity 600ms ease;
+  }
+  .hero-video.is-playing .hero-video-el {
+    opacity: 1;
+  }
+
+  /*
+   * The scrim. This is a contrast requirement, not a mood: the hero h1 and subhead sit on
+   * top, and over a bright pool they would otherwise fail AA. It is deliberately LIGHTER
+   * than the live site's flat 64% — heavier at the bottom where the text and stats are,
+   * lighter at the top where the pool actually reads.
+   */
+  .hero-video-scrim {
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(180deg, rgba(20, 21, 23, 0.55) 0%, rgba(20, 21, 23, 0.72) 55%, rgba(20, 21, 23, 0.92) 100%),
+      linear-gradient(90deg, rgba(20, 21, 23, 0.75) 0%, rgba(20, 21, 23, 0.35) 60%, transparent 100%);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero-video-el {
+      display: none;
+    }
+  }
+</style>

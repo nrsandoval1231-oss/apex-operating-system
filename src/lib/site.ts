@@ -42,12 +42,16 @@ export const site = {
 /**
  * Site-relative path to the social share image (og:image / twitter:image).
  *
- * Empty by default and BLOCKED on D-20 — there is no approved photography, and a broken or
- * placeholder OG image gets cached by every social scraper that touches a link. BaseLayout
- * omits the image tags entirely while this is empty, which degrades cleanly to a text card.
- * TODO(BLOCKED: D-20): set PUBLIC_OG_IMAGE (1200×630) once real imagery exists.
+ * NO LONGER BLOCKED. This was empty while the only imagery was stock — a placeholder OG image
+ * gets cached by every social scraper that touches a link, so shipping none was better than
+ * shipping a stranger's pool. It now points at a real Apex pool at night, cut from the
+ * company's own hero footage (scripts/extract-hero-frames.mjs).
+ *
+ * This matters more than its size suggests: it is the image on every link shared to Facebook,
+ * in a text message, or pasted into a group chat — which is precisely how a local contractor's
+ * work actually spreads.
  */
-export const ogImageUrl = envOr('PUBLIC_OG_IMAGE', '');
+export const ogImageUrl = envOr('PUBLIC_OG_IMAGE', '/images/apex/og-default.jpg');
 
 /**
  * Financing partner destination (Lyon Financial).

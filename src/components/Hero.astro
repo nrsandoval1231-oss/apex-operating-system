@@ -16,8 +16,12 @@ import { hero } from '@content/site-copy';
 import { VERTICAL_LIST } from '@content/verticals';
 import { ROUTER_TILES } from '@content/router-tiles';
 import ImageSlot from './ImageSlot.astro';
+import HeroVideo from './HeroVideo.astro';
 ---
-<section class="hero" id="top" style="padding:0">
+<section class="hero has-video" id="top" style="padding:0">
+  {/* Apex's own footage. Poster paints immediately; the video attaches after load and only
+      when it's worth the bytes. See HeroVideo.astro. */}
+  <HeroVideo />
   <svg class="grain" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
     <filter id="heroNoise">
       <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch" />

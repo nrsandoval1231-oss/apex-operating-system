@@ -71,25 +71,25 @@ export interface ImageSlot {
  */
 export const IMAGE_MANIFEST = {
   // Home router tiles (one per vertical)
+  /* REAL Apex work, from the company's own hero footage. The alt text says so, because now
+     it is true — see the note on stock alt text at the top of this file. */
   'tile-pools': {
     id: 'tile-pools',
-    alt: 'An illuminated backyard swimming pool at night, seen from above',
-    label: 'REPLACE · a completed Apex pool at twilight',
+    alt: 'An Apex-built pool at night, lit blue with sheer-descent water features and a fire bowl',
+    label: 'Apex pool at night',
     ratio: '4 / 3',
     tone: 'pool',
-    src: '/images/stock/tile-pools-1600.jpg',
-    srcset: '/images/stock/tile-pools-800.jpg 800w, /images/stock/tile-pools-1600.jpg 1600w',
-    stock: true,
+    src: '/images/apex/tile-pools-800.jpg',
+    srcset: '/images/apex/tile-pools-800.jpg 800w',
   },
   'tile-coating': {
     id: 'tile-coating',
-    alt: 'Sunlight reflecting off a polished concrete floor indoors',
-    label: 'REPLACE · an Apex-coated garage floor',
+    alt: 'A flake-coated concrete floor installed by Apex, with a car parked on the finish',
+    label: 'Apex coated floor',
     ratio: '4 / 3',
     tone: 'coat',
-    src: '/images/stock/tile-coating-1600.jpg',
-    srcset: '/images/stock/tile-coating-800.jpg 800w, /images/stock/tile-coating-1600.jpg 1600w',
-    stock: true,
+    src: '/images/apex/tile-coating-800.jpg',
+    srcset: '/images/apex/tile-coating-800.jpg 800w',
   },
   'tile-renovation': {
     id: 'tile-renovation',
@@ -115,27 +115,37 @@ export const IMAGE_MANIFEST = {
 
   // Pools deep section — hero image. The single highest-value photo on the site: Designer
   // Pools is the highest-ticket vertical, and this is the image that carries it.
+  /*
+   * REAL Apex work — but the one resolution-limited slot on the site, and worth knowing about.
+   *
+   * The source footage is 1280×720, and a 4:5 portrait crop out of it can only be 576×720.
+   * That is roughly 1x for the size this renders at, so it is sharp enough on a standard
+   * display and visibly soft on a retina one. It is a night shot with large dark areas, which
+   * hides most of that.
+   *
+   * Kept anyway: a real photograph of an actual Apex pool beats a crisp stock photo of
+   * someone else's for a local buyer who can tell the difference. A proper high-resolution
+   * photo should still replace it — this is the top item on the D-20 shot list.
+   */
   'pools-hero': {
     id: 'pools-hero',
-    alt: 'A lit swimming pool in the backyard of a home at night',
-    label: 'REPLACE · a completed Apex pool + spa at dusk',
+    alt: 'A completed Apex pool at night, lit blue with sheer-descent water features and a fire bowl',
+    label: 'REPLACE · a high-resolution photo of a completed Apex pool',
     ratio: '4 / 5',
     tone: 'pool',
-    src: '/images/stock/pools-hero-1400.jpg',
-    srcset: '/images/stock/pools-hero-800.jpg 800w, /images/stock/pools-hero-1400.jpg 1400w',
-    stock: true,
+    src: '/images/apex/pools-hero-576.jpg',
+    srcset: '/images/apex/pools-hero-576.jpg 576w',
   },
 
   // Three shallow vertical cards
   'card-coating': {
     id: 'card-coating',
-    alt: 'A large open interior with a polished concrete floor',
-    label: 'REPLACE · an Apex polyaspartic install',
+    alt: 'A vintage car parked on a flake-coated concrete floor installed by Apex',
+    label: 'Apex coated floor',
     ratio: '16 / 9',
     tone: 'coat',
-    src: '/images/stock/card-coating-1600.jpg',
-    srcset: '/images/stock/card-coating-800.jpg 800w, /images/stock/card-coating-1600.jpg 1600w',
-    stock: true,
+    src: '/images/apex/card-coating-1280.jpg',
+    srcset: '/images/apex/card-coating-800.jpg 800w, /images/apex/card-coating-1280.jpg 1280w',
   },
   'card-renovation': {
     id: 'card-renovation',
@@ -184,6 +194,36 @@ export const IMAGE_MANIFEST = {
     srcset: '/images/team/travis-640.jpg 640w, /images/team/travis-960.jpg 960w',
   },
 } as const satisfies Record<string, ImageSlot>;
+
+/**
+ * The hero background video — Apex's own footage (see scripts/extract-hero-frames.mjs).
+ *
+ * The POSTER is the real hero: a still of a completed Apex pool at night, painted
+ * immediately and sufficient on its own. The video is an enhancement attached after load,
+ * and only when it is worth the bytes — the gates live in HeroVideo.astro.
+ */
+export const heroVideo = {
+  /*
+   * The SERVED clip is a 5.6s seamless loop of the pool only — 593 KB, cut from the 15s
+   * source in media/apex-hero-source.mp4 (which stays out of public/ so visitors never
+   * fetch it). Two reasons it is trimmed rather than used whole:
+   *
+   *   · Content. The source runs pool → a jewellery storefront → coated floors. Behind a
+   *     hero that says "Anything Construction", the storefront segment reads as a jewellery
+   *     shop, and it is the brightest, busiest part of the clip. The pool is the highest-
+   *     ticket vertical and the most arresting footage Apex has.
+   *   · Coherence. The poster is the pool. Playing on into a storefront made the
+   *     poster→video hand-off look like a mistake.
+   *
+   * The camera pans slightly, so a plain loop would visibly jump. The clip is boomeranged
+   * (forward then reversed) which makes the loop seamless and costs nothing at runtime.
+   */
+  src: '/video/apex-hero-loop.mp4',
+  poster: '/images/apex/hero-poster-1280.jpg',
+  posterSrcset: '/images/apex/hero-poster-800.jpg 800w, /images/apex/hero-poster-1280.jpg 1280w',
+  /** What the footage actually shows — so nobody has to open it to know. */
+  shows: 'A completed Apex pool at night: lit water features and a fire bowl.',
+} as const;
 
 /**
  * Slots still holding stock imagery rather than real Apex work (D-20).
