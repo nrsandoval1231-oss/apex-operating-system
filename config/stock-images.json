@@ -111,7 +111,13 @@
     {
       "slot": "owner-portrait",
       "was": "photo-1672748341520-6a839e6c05bb",
-      "note": "REPLACED with a real photograph of Travis supplied by the maintainer (public/images/team/). The first slot on the site to hold genuine Apex photography. Kept as a record of what was here, and so the stock file isn't re-fetched over it — `npm run stock:fetch` no longer downloads this slot."
+      "note": "REPLACED with a real photograph of Travis supplied by the maintainer (public/images/team/). The first slot on the site to hold genuine Apex photography."
+    },
+    {
+      "slots": ["tile-pools", "pools-hero", "tile-coating", "card-coating"],
+      "note": "REPLACED with real Apex work, cut from the company's own hero footage — see scripts/extract-hero-frames.mjs and public/images/apex/. Four stock slots retired at once. What remains stock is Design & Renovation and Pool Service, which the footage does not cover."
     }
-  ]
+  ],
+
+  "$note": "Entries are removed from `images` when retired so `npm run stock:fetch` cannot re-download a stock file over real Apex photography."
 }
