@@ -23,7 +23,34 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
+
+  /*
+   * Capped at 2 locally, against a default of (cores / 2).
+   *
+   * The bottleneck is the Astro DEV server, not the browser. The home page pulls nine stock
+   * photographs at up to ~300 KB each, and every worker requests the full set on nearly every
+   * test. Four workers saturate it badly enough that `client:visible` hydration — which has to
+   * wait behind those requests for its module transform — stops completing inside any sane
+   * timeout. The symptom was assertions failing in a different spec on every run, which reads
+   * like a product defect and isn't one.
+   *
+   * Two workers keeps the suite honest and roughly as fast, because the previous four spent
+   * most of their time queued behind each other anyway.
+   */
+  workers: process.env.CI ? 1 : 2,
   reporter: process.env.CI ? 'github' : [['list']],
+
+  /*
+   * 10s, up from Playwright's 5s default.
+   *
+   * These specs run against `astro dev`, which transforms modules on demand, and the home
+   * page pulls nine stock photographs at up to ~300 KB each. Four parallel workers hitting
+   * one dev server is enough to push first paint past 5s on a cold cache, which surfaced as
+   * assertions failing in different specs on every run — the signature of contention, not of
+   * a defect. Raising the ceiling is the honest fix: nothing here is asserting that the site
+   * is FAST (that's Lighthouse's job, on a built bundle), only that it is CORRECT.
+   */
+  expect: { timeout: 10_000 },
 
   use: {
     baseURL: `http://localhost:${PORT}`,
