@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { idSchemas } from './ids.js';
+import { calculateQuantityPayloadSha256 } from './quantityDigest.js';
 
 export const AppRoleSchema = z.enum(['admin', 'office', 'field', 'customer']);
 export type AppRole = z.infer<typeof AppRoleSchema>;
@@ -55,6 +56,7 @@ export const TakeoffRevisionSchema = z.strictObject({
   engineVersion: z.string().min(1).max(80),
   jobInputSha256: z.string().regex(/^[a-f0-9]{64}$/),
   calcLedgerSha256: z.string().regex(/^[a-f0-9]{64}$/),
+  quantityPayloadSha256: z.string().regex(/^[a-f0-9]{64}$/),
   quantityModelVersion: z.string().min(1).max(80),
   createdAt: z.string().datetime({ offset: true }),
   createdBy: idSchemas.user,
@@ -174,6 +176,13 @@ export const ApprovedTakeoffRevisionSchema = TakeoffRevisionSchema.extend({
       });
     }
   });
+  if (revision.quantityPayloadSha256 !== calculateQuantityPayloadSha256(revision.quantities)) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['quantityPayloadSha256'],
+      message: 'Quantity payload SHA-256 does not match the ordered authoritative quantity facts.',
+    });
+  }
 });
 export type ApprovedTakeoffRevision = z.infer<typeof ApprovedTakeoffRevisionSchema>;
 

@@ -69,7 +69,7 @@ export const ApexEventSchema = z.discriminatedUnion('eventType', [
   leadEvent('proposal.signed', z.strictObject({ proposalVersion: z.number().int().positive(), signedAt: z.string().datetime({ offset: true }) })),
   jobEvent('job.created', z.strictObject({ createdFromLeadId: idSchemas.lead, signedProposalVersion: z.number().int().positive() })),
   jobEvent('takeoff_revision.created', z.strictObject({ revisionId: idSchemas.revision, revisionNumber: z.number().int().positive(), engineVersion: z.string().min(1) })),
-  jobEvent('takeoff_revision.approved', z.strictObject({ revisionId: idSchemas.revision, approvedBy: idSchemas.user, calcLedgerSha256: z.string().regex(/^[a-f0-9]{64}$/) })),
+  jobEvent('takeoff_revision.approved', z.strictObject({ revisionId: idSchemas.revision, approvedBy: idSchemas.user, calcLedgerSha256: z.string().regex(/^[a-f0-9]{64}$/), quantityPayloadSha256: z.string().regex(/^[a-f0-9]{64}$/) })),
   jobEvent('takeoff_revision.superseded', z.strictObject({ revisionId: idSchemas.revision, supersededByRevisionId: idSchemas.revision })),
   jobEvent('gate.started', z.strictObject({ ...gateRef, takeoffRevisionId: idSchemas.revision })),
   jobEvent('evidence.added', z.strictObject({ ...requirementRef, evidenceId: idSchemas.evidence, kind: EvidenceKindSchema })),

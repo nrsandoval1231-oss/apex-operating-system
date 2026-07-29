@@ -5,6 +5,8 @@ import {
   CANONICAL_EVENT_TYPES,
   CustomerMilestoneProjectionSchema,
   EvidenceRecordSchema,
+  calculateQuantityPayloadSha256,
+  serializeQuantityPayload,
   createCanonicalId,
   idSchemas,
 } from './index.js';
@@ -50,6 +52,7 @@ const approvedRevisionFixture = () => ({
   engineVersion: 'designer-0.1.0',
   jobInputSha256: 'a'.repeat(64),
   calcLedgerSha256: 'b'.repeat(64),
+  quantityPayloadSha256: '64a55c9b111bcacea62601aa6a93626a8b0717063ff402d3bb3be62bca99c50d',
   quantityModelVersion: 'designer-quantity-v1',
   createdAt: '2026-07-29T12:00:00.000Z',
   createdBy: actorId,
@@ -81,11 +84,76 @@ const approvedRevisionFixture = () => ({
 });
 
 describe('approved Designer quantity revisions', () => {
+  it('uses one domain-separated, order-sensitive canonical quantity serialization', () => {
+    const quantities = approvedRevisionFixture().quantities;
+    expect(serializeQuantityPayload(quantities)).toBe(
+      '{"schema":"apex-approved-quantity-payload-v1","quantities":[["pool.water-volume",12881,"gal","geom.total.volumeGal"]]}',
+    );
+    expect(calculateQuantityPayloadSha256(quantities)).toBe(
+      '64a55c9b111bcacea62601aa6a93626a8b0717063ff402d3bb3be62bca99c50d',
+    );
+  });
+
+  it('refuses non-finite and negative values before canonical serialization', () => {
+    const quantity = approvedRevisionFixture().quantities[0]!;
+    expect(() => calculateQuantityPayloadSha256([{ ...quantity, value: Number.POSITIVE_INFINITY }])).toThrow(
+      /finite non-negative/i,
+    );
+    expect(() => calculateQuantityPayloadSha256([{ ...quantity, value: -1 }])).toThrow(/finite non-negative/i);
+  });
+
   it('accepts an approved revision only when every authoritative quantity preserves Calc provenance', () => {
     const approved = ApprovedTakeoffRevisionSchema.parse(approvedRevisionFixture());
 
     expect(approved.status).toBe('approved');
     expect(approved.quantities[0]?.calcId).toBe('geom.total.volumeGal');
+  });
+
+  it('rejects an approved revision whose stored quantity digest does not match its ordered facts', () => {
+    const revision = approvedRevisionFixture();
+    expect(ApprovedTakeoffRevisionSchema.safeParse({
+      ...revision,
+      quantityPayloadSha256: 'c'.repeat(64),
+    }).success).toBe(false);
+  });
+
+  it('detects reordered, omitted, and provenance-consistent substituted quantity facts', () => {
+    const base = approvedRevisionFixture();
+    const secondQuantity = {
+      code: 'pool.waterline-perimeter' as const,
+      value: 100,
+      unit: 'ft',
+      calcId: 'geom.total.waterlinePerimeter',
+    };
+    const secondCalc = {
+      id: secondQuantity.calcId,
+      label: 'Total waterline perimeter',
+      formula: 'P = P_pool + P_spa',
+      inputs: [],
+      value: secondQuantity.value,
+      unit: secondQuantity.unit,
+    };
+    const quantities = [...base.quantities, secondQuantity];
+    const revision = {
+      ...base,
+      quantities,
+      calcLedger: [...base.calcLedger, secondCalc],
+      quantityPayloadSha256: calculateQuantityPayloadSha256(quantities),
+    };
+    expect(ApprovedTakeoffRevisionSchema.safeParse(revision).success).toBe(true);
+    expect(ApprovedTakeoffRevisionSchema.safeParse({
+      ...revision,
+      quantities: [...revision.quantities].reverse(),
+    }).success).toBe(false);
+    expect(ApprovedTakeoffRevisionSchema.safeParse({
+      ...revision,
+      quantities: revision.quantities.slice(0, 1),
+    }).success).toBe(false);
+    expect(ApprovedTakeoffRevisionSchema.safeParse({
+      ...revision,
+      quantities: [revision.quantities[0]!, { ...secondQuantity, value: 101 }],
+      calcLedger: [base.calcLedger[0]!, { ...secondCalc, value: 101 }],
+    }).success).toBe(false);
   });
 
   it('rejects duplicate authoritative quantity codes', () => {
@@ -141,6 +209,23 @@ describe('event vocabulary', () => {
     expect(CANONICAL_EVENT_TYPES).toContain('gate.released');
     expect(CANONICAL_EVENT_TYPES).toContain('draw.eligible');
     expect(CANONICAL_EVENT_TYPES).toContain('customer_update.published');
+  });
+
+  it('pins both Calc and ordered quantity digests in the takeoff approval event', () => {
+    const parsed = ApexEventSchema.parse({
+      ...baseEvent,
+      eventType: 'takeoff_revision.approved',
+      payload: {
+        revisionId: createCanonicalId('revision'),
+        approvedBy: actorId,
+        calcLedgerSha256: 'b'.repeat(64),
+        quantityPayloadSha256: 'c'.repeat(64),
+      },
+    });
+    expect(parsed.payload).toMatchObject({
+      calcLedgerSha256: 'b'.repeat(64),
+      quantityPayloadSha256: 'c'.repeat(64),
+    });
   });
 
   it('parses a Gate release with the authority and revision linkage needed for audit', () => {

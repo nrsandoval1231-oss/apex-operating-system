@@ -5,6 +5,7 @@ import {
   STANDARD_MODEL,
 } from '../Apex Designer/src/engine/index.ts';
 import { ApprovedTakeoffRevisionSchema } from '../packages/contracts/src/records.ts';
+import { calculateQuantityPayloadSha256 } from '../packages/contracts/src/quantityDigest.ts';
 
 const jobId = 'job_01ARZ3NDEKTSV4RRFFQ69G5FAW';
 const revisionId = 'revision_01ARZ3NDEKTSV4RRFFQ69G5FAX';
@@ -23,6 +24,7 @@ describe('Designer to canonical contract compatibility', () => {
       engineVersion: 'designer-0.1.0',
       jobInputSha256: 'a'.repeat(64),
       calcLedgerSha256: 'b'.repeat(64),
+      quantityPayloadSha256: calculateQuantityPayloadSha256(payload.quantities),
       quantityModelVersion: payload.quantityModelVersion,
       createdAt: '2026-07-29T12:00:00.000Z',
       createdBy: actorId,

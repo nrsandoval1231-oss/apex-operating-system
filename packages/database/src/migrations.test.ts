@@ -44,6 +44,7 @@ beforeEach(async () => {
   await db.exec(await migration('0004_pre_gunite_definition.sql'));
   await db.exec(await migration('0005_gate_instance_uniqueness.sql'));
   await db.exec(await migration('0006_approved_takeoff_authority.sql'));
+  await db.exec(await migration('0007_quantity_payload_digest.sql'));
 });
 
 const seedJob = async () => {
@@ -67,6 +68,34 @@ const seedJob = async () => {
 describe('operational schema', () => {
   it('registers the approved takeoff authority migration in the runtime migrator', () => {
     expect(OPERATIONAL_MIGRATIONS).toContain('0006_approved_takeoff_authority.sql');
+    expect(OPERATIONAL_MIGRATIONS).toContain('0007_quantity_payload_digest.sql');
+  });
+
+  it('refuses to invent digests when an existing revision needs an explicit backfill', async () => {
+    const legacy = new PGlite();
+    for (const name of [
+      '0001_core.sql',
+      '0002_rls.sql',
+      '0004_pre_gunite_definition.sql',
+      '0005_gate_instance_uniqueness.sql',
+      '0006_approved_takeoff_authority.sql',
+    ]) {
+      await legacy.exec(await migration(name));
+    }
+    await legacy.exec(`
+      insert into app_users (user_id, auth_user_id, role, display_name)
+      values ('${ids.user}', '00000000-0000-0000-0000-000000000001', 'admin', 'Test Admin');
+      insert into leads (lead_id, intake_source, source_record_id, idempotency_key, accepted_payload)
+      values ('${ids.lead}', 'test', 'legacy-source', 'test:legacy-source', '{}');
+      insert into jobs (job_id, lead_id, signed_proposal_version, status)
+      values ('${ids.job}', '${ids.lead}', 1, 'active');
+      insert into takeoff_revisions
+        (revision_id, job_id, revision_number, status, engine_version, quantity_model_version, job_input_sha256, calc_ledger_sha256, quantities, calc_ledger, created_by)
+      values
+        ('${ids.revision1}', '${ids.job}', 1, 'draft', 'designer-1', 'quantity-v1', repeat('a', 64), repeat('b', 64), '[]', '[]', '${ids.user}');
+    `);
+    await expect(legacy.exec(await migration('0007_quantity_payload_digest.sql'))).rejects.toThrow(/backfill quantity_payload_sha256/i);
+    await legacy.close();
   });
 
   it('executes every core and authorization migration in PostgreSQL', async () => {
@@ -102,8 +131,8 @@ describe('operational schema', () => {
     await seedJob();
     const insert = (revisionId: string, revisionNumber: number) => db.query(
       `insert into takeoff_revisions
-       (revision_id, job_id, revision_number, status, engine_version, quantity_model_version, job_input_sha256, calc_ledger_sha256, quantities, calc_ledger, created_by, approved_at, approved_by)
-       values ($1, $2, $3, 'approved', 'designer-1', 'quantity-v1', $4, $5, '[{"code":"pool.water-volume"}]', '[{"id":"geom.volume"}]', $6, now(), $6)`,
+       (revision_id, job_id, revision_number, status, engine_version, quantity_model_version, job_input_sha256, calc_ledger_sha256, quantity_payload_sha256, quantities, calc_ledger, created_by, approved_at, approved_by)
+       values ($1, $2, $3, 'approved', 'designer-1', 'quantity-v1', $4, $5, repeat('c', 64), '[{"code":"pool.water-volume"}]', '[{"id":"geom.volume"}]', $6, now(), $6)`,
       [revisionId, ids.job, revisionNumber, 'a'.repeat(64), 'b'.repeat(64), ids.user],
     );
     await insert(ids.revision1, 1);
@@ -114,8 +143,8 @@ describe('operational schema', () => {
     await seedJob();
     const insert = (blockingIssues: string) => db.query(
       `insert into takeoff_revisions
-       (revision_id, job_id, revision_number, status, engine_version, quantity_model_version, job_input_sha256, calc_ledger_sha256, quantities, calc_ledger, blocking_issues, created_by, approved_at, approved_by)
-       values ($1, $2, 1, 'approved', 'designer-1', 'quantity-v1', $3, $4, '[{"code":"pool.water-volume"}]', '[{"id":"geom.volume"}]', $5, $6, now(), $6)`,
+       (revision_id, job_id, revision_number, status, engine_version, quantity_model_version, job_input_sha256, calc_ledger_sha256, quantity_payload_sha256, quantities, calc_ledger, blocking_issues, created_by, approved_at, approved_by)
+       values ($1, $2, 1, 'approved', 'designer-1', 'quantity-v1', $3, $4, repeat('c', 64), '[{"code":"pool.water-volume"}]', '[{"id":"geom.volume"}]', $5, $6, now(), $6)`,
       [ids.revision1, ids.job, 'a'.repeat(64), 'b'.repeat(64), blockingIssues, ids.user],
     );
 
@@ -127,12 +156,36 @@ describe('operational schema', () => {
     )).rejects.toThrow(/immutable/i);
   });
 
+  it('persists a formatted quantity digest and makes it immutable with approved evidence', async () => {
+    await seedJob();
+    const insert = (revisionId: string, status: 'draft' | 'approved', digest: string) => db.query(
+      `insert into takeoff_revisions
+       (revision_id, job_id, revision_number, status, engine_version, quantity_model_version, job_input_sha256, calc_ledger_sha256, quantity_payload_sha256, quantities, calc_ledger, blocking_issues, created_by, approved_at, approved_by)
+       values ($1, $2, 1, $3, 'designer-1', 'quantity-v1', repeat('a', 64), repeat('b', 64), $4, '[{"code":"pool.water-volume"}]', '[{"id":"geom.volume"}]', '[]', $5,
+         case when $3 = 'approved' then now() else null end,
+         case when $3 = 'approved' then $5 else null end)`,
+      [revisionId, ids.job, status, digest, ids.user],
+    );
+
+    await expect(insert(ids.revision1, 'draft', 'not-a-sha256')).rejects.toThrow();
+    await insert(ids.revision1, 'approved', 'c'.repeat(64));
+    const stored = await db.query<{ quantity_payload_sha256: string }>(
+      'select quantity_payload_sha256 from takeoff_revisions where revision_id = $1',
+      [ids.revision1],
+    );
+    expect(stored.rows[0]?.quantity_payload_sha256).toBe('c'.repeat(64));
+    await expect(db.query(
+      `update takeoff_revisions set quantity_payload_sha256 = repeat('d', 64) where revision_id = $1`,
+      [ids.revision1],
+    )).rejects.toThrow(/immutable/i);
+  });
+
   it('stores the current approved revision on the job and rejects non-approved pointers', async () => {
     await seedJob();
     const insert = (revisionId: string, revisionNumber: number, status: 'draft' | 'approved') => db.query(
       `insert into takeoff_revisions
-       (revision_id, job_id, revision_number, status, engine_version, quantity_model_version, job_input_sha256, calc_ledger_sha256, quantities, calc_ledger, created_by, approved_at, approved_by)
-       values ($1, $2, $3, $4, 'designer-1', 'quantity-v1', $5, $6, '[{"code":"pool.water-volume"}]', '[{"id":"geom.volume"}]', $7,
+       (revision_id, job_id, revision_number, status, engine_version, quantity_model_version, job_input_sha256, calc_ledger_sha256, quantity_payload_sha256, quantities, calc_ledger, created_by, approved_at, approved_by)
+       values ($1, $2, $3, $4, 'designer-1', 'quantity-v1', $5, $6, repeat('c', 64), '[{"code":"pool.water-volume"}]', '[{"id":"geom.volume"}]', $7,
          case when $4 = 'approved' then now() else null end,
          case when $4 = 'approved' then $7 else null end)`,
       [revisionId, ids.job, revisionNumber, status, 'a'.repeat(64), 'b'.repeat(64), ids.user],
@@ -162,8 +215,8 @@ describe('operational schema', () => {
     await seedJob();
     await db.query(
       `insert into takeoff_revisions
-       (revision_id, job_id, revision_number, status, engine_version, quantity_model_version, job_input_sha256, calc_ledger_sha256, quantities, calc_ledger, created_by, approved_at, approved_by)
-       values ($1, $2, 1, 'approved', 'designer-1', 'quantity-v1', $3, $4, '[{"code":"pool.water-volume"}]', '[{"id":"geom.volume"}]', $5, now(), $5)`,
+       (revision_id, job_id, revision_number, status, engine_version, quantity_model_version, job_input_sha256, calc_ledger_sha256, quantity_payload_sha256, quantities, calc_ledger, created_by, approved_at, approved_by)
+       values ($1, $2, 1, 'approved', 'designer-1', 'quantity-v1', $3, $4, repeat('c', 64), '[{"code":"pool.water-volume"}]', '[{"id":"geom.volume"}]', $5, now(), $5)`,
       [ids.revision1, ids.job, 'a'.repeat(64), 'b'.repeat(64), ids.user],
     );
 

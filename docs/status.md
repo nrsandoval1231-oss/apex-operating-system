@@ -41,7 +41,7 @@ Phase 0 goals:
 - Pure TypeScript calculation engine separated from React UI
 - Formula/input/unit/result `Calc` primitive
 - Strict TypeScript configuration
-- 312 engine tests verified passing on 2026-07-29
+- 318 engine tests verified passing on 2026-07-29
 - Production build and standalone artifact generation previously verified
 - No production dependency vulnerabilities in the most recent audit
 
@@ -59,14 +59,14 @@ Phase 0 goals:
 3. React and standalone renderers have content/layout drift and no browser/PDF integration tests.
 4. Placeholder inputs and standard-detail assumptions require expert and controlled-job reconciliation.
 
-**Use restriction:** Designer is now the candidate quantity authority, but it must not drive material ordering or safety-critical field decisions until shared-contract migration and controlled-job reconciliation are complete.
+**Use restriction:** Designer is the sole measured-quantity authority, but its approved output must not drive material ordering or safety-critical field decisions until controlled-job reconciliation and production deployment controls are complete.
 
 ### Proposal Engine
 
 **Strengths**
 
 - Pure dependency-free calculation core
-- 112 engine checks plus 11 hash-pinned Whitaker evidence checks verified passing on 2026-07-29
+- 116 engine checks plus approved-authority/digest verification and 11 hash-pinned Whitaker evidence checks verified passing on 2026-07-29
 - Explicit distinction between fee/markup and true margin
 - Useful report and browser proposal prototype
 
@@ -83,12 +83,11 @@ Phase 0 goals:
 
 1. Whitaker's 0.0% modelled-code result is calibration, not independent validation.
 2. Approximately $47,302 / 40.4% of the quoted estimate remains unmodelled in the current calibration replay.
-3. Proposal quantities still diverge from Designer and must be replaced by approved takeoff revisions.
-4. Proposal output is disconnected from `lead_id`, `job_id`, CRM, and Gate.
-5. No proposal versioning, audit trail, persistence, or deployment controls exist.
-6. All 61 completed-job transactions are deliberately unclassified; owner-reviewed shared-cost-code mapping is required before category variance analysis.
+3. Proposal output is disconnected from `lead_id`, CRM, and Gate outside the approved-revision boundary.
+4. Issued Proposal immutability exists in memory, but no durable proposal-version table, audit trail, or deployment control exists.
+5. All 61 completed-job transactions are deliberately unclassified; owner-reviewed shared-cost-code mapping is required before category variance analysis.
 
-**Use restriction:** Customer issuance now fails closed on incomplete scope, but the provisional rate library is not pricing authority and the calibration replay must not be represented as independent validation.
+**Use restriction:** Customer issuance now fails closed without approved, digest-matching Designer quantity authority and complete commercial scope, but the provisional rate library is not pricing authority and the calibration replay must not be represented as independent validation.
 
 ### Website
 
@@ -171,12 +170,12 @@ Currently aligned:
 - Namespaced canonical IDs and versioned Zod contracts
 - Durable event vocabulary and append-only PostgreSQL history
 - Approved takeoff revision, Gate, evidence, draw, and customer-projection schema
+- Designer-owned canonical quantities flow directly into Proposal pricing with Calc provenance, revision pinning, and an order-sensitive quantity-payload SHA-256
 - Admin/office/field/customer row-level authorization policies
 
 Currently disconnected:
 
 - Proposal to lead/opportunity/job lifecycle
-- Designer quantities to Proposal pricing
 - Job creation to Gate
 - Gate events to draw release and QuickBooks
 - Customer view to approved operational events
@@ -243,6 +242,21 @@ The completed-job report records **$104,602.12** of actual pool expenses and a *
 | `pnpm audit --prod --audit-level high` | **No known vulnerabilities** |
 
 The shared spine is implemented locally but is not provisioned in a managed environment. Real JWT/RLS integration, signed evidence uploads, backups, monitoring, and deployment remain required before production use.
+
+## Approved quantity authority and tamper-evidence verification — 2026-07-29
+
+| Commands | Result |
+|---|---|
+| Designer tests, typecheck, and build | **318/318 tests passed**; strict TypeScript and production build passed |
+| Proposal ownership, engine, authority/digest, and Whitaker suites | Ownership passed, **116/116 engine checks passed**, digest tamper cases passed, and **11/11 evidence checks passed** |
+| `pnpm test` | **50/50 root tests passed** plus **1/1 real Designer-contract integration test** |
+| `pnpm typecheck` and `pnpm build` | Strict TypeScript project build passed |
+| `pnpm audit --prod` | **No known vulnerabilities** |
+| Disposable cross-repository verifier | Contract and Proposal produced the same SHA-256 for all 17 Designer quantities; reordered, omitted, provenance-consistent substituted, and non-finite payloads were rejected; verifier removed |
+
+Approved revisions now carry an immutable `quantity_payload_sha256` over the ordered tuple `(code, value, unit, calcId)`. The digest is validated by the shared contract, persisted by forward-only migration `0007`, included in approval events, independently revalidated by Proposal, and pinned into issued Proposal output. Existing database revisions require an explicit digest backfill before migration; the migration refuses to invent historical evidence.
+
+`pnpm peers check` still reports the pre-existing transitive PGlite/WASM `@emnapi/core` and `@emnapi/runtime` version mismatch. Operational tests and the production audit pass, but this dependency-tree warning remains open for a separate runtime-dependency checkpoint.
 
 ## Persistent Gate vertical-slice verification — 2026-07-29
 
