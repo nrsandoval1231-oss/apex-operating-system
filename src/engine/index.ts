@@ -91,6 +91,7 @@ export function runTakeoff(
 }
 
 export * from './calc.ts';
+export * from './approvedTakeoff.ts';
 export * from './types.ts';
 export * from './codeChecks.ts';
 export * from './geometry.ts';
