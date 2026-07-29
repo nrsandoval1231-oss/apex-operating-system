@@ -1,5 +1,5 @@
 {
-  "name": "@apex/database",
+  "name": "@apex/gate-service",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -10,6 +10,9 @@
     }
   },
   "dependencies": {
+    "@apex/contracts": "workspace:*",
+    "@apex/database": "workspace:*",
+    "@apex/domain": "workspace:*",
     "@electric-sql/pglite": "0.5.4"
   }
 }

@@ -40,6 +40,8 @@ beforeEach(async () => {
     );
   `);
   await db.exec(await migration('0003_evidence_storage.sql'));
+  await db.exec(await migration('0004_pre_gunite_definition.sql'));
+  await db.exec(await migration('0005_gate_instance_uniqueness.sql'));
 });
 
 const seedJob = async () => {
@@ -110,14 +112,7 @@ describe('operational schema', () => {
        values ($1, $2, 1, 'approved', 'designer-1', 'quantity-v1', $3, $4, '{}', '[]', $5, now(), $5)`,
       [ids.revision1, ids.job, 'a'.repeat(64), 'b'.repeat(64), ids.user],
     );
-    await db.query(
-      `insert into gate_definitions (definition_key, version, title, phase, active)
-       values ('pre-gunite', 1, 'Pre-gunite', 'pre-gunite', true)`,
-    );
-    await db.query(
-      `insert into gate_requirements (definition_key, definition_version, requirement_key, title, description, sequence, evidence_required, accepted_evidence_kinds, evaluator_roles)
-       values ('pre-gunite', 1, 'steel-spacing', 'Steel spacing', 'Verify spacing', 1, true, array['photo'], array['field','admin'])`,
-    );
+
     await db.query(
       `insert into gate_instances (gate_instance_id, job_id, definition_key, definition_version, approved_takeoff_revision_id, status)
        values ($1, $2, 'pre-gunite', 1, $3, 'in-progress')`,
@@ -159,5 +154,21 @@ describe('operational schema', () => {
       'gate_evidence_staff_read',
       'gate_evidence_staff_insert',
     ]));
+  });
+
+  it('seeds the versioned pre-gunite hold point without chemistry advice', async () => {
+    const requirements = await db.query<{ requirement_key: string }>(
+      `select requirement_key from gate_requirements
+       where definition_key = 'pre-gunite' and definition_version = 1
+       order by sequence`,
+    );
+    expect(requirements.rows.map((row) => row.requirement_key)).toEqual([
+      'approved-plan-on-site',
+      'shell-dimensions',
+      'steel-spacing',
+      'bonding',
+      'plumbing-pressure-test',
+    ]);
+    expect(requirements.rows.some((row) => row.requirement_key.includes('chem'))).toBe(false);
   });
 });

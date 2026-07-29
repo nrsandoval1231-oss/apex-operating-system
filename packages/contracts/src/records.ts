@@ -5,6 +5,7 @@ export const AppRoleSchema = z.enum(['admin', 'office', 'field', 'customer']);
 export type AppRole = z.infer<typeof AppRoleSchema>;
 
 export const EvidenceKindSchema = z.enum(['photo', 'video', 'document', 'measurement', 'inspection']);
+export type EvidenceKind = z.infer<typeof EvidenceKindSchema>;
 
 export const EvidenceRecordSchema = z.strictObject({
   evidenceId: idSchemas.evidence,

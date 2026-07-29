@@ -65,6 +65,10 @@ pnpm audit --prod --audit-level high
 - `packages/contracts` — runtime schemas, canonical IDs, event vocabulary, and customer-safe projections
 - `packages/domain` — pure Gate authority and release rules
 - `packages/database` — operational schema, row-level authorization, private evidence storage, and migration execution tests
+- `packages/gate-service` — idempotent Gate commands, durable event reconstruction, and atomic release projections
+- `apps/gate-api` — authenticated loopback pilot API, private evidence files, and the field console
+
+The controlled-pilot procedure and refusal boundaries are in [`docs/runbooks/gate-controlled-pilot.md`](docs/runbooks/gate-controlled-pilot.md).
 
 ## System boundaries
 

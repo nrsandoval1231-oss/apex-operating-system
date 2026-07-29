@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Apex Gate — Pre-gunite hold point</title>
+  <link rel="stylesheet" href="/gate-console.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="masthead">
+      <div>
+        <p class="eyebrow">APEX FIELD CONTROL</p>
+        <h1>Pre-gunite Gate</h1>
+        <p class="lede">Approved revision → field proof → authorized release.</p>
+      </div>
+      <div id="connection" class="connection">Not connected</div>
+    </header>
+
+    <section id="setup" class="panel setup">
+      <h2>Controlled-pilot access</h2>
+      <p>Use a short-lived Gate API token. It stays in this browser tab only.</p>
+      <label>Job ID<input id="job-id" autocomplete="off" placeholder="job_…"></label>
+      <label>Bearer token<input id="token" type="password" autocomplete="off" placeholder="Short-lived JWT"></label>
+      <div class="actions"><button id="open-job" class="primary">Open pre-gunite Gate</button></div>
+      <p id="setup-error" class="error" role="alert"></p>
+    </section>
+
+    <section id="workspace" class="hidden" aria-live="polite">
+      <div class="status-strip">
+        <div><span>Job</span><strong id="job-label"></strong></div>
+        <div><span>Approved revision</span><strong id="revision-label"></strong></div>
+        <div><span>Gate state</span><strong id="gate-status" class="status"></strong></div>
+      </div>
+      <div id="gate-action" class="panel action-panel"></div>
+      <section>
+        <div class="section-heading">
+          <div><p class="eyebrow">FIELD PROOF</p><h2>Release requirements</h2></div>
+          <strong id="progress"></strong>
+        </div>
+        <div id="requirements" class="requirements"></div>
+      </section>
+      <section class="panel release-panel">
+        <div><p class="eyebrow">IRREVERSIBLE HOLD POINT</p><h2>Authorize gunite</h2><p id="release-help"></p></div>
+        <button id="release" class="primary danger" disabled>Release Gate</button>
+      </section>
+      <p id="workspace-error" class="error" role="alert"></p>
+    </section>
+  </main>
+  <script type="module" src="/gate-console.js"></script>
+</body>
+</html>

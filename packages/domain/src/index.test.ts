@@ -50,6 +50,7 @@ describe('Gate command authority and evidence separation', () => {
       at: '2026-07-29T12:01:00.000Z',
       requirementKey: 'steel-spacing',
       evidenceId: createCanonicalId('evidence'),
+      kind: 'photo',
     });
     expect(state.requirements.get('steel-spacing')?.status).toBe('pending');
     expect(state.requirements.get('steel-spacing')?.evidenceIds).toHaveLength(1);
@@ -93,6 +94,7 @@ describe('Gate command authority and evidence separation', () => {
         at: '2026-07-29T12:01:00.000Z',
         requirementKey,
         evidenceId: createCanonicalId('evidence'),
+        kind: 'photo',
       });
       state = apply(state, {
         type: 'evaluate-requirement',

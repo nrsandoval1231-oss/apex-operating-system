@@ -2,6 +2,7 @@ import {
   createCanonicalId,
   type AppRole,
   type EventActor,
+  type EvidenceKind,
   type EvidenceId,
   type GateInstanceId,
   type JobId,
@@ -14,6 +15,7 @@ export type GateStatus = 'not-started' | 'in-progress' | 'blocked' | 'released';
 export interface GateRequirementState {
   readonly key: string;
   readonly evidenceRequired: boolean;
+  readonly acceptedEvidenceKinds: readonly EvidenceKind[];
   readonly status: RequirementStatus;
   readonly evidenceIds: readonly EvidenceId[];
   readonly evaluatedBy?: string;
@@ -37,7 +39,11 @@ export interface NewGateStateInput {
   readonly definitionKey: string;
   readonly definitionVersion: number;
   readonly approvedTakeoffRevisionId: RevisionId | null;
-  readonly requirements: readonly { readonly key: string; readonly evidenceRequired: boolean }[];
+  readonly requirements: readonly {
+    readonly key: string;
+    readonly evidenceRequired: boolean;
+    readonly acceptedEvidenceKinds?: readonly EvidenceKind[];
+  }[];
 }
 
 export type GateCommand =
@@ -48,6 +54,7 @@ export type GateCommand =
       readonly at: string;
       readonly requirementKey: string;
       readonly evidenceId: EvidenceId;
+      readonly kind: EvidenceKind;
     }
   | {
       readonly type: 'evaluate-requirement';
@@ -61,7 +68,7 @@ export type GateCommand =
 
 export type DomainEventDraft =
   | { readonly eventType: 'gate.started'; readonly jobId: JobId; readonly payload: { readonly gateInstanceId: GateInstanceId; readonly definitionVersion: number; readonly takeoffRevisionId: RevisionId }; readonly at: string; readonly actor: EventActor }
-  | { readonly eventType: 'evidence.added'; readonly jobId: JobId; readonly payload: { readonly gateInstanceId: GateInstanceId; readonly definitionVersion: number; readonly requirementKey: string; readonly evidenceId: EvidenceId; readonly kind: 'photo' }; readonly at: string; readonly actor: EventActor }
+  | { readonly eventType: 'evidence.added'; readonly jobId: JobId; readonly payload: { readonly gateInstanceId: GateInstanceId; readonly definitionVersion: number; readonly requirementKey: string; readonly evidenceId: EvidenceId; readonly kind: EvidenceKind }; readonly at: string; readonly actor: EventActor }
   | { readonly eventType: 'requirement.passed' | 'requirement.failed'; readonly jobId: JobId; readonly payload: { readonly gateInstanceId: GateInstanceId; readonly definitionVersion: number; readonly requirementKey: string; readonly evaluatedBy: string; readonly evidenceIds: readonly EvidenceId[]; readonly note?: string; readonly reason?: string }; readonly at: string; readonly actor: EventActor }
   | { readonly eventType: 'gate.blocked'; readonly jobId: JobId; readonly payload: { readonly gateInstanceId: GateInstanceId; readonly definitionVersion: number; readonly blockedRequirementKeys: readonly string[]; readonly reason: string }; readonly at: string; readonly actor: EventActor }
   | { readonly eventType: 'gate.released'; readonly jobId: JobId; readonly payload: { readonly gateInstanceId: GateInstanceId; readonly definitionVersion: number; readonly takeoffRevisionId: RevisionId; readonly releasedBy: string; readonly releasedByRole: 'admin' | 'field'; readonly evidenceIds: readonly EvidenceId[] }; readonly at: string; readonly actor: EventActor }
@@ -99,6 +106,7 @@ export function newGateState(input: NewGateStateInput): GateState {
     requirements.set(requirement.key, {
       key: requirement.key,
       evidenceRequired: requirement.evidenceRequired,
+      acceptedEvidenceKinds: requirement.acceptedEvidenceKinds ?? ['photo', 'video', 'document', 'measurement', 'inspection'],
       status: 'pending',
       evidenceIds: [],
     });
@@ -132,7 +140,10 @@ export function decideGateCommand(state: GateState, command: GateCommand): reado
     case 'add-evidence': {
       requireRole(command.actor, ['admin', 'office', 'field']);
       if (state.status === 'released') throw new DomainRuleError('Released Gates are immutable.');
-      requirementFor(state, command.requirementKey);
+      const requirement = requirementFor(state, command.requirementKey);
+      if (!requirement.acceptedEvidenceKinds.includes(command.kind)) {
+        throw new DomainRuleError(`Evidence kind ${command.kind} is not accepted for ${command.requirementKey}.`);
+      }
       return [{
         eventType: 'evidence.added',
         jobId: state.jobId,
@@ -141,7 +152,7 @@ export function decideGateCommand(state: GateState, command: GateCommand): reado
           definitionVersion: state.definitionVersion,
           requirementKey: command.requirementKey,
           evidenceId: command.evidenceId,
-          kind: 'photo',
+          kind: command.kind,
         },
         at: command.at,
         actor: command.actor,
@@ -151,15 +162,15 @@ export function decideGateCommand(state: GateState, command: GateCommand): reado
       const user = requireRole(command.actor, ['admin', 'field']);
       if (state.status === 'released') throw new DomainRuleError('Released Gates are immutable.');
       const requirement = requirementFor(state, command.requirementKey);
-      const payload = {
+      const sharedPayload = {
         gateInstanceId: state.gateInstanceId,
         definitionVersion: state.definitionVersion,
         requirementKey: command.requirementKey,
         evaluatedBy: user.userId,
         evidenceIds: requirement.evidenceIds,
-        ...(command.note ? { note: command.note } : {}),
       };
       if (command.outcome === 'passed') {
+        const payload = { ...sharedPayload, ...(command.note ? { note: command.note } : {}) };
         return [{ eventType: 'requirement.passed', jobId: state.jobId, payload, at: command.at, actor: command.actor }];
       }
       const reason = command.note?.trim() || 'Requirement failed without a note.';
@@ -167,7 +178,7 @@ export function decideGateCommand(state: GateState, command: GateCommand): reado
         {
           eventType: 'requirement.failed',
           jobId: state.jobId,
-          payload: { ...payload, reason },
+          payload: { ...sharedPayload, reason },
           at: command.at,
           actor: command.actor,
         },
@@ -188,7 +199,9 @@ export function decideGateCommand(state: GateState, command: GateCommand): reado
     case 'release-gate': {
       const user = requireRole(command.actor, ['admin', 'field']);
       if (!state.approvedTakeoffRevisionId) throw new DomainRuleError('Gate release requires an approved takeoff revision.');
-      if (state.status !== 'in-progress') throw new DomainRuleError('Gate must be in progress before release.');
+      if (state.status !== 'in-progress' && state.status !== 'blocked') {
+        throw new DomainRuleError('Gate must be started before release.');
+      }
       const incomplete = [...state.requirements.values()].filter((requirement) => requirement.status !== 'passed' && requirement.status !== 'overridden');
       if (incomplete.length) throw new DomainRuleError(`Gate release blocked by incomplete requirements: ${incomplete.map((item) => item.key).join(', ')}.`);
       const missingEvidence = [...state.requirements.values()].filter((requirement) => requirement.evidenceRequired && requirement.evidenceIds.length === 0);

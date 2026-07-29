@@ -18,6 +18,30 @@ importers:
         specifier: 4.1.10
         version: 4.1.10(@types/node@26.1.2)(vite@8.1.5(@types/node@26.1.2))
 
+  apps/gate-api:
+    dependencies:
+      '@apex/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
+      '@apex/database':
+        specifier: workspace:*
+        version: link:../../packages/database
+      '@apex/domain':
+        specifier: workspace:*
+        version: link:../../packages/domain
+      '@apex/gate-service':
+        specifier: workspace:*
+        version: link:../../packages/gate-service
+      '@electric-sql/pglite':
+        specifier: 0.5.4
+        version: 0.5.4
+      jose:
+        specifier: 6.2.4
+        version: 6.2.4
+      zod:
+        specifier: 4.4.3
+        version: 4.4.3
+
   packages/contracts:
     dependencies:
       ulid:
@@ -38,6 +62,21 @@ importers:
       '@apex/contracts':
         specifier: workspace:*
         version: link:../contracts
+
+  packages/gate-service:
+    dependencies:
+      '@apex/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      '@apex/database':
+        specifier: workspace:*
+        version: link:../database
+      '@apex/domain':
+        specifier: workspace:*
+        version: link:../domain
+      '@electric-sql/pglite':
+        specifier: 0.5.4
+        version: 0.5.4
 
 packages:
 
@@ -369,6 +408,9 @@ packages:
     resolution: {integrity: sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==}
     engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
     os: [darwin]
+
+  jose@6.2.4:
+    resolution: {integrity: sha512-N8acGzVsQy6M/fjFcxtysNc4Q379TcM5dM/qKkNtsHFji88yANnXTr7BLeP75iPnFwBfQzM/jg2BZ9+HZrHCZA==}
 
   lightningcss-android-arm64@1.33.0:
     resolution: {integrity: sha512-gEpRTalKdosp4Bb8qWtc2iOgE5SeIHlpS1up9bFq2wAyYhl1UdTObYiHe98zEM9SQvSoqQZ1IQD0JNpg3Ml5pg==}
@@ -835,6 +877,8 @@ snapshots:
 
   fsevents@2.3.3:
     optional: true
+
+  jose@6.2.4: {}
 
   lightningcss-android-arm64@1.33.0:
     optional: true

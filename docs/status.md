@@ -143,17 +143,19 @@ Phase 0 goals:
 - Strong irreversible hold-point concept
 - Useful linkage among QC, schedule conflicts, draws, and customer communication
 - Customer view correctly hides internal QC complexity
+- Persistent local pre-gunite service now links an approved takeoff revision to versioned requirements, binary evidence, evaluation events, release authority, draw eligibility, and a customer-safe projection
+- Authenticated field console and loopback API now exercise the narrow hold point end to end
 
 **Launch blockers**
 
-1. Prototype only; all state resets on reload.
-2. Primary “Sign this gate” button has no action.
-3. Shared canonical identity, authorization policies, and append-only events now exist, but the Gate prototype is not yet connected to them.
-4. Shared contracts now support evidence, roles, and versioned definitions; the operational Gate API, freshness rules, and UI remain unimplemented.
-5. Photos, inspection requests, notes, billing, and sharing are simulated.
-6. Schedule is hardcoded and not connected to an authority.
-7. Chemistry dosing is advisory logic without input bounds, product-specific instructions, or expert approval.
-8. Accessibility and secure customer-link behavior are not implemented.
+1. The preserved `gate-v3.jsx` prototype remains sample-driven; the new operational slice is a separate controlled-pilot implementation.
+2. Local persistence is embedded PostgreSQL and private filesystem storage, not the managed production deployment profile.
+3. Pilot JWT authentication uses a local symmetric secret; production requires asymmetric/JWKS identity, TLS, provisioning, rotation, and access logging.
+4. Evidence freshness/expiration and inspection-request scheduling are not implemented.
+5. QuickBooks synchronization is not connected; release only creates canonical draw eligibility.
+6. Schedule authority remains disconnected.
+7. Chemistry remains explicitly outside field deployment until separately approved.
+8. Full accessibility, offline behavior, deployment monitoring, automated backups, and recovery drills remain required.
 
 ## Integration status
 
@@ -230,12 +232,24 @@ The following claims must not be reused without correction:
 
 | Commands | Result |
 |---|---|
-| `pnpm verify` | **27/27 tests passed** and strict TypeScript project build passed |
+| `pnpm verify` | **34/34 tests passed** and strict TypeScript project build passed |
 | Embedded PostgreSQL migration suite | Core schema, RLS policies, intake idempotency, one-approved-revision invariant, evidence separation, append-only events, and private evidence bucket all passed |
 | `pnpm install --frozen-lockfile` | Reproducible install passed |
 | `pnpm audit --prod --audit-level high` | **No known vulnerabilities** |
 
 The shared spine is implemented locally but is not provisioned in a managed environment. Real JWT/RLS integration, signed evidence uploads, backups, monitoring, and deployment remain required before production use.
+
+## Persistent Gate vertical-slice verification — 2026-07-29
+
+| Commands | Result |
+|---|---|
+| Gate service tests | Persistent event reconstruction, command idempotency, evidence-kind refusal, release authority, draw projection, and customer filtering passed |
+| Gate API tests | Full approved-revision → evidence files → evaluations → release → draw → customer milestone flow passed over HTTP |
+| Security assertions | Missing/invalid tokens, missing idempotency keys, customer access to internal Gate state, MIME mismatch, and inactive/role-mismatched users fail closed |
+| Strict TypeScript | Full project-reference build passed |
+| Built server smoke test | Compiled API started from `dist`, migrated a persistent local database, returned HTTP 200 for health and the field console, and shut down cleanly |
+
+The API binds to loopback for a controlled pilot. It stores real evidence bytes privately, hashes them, and never exposes internal evidence through the customer endpoint. This is a working local vertical slice, not a production deployment.
 
 An additional temporary Phase 0 verification script passed **75 targeted assertions** covering backup checksums, ZIP integrity, all six Git bundles, deck claim corrections, generated deck contents/slide counts, Office package structure, ignore rules, dependency audit, and whitespace hygiene. This was ad-hoc verification, not a substitute for the component suites above. The script was removed after execution.
 
