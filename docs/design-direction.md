@@ -120,26 +120,6 @@ Not dogma — a fit judgement, and the reasoning should be relitigated if the si
 
 What is allowed: CSS transitions on `transform`/`opacity`/`clip-path` only, entrance and hover states, and `IntersectionObserver` scroll reveals if a section ever needs one.
 
-### The one exception: the hero video
-
-Added 2026-07-29, and it does not contradict the policy above — it clarifies it. **The objection was never "motion"; it was "runtime and payload spent on effects that say nothing about Apex."** A background video of a completed Apex pool at night is the opposite trade: no library, no runtime, and it is real project footage — the thing this site has been shortest of.
-
-It is built as the live site's version should have been. Theirs: `<video preload="auto" autoplay playsinline loop muted>` — 2.23 MB, no poster, no dimensions, no viewport gate, then covered by a flat 64% black scrim. Full price, fraction of the value, and LCP waiting on the whole file.
-
-Ours:
-
-| | |
-|---|---|
-| Poster | A real still, ~41 KB, `fetchpriority="high"`, painted immediately. **The page is complete without the video.** |
-| Video | `preload="none"`, no `src` in markup — attached only after `load` |
-| Gates | Skipped entirely on reduced motion, on viewports ≤ 860 px, and on `saveData` / 2g / 3g |
-| Size | 593 KB — trimmed from 15s to a 5.6s pool-only loop, boomeranged so the pan loops seamlessly |
-| Scrim | Lighter than theirs, and weighted to the bottom where the text sits — a contrast requirement, not a mood |
-
-A phone downloads **zero bytes** of it. Asserted in `tests/hero-video.spec.ts`, because every one of those properties is one careless edit from regressing and the regression is invisible on a fast desktop.
-
-**If you add video anywhere else, it follows these rules or it doesn't ship.**
-
 ### The rule this cost us
 
 Motion must be written as **progressive enhancement, never as something that has to be switched off.**
@@ -185,9 +165,7 @@ Items 3–5 were found by tests written during this pass; item 1 was found by pr
 
 ## 7 · Open
 
-- **D-20 photography — now 5 real, 4 stock.** Apex's own hero footage supplied real imagery for pools and coating; the owner portrait is a real photo of Travis. What remains stock is **Design & Renovation and Pool Service**, both verticals — the video covers neither. `npm run check:images` prints the shot list.
-- **A high-resolution pool photograph.** The pools hero is real Apex work but cut from 720p footage, so its 4:5 crop is only 576×720 — about 1x for where it renders. It is the top item on the shot list.
-- **Raw footage from Travis**, if it exists. The 2.23 MB web copy was enough for a hero loop and five stills; the originals would likely clear the whole remaining shot list without a photo shoot.
+- **D-20 photography.** Eight stock stand-ins remain (the owner portrait is now real). Real project photography is the single biggest available lift to this page — a local buyer recognises stock, and pools is a considered purchase at pool prices. `npm run check:images` prints the shot list.
 - **AC-6.4 colour contrast.** Every sage pairing was measured against AA before it shipped (§1a, §2a), but there is still no automated audit that would catch a future regression. Worth adding.
 - **An SVG or EPS of the logo.** The supplied PNG is correct and 2x, so it is crisp everywhere it currently appears, but a vector has no ceiling and would drop ~10 KB.
 - **A Lyon Financial partner/referral URL.** `PUBLIC_FINANCING_URL` currently points at Lyon's public site and attributes the referral to nobody.
