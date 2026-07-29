@@ -36,5 +36,13 @@ describe('Designer to canonical contract compatibility', () => {
     expect(revision.quantities).toHaveLength(17);
     expect(revision.quantities.find((quantity) => quantity.code === 'shell.gunite-ordered-volume')?.value)
       .toBe(takeoff.structure.outcome === 'quantities' ? takeoff.structure.quantities.guniteCy.value : undefined);
+    const forming = revision.quantities.find((quantity) => quantity.code === 'shell.forming-perimeter');
+    const waterline = revision.quantities.find((quantity) => quantity.code === 'pool.waterline-perimeter');
+    expect(forming?.value).toBe(110);
+    expect(forming?.value).not.toBe(waterline?.value);
+    expect(revision.calcLedger.find((entry) => entry.id === forming?.calcId)).toMatchObject({
+      label: 'Bond-beam form perimeter',
+      formula: 'P_form = P_exc,bond-beam',
+    });
   });
 });
