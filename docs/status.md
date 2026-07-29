@@ -148,8 +148,8 @@ Phase 0 goals:
 
 1. Prototype only; all state resets on reload.
 2. Primary “Sign this gate” button has no action.
-3. No identity, authorization, immutable signature, or audit trail.
-4. Checks do not support evidence, expiration/freshness, roles, or versioned definitions.
+3. Shared canonical identity, authorization policies, and append-only events now exist, but the Gate prototype is not yet connected to them.
+4. Shared contracts now support evidence, roles, and versioned definitions; the operational Gate API, freshness rules, and UI remain unimplemented.
 5. Photos, inspection requests, notes, billing, and sharing are simulated.
 6. Schedule is hardcoded and not connected to an authority.
 7. Chemistry dosing is advisory logic without input bounds, product-specific instructions, or expert approval.
@@ -164,6 +164,10 @@ Currently aligned:
 - Four-vertical vocabulary
 - Job-status event concept
 - Shared cost-code strategy in PRDs
+- Namespaced canonical IDs and versioned Zod contracts
+- Durable event vocabulary and append-only PostgreSQL history
+- Approved takeoff revision, Gate, evidence, draw, and customer-projection schema
+- Admin/office/field/customer row-level authorization policies
 
 Currently disconnected:
 
@@ -181,7 +185,7 @@ The following claims must not be reused without correction:
 - “Not fitted to the answer” for the Whitaker calibration job
 - 0.0% variance presented as whole-job or independent validation
 - Old 13-slide strategy-deck references
-- Old proposal test counts of 82 or 87; current verified count is 90
+- Old proposal test counts of 82, 87, or 90; current verified count is 112
 - Website README claims that implementation has not started
 - Claims that all repositories are clean
 - Commission decisions presented as settled before recorded approval
@@ -221,6 +225,17 @@ The following claims must not be reused without correction:
 | `node backtest.mjs` and `node report.mjs whitaker` | Both executed successfully; known calibration/coverage limitations remain visible |
 | `node calibrate.mjs` | Expected non-zero refusal with `DISABLED` message |
 | jsdom DOM verification | Blocked default, quoted-scope release, customer render, and invalid-geometry refusal all passed |
+
+## Shared platform verification — 2026-07-29
+
+| Commands | Result |
+|---|---|
+| `pnpm verify` | **27/27 tests passed** and strict TypeScript project build passed |
+| Embedded PostgreSQL migration suite | Core schema, RLS policies, intake idempotency, one-approved-revision invariant, evidence separation, append-only events, and private evidence bucket all passed |
+| `pnpm install --frozen-lockfile` | Reproducible install passed |
+| `pnpm audit --prod --audit-level high` | **No known vulnerabilities** |
+
+The shared spine is implemented locally but is not provisioned in a managed environment. Real JWT/RLS integration, signed evidence uploads, backups, monitoring, and deployment remain required before production use.
 
 An additional temporary Phase 0 verification script passed **75 targeted assertions** covering backup checksums, ZIP integrity, all six Git bundles, deck claim corrections, generated deck contents/slide counts, Office package structure, ignore rules, dependency audit, and whitespace hygiene. This was ad-hoc verification, not a substitute for the component suites above. The script was removed after execution.
 

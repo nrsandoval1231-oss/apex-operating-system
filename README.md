@@ -8,9 +8,9 @@ Apex is a unified operating-system project for a pool and outdoor-construction b
 
 ## Current state
 
-**Phase 0 — Preserve and stabilize.**
+**Phase 1 — Shared operational spine and controlled Gate vertical slice.**
 
-Apex has strong architecture, tested prototypes, and a promising field-operations concept. It is **not yet a production end-to-end system**. The current work is being preserved, versioned, corrected, and prepared for one controlled vertical slice.
+Phase 0 preservation is complete. Designer and Proposal now fail closed on the known safety defects, and the root workspace contains the first shared contracts, domain rules, PostgreSQL migrations, authorization policies, private evidence-storage policies, and CI verification. Apex is **not yet a production end-to-end system**; the next proof is one persistent pre-gunite Gate workflow.
 
 See:
 
@@ -19,6 +19,7 @@ See:
 - [`docs/repositories.md`](docs/repositories.md) — private remote and local-source map
 - [`docs/decisions/ADR-0001-system-boundaries.md`](docs/decisions/ADR-0001-system-boundaries.md) — proposed system authorities and boundaries
 - [`docs/decisions/ADR-0002-non-website-build-profile.md`](docs/decisions/ADR-0002-non-website-build-profile.md) — accepted implementation defaults and Website exclusion
+- [`docs/decisions/ADR-0003-canonical-identity-contracts-persistence.md`](docs/decisions/ADR-0003-canonical-identity-contracts-persistence.md) — canonical IDs, events, authorization, evidence, and persistence
 - [Unified implementation plan](.hermes/plans/2026-07-28_160832-apex-unified-operating-system.md)
 
 ## Intended lifecycle
@@ -38,18 +39,32 @@ Website lead
 
 ## Existing components
 
-| Component | Purpose | Phase 0 status |
+| Component | Purpose | Current status |
 |---|---|---|
-| `apex-website/apex-website` | Public marketing site and tagged lead capture | Check/build pass; launch work preserved; not launched |
+| `apex-website/apex-website` | External public marketing site and upstream lead producer | Explicitly excluded from this build-out; maintained in a separate workstream |
 | `apex-lead-engine/apex-lead-engine` | n8n intake and job-status workflow source | Source exists; intake inactive; speed-to-lead not built |
-| `apex-proposal-engine` | Quantity-to-price proposal prototype | 90 checks pass; input and calibration defects block production use |
-| `Apex Designer` | Technical pool/spa plan and materials takeoff | 305 tests pass; correctness defects block field/material use |
+| `apex-proposal-engine` | Quantity-to-price proposal prototype | 112 checks pass; impossible inputs and incomplete customer issuance now fail closed; provisional pricing still blocks authority |
+| `Apex Designer` | Technical pool/spa plan and materials takeoff | 312 tests pass; known spa, gas, rollup, and nested-validation defects corrected; real-job reconciliation still gates authority |
 | `gate-v3.jsx` | Field command-center prototype | Product mockup; no persistence/backend/audit yet |
 | `apex-prds/apex-prds` | Foundation, decisions, and product requirements | Strong but contains stale/open decisions presented elsewhere as settled |
 | `apex-decks` | Strategy and pitch-deck generators | Claims corrected; generated packages structurally validate |
 | `Apex Lead Engine` | Detached n8n workflow export/status snapshot | Historical/operational export; not an independent source of truth |
 
 Each existing Git component remains an independent repository during Phase 0. The root repository preserves the system-level plans and non-repository artifacts. A later approved migration will import component histories into the target monorepo rather than copying files blindly.
+
+## Shared workspace
+
+The root non-Website workspace uses pnpm, strict TypeScript, Vitest, Zod, and PostgreSQL-compatible migrations.
+
+```bash
+pnpm install
+pnpm verify
+pnpm audit --prod --audit-level high
+```
+
+- `packages/contracts` — runtime schemas, canonical IDs, event vocabulary, and customer-safe projections
+- `packages/domain` — pure Gate authority and release rules
+- `packages/database` — operational schema, row-level authorization, private evidence storage, and migration execution tests
 
 ## System boundaries
 
