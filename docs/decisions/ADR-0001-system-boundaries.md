@@ -1,6 +1,6 @@
 # ADR-0001: Apex System Boundaries and Authorities
 
-- **Status:** Proposed for Phase 1; Phase 0 preservation is approved
+- **Status:** Accepted; implementation profile completed by ADR-0002
 - **Date:** 2026-07-28
 - **Decision owner:** Nick Sandoval
 - **Related plan:** `.hermes/plans/2026-07-28_160832-apex-unified-operating-system.md`
@@ -86,15 +86,10 @@ Not selected as the default because Gate requires immutable evidence, signatures
 
 Rejected because physical quantities would continue to diverge between customer pricing and technical plans.
 
-## Open decisions
+## Decisions completed by ADR-0002
 
-1. Approve Supabase or choose a different managed/self-hosted backend.
-2. Define launch roles and access.
-3. Decide whether Gate is internal-only for the pilot.
-4. Select Monday's transitional mode.
-5. Define the business event that mints a Job ID.
-6. Define who may sign or override each gate.
+ADR-0002 accepts the Supabase-compatible platform, first-pilot roles, internal-only Gate posture, transitional Monday adapter, signed-contract Job ID event, and signer/override boundaries for implementation.
 
 ## Validation
 
-This ADR becomes accepted only after Nick approves the open Phase 1 decisions. The architecture is proven only when one lead-to-gate pilot passes the vertical-slice acceptance criteria without manual re-keying or duplicate records.
+The architecture is proven only when one lead-to-gate pilot passes the vertical-slice acceptance criteria without manual re-keying or duplicate records.

@@ -8,6 +8,8 @@
 
 **Current source of truth for status:** This file
 
+**Active build scope:** All Apex components except the Website. The Website is being developed separately and must not be modified by this build workstream. See `docs/decisions/ADR-0002-non-website-build-profile.md`.
+
 ## Executive status
 
 Apex has a coherent lifecycle, strong PRDs, a tested technical takeoff prototype, a tested proposal prototype, an actively developed website, and a high-value Gate field-operations concept. These components do not yet form a deployed end-to-end system.
