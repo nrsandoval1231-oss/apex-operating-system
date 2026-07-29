@@ -1,6 +1,6 @@
 # Apex Current Status
 
-**Last updated:** 2026-07-28
+**Last updated:** 2026-07-29
 
 **Program phase:** Phase 0 — Preserve and stabilize
 
@@ -66,7 +66,7 @@ Phase 0 goals:
 **Strengths**
 
 - Pure dependency-free calculation core
-- 112 checks verified passing on 2026-07-29
+- 112 engine checks plus 11 hash-pinned Whitaker evidence checks verified passing on 2026-07-29
 - Explicit distinction between fee/markup and true margin
 - Useful report and browser proposal prototype
 
@@ -77,14 +77,16 @@ Phase 0 goals:
 - Unresolved direct-entry scope and back-solved residuals hard-block customer proposal generation.
 - `calibrate.mjs` now exits non-zero and cannot emit pricing guidance.
 - Browser UI gating was exercised against the shipped DOM with jsdom.
+- The quoted estimate and completed-job transaction report are separately transcribed, source-hash pinned, and arithmetically reconciled in integer cents.
 
 **Launch blockers still open**
 
 1. Whitaker's 0.0% modelled-code result is calibration, not independent validation.
-2. Approximately $47,302 / 40.4% of the full reference job remains unmodelled in the current back-test.
+2. Approximately $47,302 / 40.4% of the quoted estimate remains unmodelled in the current calibration replay.
 3. Proposal quantities still diverge from Designer and must be replaced by approved takeoff revisions.
 4. Proposal output is disconnected from `lead_id`, `job_id`, CRM, and Gate.
 5. No proposal versioning, audit trail, persistence, or deployment controls exist.
+6. All 61 completed-job transactions are deliberately unclassified; owner-reviewed shared-cost-code mapping is required before category variance analysis.
 
 **Use restriction:** Customer issuance now fails closed on incomplete scope, but the provisional rate library is not pricing authority and the calibration replay must not be represented as independent validation.
 
@@ -178,7 +180,7 @@ Currently disconnected:
 - Job creation to Gate
 - Gate events to draw release and QuickBooks
 - Customer view to approved operational events
-- Completed jobs to pricing calibration, Meta, reviews, and commissions
+- Completed-job cost classification to pricing review, Meta, reviews, and commissions
 
 ## Artifact and documentation drift
 
@@ -187,7 +189,7 @@ The following claims must not be reused without correction:
 - “Not fitted to the answer” for the Whitaker calibration job
 - 0.0% variance presented as whole-job or independent validation
 - Old 13-slide strategy-deck references
-- Old proposal test counts of 82, 87, or 90; current verified count is 112
+- Old proposal test counts of 82, 87, or 90; current verified baseline is 112 engine checks plus 11 source-evidence checks
 - Website README claims that implementation has not started
 - Claims that all repositories are clean
 - Commission decisions presented as settled before recorded approval
@@ -224,9 +226,12 @@ The following claims must not be reused without correction:
 | Commands | Result |
 |---|---|
 | `node engine.test.mjs` | **112/112 checks passed** |
+| `node whitaker-evidence.test.mjs` | **11/11 checks passed**; 13 estimate sections, 61 actual transactions, fee math, five payments, and remaining balance reconcile |
 | `node backtest.mjs` and `node report.mjs whitaker` | Both executed successfully; known calibration/coverage limitations remain visible |
 | `node calibrate.mjs` | Expected non-zero refusal with `DISABLED` message |
 | jsdom DOM verification | Blocked default, quoted-scope release, customer render, and invalid-geometry refusal all passed |
+
+The completed-job report records **$104,602.12** of actual pool expenses and a **$135,982.76** actual cost-plus total, versus the **$116,955.18** quoted job cost and **$152,041.73** quoted customer total. The same-job variance is **−$12,353.06 / −10.56%** at cost and **−$16,058.97 / −10.56%** at customer total. This is estimate-to-actual evidence, not independent quantity validation or rate authority.
 
 ## Shared platform verification — 2026-07-29
 
