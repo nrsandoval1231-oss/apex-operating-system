@@ -8,7 +8,7 @@
 
 export const hero = {
   eyebrow: 'Lubbock & the South Plains · Est. by a retired firefighter',
-  // Rendered as three lines; the last line is the amber accent phrase.
+  // Rendered as three lines; the last line is the brand-sage accent phrase.
   headingLines: ['Anything', 'Construction.'] as const,
   headingAccent: 'Apex gets it done.',
   sub: 'Four crews. One standard. Pools, coatings, renovations, and pool service — built by a team that shows up, finishes the job, and stands behind it for decades.',

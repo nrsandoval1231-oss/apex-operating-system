@@ -2,7 +2,9 @@
 
 The creative spec: what is locked, what is deliberately chosen, and what must never drift. Written after running the research → direct → build → verify → review method against this site.
 
-The short version: **the palette and type are pinned by the brief and stay pinned. The design effort goes into motion, structure, and the signature device — the axes the brief leaves free.**
+The short version: **type is pinned by the brief. The palette is now pinned by the real logo — sage carries the brand, amber survives only on actions. The remaining design effort goes into motion, structure, and the signature device.**
+
+> **Updated when the real logo arrived.** §1 below was written while the palette was an approximation and amber was treated as the master accent. It isn't — see §1a. The audit is kept rather than rewritten, because how the question was resolved matters more than the conclusion.
 
 ---
 
@@ -37,13 +39,41 @@ Two reasons, and neither is "we couldn't be bothered."
 
 ---
 
+## 1a · The real logo arrived, and the audit above was wrong on one axis
+
+The maintainer supplied `Apex-Site-Logo-2x.png`. Sampled directly from the file rather than eyeballed:
+
+| Colour | Hex | Share of the mark |
+|---|---|---|
+| Sage | `#A1CCCA` | 56.6% |
+| Charcoal | `#383C3D` | 3.9% |
+| White | `#FFFFFF` | 4.4% |
+
+**There is no amber in Apex's identity at all.** The palette was an approximation from the pitch deck, and it guessed the accent wrong — not slightly, but to the opposite temperature. §1 spent its effort defending a warm accent that was never the brand's.
+
+That is worth stating plainly, because the lesson generalises: the cliché audit was a good question asked against bad data. Sampling the actual asset took one command and settled in seconds what a paragraph of reasoning could not.
+
+### The two-accent system (the maintainer's call: sage primary, amber demoted)
+
+A straight find-and-replace was not an option — raw sage is **1.59:1 on paper**, unusable as text. So the accents were split by *job*, and each colour has a rule:
+
+- **SAGE is brand.** Eyebrows, the hero accent phrase, warranty badges, guarantee stats, hover states, the capture panel's cursor. `--sage` on dark surfaces (9.75:1 on charcoal); `--sage-ink` `#2F6B68` for small text on light ones (5.58:1 paper · 4.89:1 concrete · 6.13:1 white — all AA).
+- **AMBER is action, and nothing else.** Quote buttons, focus rings, input focus, the checkbox, the error-state phone link. It is not in the identity, so it earns its place by doing a job: it is the highest-contrast "act now" colour available on a charcoal page, and this site exists to capture leads.
+- **One documented exception:** star ratings stay amber. Gold stars are a review convention that reads as *rating*, not as brand colour.
+
+**The test for drift:** if amber ever appears somewhere you don't click, it has drifted. Use sage.
+
+---
+
 ## 2 · Locked (do not restyle)
 
 | Token | Value | Source |
 |---|---|---|
 | `--char` / `--char2` | `#1B1C1E` / `#25272A` | approved mockup (D-08) |
 | `--paper` / `--concrete` | `#F6F4EF` / `#E9E5DE` | approved mockup |
-| `--amber` / `--amber-d` | `#E0901B` / `#C67A0C` | brand accent |
+| `--sage` / `--sage-ink` | `#A1CCCA` / `#2F6B68` | **the real brand accent** — sampled from the logo |
+| `--brand-char` | `#383C3D` | the logo's own charcoal |
+| `--amber` / `--amber-d` | `#E0901B` / `#C67A0C` | **action only** — CTAs, focus, form affordances (§1a) |
 | `--pool` `--coat` `--reno` `--serv` | `#0E6E7C` `#46586B` `#A9632F` `#3E9B5F` | the vertical enum, colour-coded |
 | Display / body / utility | Oswald / Inter / JetBrains Mono | approved mockup |
 
@@ -92,7 +122,9 @@ It built, it type-checked, it looked perfect in a normal browser, and it was inv
 
 ## 5 · Anti-checklist — do NOT
 
-1. **Do not restyle the tokens** without the maintainer and the client. D-08. If real brand hexes arrive, swap and keep everything else.
+1. **Do not restyle the tokens** without the maintainer and the client. D-08. The sage/charcoal values now come from the real logo and are not up for reinterpretation.
+1a. **Do not use amber for anything you don't click.** It is the action colour, not a brand colour (§1a). The one exception is star ratings.
+1b. **Do not put raw `--sage` on a light background as text** — 1.59:1, invisible. Use `--sage-ink`.
 2. **Do not add a second loud element.** The capture panel is the signature. Anything competing with it gets cut.
 3. **Do not add an animation runtime** (Lenis / GSAP / Three.js) for a marketing page whose buyers are on phones. See §4.
 4. **Do not write motion that must be disabled.** Default to visible; enhance under `no-preference`. See §4.
@@ -122,5 +154,6 @@ Items 3–5 were found by tests written during this pass; item 1 was found by pr
 ## 7 · Open
 
 - **D-20 photography.** Nine stock stand-ins. Real project photography is the single biggest available lift to this page — a local buyer recognises stock, and pools is a considered purchase at pool prices. `npm run check:images` prints the shot list.
-- **AC-6.4 colour contrast.** Tokens were chosen against AA and the two risky ones have documented safe variants, but no automated audit runs. Worth adding.
+- **AC-6.4 colour contrast.** Every sage pairing introduced in §1a was measured against AA before it shipped (5.58 / 4.89 / 6.13 / 9.75 / 8.56 / 10.45 : 1), but there is still no automated audit that would catch a future regression. Worth adding.
+- **An SVG or EPS of the logo.** The supplied PNG is correct and 2x, so it is crisp everywhere it currently appears, but a vector has no ceiling and would drop ~10 KB.
 - **A second signature moment**, if the site ever needs one — from §3's vocabulary, not from a stock effect.
