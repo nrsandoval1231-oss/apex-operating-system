@@ -65,28 +65,22 @@ export const ogImageUrl = envOr('PUBLIC_OG_IMAGE', '');
 export const financingUrl = envOr('PUBLIC_FINANCING_URL', 'https://www.lyonfinancial.net/');
 
 /**
- * Legal page destinations, rendered as real links in the footer.
+ * Legal page destinations.
  *
- * Defaults point at where these pages ACTUALLY live, which a crawl of the live site
- * (2026-07-29) put on the MAIN domain — not on `apexcoatinglbk.com` as `docs/decisions.md`
- * D-03 had recorded. That note was wrong and is corrected there. This repo has no legal
- * routes and must not invent legal text.
+ * Now INTERNAL routes. Both documents were transcribed verbatim from the live site and are
+ * served from /privacy and /terms — see src/content/legal.ts, which also records the four
+ * problems the transcription surfaced and which still need a lawyer's answer.
  *
- * ⚠ THESE URLS DIE AT CUTOVER. They are pages on the very site this project replaces, so the
- * moment DNS points at the new build they 404 and the footer links break. Two things then
- * fail at once: the links, and A2P 10DLC registration — carriers require a reachable privacy
- * policy naming SMS, and TCPA is the reason consent is per-vertical in the first place.
+ * They had to move in-house: the live versions sit on the very domain this project replaces,
+ * so at cutover they 404 and take two things with them — the footer links, and A2P 10DLC
+ * registration, which carriers gate on a reachable privacy policy that names SMS.
  *
- * The fix is to rebuild both as routes here, copying the text VERBATIM from the live pages
- * (legal copy is not something to paraphrase or regenerate), then repoint these at internal
- * paths. Tracked in config/redirects.json → `$legalGap` and docs/launch-checklist.md.
+ * Still env-overridable. If Apex's counsel would rather host the canonical copies elsewhere,
+ * point these at that instead; nothing else needs to change.
  */
 export const legalUrls = {
-  privacy: envOr(
-    'PUBLIC_PRIVACY_URL',
-    'https://apexgetsitdone.com/privacy-policy-apex-designer-pools/',
-  ),
-  terms: envOr('PUBLIC_TERMS_URL', 'https://apexgetsitdone.com/terms-and-conditions/'),
+  privacy: envOr('PUBLIC_PRIVACY_URL', '/privacy'),
+  terms: envOr('PUBLIC_TERMS_URL', '/terms'),
 } as const;
 
 /** True when this is a real production build (gates live vs test webhook — Phase 3). */

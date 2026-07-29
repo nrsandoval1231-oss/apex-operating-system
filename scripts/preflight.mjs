@@ -191,9 +191,9 @@ if (stock > 0) {
   const why =
     'They are correctly captioned — no alt text claims Apex did this work — so this is not a ' +
     'misrepresentation. It is a conversion problem: real project photography is the primary ' +
-    'asset for a considered purchase at pool prices, and a local buyer recognises stock. ' +
-    'Note the owner portrait especially: it is a photo of a stranger, and the alt text was ' +
-    'deliberately made generic so it does not name Travis. Pass --allow-placeholders to ship.';
+    'asset for a considered purchase at pool prices, and a local buyer recognises stock. The ' +
+    'pools hero is the one carrying the most weight. Run `npm run check:images` for the shot ' +
+    'list. Pass --allow-placeholders to ship anyway.';
   if (allowPlaceholders) warn(msg, why);
   else block(msg, why);
 }
@@ -219,16 +219,50 @@ if (!/property="og:image"/.test(homeHtml)) {
 // distinction is the entire point, and a substring match would happily pass on the latter.
 const privacyLink = /<a[^>]+href="([^"]+)"[^>]*>[^<]*privacy[^<]*<\/a>/i.exec(allHtml);
 if (!privacyLink) {
-  warn(
+  block(
     'no privacy policy LINK found in the output',
     'The site collects SMS consent. Carriers require a reachable privacy policy naming SMS ' +
       'for A2P 10DLC registration, and TCPA exposure is the reason consent is per-vertical. ' +
       'Text that merely says "Privacy Policy" does not satisfy this.',
   );
 } else if (privacyLink[1] === '#' || privacyLink[1].trim() === '') {
-  warn('the privacy policy link has no destination', `href="${privacyLink[1]}"`);
+  block('the privacy policy link has no destination', `href="${privacyLink[1]}"`);
 } else {
   pass(`privacy policy is linked (${privacyLink[1]})`);
+}
+
+// The linked policy must actually be a page in this build, not a promise.
+for (const [label, route] of [['privacy policy', '/privacy'], ['terms', '/terms']]) {
+  if (pages.some((p) => (p.path || '/') === route)) pass(`${label} page exists at ${route}`);
+  else block(`${label} route ${route} is missing from the build`, 'The footer links to it.');
+}
+
+/* --------------------------------------------------- 8b. legal text has been reviewed */
+
+/*
+ * The legal copy on this site was transcribed verbatim from the previous site, and it does
+ * not currently describe this business: it names the wrong domain, covers two of four
+ * verticals, and gives contact details that disagree with the rest of the site. Those are
+ * faithfully reproduced rather than quietly edited, because editing them is a lawyer's call.
+ *
+ * This check exists so that decision cannot be forgotten. It reads the flag rather than the
+ * prose — a human has to assert the text is fit for use.
+ */
+const legalSrc = readFileSync(join(root, 'src', 'content', 'legal.ts'), 'utf8');
+const unreviewed = [...legalSrc.matchAll(/title:\s*'([^']+)'[\s\S]{0,400}?reviewed:\s*(true|false)/g)]
+  .filter((m) => m[2] === 'false')
+  .map((m) => m[1]);
+
+if (unreviewed.length) {
+  block(
+    `legal text not signed off: ${unreviewed.join(', ')}`,
+    'Transcribed verbatim from the old site and NOT yet reviewed for use on this one. It ' +
+      'names apexcoatinglbk.com, covers only 2 of the 4 verticals, and lists contact details ' +
+      'that differ from the site. Have counsel review, then set `reviewed: true` in ' +
+      'src/content/legal.ts. This is the one preflight blocker no engineer can clear.',
+  );
+} else {
+  pass('legal documents are signed off for use on this site');
 }
 
 /* -------------------------------------------------------------------- report */

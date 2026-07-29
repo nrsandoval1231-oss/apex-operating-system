@@ -69,6 +69,12 @@ export const SITEMAP_ENTRIES: readonly SitemapEntry[] = [
     // Designer Pools is the highest-ticket vertical and the primary organic target.
     priority: cfg.vertical === 'Designer Pools' ? 0.9 : 0.8,
   })),
+  /* Legal pages are indexable and listed deliberately, at low priority. They rank for
+     nothing and shouldn't, but they must be discoverable: the live site's versions are
+     indexed today, so omitting them from the sitemap after cutover would drop URLs Google
+     already knows about. Carriers checking the SMS policy also need to reach it. */
+  { path: '/privacy', changefreq: 'yearly', priority: 0.2 },
+  { path: '/terms', changefreq: 'yearly', priority: 0.2 },
 ];
 
 /* ------------------------------------------------------------------ JSON-LD builders */
