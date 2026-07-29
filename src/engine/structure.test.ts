@@ -167,17 +167,19 @@ describe('quantities, once a detail covers the job', () => {
     close(q!.shellVolume.value, 484.911, 0.01);
   });
 
-  // 0.5 x 0.5^2 x 90 = 11.25 cf
-  it('cove fillet = 11.25 cf', () => close(q!.coveVolume.value, 11.25));
+  // Pool cove 90 ft + spa floor-to-wall cove 24 ft.
+  it('cove fillet includes the attached spa perimeter', () => close(q!.coveVolume.value, 14.25));
 
-  // (1.0 - 0.5) x 1.0 x 90 = 45 cf
-  it('bond beam beyond the wall section = 45 cf', () => close(q!.bondBeamVolume.value, 45));
+  // Pool perimeter 90 ft + three exterior spa edges 18 ft; shared dam edge is already in pool perimeter.
+  it('bond beam includes the three exterior attached-spa edges without double-counting the shared edge', () => {
+    close(q!.bondBeamVolume.value, 54);
+  });
 
   // 0.5 x 1.5 x 6 = 4.5 cf
   it('spa dam wall = 4.5 cf', () => close(q!.damWallVolume!.value, 4.5));
 
   it('rebound is a separate line, never folded into net', () => {
-    close(q!.gunite.net.value, q!.shellVolume.value + 11.25 + 45 + 4.5, 0.01);
+    close(q!.gunite.net.value, q!.shellVolume.value + 14.25 + 54 + 4.5, 0.01);
     close(q!.gunite.waste.value, q!.gunite.net.value * 0.15, 0.01);
     close(q!.gunite.ordered.value, q!.gunite.net.value * 1.15, 0.01);
     expect(q!.gunite.waste.id).not.toBe(q!.gunite.net.id);
@@ -187,8 +189,8 @@ describe('quantities, once a detail covers the job', () => {
     close(q!.guniteCy.value, q!.gunite.ordered.value / 27, 0.001);
   });
 
-  it('bond beam steel = 4 continuous bars x 90 ft perimeter = 360 lf', () => {
-    close(q!.bondBeamBarLf.value, 360);
+  it('bond beam steel = 4 continuous bars x 108 ft effective perimeter = 432 lf', () => {
+    close(q!.bondBeamBarLf.value, 432);
   });
 
   it('every structural line names the detail it came from', () => {
@@ -229,6 +231,16 @@ describe('quantities, once a detail covers the job', () => {
 });
 
 describe('bar schedule and stock-length cut optimization', () => {
+  it('adds traceable floor and exterior-wall reinforcement families for an attached spa', () => {
+    const withSpa = buildBarSchedule(STANDARD_MODEL, geom.segments, EXAMPLE_DETAIL);
+    const poolOnlyJob: Job = { ...STANDARD_MODEL, spa: undefined };
+    const poolOnly = buildBarSchedule(poolOnlyJob, computeGeometry(poolOnlyJob).segments, EXAMPLE_DETAIL);
+    expect(withSpa.some((row) => row.family.startsWith('Attached spa — floor'))).toBe(true);
+    expect(withSpa.some((row) => row.family.startsWith('Attached spa — exterior walls'))).toBe(true);
+    const lf = (rows: ReturnType<typeof buildBarSchedule>) => rows.reduce((sum, row) => sum + row.count * row.lengthFt, 0);
+    expect(lf(withSpa)).toBeGreaterThan(lf(poolOnly));
+  });
+
   it('a tighter spacing puts more steel in the shell', () => {
     const at12 = buildBarSchedule(STANDARD_MODEL, geom.segments, EXAMPLE_DETAIL);
     const at6 = buildBarSchedule(STANDARD_MODEL, geom.segments, detail({ barSpacingIn: 6 }));
@@ -353,12 +365,12 @@ describe('the Apex standard detail as supplied', () => {
   });
 
   it('weighs the #4 bond beam on its own unit weight, not the shell bar', () => {
-    // 2,238 lf of #3 at 0.376 + 360 lf of #4 at 0.668 = 1,082 lb.
     expect(APEX_STANDARD_DETAIL.bondBeamBarSize).toBe('#4');
-    close(q!.barWeight.value, 2237.9863 * 0.376 + 360 * 0.668, 0.5);
+    const shellLf = q!.barSchedule.reduce((sum, row) => sum + row.count * row.lengthFt, 0);
+    close(q!.barWeight.value, shellLf * 0.376 + q!.bondBeamBarLf.value * 0.668, 0.5);
     expect(q!.barWeight.notes!.join(' ')).toMatch(/each is weighed on its own unit weight/i);
-    // Averaging the two would have understated it.
-    expect(q!.barWeight.value).toBeGreaterThan((2237.9863 + 360) * 0.376);
+    // Treating every bar as #3 would understate the #4 bond beam.
+    expect(q!.barWeight.value).toBeGreaterThan((shellLf + q!.bondBeamBarLf.value) * 0.376);
   });
 
   it('still refuses a job outside the assumed envelope', () => {

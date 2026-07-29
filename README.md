@@ -18,7 +18,7 @@ JSON save/load)** are complete. Every step in the PRD's build order is done.
 ```bash
 npm install
 npm run dev     # takeoff sheet at localhost:5173
-npm test        # 311 tests
+npm test        # 312 tests
 npm run takeoff # same numbers, headless, for reconciliation
 ```
 
@@ -90,9 +90,9 @@ src/ui/              step 3 — the takeoff sheet
   selection is independent of row order, and a run beyond the entered table
   fails closed rather than reusing a shorter terminal row.
 - **An attached spa is not free material.** Its excavation outside the pool
-  envelope, shell area, and plan-view excavation/deck outlines are separate,
-  traceable lines. The shared dam wall remains separate from the three exterior
-  spa walls.
+  envelope, shell area, cove, exterior bond beam, reinforcement families, and
+  plan-view excavation/deck outlines are traceable. The shared dam wall remains
+  separate from the three exterior spa walls and is not double-counted.
 - **Safety failures roll up to the sheet.** Hydraulic hard failures, gas meter or
   intended-size failures, and impossible pad runs set the takeoff's global
   failure state; they cannot remain red inside a module while the sheet appears

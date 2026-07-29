@@ -157,6 +157,22 @@ export function buildBarSchedule(
     out.push({ family: 'Breakover supplemental', count: 2 * extraPerRun, lengthFt: W + lap });
   }
 
+  const attachedSpa = job.spa?.attachedToPool === true && job.spa.insetIntoPool !== true
+    ? job.spa
+    : undefined;
+  if (attachedSpa) {
+    const Ls = attachedSpa.lengthFt;
+    const Ws = attachedSpa.widthFt;
+    const ds = attachedSpa.depthFt;
+
+    out.push({ family: 'Attached spa — floor transverse', count: n(Ls), lengthFt: Ws + lap });
+    out.push({ family: 'Attached spa — floor longitudinal', count: n(Ws), lengthFt: Ls + lap });
+    out.push({ family: 'Attached spa — exterior walls vertical (2 side walls)', count: 2 * n(Ls), lengthFt: ds + lap });
+    out.push({ family: 'Attached spa — exterior walls horizontal (2 side walls)', count: 2 * n(ds), lengthFt: Ls + lap });
+    out.push({ family: 'Attached spa — exterior walls vertical (far wall)', count: n(Ws), lengthFt: ds + lap });
+    out.push({ family: 'Attached spa — exterior walls horizontal (far wall)', count: n(ds), lengthFt: Ws + lap });
+  }
+
   return out;
 }
 
@@ -311,6 +327,10 @@ export function computeStructure(
         ],
       })
     : undefined;
+  const attachedSpaCoveRunFt = attachedSpa ? 2 * (attachedSpa.lengthFt + attachedSpa.widthFt) : 0;
+  const attachedSpaExteriorPerimeterFt = attachedSpa ? attachedSpa.widthFt + 2 * attachedSpa.lengthFt : 0;
+  const covePerimeter = perimeter + attachedSpaCoveRunFt;
+  const effectiveBondBeamPerimeter = perimeter + attachedSpaExteriorPerimeterFt;
 
   const developedArea = calc({
     id: 'str.developedArea',
@@ -342,7 +362,7 @@ export function computeStructure(
     unit: 'cf',
     inputs: [
       inp('leg', 'Cove leg', coveLeg, 'ft'),
-      inp('P_cove', 'Cove run (pool perimeter)', perimeter, 'ft'),
+      inp('P_cove', 'Cove run (pool plus attached spa floor-to-wall perimeter)', covePerimeter, 'ft'),
     ],
     compute: ({ leg, P_cove }) => 0.5 * leg! * leg! * P_cove!,
   });
@@ -358,7 +378,7 @@ export function computeStructure(
       inp('w_bb', 'Bond beam width', bbW, 'ft'),
       inp('t', 'Shell thickness', t, 'ft'),
       inp('d_bb', 'Bond beam depth', bbD, 'ft'),
-      inp('P', 'Pool perimeter', perimeter, 'ft'),
+      inp('P', 'Pool perimeter plus three exterior attached-spa edges', effectiveBondBeamPerimeter, 'ft'),
     ],
     compute: ({ w_bb, t, d_bb, P }) => Math.max(0, w_bb! - t!) * d_bb! * P!,
     notes: ['Only the volume beyond the wall section is added — the wall thickness is already in the shell line.'],
@@ -442,7 +462,7 @@ export function computeStructure(
     unit: 'lf',
     inputs: [
       inp('n', 'Continuous bars in the bond beam', detail.bondBeamBarCount, 'ea'),
-      inp('P', 'Pool perimeter', perimeter, 'ft'),
+      inp('P', 'Pool perimeter plus three exterior attached-spa edges', effectiveBondBeamPerimeter, 'ft'),
     ],
     compute: ({ n, P }) => n! * P!,
   });
@@ -474,7 +494,7 @@ export function computeStructure(
   const cutPlan = optimizeCuts(
     [
       ...barSchedule,
-      { family: 'Bond beam continuous', count: detail.bondBeamBarCount, lengthFt: perimeter },
+      { family: 'Bond beam continuous', count: detail.bondBeamBarCount, lengthFt: effectiveBondBeamPerimeter },
     ],
     detail.stockBarLengthFt,
   );
@@ -500,11 +520,17 @@ export function computeStructure(
 
   // Ties: one at each intersection of the two bar directions, per panel.
   const s = inToFt(detail.barSpacingIn);
+  const attachedSpaIntersections = attachedSpa
+    ? (Math.floor(attachedSpa.lengthFt / s) + 1) * (Math.floor(attachedSpa.widthFt / s) + 1) +
+      2 * (Math.floor(attachedSpa.lengthFt / s) + 1) * (Math.floor(attachedSpa.depthFt / s) + 1) +
+      (Math.floor(attachedSpa.widthFt / s) + 1) * (Math.floor(attachedSpa.depthFt / s) + 1)
+    : 0;
   const intersections =
     (Math.floor(slant / s) + 1) * (Math.floor(W / s) + 1) + // floor
     2 * (Math.floor(slant / s) + 1) * (Math.floor(p.deepDepth / s) + 1) + // side walls
     (Math.floor(W / s) + 1) * (Math.floor(p.shallowDepth / s) + 1) +
-    (Math.floor(W / s) + 1) * (Math.floor(p.deepDepth / s) + 1);
+    (Math.floor(W / s) + 1) * (Math.floor(p.deepDepth / s) + 1) +
+    attachedSpaIntersections;
 
   const tieCount = calc({
     id: 'str.ties',
