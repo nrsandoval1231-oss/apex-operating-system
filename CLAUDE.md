@@ -70,6 +70,7 @@ Work is not done until it passes `docs/acceptance-criteria.md`. Most of those ar
 - `docs/data-contract.md` — the lead object schema and attribution capture rules (the spine)
 - `docs/acceptance-criteria.md` — pass/fail assertions; definition of done
 - `docs/decisions.md` — locked decisions and `⚠ BLOCKED` gates that need a human
+- `docs/design-direction.md` — the creative spec: locked tokens, the signature device, the motion policy, and the do-NOT anti-checklist. **Read before any visual change.**
 - `docs/redirect-map.md` — old→new URL parity plan for cutover (Phase 4/5; BLOCKED on D-03)
 - `docs/launch-checklist.md` — the Phase 5 cutover runbook: access, DNS, verification, rollback
 - `config/redirects.json` — machine-readable redirect map; `npm run redirects:generate` emits the host files

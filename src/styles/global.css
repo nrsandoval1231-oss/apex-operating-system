@@ -169,11 +169,27 @@ header {
 .hstat b { font-family: Oswald, sans-serif; font-size: 30px; color: #f4f2ee; display: block; line-height: 1; }
 .hstat span { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #9e968b; }
 
-/* entrance animation (respects reduced-motion via the rule above) */
-.anim { opacity: 0; transform: translateY(16px); animation: rise 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) forwards; }
-.a2 { animation-delay: 0.08s; }
-.a3 { animation-delay: 0.16s; }
-.a4 { animation-delay: 0.24s; }
+/* Hero entrance animation.
+
+   ⚠ This is written as PROGRESSIVE ENHANCEMENT on purpose, and it must stay that way.
+
+   It previously read `.anim { opacity: 0; animation: rise ... forwards; }` with the global
+   `@media (prefers-reduced-motion: reduce) { * { animation: none !important } }` above meant
+   to switch it off. That combination silently deleted the hero: killing the animation removed
+   the only thing that ever set opacity back to 1, so every visitor with reduced motion enabled
+   got a blank charcoal box where the headline, subhead, stats, and router question should be.
+   Invisible, not merely unanimated — on the single most important screen of the site.
+
+   The fix is to invert the default. Content is visible with no animation at all; the motion is
+   added only inside `prefers-reduced-motion: no-preference`. Now the hero cannot be hidden by
+   anything that disables animation — a media query, a `!important` reset, or a browser that
+   never runs the keyframes. Asserted by tests/reduced-motion.spec.ts. */
+@media (prefers-reduced-motion: no-preference) {
+  .anim { opacity: 0; transform: translateY(16px); animation: rise 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) forwards; }
+  .a2 { animation-delay: 0.08s; }
+  .a3 { animation-delay: 0.16s; }
+  .a4 { animation-delay: 0.24s; }
+}
 @keyframes rise { to { opacity: 1; transform: none; } }
 
 /* --- router --- */
@@ -287,7 +303,22 @@ section { padding: 78px 0; }
 .vcard ul li::before { content: ''; position: absolute; left: 0; top: 12px; width: 8px; height: 8px; background: var(--vt); transform: rotate(45deg); }
 .vcard .foot { margin-top: auto; padding-top: 20px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .minibadge { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--vt-text, var(--vt)); font-weight: 700; }
-.tlink { font-family: Oswald, sans-serif; text-transform: uppercase; letter-spacing: 0.05em; font-size: 14px; color: var(--ink); border-bottom: 2px solid var(--vt); padding-bottom: 2px; }
+/* The 44px min-height is a touch-target floor, not a visual choice: these are the primary CTAs
+   on the three vertical cards and they measured 26px tall on a phone. The box grows UPWARD via
+   padding-top, so the underline stays tight under the text and the card layout doesn't move. */
+.tlink {
+  font-family: Oswald, sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 14px;
+  color: var(--ink);
+  display: inline-flex;
+  align-items: flex-end;
+  min-height: 44px;
+  padding-top: 20px;
+  padding-bottom: 2px;
+  border-bottom: 2px solid var(--vt);
+}
 
 /* --- guarantee band --- */
 .band-g { background: var(--char); color: #f4f2ee; }

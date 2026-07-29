@@ -43,6 +43,8 @@ export default defineConfig({
     url: `http://localhost:${PORT}`,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
-    env: { PUBLIC_ENV: 'development' },
+    // ASTRO_DEV_TOOLBAR=false: the toolbar injects its own markup (including an <h1>) into
+    // every dev page, which pollutes element queries and breaks heading assertions.
+    env: { PUBLIC_ENV: 'development', ASTRO_DEV_TOOLBAR: 'false' },
   },
 });

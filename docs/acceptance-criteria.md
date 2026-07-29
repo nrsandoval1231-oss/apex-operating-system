@@ -54,7 +54,8 @@ npm test
 
 - [x] **AC-6.1** All interactive elements are keyboard reachable; focus is visible. *(Automated for the service selector — focus + Enter toggles it. A full keyboard sweep of the page is still a manual pass.)*
 - [x] **AC-6.2** Form inputs have associated labels; the service selector is operable by keyboard and screen reader. *(Automated: every input id has a matching `<label for>`.)*
-- [ ] **AC-6.3** `prefers-reduced-motion` is respected (no animation when set). *(Implemented in `global.css`; not yet asserted.)*
+- [x] **AC-6.3** `prefers-reduced-motion` is respected — and all content remains **visible**. *(Automated across all 5 pages. This previously FAILED in the worst way: the reduced-motion reset blanked the entire hero. See `docs/design-direction.md` §4. The test also asserts the emulation is actually active, so it cannot pass for the wrong reason.)*
+- [x] **AC-6.5** Primary CTAs meet the 44px touch-target floor on a phone. *(Automated at 390px. The three vertical-card links shipped at 26px.)*
 - [ ] **AC-6.4** Color contrast meets WCAG AA for text. *(Tokens were chosen against AA — see the `--amber-eyebrow` and `--serv-text` notes in `global.css` — but no automated contrast audit runs yet.)*
 
 ## AC-8 · Vertical landing pages (Phase 4)

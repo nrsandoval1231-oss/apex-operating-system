@@ -66,6 +66,11 @@ const cfg = getVerticalConfig(pools.vertical);
     font-size: 14px;
     color: var(--pool);
     border-bottom: 1.5px solid transparent;
+    /* 44px touch-target floor (AC-6). Sits next to a .btn in a centered flex row, so growing
+       it vertically costs no layout. */
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
   }
   .pool-more:hover {
     border-bottom-color: var(--pool);
