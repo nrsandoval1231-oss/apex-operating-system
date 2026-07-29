@@ -11,6 +11,7 @@ export const OPERATIONAL_MIGRATIONS = [
   '0002_rls.sql',
   '0004_pre_gunite_definition.sql',
   '0005_gate_instance_uniqueness.sql',
+  '0006_approved_takeoff_authority.sql',
 ] as const;
 
 export const STORAGE_MIGRATION = '0003_evidence_storage.sql';

@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { PGlite } from '@electric-sql/pglite';
 import { beforeEach, describe, expect, it } from 'vitest';
+import { OPERATIONAL_MIGRATIONS } from './index.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const migration = async (name: string) => readFile(resolve(here, '../migrations', name), 'utf8');
@@ -42,6 +43,7 @@ beforeEach(async () => {
   await db.exec(await migration('0003_evidence_storage.sql'));
   await db.exec(await migration('0004_pre_gunite_definition.sql'));
   await db.exec(await migration('0005_gate_instance_uniqueness.sql'));
+  await db.exec(await migration('0006_approved_takeoff_authority.sql'));
 });
 
 const seedJob = async () => {
@@ -63,6 +65,10 @@ const seedJob = async () => {
 };
 
 describe('operational schema', () => {
+  it('registers the approved takeoff authority migration in the runtime migrator', () => {
+    expect(OPERATIONAL_MIGRATIONS).toContain('0006_approved_takeoff_authority.sql');
+  });
+
   it('executes every core and authorization migration in PostgreSQL', async () => {
     const result = await db.query<{ table_name: string }>(
       `select table_name from information_schema.tables where table_schema = 'public' order by table_name`,
@@ -97,11 +103,59 @@ describe('operational schema', () => {
     const insert = (revisionId: string, revisionNumber: number) => db.query(
       `insert into takeoff_revisions
        (revision_id, job_id, revision_number, status, engine_version, quantity_model_version, job_input_sha256, calc_ledger_sha256, quantities, calc_ledger, created_by, approved_at, approved_by)
-       values ($1, $2, $3, 'approved', 'designer-1', 'quantity-v1', $4, $5, '{}', '[]', $6, now(), $6)`,
+       values ($1, $2, $3, 'approved', 'designer-1', 'quantity-v1', $4, $5, '[{"code":"pool.water-volume"}]', '[{"id":"geom.volume"}]', $6, now(), $6)`,
       [revisionId, ids.job, revisionNumber, 'a'.repeat(64), 'b'.repeat(64), ids.user],
     );
     await insert(ids.revision1, 1);
     await expect(insert(ids.revision2, 2)).rejects.toThrow();
+  });
+
+  it('rejects blocked approvals and protects approved quantity evidence from mutation', async () => {
+    await seedJob();
+    const insert = (blockingIssues: string) => db.query(
+      `insert into takeoff_revisions
+       (revision_id, job_id, revision_number, status, engine_version, quantity_model_version, job_input_sha256, calc_ledger_sha256, quantities, calc_ledger, blocking_issues, created_by, approved_at, approved_by)
+       values ($1, $2, 1, 'approved', 'designer-1', 'quantity-v1', $3, $4, '[{"code":"pool.water-volume"}]', '[{"id":"geom.volume"}]', $5, $6, now(), $6)`,
+      [ids.revision1, ids.job, 'a'.repeat(64), 'b'.repeat(64), blockingIssues, ids.user],
+    );
+
+    await expect(insert('["gas-capacity"]')).rejects.toThrow();
+    await insert('[]');
+    await expect(db.query(
+      `update takeoff_revisions set quantities = '[{"code":"pool.water-volume","value":99999}]' where revision_id = $1`,
+      [ids.revision1],
+    )).rejects.toThrow(/immutable/i);
+  });
+
+  it('stores the current approved revision on the job and rejects non-approved pointers', async () => {
+    await seedJob();
+    const insert = (revisionId: string, revisionNumber: number, status: 'draft' | 'approved') => db.query(
+      `insert into takeoff_revisions
+       (revision_id, job_id, revision_number, status, engine_version, quantity_model_version, job_input_sha256, calc_ledger_sha256, quantities, calc_ledger, created_by, approved_at, approved_by)
+       values ($1, $2, $3, $4, 'designer-1', 'quantity-v1', $5, $6, '[{"code":"pool.water-volume"}]', '[{"id":"geom.volume"}]', $7,
+         case when $4 = 'approved' then now() else null end,
+         case when $4 = 'approved' then $7 else null end)`,
+      [revisionId, ids.job, revisionNumber, status, 'a'.repeat(64), 'b'.repeat(64), ids.user],
+    );
+    await insert(ids.revision1, 1, 'approved');
+    await db.query(`update jobs set current_takeoff_revision_id = $1 where job_id = $2`, [ids.revision1, ids.job]);
+    const current = await db.query<{ current_takeoff_revision_id: string }>(
+      `select current_takeoff_revision_id from jobs where job_id = $1`,
+      [ids.job],
+    );
+    expect(current.rows[0]?.current_takeoff_revision_id).toBe(ids.revision1);
+
+    await expect(db.query(
+      `update takeoff_revisions set status = 'superseded' where revision_id = $1`,
+      [ids.revision1],
+    )).rejects.toThrow(/current revision/i);
+    await db.query(`update jobs set current_takeoff_revision_id = null where job_id = $1`, [ids.job]);
+    await db.query(`update takeoff_revisions set status = 'superseded' where revision_id = $1`, [ids.revision1]);
+    await insert(ids.revision2, 2, 'draft');
+    await expect(db.query(
+      `update jobs set current_takeoff_revision_id = $1 where job_id = $2`,
+      [ids.revision2, ids.job],
+    )).rejects.toThrow(/approved/i);
   });
 
   it('stores evidence separately from requirement evaluation state', async () => {
@@ -109,7 +163,7 @@ describe('operational schema', () => {
     await db.query(
       `insert into takeoff_revisions
        (revision_id, job_id, revision_number, status, engine_version, quantity_model_version, job_input_sha256, calc_ledger_sha256, quantities, calc_ledger, created_by, approved_at, approved_by)
-       values ($1, $2, 1, 'approved', 'designer-1', 'quantity-v1', $3, $4, '{}', '[]', $5, now(), $5)`,
+       values ($1, $2, 1, 'approved', 'designer-1', 'quantity-v1', $3, $4, '[{"code":"pool.water-volume"}]', '[{"id":"geom.volume"}]', $5, now(), $5)`,
       [ids.revision1, ids.job, 'a'.repeat(64), 'b'.repeat(64), ids.user],
     );
 

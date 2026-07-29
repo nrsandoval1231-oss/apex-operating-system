@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  ApprovedTakeoffRevisionSchema,
   ApexEventSchema,
   CANONICAL_EVENT_TYPES,
   CustomerMilestoneProjectionSchema,
@@ -38,6 +39,99 @@ describe('canonical identifiers', () => {
 
   it('refuses a valid ULID carried under the wrong identity namespace', () => {
     expect(idSchemas.job.safeParse(createCanonicalId('lead')).success).toBe(false);
+  });
+});
+
+const approvedRevisionFixture = () => ({
+  revisionId: createCanonicalId('revision'),
+  jobId,
+  revisionNumber: 1,
+  status: 'approved' as const,
+  engineVersion: 'designer-0.1.0',
+  jobInputSha256: 'a'.repeat(64),
+  calcLedgerSha256: 'b'.repeat(64),
+  quantityModelVersion: 'designer-quantity-v1',
+  createdAt: '2026-07-29T12:00:00.000Z',
+  createdBy: actorId,
+  approvedAt: '2026-07-29T12:05:00.000Z',
+  approvedBy: actorId,
+  blockingIssues: [],
+  quantities: [
+    {
+      code: 'pool.water-volume',
+      value: 12881,
+      unit: 'gal',
+      calcId: 'geom.total.volumeGal',
+    },
+  ],
+  calcLedger: [
+    {
+      id: 'geom.total.volumeGal',
+      label: 'Total water volume',
+      formula: 'V_gal = V_cf x 7.48052',
+      inputs: [
+        { symbol: 'V_cf', label: 'Total water volume', value: 1721.94, unit: 'cf' },
+        { symbol: 'k', label: 'US gallons per cubic foot', value: 7.48052, unit: 'gal/cf' },
+      ],
+      value: 12881,
+      unit: 'gal',
+      notes: ['Root input for downstream quantity calculations.'],
+    },
+  ],
+});
+
+describe('approved Designer quantity revisions', () => {
+  it('accepts an approved revision only when every authoritative quantity preserves Calc provenance', () => {
+    const approved = ApprovedTakeoffRevisionSchema.parse(approvedRevisionFixture());
+
+    expect(approved.status).toBe('approved');
+    expect(approved.quantities[0]?.calcId).toBe('geom.total.volumeGal');
+  });
+
+  it('rejects duplicate authoritative quantity codes', () => {
+    const revision = approvedRevisionFixture();
+    const duplicate = revision.quantities[0]!;
+
+    expect(ApprovedTakeoffRevisionSchema.safeParse({
+      ...revision,
+      quantities: [duplicate, { ...duplicate }],
+    }).success).toBe(false);
+  });
+
+  it('rejects an authoritative quantity that is not backed by its referenced Calc ledger entry', () => {
+    const revision = approvedRevisionFixture();
+
+    expect(ApprovedTakeoffRevisionSchema.safeParse({
+      ...revision,
+      quantities: [{ ...revision.quantities[0]!, calcId: 'geom.unrecorded.value' }],
+    }).success).toBe(false);
+  });
+
+  it('rejects quantity codes outside the canonical Designer vocabulary', () => {
+    const revision = approvedRevisionFixture();
+
+    expect(ApprovedTakeoffRevisionSchema.safeParse({
+      ...revision,
+      quantities: [{ ...revision.quantities[0]!, code: 'proposal.magic-number' }],
+    }).success).toBe(false);
+  });
+
+  it('rejects an authoritative quantity whose unit does not match its canonical code', () => {
+    const revision = approvedRevisionFixture();
+
+    expect(ApprovedTakeoffRevisionSchema.safeParse({
+      ...revision,
+      quantities: [{ ...revision.quantities[0]!, unit: 'sf' }],
+    }).success).toBe(false);
+  });
+
+  it('rejects an authoritative value that differs from its referenced Calc result', () => {
+    const revision = approvedRevisionFixture();
+
+    expect(ApprovedTakeoffRevisionSchema.safeParse({
+      ...revision,
+      quantities: [{ ...revision.quantities[0]!, value: 99999 }],
+    }).success).toBe(false);
   });
 });
 

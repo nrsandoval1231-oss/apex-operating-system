@@ -40,7 +40,7 @@ beforeEach(async () => {
   await db.query(
     `insert into takeoff_revisions
      (revision_id, job_id, revision_number, status, engine_version, quantity_model_version, job_input_sha256, calc_ledger_sha256, quantities, calc_ledger, created_by, approved_at, approved_by)
-     values ($1, $2, 1, 'approved', 'designer-test', 'quantity-v1', $3, $4, '{}', '[]', $5, now(), $5)`,
+     values ($1, $2, 1, 'approved', 'designer-test', 'quantity-v1', $3, $4, '[{"code":"pool.water-volume","value":1,"unit":"gal","calcId":"fixture.calc"}]', '[{"id":"fixture.calc","label":"Fixture quantity","formula":"Q = 1","inputs":[],"value":1,"unit":"gal"}]', $5, now(), $5)`,
     [ids.revision, ids.job, 'a'.repeat(64), 'b'.repeat(64), ids.office],
   );
   service = new GateService(db);
