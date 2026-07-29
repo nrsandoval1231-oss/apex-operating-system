@@ -41,22 +41,25 @@ Phase 0 goals:
 - Pure TypeScript calculation engine separated from React UI
 - Formula/input/unit/result `Calc` primitive
 - Strict TypeScript configuration
-- 305 engine tests verified passing on 2026-07-28
+- 312 engine tests verified passing on 2026-07-29
 - Production build and standalone artifact generation previously verified
 - No production dependency vulnerabilities in the most recent audit
 
-**Launch blockers**
+**Safety stabilization completed on 2026-07-29**
 
-1. Attached spa is omitted from excavation and most shell/reinforcement quantities.
-2. Hydraulic and gas failures do not roll into the global blocking flag.
-3. Gas-table selection can depend on input order and silently use a shorter length row.
-4. Runtime job-file validation is incomplete and malformed nested inputs can crash later.
-5. Duplicate physical facts, including shell thickness, can diverge between modules.
-6. Job editor covers only part of the domain model.
-7. React and standalone renderers have content/layout drift and no browser/PDF integration tests.
-8. Placeholder inputs and standard-detail assumptions require expert reconciliation.
+- Attached-spa excavation, shell, cove, exterior bond beam, reinforcement families, and plan outlines are now included without double-counting the shared edge.
+- Hydraulic, gas, and impossible-pad failures now roll into the global blocking state.
+- Gas-table sizing is deterministic and refuses to reuse a shorter terminal row.
+- Nested step, seat, spa, hydraulic-run, and gas-load records are rejected before calculation.
 
-**Use restriction:** Do not use for material ordering or safety-critical field decisions until blockers 1–5 are fixed and independently reviewed.
+**Launch blockers still open**
+
+1. Duplicate physical facts, including shell thickness, must be removed as the shared quantity contract is introduced.
+2. Job editor covers only part of the domain model.
+3. React and standalone renderers have content/layout drift and no browser/PDF integration tests.
+4. Placeholder inputs and standard-detail assumptions require expert and controlled-job reconciliation.
+
+**Use restriction:** Designer is now the candidate quantity authority, but it must not drive material ordering or safety-critical field decisions until shared-contract migration and controlled-job reconciliation are complete.
 
 ### Proposal Engine
 
@@ -195,6 +198,14 @@ The following claims must not be reused without correction:
 | Decks | `npm audit --omit=dev --audit-level=high` | **0 vulnerabilities** after adding the lockfile |
 | Decks | regenerate both PPTX files | Completed |
 | Decks | Office package validator | Both PPTX files passed structural/package validation |
+
+## Designer stabilization verification — 2026-07-29
+
+| Commands | Result |
+|---|---|
+| `npm test` | **10/10 files and 312/312 tests passed** |
+| `npm run build` | Strict TypeScript check and Vite production build passed |
+| `npm audit --omit=dev --audit-level=high` | **0 vulnerabilities** |
 
 An additional temporary Phase 0 verification script passed **75 targeted assertions** covering backup checksums, ZIP integrity, all six Git bundles, deck claim corrections, generated deck contents/slide counts, Office package structure, ignore rules, dependency audit, and whitespace hygiene. This was ad-hoc verification, not a substitute for the component suites above. The script was removed after execution.
 
