@@ -66,21 +66,27 @@ Phase 0 goals:
 **Strengths**
 
 - Pure dependency-free calculation core
-- 90 checks previously verified passing
+- 112 checks verified passing on 2026-07-29
 - Explicit distinction between fee/markup and true margin
 - Useful report and browser proposal prototype
 
-**Launch blockers**
+**Safety stabilization completed on 2026-07-29**
+
+- Impossible geometry, negative fees, negative direct costs, and negative allowances now fail before arithmetic.
+- Draft takeoff and customer-issuable proposal are separate states.
+- Unresolved direct-entry scope and back-solved residuals hard-block customer proposal generation.
+- `calibrate.mjs` now exits non-zero and cannot emit pricing guidance.
+- Browser UI gating was exercised against the shipped DOM with jsdom.
+
+**Launch blockers still open**
 
 1. Whitaker's 0.0% modelled-code result is calibration, not independent validation.
 2. Approximately $47,302 / 40.4% of the full reference job remains unmodelled in the current back-test.
-3. Zero and negative dimensions/fee rates are accepted.
-4. Customer proposal generation is not hard-blocked when required direct-entry scope is unresolved.
-5. `calibrate.mjs` is stale/broken and can generate incorrect pricing guidance.
-6. Proposal output is disconnected from `lead_id`, `job_id`, CRM, and Gate.
-7. No proposal versioning, audit trail, persistence, or deployment controls exist.
+3. Proposal quantities still diverge from Designer and must be replaced by approved takeoff revisions.
+4. Proposal output is disconnected from `lead_id`, `job_id`, CRM, and Gate.
+5. No proposal versioning, audit trail, persistence, or deployment controls exist.
 
-**Use restriction:** Do not represent the calibration result as independent validation. Disable calibration use until repaired and validated.
+**Use restriction:** Customer issuance now fails closed on incomplete scope, but the provisional rate library is not pricing authority and the calibration replay must not be represented as independent validation.
 
 ### Website
 
@@ -206,6 +212,15 @@ The following claims must not be reused without correction:
 | `npm test` | **10/10 files and 312/312 tests passed** |
 | `npm run build` | Strict TypeScript check and Vite production build passed |
 | `npm audit --omit=dev --audit-level=high` | **0 vulnerabilities** |
+
+## Proposal stabilization verification — 2026-07-29
+
+| Commands | Result |
+|---|---|
+| `node engine.test.mjs` | **112/112 checks passed** |
+| `node backtest.mjs` and `node report.mjs whitaker` | Both executed successfully; known calibration/coverage limitations remain visible |
+| `node calibrate.mjs` | Expected non-zero refusal with `DISABLED` message |
+| jsdom DOM verification | Blocked default, quoted-scope release, customer render, and invalid-geometry refusal all passed |
 
 An additional temporary Phase 0 verification script passed **75 targeted assertions** covering backup checksums, ZIP integrity, all six Git bundles, deck claim corrections, generated deck contents/slide counts, Office package structure, ignore rules, dependency audit, and whitespace hygiene. This was ad-hoc verification, not a substitute for the component suites above. The script was removed after execution.
 
