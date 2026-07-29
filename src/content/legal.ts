@@ -75,7 +75,7 @@ export const privacyPolicy: LegalDocument = {
   effective: 'Effective as of April 20, 2022',
   sourceUrl: 'https://apexgetsitdone.com/privacy-policy-apex-designer-pools/',
   transcribedOn: '2026-07-29',
-  reviewed: false,
+  reviewed: true, // signed off by the maintainer, 2026-07-29 — see `legalReview` below
   sections: [
     {
       blocks: [
@@ -244,7 +244,7 @@ export const termsAndConditions: LegalDocument = {
   effective: '',
   sourceUrl: 'https://apexgetsitdone.com/terms-and-conditions/',
   transcribedOn: '2026-07-29',
-  reviewed: false,
+  reviewed: true, // signed off by the maintainer, 2026-07-29 — see `legalReview` below
   sections: [
     {
       blocks: [
@@ -302,4 +302,19 @@ export const legalReview = {
   outstanding: Object.entries(LEGAL_DOCUMENTS)
     .filter(([, doc]) => !doc.reviewed)
     .map(([slug]) => slug),
+  /**
+   * SIGN-OFF RECORD — this is what `reviewed: true` above is asserting.
+   *
+   * Signed off by: the maintainer (Nick), 2026-07-29, in session.
+   * Scope of sign-off: the four problems listed in this file's header were raised in full and
+   * accepted as-is for launch. They were NOT edited — the text still names apexcoatinglbk.com,
+   * still covers two of the four verticals, still carries contact details that differ from the
+   * site, and is still dated April 2022.
+   *
+   * To reopen the gate, set `reviewed: false` on either document; preflight blocks again
+   * immediately. If the text itself is ever amended, re-transcribe it here and reset both
+   * flags so the sign-off is re-made against the new wording rather than inherited.
+   */
+  signedOffBy: 'maintainer',
+  signedOffOn: '2026-07-29',
 } as const;
