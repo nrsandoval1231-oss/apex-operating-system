@@ -72,7 +72,13 @@ const ogImage = ogImageUrl ? absoluteUrl(ogImageUrl) : null;
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     <meta name="description" content={description} />
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    {/* Icons generated from the real logo's lion panel (scripts/../public/images/brand).
+        The previous /favicon.svg was the placeholder starburst mark from the pitch mockup and
+        was never Apex's identity — it is gone rather than kept as a fallback, because a
+        wrong-brand favicon is worse than a default one. */}
+    <link rel="icon" href="/images/brand/apex-icon-32.png" sizes="32x32" type="image/png" />
+    <link rel="icon" href="/images/brand/apex-icon-512.png" sizes="512x512" type="image/png" />
+    <link rel="apple-touch-icon" href="/images/brand/apex-icon-180.png" />
     <link rel="canonical" href={canonical} />
     <meta name="theme-color" content="#1B1C1E" />
     <meta name="robots" content={noindex ? 'noindex, nofollow' : 'index, follow, max-image-preview:large'} />

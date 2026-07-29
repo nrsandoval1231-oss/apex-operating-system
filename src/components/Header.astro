@@ -8,16 +8,18 @@
  * including each vertical page, renders its own quote section.
  */
 import { site } from '@lib/site';
-import LionMark from './LionMark.astro';
+import Logo from './Logo.astro';
 ---
 <header>
   <div class="wrap nav">
-    <a class="brand" href="/" aria-label="Apex Gets It Done — home">
-      <LionMark size={38} class="lion" />
-      <div>
-        <div class="wm">APEX</div>
-        <div class="tag">GETS IT DONE</div>
-      </div>
+    {/*
+      The real lockup already contains both the lion and the APEX wordmark, so the previously
+      hand-set "APEX / GETS IT DONE" text block is gone — rendering it alongside the logo would
+      print the brand name twice. The link carries the accessible name and the image is marked
+      decorative, so the destination is announced once.
+    */}
+    <a class="brand" href="/" aria-label="Apex — Gets It Done, home">
+      <Logo height={40} alt={null} />
     </a>
     <div class="nav-r">
       <a class="nav-phone" href={`tel:${site.phoneE164}`}>{site.phoneDisplay}</a>

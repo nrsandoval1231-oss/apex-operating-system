@@ -13,6 +13,15 @@
   --concrete: #e9e5de;    /* warm concrete paper */
   --paper: #f6f4ef;
   --line: #d4cfc5;
+  /* --- REAL brand colours, sampled from the supplied logo (Apex-Site-Logo-2x.png) ---
+     The lockup is 56.6% sage, plus charcoal and white. There is no amber anywhere in it.
+     `--sage` is the true brand accent; `--sage-ink` is a darkened variant that clears WCAG AA
+     as small text on the light backgrounds, where raw sage sits at roughly 1.5:1 and is
+     unusable. See docs/design-direction.md for how these relate to the amber below. */
+  --sage: #a1ccca;
+  --sage-ink: #2f6b68;
+  --brand-char: #383c3d;  /* the logo's own charcoal — slightly lighter/cooler than --char */
+
   --amber: #e0901b;       /* master brand accent: heat / metal */
   --amber-d: #c67a0c;     /* darker accent — buttons, hovers, large/dark-bg accents */
   /* AA-safe deep bronze for the small eyebrow label on LIGHT backgrounds (AC-6.4):
@@ -137,17 +146,19 @@ header {
   border-bottom: 1px solid #2f3236;
 }
 .nav { display: flex; align-items: center; justify-content: space-between; height: 70px; }
-.brand { display: flex; align-items: center; gap: 12px; color: #f6f4ef; }
-.brand .lion { width: 38px; height: 38px; flex: none; }
-.brand .wm { font-family: Oswald, sans-serif; font-weight: 700; font-size: 27px; letter-spacing: 0.16em; line-height: 1; }
-.brand .tag { font-family: 'JetBrains Mono', monospace; font-size: 8.5px; letter-spacing: 0.32em; color: var(--amber); margin-top: 2px; }
+/* The brand is now the supplied logo lockup (components/Logo.astro), which contains the lion
+   AND the APEX wordmark. The old .lion / .wm / .tag rules that hand-set the wordmark next to a
+   placeholder mark are gone with it — keeping them would invite someone to re-create a
+   second, non-brand wordmark. */
+.brand { display: flex; align-items: center; color: #f6f4ef; }
 .nav-r { display: flex; align-items: center; gap: 18px; }
 .nav-phone { color: #f6f4ef; font-family: Oswald, sans-serif; font-size: 19px; letter-spacing: 0.05em; font-weight: 600; }
 .nav-phone-sm { display: none; }
 @media (max-width: 720px) {
   .nav-phone { display: none; }
   .nav-phone-sm { display: inline-flex; }
-  .brand .wm { font-size: 23px; }
+  /* Scale the lockup down on small screens so the phone/CTA keep room. */
+  .brand .apex-logo { height: 32px !important; width: 134px !important; }
 }
 
 /* --- hero --- */
@@ -253,7 +264,6 @@ header {
   gap: 7px;
 }
 .img-ph .lbl::before { content: '◢'; color: var(--amber); flex: none; }
-.img-ph .lionwm { position: absolute; right: -20px; bottom: -24px; width: 180px; opacity: 0.09; z-index: 1; color: #fff; }
 
 /* placeholder tones — mirror the mockup's procedural photo-slot textures */
 .tone-pool  { background: linear-gradient(135deg, #0a3a42, #0e6e7c 55%, #17323a); }
@@ -410,7 +420,6 @@ section { padding: 78px 0; }
 /* --- footer --- */
 footer { background: #141517; color: #9e968b; padding: 52px 0 30px; font-size: 14px; }
 .foot-grid { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 26px; align-items: flex-start; }
-footer .brand .wm { font-size: 24px; }
 footer a:hover { color: var(--amber); }
 .foot-contact { font-family: 'JetBrains Mono', monospace; font-size: 12.5px; line-height: 2; letter-spacing: 0.03em; }
 /* #6d6f74 is only ~3.6:1 on #141517 at 11px; #948d83 clears AA (AC-6.4). */

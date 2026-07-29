@@ -98,8 +98,11 @@ test.describe('AC-1 · lead object completeness', () => {
   }) => {
     const hook = await mockWebhook(page);
     await page.goto('/pools');
-    // Navigate via a real in-page link, the way a visitor would.
-    await page.getByRole('link', { name: 'Apex Gets It Done — home' }).click();
+    // Navigate via a real in-page link, the way a visitor would. Matched on a loose pattern
+    // rather than the exact accessible name: the brand link's label is copy, and pinning a
+    // test to its exact punctuation means a wording tweak fails an attribution test for no
+    // reason. What matters is that a visitor can get home from a vertical page.
+    await page.getByRole('link', { name: /apex.*home/i }).click();
     await expect(page).toHaveURL(/\/$/);
 
     await openQuoteForm(page);

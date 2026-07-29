@@ -10,20 +10,16 @@
  */
 import { site, legalUrls } from '@lib/site';
 import { footer } from '@content/site-copy';
-import LionMark from './LionMark.astro';
+import Logo from './Logo.astro';
 ---
 <div class="accent-line"></div>
 <footer>
   <div class="wrap">
     <div class="foot-grid">
       <div>
-        <div class="brand" style="color:#F4F2EE">
-          <LionMark size={34} class="lion" />
-          <div>
-            <div class="wm">APEX</div>
-            <div class="tag" style="color:var(--amber)">GETS IT DONE</div>
-          </div>
-        </div>
+        {/* The footer has room for the tagline, which is not part of the lockup itself. */}
+        <Logo height={38} alt="Apex — Gets It Done" loading="lazy" />
+        <p class="foot-tag mono">GETS IT DONE</p>
         <p style="max-width:320px;margin-top:16px">{footer.blurb}</p>
       </div>
       <div class="foot-contact">
@@ -46,6 +42,15 @@ import LionMark from './LionMark.astro';
 </footer>
 
 <style>
+  .foot-tag {
+    font-size: 9px;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    /* Brand sage. On the near-black footer this is high-contrast and is the logo's own
+       colour, so the tagline reads as part of the mark rather than as stray text. */
+    color: var(--sage);
+    margin: 10px 0 0;
+  }
   .legal {
     display: inline-flex;
     flex-wrap: wrap;

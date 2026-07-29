@@ -9,7 +9,6 @@
  * (AC-9.2, AC-9.3). Placeholders are never silently blank (AC-9.4).
  */
 import { getImageSlot, type ImageSlotId } from '@content/images';
-import LionMark from './LionMark.astro';
 
 interface Props {
   id: ImageSlotId;
@@ -57,9 +56,13 @@ const style = `aspect-ratio:${slot.ratio};`;
     data-image-slot={slot.id}
     data-image-unfilled="true"
   >
+    {/* The empty-slot placeholder carried a large watermark of the old placeholder lion.
+        That mark was never Apex's real identity, so it is removed rather than swapped: the
+        real logo is a solid sage panel and would read as a coloured block here, not a
+        watermark. The texture and the visible label still make the slot obviously
+        intentional rather than broken (AC-9.4). */}
     <div class="img-ph" aria-hidden="true">
       <span class={`img-ph-tex tone-${slot.tone}`}></span>
-      <LionMark size={180} class="lionwm" />
       <span class="lbl mono">{slot.label}</span>
     </div>
   </div>
