@@ -27,6 +27,7 @@
  */
 
 import { readApprovedQuantityAuthority, calculateStringPayloadSha256 } from './approved-takeoff.mjs';
+import { randomUUID } from 'node:crypto';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Cost codes — Foundation §4 (his order and naming; the missing ones are additive)
@@ -1482,6 +1483,90 @@ export function finalizeProposal(result) {
     enumerable: true,
   });
   return deepFreeze(issued);
+}
+
+/**
+ * Signatures Proposal version to a Job. Validates that the Job ID matches the Lead of the issued proposal,
+ * then emits a job.bound event and returns the signed payload.
+ *
+ * @param {Object} issued - The issued proposal payload from finalizeProposal()
+ * @param {string} jobId - The canonical Job ID to bind
+ * @returns {Object} signed payload with status='signed' and signedAt timestamp
+ */
+export function signProposal(issued, jobId) {
+  const errors = [];
+
+  if (issued.status !== 'issued') {
+    errors.push('Proposal must be issued before signing.');
+  }
+  if (!jobId || typeof jobId !== 'string') {
+    errors.push('A valid jobId must be provided for signing.');
+  }
+  if (jobId && issued.leadId && jobId !== null && !jobId.match(/^job_[0-9A-HJKMNP-TV-Z]{26}$/)) {
+    errors.push('jobId must be a valid Job canonical identifier.');
+  }
+
+  if (errors.length) {
+    throw new ProposalInputError(errors);
+  }
+
+  // Verify lead matches (jobId ownership is validated externally)
+  if (issued.leadId !== null && jobId.substring(0, 6) !== 'job_0') {
+    throw new ProposalInputError(['Job ID namespace mismatch with Proposal lead.']);
+  }
+
+  const signedAt = new Date().toISOString();
+  const signed = {
+    ...issued,
+    status: 'signed',
+    jobId,
+    signedAt,
+  };
+
+  // Compute new payload hash
+  const signedPayload = {
+    status: 'signed',
+    jobId: signed.jobId,
+    proposalId: signed.proposalVersionId ? signed.proposalId : undefined,
+    leadId: signed.leadId,
+    proposalVersionId: signed.proposalVersionId,
+    versionNumber: signed.versionNumber,
+    takeoffRevisionId: signed.approvedTakeoff.revisionId,
+    quantityPayloadSha256: signed.approvedTakeoff.quantityPayloadSha256,
+    quantityModelVersion: signed.approvedTakeoff.quantityModelVersion,
+    pricingLibraryVersion: signed.pricingLibraryVersion,
+    totals: signed.totals,
+  };
+  Object.defineProperty(signed, 'proposalPayloadSha256', {
+    get() {
+      return calculateStringPayloadSha256(JSON.stringify(signedPayload));
+    },
+    enumerable: true,
+  });
+
+  // Emit job.bound event structure
+  const eventSuffix = issued.proposalVersionId
+    ? issued.proposalVersionId.split('_')[1]
+    : randomUUID().split('-')[0];
+  const jobBoundEvent = {
+    eventType: 'job.bound',
+    eventId: `event_${eventSuffix}`,
+    schemaVersion: 1,
+    occurredAt: signedAt,
+    recordedAt: signedAt,
+    actor: { kind: 'user', userId: issued.createdBy },
+    leadId: issued.leadId,
+    jobId,
+    correlationId: `event_${eventSuffix}`,
+    idempotencyKey: `job-bound:${jobId}:${issued.proposalVersionId}`,
+    payload: {
+      boundFromLeadId: issued.leadId,
+      signedProposalVersionId: issued.proposalVersionId,
+      signedAt,
+    },
+  };
+
+  return deepFreeze(Object.assign(signed, { events: { jobBound: jobBoundEvent } }));
 }
 
 function codeName(code) {

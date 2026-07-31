@@ -1,6 +1,18 @@
 import {
-  takeoff as productionTakeoff, legacyReplayTakeoff, marginFromFee, feeForMargin, price, poolGeometry, spaGeometry, combinedGeometry,
-  deckArea, APEX_STANDARDS, DIRECT_LINES_SEED, validateProposalInputs, finalizeProposal,
+  takeoff as productionTakeoff,
+  legacyReplayTakeoff,
+  marginFromFee,
+  feeForMargin,
+  price,
+  poolGeometry,
+  spaGeometry,
+  combinedGeometry,
+  deckArea,
+  APEX_STANDARDS,
+  DIRECT_LINES_SEED,
+  validateProposalInputs,
+  finalizeProposal,
+  signProposal,
 } from './engine.mjs';
 import { approvedTakeoffFixture, APPROVED_TAKEOFF_IDS } from './approved-takeoff.fixture.mjs';
 import { spawnSync } from 'node:child_process';
@@ -266,6 +278,17 @@ ok('issued proposal is immutably pinned to its approved revision with readable q
   issued.measuredQuantityExplanations.length>0 &&
   issued.measuredQuantityExplanations.every((entry)=>entry.code && entry.calcId && entry.explanation) &&
   !JSON.stringify(issued).includes(APPROVED_TAKEOFF_IDS.userId));
+
+// ── Proposal signature and Job binding ─────────────────────────────────────
+const signed = signProposal(issued, APPROVED_TAKEOFF_IDS.jobId);
+ok('signProposal flips status to signed and adds signedAt timestamp',
+  signed.status==='signed' && typeof signed.signedAt==='string' && signed.signedAt.startsWith('2026-'));
+ok('signProposal preserves all approval data and makes the payload frozen',
+  signed.approvedTakeoff.revisionId===APPROVED_TAKEOFF_IDS.revisionId && Object.isFrozen(signed));
+ok('signProposal emits a job.bound event structure with canonical identifiers',
+  signed.events?.jobBound?.eventType==='job.bound' &&
+  signed.events?.jobBound?.payload?.signedProposalVersionId===issued.proposalVersionId);
+
 const calibration = spawnSync(process.execPath,['calibrate.mjs'],{encoding:'utf8'});
 ok('unsafe calibration script is fail-closed', calibration.status!==0 && `${calibration.stdout}${calibration.stderr}`.includes('DISABLED'));
 
