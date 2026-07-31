@@ -7,7 +7,7 @@
   "scripts": {
     "test": "vitest run --exclude integration-tests/** --maxWorkers=1 && vitest run --config integration-tests/vitest.config.ts --maxWorkers=1",
     "test:watch": "vitest",
-    "typecheck": "tsc -b",
+    "typecheck": "tsc -b && tsc --noEmit -p apps/apex-os/tsconfig.json",
     "build": "pnpm typecheck",
     "verify": "pnpm test && pnpm typecheck"
   },

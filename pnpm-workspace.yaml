@@ -1,3 +1,11 @@
 packages:
   - "apps/*"
   - "packages/*"
+# esbuild is a Vite build-time dependency only. Its postinstall script merely
+# verifies the platform binary that pnpm already installs via @esbuild/<platform>,
+# so the script is denied rather than granted install-time execution.
+allowBuilds:
+  esbuild: false
+minimumReleaseAgeExclude:
+  - '@types/react-dom@19.2.4'
+  - '@types/react@19.2.18'
