@@ -3,7 +3,9 @@ import type { PGlite, Transaction } from '@electric-sql/pglite';
 import {
   ApexEventSchema,
   CustomerMilestoneProjectionSchema,
+  JobSummarySchema,
   createCanonicalId,
+  readLeadIdentity,
   type ApexEvent,
   type CustomerMilestoneProjection,
   type EvidenceId,
@@ -12,6 +14,7 @@ import {
   type EventId,
   type GateInstanceId,
   type JobId,
+  type JobSummary,
 } from '@apex/contracts';
 import {
   decideGateCommand,
@@ -48,6 +51,93 @@ export interface ExecuteResult {
 }
 
 type QueryClient = Pick<PGlite, 'query'> | Transaction;
+
+interface JobSummaryRow {
+  job_id: string;
+  lead_id: string;
+  status: string;
+  created_at: string | Date;
+  accepted_payload: unknown;
+  total_cents_text: string | null;
+  gate_instance_id: string | null;
+  definition_key: string | null;
+  definition_version: number | null;
+  gate_status: string | null;
+  approved_takeoff_revision_id: string | null;
+  gate_title: string | null;
+  gate_phase: string | null;
+  customer_milestone: string | null;
+}
+
+/**
+ * Current Gate = the most recent gate that is not yet released; if every gate on
+ * the job is released, the most recent released one. `order by (status = 'released')`
+ * sorts false before true, so unreleased gates always win.
+ */
+const jobSummaryQuery = (filter: 'all' | 'one') => `
+  select
+    j.job_id, j.lead_id, j.status, j.created_at,
+    l.accepted_payload,
+    pv.total_cents::text as total_cents_text,
+    gi.gate_instance_id, gi.definition_key, gi.definition_version,
+    gi.status as gate_status, gi.approved_takeoff_revision_id,
+    gd.title as gate_title, gd.phase as gate_phase, gd.customer_milestone
+  from jobs j
+  join leads l on l.lead_id = j.lead_id
+  left join lateral (
+    select total_cents from proposal_versions
+    where job_id = j.job_id and status = 'signed'
+    order by version_number desc limit 1
+  ) pv on true
+  left join lateral (
+    select gate_instance_id, definition_key, definition_version, status, approved_takeoff_revision_id
+    from gate_instances
+    where job_id = j.job_id
+    order by (status = 'released'), created_at desc, gate_instance_id desc
+    limit 1
+  ) gi on true
+  left join gate_definitions gd
+    on gd.definition_key = gi.definition_key and gd.version = gi.definition_version
+  ${filter === 'one' ? 'where j.job_id = $1' : ''}
+  order by j.created_at desc, j.job_id desc
+`;
+
+/**
+ * bigint columns arrive as text so no cent is lost to float conversion. A value
+ * outside the safe-integer range is refused rather than silently rounded.
+ */
+const readCents = (value: string | null): number | null => {
+  if (value === null) return null;
+  const cents = Number(value);
+  if (!Number.isSafeInteger(cents)) {
+    throw new Error(`Contract total ${value} is outside the safe integer range.`);
+  }
+  return cents;
+};
+
+const toJobSummary = (row: JobSummaryRow): JobSummary => {
+  const identity = readLeadIdentity(row.accepted_payload);
+  const gate = row.gate_instance_id === null ? null : {
+    gateInstanceId: row.gate_instance_id,
+    definitionKey: row.definition_key,
+    definitionVersion: row.definition_version,
+    title: row.gate_title,
+    phase: row.gate_phase,
+    status: row.gate_status,
+    customerMilestone: row.customer_milestone,
+  };
+  return JobSummarySchema.parse({
+    jobId: row.job_id,
+    leadId: row.lead_id,
+    status: row.status,
+    createdAt: new Date(row.created_at).toISOString(),
+    customerName: identity.customerName,
+    addressLine: identity.addressLine,
+    contractCents: readCents(row.total_cents_text),
+    approvedTakeoffRevisionId: row.approved_takeoff_revision_id,
+    currentGate: gate,
+  });
+};
 
 const replayableEventTypes = new Set([
   'gate.started',
@@ -216,6 +306,22 @@ export class GateService {
       events: persisted,
       duplicate: false,
     };
+  }
+
+  /**
+   * Every job with its lead identity, signed contract value, and current Gate.
+   * Ordered newest first. Internal read model — staff only at the API boundary.
+   */
+  async listJobs(): Promise<readonly JobSummary[]> {
+    const result = await this.db.query<JobSummaryRow>(jobSummaryQuery('all'));
+    return result.rows.map(toJobSummary);
+  }
+
+  /** One job summary, or null when the job does not exist. */
+  async getJob(jobId: JobId): Promise<JobSummary | null> {
+    const result = await this.db.query<JobSummaryRow>(jobSummaryQuery('one'), [jobId]);
+    const row = result.rows[0];
+    return row === undefined ? null : toJobSummary(row);
   }
 
   async getCustomerMilestones(jobId: JobId): Promise<readonly CustomerMilestoneProjection[]> {

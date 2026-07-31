@@ -160,6 +160,19 @@ export function createGateApi(options: GateApiOptions) {
       }
       const actor = await authenticate(request);
 
+      if (request.method === 'GET' && url.pathname === '/api/jobs') {
+        requireStaff(actor);
+        return sendJson(response, 200, await service.listJobs());
+      }
+
+      const jobMatch = url.pathname.match(/^\/api\/jobs\/(job_[0-9A-HJKMNP-TV-Z]{26})$/);
+      if (request.method === 'GET' && jobMatch) {
+        requireStaff(actor);
+        const summary = await service.getJob(idSchemas.job.parse(jobMatch[1]));
+        if (summary === null) return sendJson(response, 404, { error: 'Job not found.' });
+        return sendJson(response, 200, summary);
+      }
+
       const createMatch = url.pathname.match(/^\/api\/jobs\/(job_[0-9A-HJKMNP-TV-Z]{26})\/gates\/pre-gunite$/);
       if (request.method === 'POST' && createMatch) {
         requireStaff(actor);

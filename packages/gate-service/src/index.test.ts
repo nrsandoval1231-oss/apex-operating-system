@@ -126,3 +126,122 @@ describe('persistent pre-gunite Gate', () => {
     }, context('office-release-1'))).rejects.toThrow(/not authorized/i);
   });
 });
+
+describe('job summary read model', () => {
+  const second = {
+    lead: createCanonicalId('lead'),
+    job: createCanonicalId('job'),
+    proposal: createCanonicalId('proposal'),
+    proposalVersion: createCanonicalId('proposal_version'),
+  };
+
+  const addSignedProposal = async (totalCents: string) => {
+    await db.query(`insert into proposals (proposal_id, lead_id) values ($1, $2)`, [second.proposal, ids.lead]);
+    await db.query(
+      `insert into proposal_versions
+       (proposal_version_id, proposal_id, lead_id, job_id, version_number, status, takeoff_revision_id,
+        quantity_payload_sha256, quantity_model_version, pricing_library_version, proposal_payload_sha256,
+        proposal_payload, total_cents, created_by, signed_at)
+       values ($1, $2, $3, $4, 1, 'signed', $5, repeat('c', 64), 'quantity-v1', 'pricing-v1', repeat('d', 64),
+               '{}', $6, $7, now())`,
+      [second.proposalVersion, second.proposal, ids.lead, ids.job, ids.revision, totalCents, ids.office],
+    );
+  };
+
+  beforeEach(async () => {
+    // A second job with a lead identity, no proposal, no takeoff, and no Gate.
+    await db.query(
+      `insert into leads (lead_id, intake_source, source_record_id, idempotency_key, accepted_payload)
+       values ($1, 'website', 'source-second', 'test:source-second', $2)`,
+      [second.lead, { customerName: 'Mike Johnson', streetAddress: '7821 Knoxville Ave', city: 'Lubbock', state: 'TX' }],
+    );
+    await db.query(
+      `insert into jobs (job_id, lead_id, signed_proposal_version, status) values ($1, $2, 1, 'on-hold')`,
+      [second.job, second.lead],
+    );
+  });
+
+  it('returns every job newest first with its lead identity and current Gate', async () => {
+    const jobs = await service.listJobs();
+    expect(jobs.map((job) => job.jobId)).toEqual([second.job, ids.job]);
+
+    const withoutGate = jobs[0];
+    expect(withoutGate).toMatchObject({
+      status: 'on-hold',
+      customerName: 'Mike Johnson',
+      addressLine: '7821 Knoxville Ave, Lubbock, TX',
+      contractCents: null,
+      approvedTakeoffRevisionId: null,
+      currentGate: null,
+    });
+
+    const withGate = jobs[1];
+    expect(withGate?.currentGate).toMatchObject({
+      gateInstanceId: ids.gate,
+      definitionKey: 'pre-gunite',
+      definitionVersion: 1,
+      status: 'not-started',
+    });
+    expect(withGate?.approvedTakeoffRevisionId).toBe(ids.revision);
+    // The seed lead payload is '{}', so no identity may be invented for it.
+    expect(withGate?.customerName).toBeNull();
+    expect(withGate?.addressLine).toBeNull();
+  });
+
+  it('reports the signed proposal total as the contract value', async () => {
+    await addSignedProposal('18500000');
+    const job = await service.getJob(ids.job);
+    expect(job?.contractCents).toBe(18_500_000);
+  });
+
+  it('refuses a contract total that cannot survive as an exact integer', async () => {
+    await addSignedProposal('9007199254740993');
+    await expect(service.getJob(ids.job)).rejects.toThrow(/safe integer/i);
+  });
+
+  it('ignores unsigned proposal versions when reporting contract value', async () => {
+    await db.query(`insert into proposals (proposal_id, lead_id) values ($1, $2)`, [second.proposal, ids.lead]);
+    await db.query(
+      `insert into proposal_versions
+       (proposal_version_id, proposal_id, lead_id, version_number, status, takeoff_revision_id,
+        quantity_payload_sha256, quantity_model_version, pricing_library_version, proposal_payload_sha256,
+        proposal_payload, total_cents, created_by)
+       values ($1, $2, $3, 1, 'draft', $4, repeat('c', 64), 'quantity-v1', 'pricing-v1', repeat('d', 64),
+               '{}', 12300000, $5)`,
+      [second.proposalVersion, second.proposal, ids.lead, ids.revision, ids.office],
+    );
+    expect((await service.getJob(ids.job))?.contractCents).toBeNull();
+  });
+
+  it('prefers an unreleased Gate over a newer released one', async () => {
+    // A second definition is required: one gate instance per definition per job.
+    await db.query(
+      `insert into gate_definitions (definition_key, version, title, phase, draw_code, customer_milestone, active)
+       values ('pre-deck', 1, 'Pre-deck release', 'pre-deck', 'pre-deck-draw', 'finishes', true)`,
+    );
+    const released = createCanonicalId('gate');
+    await db.query(
+      `insert into gate_instances
+       (gate_instance_id, job_id, definition_key, definition_version, approved_takeoff_revision_id, status, released_at, released_by, created_at)
+       values ($1, $2, 'pre-deck', 1, $3, 'released', now(), $4, now() + interval '1 hour')`,
+      [released, ids.job, ids.revision, ids.field],
+    );
+    // The released gate is newer, but the unreleased one is what still needs attention.
+    expect((await service.getJob(ids.job))?.currentGate?.gateInstanceId).toBe(ids.gate);
+  });
+
+  it('falls back to the most recent released Gate once nothing is outstanding', async () => {
+    await db.query(
+      `update gate_instances set status = 'released', released_at = now(), released_by = $2
+       where gate_instance_id = $1`,
+      [ids.gate, ids.field],
+    );
+    const summary = await service.getJob(ids.job);
+    expect(summary?.currentGate).toMatchObject({ gateInstanceId: ids.gate, status: 'released' });
+    expect(summary?.currentGate?.customerMilestone).toBe('pre-gunite-released');
+  });
+
+  it('returns null for a job that does not exist', async () => {
+    expect(await service.getJob(createCanonicalId('job'))).toBeNull();
+  });
+});

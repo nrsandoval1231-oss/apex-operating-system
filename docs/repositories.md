@@ -2,15 +2,19 @@
 
 All repositories below were created as **private** GitHub repositories on 2026-07-28. Local and remote `main` heads were verified to match after the initial push.
 
+Local source root: `C:\Users\NickSandoval\Desktop\Nick-Assistant\Projects\Apex`
+
+Wrapper directories were flattened on 2026-07-31 (`apex-lead-engine\apex-lead-engine` → `apex-lead-engine`, and the same for `apex-prds` and `apex-website`).
+
 | Component | Private remote | Local source during Phase 0 |
 |---|---|---|
-| System root | https://github.com/nrsandoval1231-oss/apex-operating-system | `C:\Users\NickSandoval\Desktop\Apex` |
+| System root | https://github.com/nrsandoval1231-oss/apex-operating-system | `.` (the source root above) |
 | Designer | https://github.com/nrsandoval1231-oss/apex-designer | `Apex Designer` |
 | Decks | https://github.com/nrsandoval1231-oss/apex-decks | `apex-decks` |
-| Lead Engine | https://github.com/nrsandoval1231-oss/apex-lead-engine | `apex-lead-engine\apex-lead-engine` |
-| PRDs | https://github.com/nrsandoval1231-oss/apex-prds | `apex-prds\apex-prds` |
+| Lead Engine | https://github.com/nrsandoval1231-oss/apex-lead-engine | `apex-lead-engine` |
+| PRDs | https://github.com/nrsandoval1231-oss/apex-prds | `apex-prds` |
 | Proposal Engine | https://github.com/nrsandoval1231-oss/apex-proposal-engine | `apex-proposal-engine` |
-| Website | https://github.com/nrsandoval1231-oss/apex-website | `apex-website\apex-website` |
+| Website | https://github.com/nrsandoval1231-oss/apex-website | `apex-website` |
 
 ## Phase 0 preservation model
 
@@ -30,4 +34,4 @@ This backup contains:
 - tracked binary-capable patches
 - SHA-256 manifest and artifact checksums
 
-The backup predates the Phase 0 checkpoint commits and remote pushes and can reconstruct the exact starting state.
+The backup predates the Phase 0 checkpoint commits and remote pushes and can reconstruct the exact starting state. It also predates the 2026-07-31 wrapper flattening; paths inside the backup use the original nested layout.

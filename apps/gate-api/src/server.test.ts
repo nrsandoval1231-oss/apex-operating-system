@@ -154,6 +154,46 @@ describe('Gate HTTP vertical slice', () => {
     expect(forbiddenInternal.status).toBe(403);
   });
 
+  it('serves the internal job list to staff and refuses customers', async () => {
+    const office = await token(ids.office, 'office');
+    const customer = await token(ids.customer, 'customer');
+
+    const list = await call('/api/jobs', office);
+    expect(list.status).toBe(200);
+    const jobs = await list.json() as Array<Record<string, unknown>>;
+    expect(jobs).toHaveLength(1);
+    expect(jobs[0]).toMatchObject({ jobId: ids.job, leadId: ids.lead, status: 'active' });
+    // The seed lead payload is empty, so no identity or contract value may be invented.
+    expect(jobs[0]).toMatchObject({ customerName: null, addressLine: null, contractCents: null });
+
+    const detail = await call(`/api/jobs/${ids.job}`, office);
+    expect(detail.status).toBe(200);
+    expect(await detail.json()).toMatchObject({ jobId: ids.job });
+
+    const missing = await call(`/api/jobs/${createCanonicalId('job')}`, office);
+    expect(missing.status).toBe(404);
+
+    const forbiddenList = await call('/api/jobs', customer);
+    expect(forbiddenList.status).toBe(403);
+    const forbiddenDetail = await call(`/api/jobs/${ids.job}`, customer);
+    expect(forbiddenDetail.status).toBe(403);
+    const unauthenticated = await fetch(`${baseUrl}/api/jobs`);
+    expect(unauthenticated.status).toBe(403);
+  });
+
+  it('reports the current Gate on the job summary once one exists', async () => {
+    const field = await token(ids.field, 'field');
+    await call(`/api/jobs/${ids.job}/gates/pre-gunite`, field, { method: 'POST', body: '{}' });
+    const detail = await call(`/api/jobs/${ids.job}`, field);
+    const summary = await detail.json() as { currentGate: Record<string, unknown> | null };
+    expect(summary.currentGate).toMatchObject({
+      definitionKey: 'pre-gunite',
+      definitionVersion: 1,
+      title: 'Pre-gunite release',
+      status: 'not-started',
+    });
+  });
+
   it('requires authentication and idempotency headers', async () => {
     const health = await fetch(`${baseUrl}/health`);
     expect(health.status).toBe(200);

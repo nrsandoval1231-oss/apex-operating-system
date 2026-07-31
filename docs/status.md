@@ -1,8 +1,8 @@
 # Apex Current Status
 
-**Last updated:** 2026-07-29
+**Last updated:** 2026-07-31
 
-**Program phase:** Phase 0 — Preserve and stabilize
+**Program phase:** Phase 1 — Shared operational spine and controlled Gate vertical slice (Phase 0 preservation complete)
 
 **Production status:** Not production-ready
 
@@ -273,6 +273,33 @@ The API binds to loopback for a controlled pilot. It stores real evidence bytes 
 An additional temporary Phase 0 verification script passed **75 targeted assertions** covering backup checksums, ZIP integrity, all six Git bundles, deck claim corrections, generated deck contents/slide counts, Office package structure, ignore rules, dependency audit, and whitespace hygiene. This was ad-hoc verification, not a substitute for the component suites above. The script was removed after execution.
 
 PowerPoint visual rendering was not completed because the headless COM export approval timed out. Structural validation passed, but slide-level visual QA remains pending before the corrected decks are used externally.
+
+## Apex OS shell adoption — 2026-07-31
+
+The previously untracked `apex-os/` React prototype is now `apps/apex-os` inside the pnpm workspace and reads live data from the Gate API. See [`docs/plans/apex-os-v1-build-plan.md`](plans/apex-os-v1-build-plan.md) and [`PRD.md`](../PRD.md).
+
+| Commands | Result |
+|---|---|
+| `pnpm verify` | **85/85 root tests** and **1/1 integration test** passed; strict TypeScript project build and the app typecheck passed |
+| `pnpm --filter @apex/os build` | Vite production build passed |
+| `pnpm audit --prod` | **No known vulnerabilities** |
+| Browser verification | Signed-out, signed-in, sign-out, Today, Projects, and Project detail all verified against seeded local data; no console errors |
+
+Added: a `job_summary` read model (`GET /api/jobs`, `GET /api/jobs/:jobId`) over jobs, leads, signed proposal versions, and gate instances, staff-only at the API boundary and validated by a shared contract schema at both ends.
+
+Deliberate constraints in this slice:
+
+- Wired screens never fall back to sample data. Failure, empty, and signed-out states are shown explicitly so an invented project can never be mistaken for a real one.
+- Lead identity is read from a fixed list of known payload key spellings and returns null rather than guessing; contract value comes only from a signed Proposal version.
+- Contract totals are read as text and refused if outside the safe-integer range, so no cent is lost to float conversion.
+- The app holds no database and mints no credentials. It carries the same short-lived pilot token as the Gate field console, which remains pilot-grade symmetric authentication.
+
+Dependency decisions made during adoption:
+
+- `allowBuilds: esbuild: false` resolves a placeholder that was blocking every pnpm command. Vite runs from the platform binary pnpm installs directly, so the install script is not needed.
+- React 19.2.8 and React Router 8.3.0 replace React 18 / Router 6. Router 6 and 7 both carried open advisories; Router 8 requires React 19. The app uses only core routing APIs, so the upgrade was contained.
+
+Not built in this slice: the action-card engine, the project/phase model, inspections, scheduled visits, draw schedules, the customer progress page, and the daily brief. The Today feed shows Gate status only and says so on screen.
 
 ## Next controlled milestone
 

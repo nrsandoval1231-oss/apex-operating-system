@@ -22,6 +22,10 @@ Thumbs.db
 *.tmp
 ~$*
 
+# Scratch and staged-for-deletion areas (never committed)
+/tmp/
+/_to_delete/
+
 # Hermes transient attachments (plans are intentional project records)
 .hermes/desktop-attachments/
 
@@ -33,3 +37,6 @@ Thumbs.db
 /apex-prds/
 /apex-proposal-engine/
 /apex-website/
+
+# Local pilot database and evidence (never committed)
+/var/

@@ -8,6 +8,13 @@
       "port": 4173
     },
     {
+      "name": "apex-os",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@apex/os", "dev"],
+      "port": 3000,
+      "autoPort": true
+    },
+    {
       "name": "apex-website",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev", "--prefix", "apex-website/apex-website"],
