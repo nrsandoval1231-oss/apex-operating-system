@@ -45,6 +45,7 @@ beforeEach(async () => {
   await db.exec(await migration('0005_gate_instance_uniqueness.sql'));
   await db.exec(await migration('0006_approved_takeoff_authority.sql'));
   await db.exec(await migration('0007_quantity_payload_digest.sql'));
+  await db.exec(await migration('0008_proposal_versions.sql'));
 });
 
 const seedJob = async () => {
@@ -71,7 +72,11 @@ describe('operational schema', () => {
     expect(OPERATIONAL_MIGRATIONS).toContain('0007_quantity_payload_digest.sql');
   });
 
-  it('refuses to invent digests when an existing revision needs an explicit backfill', async () => {
+  it('registers durable Proposal versions in the runtime migrator', () => {
+    expect(OPERATIONAL_MIGRATIONS).toContain('0008_proposal_versions.sql');
+  });
+
+  it('executes every core and authorization migration in PostgreSQL', async () => {
     const legacy = new PGlite();
     for (const name of [
       '0001_core.sql',
@@ -131,8 +136,8 @@ describe('operational schema', () => {
     await seedJob();
     const insert = (revisionId: string, revisionNumber: number) => db.query(
       `insert into takeoff_revisions
-       (revision_id, job_id, revision_number, status, engine_version, quantity_model_version, job_input_sha256, calc_ledger_sha256, quantity_payload_sha256, quantities, calc_ledger, created_by, approved_at, approved_by)
-       values ($1, $2, $3, 'approved', 'designer-1', 'quantity-v1', $4, $5, repeat('c', 64), '[{"code":"pool.water-volume"}]', '[{"id":"geom.volume"}]', $6, now(), $6)`,
+       (revision_id, job_id, revision_number, status, engine_version, quantity_model_version, job_input_sha256, calc_ledger_sha256, quantity_payload_sha256, quantities, calc_ledger, blocking_issues, created_by, approved_at, approved_by)
+       values ($1, $2, $3, 'approved', 'designer-1', 'designer-quantity-v2', $4, $5, repeat('c', 64), '[{"code":"pool.water-volume"}]', '[{"id":"geom.total.volumeGal"}]', '[]', $6, now(), $6)`,
       [revisionId, ids.job, revisionNumber, 'a'.repeat(64), 'b'.repeat(64), ids.user],
     );
     await insert(ids.revision1, 1);
@@ -144,7 +149,7 @@ describe('operational schema', () => {
     const insert = (blockingIssues: string) => db.query(
       `insert into takeoff_revisions
        (revision_id, job_id, revision_number, status, engine_version, quantity_model_version, job_input_sha256, calc_ledger_sha256, quantity_payload_sha256, quantities, calc_ledger, blocking_issues, created_by, approved_at, approved_by)
-       values ($1, $2, 1, 'approved', 'designer-1', 'quantity-v1', $3, $4, repeat('c', 64), '[{"code":"pool.water-volume"}]', '[{"id":"geom.volume"}]', $5, $6, now(), $6)`,
+       values ($1, $2, 1, 'approved', 'designer-1', 'designer-quantity-v2', $3, $4, repeat('c', 64), '[{"code":"pool.water-volume"}]', '[{"id":"geom.total.volumeGal"}]', $5, $6, now(), $6)`,
       [ids.revision1, ids.job, 'a'.repeat(64), 'b'.repeat(64), blockingIssues, ids.user],
     );
 
@@ -161,7 +166,7 @@ describe('operational schema', () => {
     const insert = (revisionId: string, status: 'draft' | 'approved', digest: string) => db.query(
       `insert into takeoff_revisions
        (revision_id, job_id, revision_number, status, engine_version, quantity_model_version, job_input_sha256, calc_ledger_sha256, quantity_payload_sha256, quantities, calc_ledger, blocking_issues, created_by, approved_at, approved_by)
-       values ($1, $2, 1, $3, 'designer-1', 'quantity-v1', repeat('a', 64), repeat('b', 64), $4, '[{"code":"pool.water-volume"}]', '[{"id":"geom.volume"}]', '[]', $5,
+       values ($1, $2, 1, $3, 'designer-1', 'designer-quantity-v2', repeat('a', 64), repeat('b', 64), $4, '[{"code":"pool.water-volume"}]', '[{"id":"geom.total.volumeGal"}]', '[]', $5,
          case when $3 = 'approved' then now() else null end,
          case when $3 = 'approved' then $5 else null end)`,
       [revisionId, ids.job, status, digest, ids.user],
@@ -184,8 +189,8 @@ describe('operational schema', () => {
     await seedJob();
     const insert = (revisionId: string, revisionNumber: number, status: 'draft' | 'approved') => db.query(
       `insert into takeoff_revisions
-       (revision_id, job_id, revision_number, status, engine_version, quantity_model_version, job_input_sha256, calc_ledger_sha256, quantity_payload_sha256, quantities, calc_ledger, created_by, approved_at, approved_by)
-       values ($1, $2, $3, $4, 'designer-1', 'quantity-v1', $5, $6, repeat('c', 64), '[{"code":"pool.water-volume"}]', '[{"id":"geom.volume"}]', $7,
+       (revision_id, job_id, revision_number, status, engine_version, quantity_model_version, job_input_sha256, calc_ledger_sha256, quantity_payload_sha256, quantities, calc_ledger, blocking_issues, created_by, approved_at, approved_by)
+       values ($1, $2, $3, $4, 'designer-1', 'designer-quantity-v2', $5, $6, repeat('c', 64), '[{"code":"pool.water-volume"}]', '[{"id":"geom.total.volumeGal"}]', '[]', $7,
          case when $4 = 'approved' then now() else null end,
          case when $4 = 'approved' then $7 else null end)`,
       [revisionId, ids.job, revisionNumber, status, 'a'.repeat(64), 'b'.repeat(64), ids.user],
@@ -215,8 +220,8 @@ describe('operational schema', () => {
     await seedJob();
     await db.query(
       `insert into takeoff_revisions
-       (revision_id, job_id, revision_number, status, engine_version, quantity_model_version, job_input_sha256, calc_ledger_sha256, quantity_payload_sha256, quantities, calc_ledger, created_by, approved_at, approved_by)
-       values ($1, $2, 1, 'approved', 'designer-1', 'quantity-v1', $3, $4, repeat('c', 64), '[{"code":"pool.water-volume"}]', '[{"id":"geom.volume"}]', $5, now(), $5)`,
+       (revision_id, job_id, revision_number, status, engine_version, quantity_model_version, job_input_sha256, calc_ledger_sha256, quantity_payload_sha256, quantities, calc_ledger, blocking_issues, created_by, approved_at, approved_by)
+       values ($1, $2, 1, 'approved', 'designer-1', 'designer-quantity-v2', $3, $4, repeat('c', 64), '[{"code":"pool.water-volume"}]', '[{"id":"geom.total.volumeGal"}]', '[]', $5, now(), $5)`,
       [ids.revision1, ids.job, 'a'.repeat(64), 'b'.repeat(64), ids.user],
     );
 

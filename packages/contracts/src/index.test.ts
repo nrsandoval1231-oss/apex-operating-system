@@ -5,6 +5,7 @@ import {
   CANONICAL_EVENT_TYPES,
   CustomerMilestoneProjectionSchema,
   EvidenceRecordSchema,
+  ProposalVersionSchema,
   calculateQuantityPayloadSha256,
   serializeQuantityPayload,
   createCanonicalId,
@@ -13,6 +14,8 @@ import {
 
 const actorId = createCanonicalId('user');
 const leadId = createCanonicalId('lead');
+const proposalId = createCanonicalId('proposal');
+const proposalVersionId = createCanonicalId('proposal_version');
 const jobId = createCanonicalId('job');
 const gateInstanceId = createCanonicalId('gate');
 const eventId = createCanonicalId('event');
@@ -30,7 +33,7 @@ const baseEvent = {
 };
 
 describe('canonical identifiers', () => {
-  it.each(['lead', 'job', 'event', 'revision', 'gate', 'evidence', 'user', 'draw', 'customer_update'] as const)(
+  it.each(['lead', 'proposal', 'proposal_version', 'job', 'event', 'revision', 'gate', 'evidence', 'user', 'draw', 'customer_update'] as const)(
     'mints and validates %s IDs',
     (kind) => {
       const id = createCanonicalId(kind);
@@ -46,6 +49,7 @@ describe('canonical identifiers', () => {
 
 const approvedRevisionFixture = () => ({
   revisionId: createCanonicalId('revision'),
+  leadId,
   jobId,
   revisionNumber: 1,
   status: 'approved' as const,
@@ -84,6 +88,14 @@ const approvedRevisionFixture = () => ({
 });
 
 describe('approved Designer quantity revisions', () => {
+  it('allows approved Designer authority to belong to a Lead before a Job exists', () => {
+    expect(ApprovedTakeoffRevisionSchema.safeParse({
+      ...approvedRevisionFixture(),
+      leadId,
+      jobId: null,
+    }).success).toBe(true);
+  });
+
   it('uses one domain-separated, order-sensitive canonical quantity serialization', () => {
     const quantities = approvedRevisionFixture().quantities;
     expect(serializeQuantityPayload(quantities)).toBe(
@@ -203,7 +215,84 @@ describe('approved Designer quantity revisions', () => {
   });
 });
 
-describe('event vocabulary', () => {
+const issuedProposalVersionFixture = () => ({
+  proposalVersionId,
+  proposalId,
+  leadId,
+  jobId: null,
+  versionNumber: 1,
+  status: 'issued' as const,
+  takeoffRevisionId: approvedRevisionFixture().revisionId,
+  quantityPayloadSha256: approvedRevisionFixture().quantityPayloadSha256,
+  quantityModelVersion: approvedRevisionFixture().quantityModelVersion,
+  pricingLibraryVersion: 'proposal-pricing-v1',
+  proposalPayloadSha256: 'd'.repeat(64),
+  proposalPayload: { status: 'issued', totals: { totalCents: 15204173 } },
+  totalCents: 15204173,
+  createdAt: '2026-07-29T12:00:00.000Z',
+  createdBy: actorId,
+  issuedAt: '2026-07-29T12:05:00.000Z',
+  issuedBy: actorId,
+  signedAt: null,
+});
+
+describe('durable Proposal versions', () => {
+  it('accepts an issued Proposal version owned by a Lead before a Job exists', () => {
+    const issued = ProposalVersionSchema.parse(issuedProposalVersionFixture());
+    expect(issued.leadId).toBe(leadId);
+    expect(issued.jobId).toBeNull();
+  });
+
+  it('rejects a signed Proposal version until it is bound to the minted Job', () => {
+    expect(ProposalVersionSchema.safeParse({
+      ...issuedProposalVersionFixture(),
+      status: 'signed',
+      signedAt: '2026-07-29T12:10:00.000Z',
+      jobId: null,
+    }).success).toBe(false);
+  });
+
+   it('accepts a signed Proposal version once it is bound to a Job', () => {
+     expect(ProposalVersionSchema.safeParse({
+       ...issuedProposalVersionFixture(),
+       status: 'signed',
+       signedAt: '2026-07-29T12:10:00.000Z',
+       jobId,
+     }).success).toBe(true);
+   });
+
+   it('emits proposal.signed event only when Job ID is minted and bound', () => {
+     const signedEvent = ApexEventSchema.parse({
+       ...baseEvent,
+       eventType: 'proposal.signed',
+       leadId,
+       jobId,
+       payload: {
+         proposalVersionId,
+         signedAt: '2026-07-29T12:10:00.000Z',
+       },
+     });
+     expect(signedEvent.eventType).toBe('proposal.signed');
+     expect(signedEvent.jobId).toBe(jobId);
+     expect(signedEvent.leadId).toBe(leadId);
+     expect(signedEvent.payload).toMatchObject({ proposalVersionId });
+   });
+
+   it('rejects proposal.signed event without a Job ID', () => {
+     expect(ApexEventSchema.safeParse({
+       ...baseEvent,
+       eventType: 'proposal.signed',
+       leadId,
+       jobId: undefined,
+       payload: {
+         proposalVersionId,
+         signedAt: '2026-07-29T12:10:00.000Z',
+       },
+     }).success).toBe(false);
+   });
+  });
+
+  describe('event vocabulary', () => {
   it('has one stable, duplicate-free canonical vocabulary', () => {
     expect(new Set(CANONICAL_EVENT_TYPES).size).toBe(CANONICAL_EVENT_TYPES.length);
     expect(CANONICAL_EVENT_TYPES).toContain('gate.released');

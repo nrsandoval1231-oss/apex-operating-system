@@ -30,6 +30,7 @@ describe('Designer to canonical contract compatibility', () => {
       createdBy: actorId,
       approvedAt: '2026-07-29T12:05:00.000Z',
       approvedBy: actorId,
+      leadId: 'lead_01ARZ3NDEKTSV4RRFFQ69G5FAA',
       blockingIssues: [],
       quantities: payload.quantities,
       calcLedger: payload.calcLedger,

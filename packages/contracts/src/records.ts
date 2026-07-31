@@ -50,7 +50,8 @@ export type GateDefinition = z.infer<typeof GateDefinitionSchema>;
 
 export const TakeoffRevisionSchema = z.strictObject({
   revisionId: idSchemas.revision,
-  jobId: idSchemas.job,
+  leadId: idSchemas.lead,
+  jobId: idSchemas.job.nullable(),
   revisionNumber: z.number().int().positive(),
   status: z.enum(['draft', 'approved', 'superseded']),
   engineVersion: z.string().min(1).max(80),
@@ -185,6 +186,36 @@ export const ApprovedTakeoffRevisionSchema = TakeoffRevisionSchema.extend({
   }
 });
 export type ApprovedTakeoffRevision = z.infer<typeof ApprovedTakeoffRevisionSchema>;
+
+export const ProposalVersionSchema = z.strictObject({
+  proposalVersionId: idSchemas.proposal_version,
+  proposalId: idSchemas.proposal,
+  leadId: idSchemas.lead,
+  jobId: idSchemas.job.nullable(),
+  versionNumber: z.number().int().positive(),
+  status: z.enum(['draft', 'issued', 'signed']),
+  takeoffRevisionId: idSchemas.revision,
+  quantityPayloadSha256: z.string().regex(/^[a-f0-9]{64}$/),
+  quantityModelVersion: z.string().min(1).max(80),
+  pricingLibraryVersion: z.string().min(1).max(80),
+  proposalPayloadSha256: z.string().regex(/^[a-f0-9]{64}$/),
+  proposalPayload: z.record(z.string(), z.unknown()),
+  totalCents: z.number().int().nonnegative(),
+  createdAt: z.string().datetime({ offset: true }),
+  createdBy: idSchemas.user,
+  issuedAt: z.string().datetime({ offset: true }).nullable(),
+  issuedBy: idSchemas.user.nullable(),
+  signedAt: z.string().datetime({ offset: true }).nullable(),
+}).superRefine((version, ctx) => {
+  if (version.status === 'signed' && version.jobId === null) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['jobId'],
+      message: 'A signed Proposal version must be bound to an existing Job.',
+    });
+  }
+});
+export type ProposalVersion = z.infer<typeof ProposalVersionSchema>;
 
 export const CustomerMilestoneProjectionSchema = z.strictObject({
   projectionId: idSchemas.customer_update,

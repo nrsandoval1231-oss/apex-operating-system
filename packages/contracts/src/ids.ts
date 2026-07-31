@@ -3,6 +3,8 @@ import { z } from 'zod';
 
 export const ID_KINDS = [
   'lead',
+  'proposal',
+  'proposal_version',
   'job',
   'event',
   'revision',
@@ -23,6 +25,8 @@ const canonicalIdSchema = <Prefix extends CanonicalIdKind>(prefix: Prefix) =>
 
 export const idSchemas = {
   lead: canonicalIdSchema('lead'),
+  proposal: canonicalIdSchema('proposal'),
+  proposal_version: canonicalIdSchema('proposal_version'),
   job: canonicalIdSchema('job'),
   event: canonicalIdSchema('event'),
   revision: canonicalIdSchema('revision'),
@@ -37,6 +41,8 @@ export const createCanonicalId = <Kind extends CanonicalIdKind>(kind: Kind, time
   `${kind}_${ulid(timestamp)}`;
 
 export type LeadId = z.infer<typeof idSchemas.lead>;
+export type ProposalId = z.infer<typeof idSchemas.proposal>;
+export type ProposalVersionId = z.infer<typeof idSchemas.proposal_version>;
 export type JobId = z.infer<typeof idSchemas.job>;
 export type EventId = z.infer<typeof idSchemas.event>;
 export type RevisionId = z.infer<typeof idSchemas.revision>;
