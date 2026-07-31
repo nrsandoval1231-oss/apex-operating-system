@@ -5,6 +5,7 @@ import {
   CANONICAL_EVENT_TYPES,
   CustomerMilestoneProjectionSchema,
   EvidenceRecordSchema,
+  JobSchema,
   ProposalVersionSchema,
   calculateQuantityPayloadSha256,
   serializeQuantityPayload,
@@ -252,47 +253,102 @@ describe('durable Proposal versions', () => {
     }).success).toBe(false);
   });
 
-   it('accepts a signed Proposal version once it is bound to a Job', () => {
-     expect(ProposalVersionSchema.safeParse({
-       ...issuedProposalVersionFixture(),
-       status: 'signed',
-       signedAt: '2026-07-29T12:10:00.000Z',
-       jobId,
-     }).success).toBe(true);
-   });
-
-   it('emits proposal.signed event only when Job ID is minted and bound', () => {
-     const signedEvent = ApexEventSchema.parse({
-       ...baseEvent,
-       eventType: 'proposal.signed',
-       leadId,
-       jobId,
-       payload: {
-         proposalVersionId,
-         signedAt: '2026-07-29T12:10:00.000Z',
-       },
-     });
-     expect(signedEvent.eventType).toBe('proposal.signed');
-     expect(signedEvent.jobId).toBe(jobId);
-     expect(signedEvent.leadId).toBe(leadId);
-     expect(signedEvent.payload).toMatchObject({ proposalVersionId });
-   });
-
-   it('rejects proposal.signed event without a Job ID', () => {
-     expect(ApexEventSchema.safeParse({
-       ...baseEvent,
-       eventType: 'proposal.signed',
-       leadId,
-       jobId: undefined,
-       payload: {
-         proposalVersionId,
-         signedAt: '2026-07-29T12:10:00.000Z',
-       },
-     }).success).toBe(false);
-   });
+  it('accepts a signed Proposal version once it is bound to a Job', () => {
+    expect(ProposalVersionSchema.safeParse({
+      ...issuedProposalVersionFixture(),
+      status: 'signed',
+      signedAt: '2026-07-29T12:10:00.000Z',
+      jobId,
+    }).success).toBe(true);
   });
 
-  describe('event vocabulary', () => {
+  it('emits proposal.signed event only when Job ID is minted and bound', () => {
+    const signedEvent = ApexEventSchema.parse({
+      ...baseEvent,
+      eventType: 'proposal.signed',
+      leadId,
+      jobId,
+      payload: {
+        proposalVersionId,
+        signedAt: '2026-07-29T12:10:00.000Z',
+      },
+    });
+    expect(signedEvent.eventType).toBe('proposal.signed');
+    expect(signedEvent.jobId).toBe(jobId);
+    expect(signedEvent.leadId).toBe(leadId);
+    expect(signedEvent.payload).toMatchObject({ proposalVersionId });
+  });
+
+  it('rejects proposal.signed event without a Job ID', () => {
+    expect(ApexEventSchema.safeParse({
+      ...baseEvent,
+      eventType: 'proposal.signed',
+      leadId,
+      jobId: undefined,
+      payload: {
+        proposalVersionId,
+        signedAt: '2026-07-29T12:10:00.000Z',
+      },
+    }).success).toBe(false);
+  });
+});
+
+describe('Job contract', () => {
+  it('accepts a Job bound to the signed Proposal version', () => {
+    const job = JobSchema.parse({
+      jobId,
+      leadId,
+      signedProposalVersionId: proposalVersionId,
+      status: 'active',
+      currentTakeoffRevisionId: null,
+      createdFromLeadId: leadId,
+      createdAt: '2026-07-29T12:10:00.000Z',
+      createdBy: actorId,
+      closedAt: null,
+      closedBy: null,
+      reconciliationComplete: null,
+    });
+    expect(job.signedProposalVersionId).toBe(proposalVersionId);
+    expect(job.leadId).toBe(leadId);
+  });
+
+  it('rejects a closed Job without closure metadata or reconciliation', () => {
+    expect(JobSchema.safeParse({
+      jobId,
+      leadId,
+      signedProposalVersionId: proposalVersionId,
+      status: 'closed',
+      currentTakeoffRevisionId: null,
+      createdFromLeadId: leadId,
+      createdAt: '2026-07-29T12:10:00.000Z',
+      createdBy: actorId,
+      closedAt: null,
+      closedBy: null,
+      reconciliationComplete: null,
+    }).success).toBe(false);
+  });
+
+  it('accepts a fully closed Job and pins its approved revision pointer', () => {
+    const revision = approvedRevisionFixture();
+    const job = JobSchema.parse({
+      jobId,
+      leadId,
+      signedProposalVersionId: proposalVersionId,
+      status: 'closed',
+      currentTakeoffRevisionId: revision.revisionId,
+      createdFromLeadId: leadId,
+      createdAt: '2026-07-29T12:10:00.000Z',
+      createdBy: actorId,
+      closedAt: '2026-07-30T08:00:00.000Z',
+      closedBy: actorId,
+      reconciliationComplete: true,
+    });
+    expect(job.status).toBe('closed');
+    expect(job.currentTakeoffRevisionId).toBe(revision.revisionId);
+  });
+});
+
+describe('event vocabulary', () => {
   it('has one stable, duplicate-free canonical vocabulary', () => {
     expect(new Set(CANONICAL_EVENT_TYPES).size).toBe(CANONICAL_EVENT_TYPES.length);
     expect(CANONICAL_EVENT_TYPES).toContain('gate.released');
@@ -331,6 +387,35 @@ describe('durable Proposal versions', () => {
       },
     });
     expect(parsed.eventType).toBe('gate.released');
+  });
+
+  it('pins canonical proposal and Job binding identifiers in creation and signing events', () => {
+    const createdEvent = ApexEventSchema.parse({
+      ...baseEvent,
+      eventType: 'job.created',
+      leadId,
+      jobId,
+      payload: {
+        createdFromLeadId: leadId,
+        signedProposalVersionId: proposalVersionId,
+      },
+    });
+    expect(createdEvent.payload).toMatchObject({
+      createdFromLeadId: leadId,
+      signedProposalVersionId: proposalVersionId,
+    });
+
+    const signedEvent = ApexEventSchema.parse({
+      ...baseEvent,
+      eventType: 'proposal.signed',
+      leadId,
+      jobId,
+      payload: {
+        proposalVersionId,
+        signedAt: '2026-07-29T12:10:00.000Z',
+      },
+    });
+    expect(signedEvent.payload).toMatchObject({ proposalVersionId });
   });
 
   it('rejects an event payload that does not match its event type', () => {

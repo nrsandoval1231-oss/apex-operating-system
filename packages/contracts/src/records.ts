@@ -217,6 +217,29 @@ export const ProposalVersionSchema = z.strictObject({
 });
 export type ProposalVersion = z.infer<typeof ProposalVersionSchema>;
 
+export const JobSchema = z.strictObject({
+  jobId: idSchemas.job,
+  leadId: idSchemas.lead,
+  signedProposalVersionId: idSchemas.proposal_version,
+  status: z.enum(['active', 'on-hold', 'closed']),
+  currentTakeoffRevisionId: idSchemas.revision.nullable(),
+  createdFromLeadId: idSchemas.lead,
+  createdAt: z.string().datetime({ offset: true }),
+  createdBy: idSchemas.user,
+  closedAt: z.string().datetime({ offset: true }).nullable(),
+  closedBy: idSchemas.user.nullable(),
+  reconciliationComplete: z.boolean().nullable(),
+}).superRefine((job, ctx) => {
+  if (job.status === 'closed' && (job.closedAt === null || job.closedBy === null || job.reconciliationComplete !== true)) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['status'],
+      message: 'A closed Job must record closedAt, closedBy, and a completed reconciliation.',
+    });
+  }
+});
+export type Job = z.infer<typeof JobSchema>;
+
 export const CustomerMilestoneProjectionSchema = z.strictObject({
   projectionId: idSchemas.customer_update,
   jobId: idSchemas.job,
