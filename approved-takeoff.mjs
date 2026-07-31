@@ -46,6 +46,10 @@ export function calculateQuantityPayloadSha256(quantities) {
   return createHash('sha256').update(serializeQuantityPayload(quantities), 'utf8').digest('hex');
 }
 
+export function calculateStringPayloadSha256(payloadString) {
+  return createHash('sha256').update(payloadString, 'utf8').digest('hex');
+}
+
 export function readApprovedQuantityAuthority(revision, context = {}) {
   if (revision?.status !== 'approved') {
     throw new Error('Proposal pricing requires an approved Designer takeoff revision.');

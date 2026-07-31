@@ -26,7 +26,7 @@
  * re-derived from 5–10 completed jobs (PRD 02 Milestone 1) and owner-maintained (Phase 1).
  */
 
-import { readApprovedQuantityAuthority } from './approved-takeoff.mjs';
+import { readApprovedQuantityAuthority, calculateStringPayloadSha256 } from './approved-takeoff.mjs';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Cost codes — Foundation §4 (his order and naming; the missing ones are additive)
@@ -1412,10 +1412,15 @@ export function finalizeProposal(result) {
     const messages = result?.proposalGate?.blockers?.map((blocker) => blocker.message) ?? ['No proposal issue gate was evaluated.'];
     throw new ProposalInputError(messages);
   }
-  return deepFreeze({
+  const issued = {
     status: 'issued',
     issuedAt: new Date().toISOString(),
     jobId: result.inputs.jobId,
+    proposalId: result.inputs.proposalId ?? null,
+    leadId: result.inputs.leadId ?? null,
+    proposalVersionId: result.inputs.proposalVersionId ?? null,
+    versionNumber: result.inputs.proposalVersionNumber ?? 1,
+    pricingLibraryVersion: result.inputs.pricingLibraryVersion ?? 'proposal-pricing-v1',
     approvedTakeoff: {
       revisionId: result.approvedTakeoffRevisionId,
       quantityModelVersion: result.quantityModelVersion,
@@ -1456,7 +1461,27 @@ export function finalizeProposal(result) {
       total: result.pricing.revenue,
     },
     warnings: result.proposalGate.warnings,
+  };
+  Object.defineProperty(issued, 'proposalPayloadSha256', {
+    get() {
+      const payload = {
+        status: issued.status,
+        jobId: issued.jobId,
+        proposalId: issued.proposalVersionId ? issued.proposalId : undefined,
+        leadId: issued.leadId,
+        proposalVersionId: issued.proposalVersionId,
+        versionNumber: issued.versionNumber,
+        takeoffRevisionId: issued.approvedTakeoff.revisionId,
+        quantityPayloadSha256: issued.approvedTakeoff.quantityPayloadSha256,
+        quantityModelVersion: issued.approvedTakeoff.quantityModelVersion,
+        pricingLibraryVersion: issued.pricingLibraryVersion,
+        totals: issued.totals,
+      };
+      return calculateStringPayloadSha256(JSON.stringify(payload));
+    },
+    enumerable: true,
   });
+  return deepFreeze(issued);
 }
 
 function codeName(code) {
