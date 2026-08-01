@@ -3,7 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Apex Gate — Pre-gunite hold point</title>
+  <title>Apex Gate — Field control</title>
+  <meta name="theme-color" content="#141517">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="apple-touch-icon" href="/favicon.svg">
+  <link rel="mask-icon" href="/favicon.svg" color="#a1ccca">
   <link rel="stylesheet" href="/gate-console.css">
 </head>
 <body>
@@ -22,6 +26,7 @@
       <p>Use a short-lived Gate API token. It stays in this browser tab only.</p>
       <label>Job ID<input id="job-id" autocomplete="off" placeholder="job_…"></label>
       <label>Bearer token<input id="token" type="password" autocomplete="off" placeholder="Short-lived JWT"></label>
+      <label>Gate<select id="gate-choice"><option value="">Load the job first</option></select></label>
       <div class="actions"><button id="open-job" class="primary">Open pre-gunite Gate</button></div>
       <p id="setup-error" class="error" role="alert"></p>
     </section>

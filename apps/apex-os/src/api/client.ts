@@ -24,19 +24,47 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * A dropped request is retried once, quietly.
+ *
+ * The dev proxy blips while the app rebuilds, and a phone changing cell or
+ * leaving a jobsite's wifi does the same thing for a different reason. One
+ * silent retry turns most of those into nothing the user ever sees.
+ */
+const RETRY_DELAY_MS = 400;
+
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 export const apiGet = async <T>(path: string, schema: ZodType<T>, signal?: AbortSignal): Promise<T> => {
+  // No token is not an error the client decides. The server may be running in
+  // single-machine pilot mode, where a local request needs none; if it is not,
+  // it answers 403 and the app shows sign-in. Only the server knows.
   const token = getToken();
-  if (token === '') throw new ApiError('A pilot access token is required.', 403);
+
+  const send = () => fetch(path, {
+    ...(signal ? { signal } : {}),
+    headers: {
+      ...(token === '' ? {} : { authorization: `Bearer ${token}` }),
+      accept: 'application/json',
+    },
+  });
 
   let response: Response;
   try {
-    response = await fetch(path, {
-      ...(signal ? { signal } : {}),
-      headers: { authorization: `Bearer ${token}`, accept: 'application/json' },
-    });
+    try {
+      response = await send();
+    } catch (first) {
+      if (first instanceof DOMException && first.name === 'AbortError') throw first;
+      await wait(RETRY_DELAY_MS);
+      response = await send();
+    }
   } catch (cause) {
     if (cause instanceof DOMException && cause.name === 'AbortError') throw cause;
-    throw new ApiError('The Apex API is unreachable. Is the Gate API running?', 0);
+    // The browser does not say why a fetch failed, so this must not guess. It
+    // previously blamed the Gate API, which was wrong often enough to matter:
+    // a blocked request, a sleeping laptop, or a dropped proxy look identical
+    // from here, and naming the wrong cause sends someone to fix the wrong thing.
+    throw new ApiError('Could not reach the Apex API. The connection failed rather than the request.', 0);
   }
 
   const body: unknown = await response.json().catch(() => null);

@@ -1,5 +1,15 @@
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
-import { JobSummaryListSchema, JobSummarySchema, type JobSummary } from '@apex/contracts';
+import {
+  ActionCardListSchema,
+  DrawScheduleSchema,
+  JobGatePlanSchema,
+  JobSummaryListSchema,
+  JobSummarySchema,
+  type ActionCard,
+  type DrawSchedule,
+  type JobGatePlanEntry,
+  type JobSummary,
+} from '@apex/contracts';
 import { ApiError, apiGet } from './client';
 import { getToken, subscribeToToken } from './session';
 
@@ -69,3 +79,24 @@ export const useJobs = (): Query<readonly JobSummary[]> => useResource('/api/job
 /** One job summary. Pass undefined while the route parameter is unresolved. */
 export const useJob = (jobId: string | undefined): Query<JobSummary> =>
   useResource(jobId === undefined ? null : `/api/jobs/${jobId}`, loadJob);
+
+const loadCards = (path: string, signal: AbortSignal): Promise<readonly ActionCard[]> =>
+  apiGet(path, ActionCardListSchema, signal);
+
+/** The §9.5 action feed, derived server-side from stored state. */
+export const useActionCards = (): Query<readonly ActionCard[]> =>
+  useResource('/api/today', loadCards);
+
+const loadDraws = (path: string, signal: AbortSignal): Promise<DrawSchedule> =>
+  apiGet(path, DrawScheduleSchema, signal);
+
+/** The job's draw schedule and where the money stands. */
+export const useDrawSchedule = (jobId: string | undefined): Query<DrawSchedule> =>
+  useResource(jobId === undefined ? null : `/api/jobs/${jobId}/draws`, loadDraws);
+
+const loadGatePlan = (path: string, signal: AbortSignal): Promise<readonly JobGatePlanEntry[]> =>
+  apiGet(path, JobGatePlanSchema, signal);
+
+/** The job's seven Gate templates and whichever of them have been opened. */
+export const useJobGates = (jobId: string | undefined): Query<readonly JobGatePlanEntry[]> =>
+  useResource(jobId === undefined ? null : `/api/jobs/${jobId}/gates`, loadGatePlan);

@@ -1,8 +1,9 @@
 # Apex OS v1 — Build Plan
 
-**Source PRD:** [`PRD.md`](../../PRD.md) (Apex OS v1, Designer Pools, powered by GATE v3)
+**Source PRD:** [`PRD FINAL.md`](../../PRD%20FINAL.md) (Apex OS v1, Designer Pools, powered by GATE v3)
 **Written:** 2026-07-31
-**Status:** Approved 2026-07-31. Step 1 complete; Step 2 next.
+**Status:** Approved 2026-07-31. Steps 1–4 and 6 complete. Step 5 is blocked on Apex's inspection list; Step 7 is next.
+**Construction model:** [`docs/decisions/construction-model.md`](../decisions/construction-model.md) — nine phases, seven gates, 10/30/30/20/10 draws, confirmed 2026-07-31.
 
 ---
 
@@ -43,8 +44,8 @@ Against PRD §19, the true MVP is nine items. Here is the real gap:
 | # | MVP item | Gap |
 |---|---|---|
 | 1 | Projects | Medium — `jobs` exists; needs project record per §9.3 (owner, phase, milestone, target window, risks) |
-| 2 | Construction phases | Medium — 15-phase model + 6 customer milestones, none built |
-| 3 | Gates with checklists and photos | **Small** — generalize the pre-gunite slice to the 9 gate templates in §9.4 |
+| 2 | Construction phases | Done — 9 confirmed phases + 6 customer milestones, migration `0010` |
+| 3 | Gates with checklists and photos | **Small** — generalize the pre-gunite slice to the 7 confirmed gate templates |
 | 4 | Today action feed | Large — card generation engine is entirely new; UI mock exists |
 | 5 | Inspection deadlines | Large — new entity, new lead-time/deadline logic |
 | 6 | Sub conflict detection | Medium — new scheduled-visit entity + overlap detection |
@@ -74,30 +75,114 @@ data. A load that fails or returns nothing shows an explicit signed-out, error,
 or empty state. Rendering invented pools inside the system whose purpose is
 trustworthy field evidence was the wrong trade.
 
-**Step 2 — Project + phase model (medium)**
-Migration for the project record (§9.3) and the 15-phase / 6-milestone model
-(§8.2, §8.3). Exit: a real pilot pool exists with a current phase and next gate.
+**Step 2 — Project + phase model (medium) — DONE 2026-07-31**
+Migration `0010_project_phase_model.sql` adds the nine confirmed construction
+phases, the six customer milestones, the §9.3 project record, append-only phase
+history, and the `superintendent` role the four-role model had no seat for.
 
-**Step 3 — Generalize the gate engine (small–medium)**
-Lift the pre-gunite slice to the 9 gate templates (§9.4), with per-gate required
-checklist items, evidence slots, blocking vs non-blocking, and override-with-reason.
-Exit: three gate types run on real work — PRD §21 requires exactly this.
+Decisions taken during the build, each of which departs from a literal reading
+of the PRD and should be challenged if wrong:
 
-**Step 4 — Action-card engine + Today feed (large)**
-One derivation layer producing Things Need You / Running / This Week (§9.5), with
-reason, consequence, urgency, and a link to the smallest workflow. Exit: the feed
-shows a card you didn't hand-write.
+1. **The project record is keyed by `job_id`.** No `project_id` is minted. The
+   canonical chain stays lead → job; a parallel identity would be a second thing
+   to reconcile for no gain. "Project" is the PRD's word for the operational face
+   of a Job.
+2. **No project status column.** `jobs.status` already carries lifecycle. Two
+   status columns on one thing is how a system starts disagreeing with itself.
+3. **Handover is not reachable from a phase.** It is derived from job completion.
+   A pool sitting in phase 9 with water in it has not been handed over, and the
+   customer page must never say it has.
+4. **Skips and reversals are allowed, with a mandatory reason.** A real jobsite
+   backs up; refusing to record it only pushes the truth outside the system. The
+   database enforces the reason, not just the service.
+5. **Gate release authority moved onto the Gate definition** (`release_roles`,
+   `countersign_roles`). This is Step 3's rule arriving early because Step 2 had
+   to add the role anyway. The **field lead can no longer release any Gate** —
+   that is the confirmed model, and it changed two existing tests.
+6. **The phase and milestone tables refuse writes by statement.** They can only
+   change by migration, which is the same discipline `events` already has.
 
-**Step 5 — Inspections and scheduled visits (large)**
-Inspection entity with jurisdiction, lead time, last-safe-request date (§9.7).
-Scheduled visits with same-crew overlap and prerequisite-gate warnings (§9.6).
-Both emit cards into step 4. Exit: a real conflict on a real schedule surfaces.
+Exit condition met: a job carries a current phase, a customer milestone, an
+accountable superintendent, and a target window, all rendered from Postgres.
 
-**Step 6 — Draw schedule and ready-to-bill (medium)**
-Draw schedule per project, each draw bound to a gate release condition, human
-confirms invoicing (§9.8). Exit: one passed gate produces one ready-to-bill card.
+**Step 3 — Generalize the gate engine (small–medium) — DONE 2026-07-31**
+Migration `0012_gate_templates.sql` seeds all seven confirmed templates and moves
+pre-gunite to version 2 with the eleven-item PRD §9.4 baseline.
 
-**Step 7 — Customer progress page (small–medium)**
+The engine changes that mattered more than the seeding:
+
+1. **Release consequences became per-definition.** `draw.eligible` fires only for
+   the four draw-bearing Gates. Every release used to create draw eligibility, so
+   generalizing without this would have had Permit and Equipment inventing money.
+2. **Customer wording moved onto the definition.** It was hardcoded to pre-gunite;
+   seven Gates would otherwise have published the same sentence seven times.
+3. **Gates are not sequenced.** A job imported mid-build opens whichever Gate it
+   is actually at. Unopened Gates read as "not opened", never as skipped.
+
+Exit condition met: Permit, Excavation, and pre-gunite all completed on one job
+against the live local database — the three Gate types PRD §21 asks for.
+
+**Caveat carried forward:** the requirement checklists for the six new Gates are
+written from the decision document's one-line "Verifies" plus the draw schedule's
+"Covers". They are not Apex's procedures and need Travis's review before field
+use. Definitions are versioned, so correcting one is a new version, not an edit.
+
+**Step 4 — Action-card engine + Today feed (large) — DONE 2026-07-31**
+One pure derivation in `packages/domain/src/cards.ts` produces twelve card kinds
+across Things Need You / Running / This Week, each with reason, consequence,
+urgency, and a link. `GET /api/today` serves it; the Today screen renders it.
+
+Exit condition met: the feed shows cards nobody hand-wrote — an overdue target
+window, two unbilled draws, a missing takeoff, and a gate part-way through — all
+derived from what the database actually holds.
+
+Three rules that shaped it, and are worth keeping as the feed grows:
+
+1. **A card must state a consequence**, or it does not exist. This is what stops
+   the feed becoming a list of statuses nobody reads.
+2. **A card must never ask for the impossible.** Suppressing "open the gate" on a
+   job with no approved takeoff was found by looking at real output, not by
+   reasoning about it — worth re-checking every time a card kind is added.
+3. **The derivation reads no clock.** `today` is an argument, so the same state
+   always produces the same feed and every rule is testable without fixtures.
+
+The daily brief (Step 8) and the §15 notifications should be views over these
+cards, not new logic. Snooze, delegate, and acknowledge are not built; the derived
+card id is the identity they will need.
+
+**Step 5 — Inspections and scheduled visits (large) — BLOCKED, taken out of order**
+The inspection half cannot be built: §9.7's last-safe-request-date logic needs
+the list of inspections, who requests each, and each one's lead time. None of
+that is confirmed. The jurisdiction dimension is already closed (single regime,
+City of Lubbock), so the remaining gap is purely Apex's own list.
+
+The scheduled-visit half — same-crew overlap and prerequisite-gate warnings
+(§9.6) — is **not** blocked and can be built whenever it is wanted.
+
+**Step 6 — Draw schedule and ready-to-bill (medium) — DONE 2026-07-31**
+Migration `0013_draw_schedule.sql` renames `draw_eligibility` to `job_draws` and
+gives it the confirmed 10/30/30/20/10 schedule, release conditions, invoice
+status, and payment fields.
+
+Exit condition met and exceeded: a passed Gate produces a ready-to-bill card
+carrying the actual amount, and confirming the invoice clears it. On the live
+database the real $152,041.73 contract splits exactly across the five draws.
+
+Decisions worth challenging:
+
+1. **One table, not two.** Renaming beat adding a schedule table beside the
+   eligibility projection. Two tables tracking the same money is how a system
+   starts disagreeing with itself about what it is owed.
+2. **Regenerating a schedule adopts history rather than refusing it.** A job that
+   released Gates before it had a schedule keeps those releases and gains its
+   amounts. Real jobs are mid-build when a system arrives; a job that can never
+   be given a schedule can never be billed correctly. Amounts on already-invoiced
+   draws are never rewritten.
+3. **Money authority is narrower than Gate authority.** A superintendent can
+   release a draw-bearing Gate but cannot create a schedule or confirm an
+   invoice. Those are the owner's and the office's.
+
+**Step 7 — Customer progress page (small–medium) — NEXT**
 Tokenized no-login link, rotation and revocation, access log, six milestones,
 approved-photo gallery, per-photo visibility toggle (§9.11). Exit: one real
 customer link is live.
@@ -116,15 +201,13 @@ deployment).
 
 1. **`apex-os/` mock — adopt or discard?** My recommendation is adopt as
    `apps/apex-os`. It's the right shape and it saves the layout work.
-2. **PRD §8.2 phases are "proposed baseline."** `SESSION-HANDOFF.md` says gunite
-   is the pivot and a booked queue, and PRD 06 says phases are Schedule-board
-   items. I can build the 15-phase list as written, but Travis should confirm it
-   before it's cemented in a migration.
-3. **§20 open decisions.** Four of these block real work: who may pass each gate
-   (Q3), exact phases and gate templates (Q4), standard vs contract-specific draw
-   schedules (Q5), and which jurisdictions vary inspections (Q6). Steps 3, 5 and 6
-   above stall without them. I'll build against documented defaults and flag each
-   assumption in the code rather than wait — but they need Travis eventually.
+2. ~~**PRD §8.2 phases are "proposed baseline."**~~ **Resolved 2026-07-31** —
+   nine confirmed phases, built in migration `0010`.
+3. ~~**§20 open decisions Q3–Q6, and both authority flags in §5 of the decisions
+   document.**~~ **All resolved 2026-07-31.** Pre-gunite takes a sign-off plus an
+   owner countersign by a different person; the four draw-bearing gates take one
+   signature from the owner or a superintendent, so draws no longer stall while
+   Travis is away. Built in migration `0011`.
 4. **The PRD doesn't mention the Designer or Proposal engines.** This repo already
    binds approved takeoff quantities to proposals with a pinned SHA-256. Apex OS
    should consume that binding, not re-enter contract values by hand. I've assumed

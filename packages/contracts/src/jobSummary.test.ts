@@ -74,6 +74,17 @@ describe('JobSummarySchema', () => {
       status: 'in-progress',
       customerMilestone: 'shell',
     },
+    project: {
+      currentPhaseKey: 'gunite',
+      currentPhaseTitle: 'Gunite/Shotcrete Concrete Pour',
+      currentPhaseSequence: 5,
+      customerMilestone: 'shell',
+      superintendentUserId: createCanonicalId('user'),
+      superintendentName: 'Travis',
+      targetCompletionStart: '2026-09-01',
+      targetCompletionEnd: '2026-09-30',
+      riskNote: null,
+    },
   };
 
   it('accepts a fully populated summary', () => {
@@ -88,7 +99,15 @@ describe('JobSummarySchema', () => {
       contractCents: null,
       approvedTakeoffRevisionId: null,
       currentGate: null,
+      project: null,
     })).not.toThrow();
+  });
+
+  it('refuses a phase outside the nine Apex builds', () => {
+    expect(() => JobSummarySchema.parse({
+      ...base,
+      project: { ...base.project, currentPhaseKey: 'steel-underground' },
+    })).toThrow();
   });
 
   it('admits every lifecycle value the jobs table permits', () => {

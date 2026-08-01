@@ -1,109 +1,274 @@
 import { Link, useParams } from 'react-router';
-import { useJob } from '../api/useJobs';
+import { CONSTRUCTION_PHASES, type DrawStatus } from '@apex/contracts';
+import { useDrawSchedule, useJob, useJobGates } from '../api/useJobs';
 import QueryState from '../components/QueryState';
 import {
   GATE_STATUS_LABEL,
   JOB_STATUS_LABEL,
   formatContract,
-  gateBadgeClass,
-  gateSummaryLine,
   jobLocation,
   jobTitle,
+  milestoneTitle,
+  targetWindow,
 } from '../lib/jobDisplay';
 
-/** Facts the project record still needs, in the order they are being built. */
+const DRAW_STATUS_LABEL: Readonly<Record<DrawStatus, string>> = {
+  scheduled: 'Not earned',
+  eligible: 'Ready to bill',
+  invoiced: 'Invoiced',
+  paid: 'Paid',
+};
+
+const DRAW_TAG: Readonly<Record<DrawStatus, string>> = {
+  scheduled: 'tag-dim',
+  // Earned and unbilled is the one that should catch the eye.
+  eligible: 'tag-urgent',
+  invoiced: 'tag-dim',
+  paid: 'tag-clear',
+};
+
+const GATE_TAG = (status: string | null): string => {
+  if (status === null) return 'tag-dim';
+  if (status === 'released') return 'tag-clear';
+  if (status === 'blocked' || status === 'awaiting-countersign') return 'tag-urgent';
+  return 'tag-pool';
+};
+
+/** Work still to be built on this screen, stated rather than implied. */
 const PENDING = [
-  ['Construction phases', 'The 15-phase model and 6 customer milestones.'],
-  ['Gate checklist and evidence', 'Per-requirement evidence capture and signoff, generalized past pre-gunite.'],
-  ['Inspections and crew visits', 'Deadlines, jurisdictions, and same-crew conflict detection.'],
-  ['Draw schedule', 'Draw release conditions and ready-to-bill confirmation.'],
-  ['Customer progress page', 'Tokenized link, approved photos, and access log.'],
+  ['Checklists and photos', 'Requirement checklists and evidence capture run in the Gate field console.'],
+  ['Inspections and crew', 'Deadlines and same-crew conflict detection.'],
+  ['Customer page', 'Tokenized link, approved photos, and access log.'],
 ] as const;
 
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>();
   const { data: job, error, loading, reload } = useJob(id);
-
-  const state = (
-    <QueryState
-      loading={loading}
-      error={error}
-      isEmpty={false}
-      emptyTitle=""
-      emptyBody=""
-      onRetry={reload}
-    />
-  );
+  const gates = useJobGates(id);
+  const gatePlan = gates.data ?? [];
+  const draws = useDrawSchedule(id);
+  const schedule = draws.data;
 
   if (job === null) {
     return (
-      <div>
-        <Link to="/projects" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>← Back</Link>
-        {state}
-      </div>
+      <>
+        <header className="title-block">
+          <h1>Project</h1>
+          <div className="stamp"><Link to="/projects" className="link-quiet">← All projects</Link></div>
+        </header>
+        <QueryState
+          loading={loading}
+          error={error}
+          isEmpty={false}
+          emptyTitle=""
+          emptyBody=""
+          onRetry={reload}
+        />
+      </>
     );
   }
 
+  const phase = job.project;
+
   return (
-    <div>
-      <div className="card" style={{ marginBottom: '16px' }}>
-        <div className="flex items-center justify-between mb-2">
-          <Link to="/projects" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>← Back</Link>
-          <span className={`card-badge ${job.status === 'active' ? 'badge-success' : 'badge-info'}`}>
-            {JOB_STATUS_LABEL[job.status]}
-          </span>
+    <>
+      <header className="title-block">
+        <div style={{ minWidth: 0 }}>
+          <Link to="/projects" className="link-quiet" style={{ display: 'inline-block', marginBottom: '10px' }}>
+            ← All projects
+          </Link>
+          <h1>{jobTitle(job)}</h1>
         </div>
-        <h1 style={{ fontSize: '24px', fontWeight: 700, marginBottom: '4px' }}>{jobTitle(job)}</h1>
-        <div className="text-muted">{jobLocation(job)}</div>
-        <div className="text-muted" style={{ fontSize: '12px' }}>Job {job.jobId}</div>
-        <div className="mt-4" style={{ fontSize: '18px', fontWeight: 600 }}>
-          {formatContract(job.contractCents)}
+        <div className="stamp">
+          {JOB_STATUS_LABEL[job.status]}
+          <b>{formatContract(job.contractCents)}</b>
         </div>
-      </div>
+      </header>
 
-      <div className="card">
-        <div className="section-header" style={{ marginBottom: '12px', marginTop: 0 }}>
-          <h2 style={{ fontSize: '16px', fontWeight: 600 }}>Current gate</h2>
-          {job.currentGate !== null && (
-            <span className={`card-badge ${gateBadgeClass(job.currentGate.status)}`}>
-              {GATE_STATUS_LABEL[job.currentGate.status]}
+      <p className="notice">{jobLocation(job)}</p>
+
+      {/* ---------------------------------------------------------- phases */}
+
+      <div className="section-rule"><h2>Construction</h2></div>
+
+      {phase === null ? (
+        <p className="state-quiet">
+          This job has not been opened as a construction project, so it has no phase.
+        </p>
+      ) : (
+        <>
+          <ol className="track-line" aria-label="Construction phase">
+            {CONSTRUCTION_PHASES.map((step) => {
+              const done = step.sequence < phase.currentPhaseSequence;
+              const current = step.sequence === phase.currentPhaseSequence;
+              return (
+                <li
+                  key={step.key}
+                  className={`mark ${done ? 'is-done' : ''} ${current ? 'is-current' : ''}`}
+                  aria-current={current ? 'step' : undefined}
+                  title={step.title}
+                >
+                  {step.sequence}
+                </li>
+              );
+            })}
+          </ol>
+
+          <div className="track-caption">
+            <span className="now">{phase.currentPhaseTitle}</span>
+            <span className="of">
+              {phase.currentPhaseSequence} of 9 · {milestoneTitle(phase.customerMilestone)}
             </span>
-          )}
-        </div>
-        <p style={{ fontSize: '14px' }}>{gateSummaryLine(job)}</p>
-        {job.currentGate !== null && (
-          <dl className="fact-list">
-            <div><dt>Phase</dt><dd>{job.currentGate.phase}</dd></div>
-            <div><dt>Definition</dt><dd>{job.currentGate.definitionKey} v{job.currentGate.definitionVersion}</dd></div>
-            <div>
-              <dt>Customer milestone</dt>
-              <dd>{job.currentGate.customerMilestone ?? 'Not mapped'}</dd>
-            </div>
+          </div>
+
+          <dl className="facts">
+            <dt>Super</dt>
+            <dd className={phase.superintendentName === null ? 'unset' : ''}>
+              {phase.superintendentName ?? 'Not assigned'}
+            </dd>
+            <dt>Target</dt>
+            <dd className={targetWindow(phase) === null ? 'unset' : ''}>
+              {targetWindow(phase) ?? 'Not recorded'}
+            </dd>
+            <dt>Risks</dt>
+            <dd className={phase.riskNote === null ? 'unset' : ''}>
+              {phase.riskNote ?? 'None recorded'}
+            </dd>
           </dl>
-        )}
-        <p className="notice mt-2">
-          Checklist, evidence capture, and signoff run in the Gate field console for this pilot.
-          They move into this screen when the gate engine is generalized past pre-gunite.
-        </p>
+        </>
+      )}
+
+      {/* ----------------------------------------------------------- gates */}
+
+      <div className="section-rule">
+        <h2>Gates</h2>
+        <span className="count">{gatePlan.filter((g) => g.status === 'released').length} of {gatePlan.length} released</span>
       </div>
 
-      <div className="card">
-        <h2 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '12px' }}>Approved takeoff</h2>
-        <p style={{ fontSize: '14px' }}>
-          {job.approvedTakeoffRevisionId === null
-            ? 'No approved Designer takeoff revision. A gate cannot open without one.'
-            : `Revision ${job.approvedTakeoffRevisionId}`}
-        </p>
-      </div>
+      <QueryState
+        loading={gates.loading}
+        error={gates.error}
+        isEmpty={gatePlan.length === 0}
+        emptyTitle="No gate templates"
+        emptyBody="No active gate definitions were returned."
+        onRetry={gates.reload}
+        quiet
+      />
 
-      <div className="card">
-        <h2 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '12px' }}>Not built yet</h2>
-        <dl className="fact-list">
-          {PENDING.map(([title, detail]) => (
-            <div key={title}><dt>{title}</dt><dd>{detail}</dd></div>
+      {gatePlan.length > 0 && (
+        <ul className="schedule">
+          {gatePlan.map((entry) => (
+            <li key={entry.definitionKey}>
+              <div style={{ minWidth: 0 }}>
+                <div className="what">{entry.title}</div>
+                <div className="note">
+                  {[
+                    entry.drawCode === null ? 'No draw' : 'Releases a draw',
+                    entry.requiresCountersign ? 'Owner countersign' : null,
+                  ].filter(Boolean).join(' · ')}
+                </div>
+              </div>
+              <div className="figure">
+                <span className={`tag ${GATE_TAG(entry.status)}`}>
+                  {/* Not opened is not the same as skipped, and must never read as passed. */}
+                  {entry.status === null ? 'Not opened' : GATE_STATUS_LABEL[entry.status]}
+                </span>
+              </div>
+            </li>
           ))}
-        </dl>
+        </ul>
+      )}
+
+      {/* ----------------------------------------------------------- draws */}
+
+      <div className="section-rule">
+        <h2>Draws</h2>
+        {schedule !== null && schedule.eligibleUnbilledCents > 0 && (
+          <span className="count">{formatContract(schedule.eligibleUnbilledCents)} ready</span>
+        )}
       </div>
-    </div>
+
+      <QueryState
+        loading={draws.loading}
+        error={draws.error}
+        isEmpty={schedule !== null && schedule.draws.length === 0}
+        emptyTitle="No draw schedule"
+        emptyBody="This job has no draw schedule, so no gate release can make anything billable."
+        onRetry={draws.reload}
+        quiet
+      />
+
+      {schedule !== null && schedule.draws.length > 0 && (
+        <>
+          <ul className="schedule">
+            {schedule.draws.map((draw) => (
+              <li key={draw.drawId}>
+                <div style={{ minWidth: 0 }}>
+                  <div className="what">{draw.label}</div>
+                  <div className="note">
+                    {[
+                      draw.percentBasisPoints === null ? null : `${draw.percentBasisPoints / 100}%`,
+                      draw.releaseCondition === 'contract-signed'
+                        ? 'On signing'
+                        : `On ${draw.gateDefinitionKey ?? 'gate'}`,
+                      draw.invoiceReference === null ? null : draw.invoiceReference,
+                    ].filter(Boolean).join(' · ')}
+                  </div>
+                </div>
+                <div className="figure">
+                  {/* An amount is never invented; a draw without one says so. */}
+                  <div className={`money ${draw.amountCents === null ? 'is-none' : ''}`}>
+                    {draw.amountCents === null ? 'No amount' : formatContract(draw.amountCents)}
+                  </div>
+                  <span className={`tag ${DRAW_TAG[draw.status]}`}>{DRAW_STATUS_LABEL[draw.status]}</span>
+                </div>
+              </li>
+            ))}
+          </ul>
+
+          <dl className="totals">
+            <div style={{ display: 'contents' }} className="lead">
+              <dt>Ready to bill</dt>
+              <dd>{formatContract(schedule.eligibleUnbilledCents)}</dd>
+            </div>
+            <dt>Contract</dt>
+            <dd>{formatContract(schedule.contractCents)}</dd>
+            <dt>Invoiced</dt>
+            <dd>{formatContract(schedule.invoicedCents)}</dd>
+            <dt>Collected</dt>
+            <dd>{formatContract(schedule.collectedCents)}</dd>
+            <dt>Remaining</dt>
+            <dd>{formatContract(schedule.remainingCents)}</dd>
+          </dl>
+
+          <p className="notice">
+            Apex OS records what a passed gate makes billable and what a person says they
+            invoiced. It does not issue invoices; QuickBooks remains the financial authority.
+          </p>
+        </>
+      )}
+
+      {/* --------------------------------------------------------- takeoff */}
+
+      <div className="section-rule"><h2>Takeoff</h2></div>
+      <dl className="facts">
+        <dt>Approved</dt>
+        <dd className={job.approvedTakeoffRevisionId === null ? 'unset' : 'mono'}>
+          {job.approvedTakeoffRevisionId === null
+            ? 'None — no gate can open without one'
+            : job.approvedTakeoffRevisionId.slice(-12)}
+        </dd>
+      </dl>
+
+      <div className="section-rule"><h2>Not built yet</h2></div>
+      <dl className="facts">
+        {PENDING.map(([title, detail]) => (
+          <div key={title} style={{ display: 'contents' }}>
+            <dt>{title}</dt>
+            <dd className="unset">{detail}</dd>
+          </div>
+        ))}
+      </dl>
+    </>
   );
 }

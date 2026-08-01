@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { idSchemas } from './ids.js';
-import { AppRoleSchema, EvidenceKindSchema } from './records.js';
+import { AppRoleSchema, EvidenceKindSchema, GateReleaseRoleSchema } from './records.js';
+import { ConstructionPhaseKeySchema } from './project.js';
 
 export const CANONICAL_EVENT_TYPES = [
   'lead.received',
@@ -9,6 +10,9 @@ export const CANONICAL_EVENT_TYPES = [
   'proposal.signed',
   'job.created',
    'job.bound',
+  'project.created',
+  'project.phase_changed',
+  'project.assigned',
   'takeoff_revision.created',
   'takeoff_revision.approved',
   'takeoff_revision.superseded',
@@ -17,6 +21,8 @@ export const CANONICAL_EVENT_TYPES = [
   'requirement.passed',
   'requirement.failed',
   'gate.blocked',
+  'gate.signoff_recorded',
+  'gate.countersigned',
   'gate.released',
   'override.requested',
   'override.approved',
@@ -70,6 +76,22 @@ export const ApexEventSchema = z.discriminatedUnion('eventType', [
     z.strictObject({ ...base, leadId: idSchemas.lead, jobId: idSchemas.job, eventType: z.literal('proposal.signed'), payload: z.strictObject({ proposalVersionId: idSchemas.proposal_version, signedAt: z.string().datetime({ offset: true }) }) }),
   jobEvent('job.created', z.strictObject({ createdFromLeadId: idSchemas.lead, signedProposalVersionId: idSchemas.proposal_version })),
   jobEvent('job.bound', z.strictObject({ boundFromLeadId: idSchemas.lead, signedProposalVersionId: idSchemas.proposal_version, signedAt: z.string().datetime({ offset: true }) })),
+  jobEvent('project.created', z.strictObject({ initialPhaseKey: ConstructionPhaseKeySchema, superintendentUserId: idSchemas.user.nullable() })),
+  /**
+   * `reason` is required whenever the move is not one step forward. Backwards and
+   * skipped transitions are recorded facts about a real jobsite, not errors — but
+   * they never happen silently.
+   */
+  jobEvent('project.phase_changed', z.strictObject({
+    fromPhaseKey: ConstructionPhaseKeySchema.nullable(),
+    toPhaseKey: ConstructionPhaseKeySchema,
+    changedBy: idSchemas.user,
+    reason: z.string().min(1).max(2000).nullable(),
+  })),
+  jobEvent('project.assigned', z.strictObject({
+    superintendentUserId: idSchemas.user.nullable(),
+    assignedBy: idSchemas.user,
+  })),
   jobEvent('takeoff_revision.created', z.strictObject({ revisionId: idSchemas.revision, revisionNumber: z.number().int().positive(), engineVersion: z.string().min(1) })),
   jobEvent('takeoff_revision.approved', z.strictObject({ revisionId: idSchemas.revision, approvedBy: idSchemas.user, calcLedgerSha256: z.string().regex(/^[a-f0-9]{64}$/), quantityPayloadSha256: z.string().regex(/^[a-f0-9]{64}$/) })),
   jobEvent('takeoff_revision.superseded', z.strictObject({ revisionId: idSchemas.revision, supersededByRevisionId: idSchemas.revision })),
@@ -78,7 +100,22 @@ export const ApexEventSchema = z.discriminatedUnion('eventType', [
   jobEvent('requirement.passed', z.strictObject({ ...requirementRef, evaluatedBy: idSchemas.user, evidenceIds: z.array(idSchemas.evidence), note: z.string().max(2000).optional() })),
   jobEvent('requirement.failed', z.strictObject({ ...requirementRef, evaluatedBy: idSchemas.user, evidenceIds: z.array(idSchemas.evidence), reason: z.string().min(1).max(2000) })),
   jobEvent('gate.blocked', z.strictObject({ ...gateRef, blockedRequirementKeys: z.array(z.string().min(1)).min(1), reason: z.string().min(1).max(2000) })),
-  jobEvent('gate.released', z.strictObject({ ...gateRef, takeoffRevisionId: idSchemas.revision, releasedBy: idSchemas.user, releasedByRole: z.enum(['admin', 'field']), evidenceIds: z.array(idSchemas.evidence) })),
+  /** First signature on a Gate that needs two. The Gate is not released yet. */
+  jobEvent('gate.signoff_recorded', z.strictObject({
+    ...gateRef,
+    signedBy: idSchemas.user,
+    signedByRole: GateReleaseRoleSchema,
+    awaitingCountersignFromRoles: z.array(GateReleaseRoleSchema).min(1),
+    evidenceIds: z.array(idSchemas.evidence),
+  })),
+  /** The second signature. Always accompanied by gate.released. */
+  jobEvent('gate.countersigned', z.strictObject({
+    ...gateRef,
+    countersignedBy: idSchemas.user,
+    countersignedByRole: GateReleaseRoleSchema,
+    signedBy: idSchemas.user,
+  })),
+  jobEvent('gate.released', z.strictObject({ ...gateRef, takeoffRevisionId: idSchemas.revision, releasedBy: idSchemas.user, releasedByRole: GateReleaseRoleSchema, evidenceIds: z.array(idSchemas.evidence) })),
   jobEvent('override.requested', z.strictObject({ ...requirementRef, requestedBy: idSchemas.user, reason: z.string().min(1).max(2000) })),
   jobEvent('override.approved', z.strictObject({ ...requirementRef, approvedBy: idSchemas.user, reason: z.string().min(1).max(2000) })),
   jobEvent('override.rejected', z.strictObject({ ...requirementRef, rejectedBy: idSchemas.user, reason: z.string().min(1).max(2000) })),

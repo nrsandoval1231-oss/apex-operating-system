@@ -2,10 +2,18 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- viewport-fit=cover so the ground runs under the phone's home indicator;
+         the safe-area insets in index.css keep the nav clear of it. Pinch-zoom
+         is left enabled: this is read outdoors, and disabling it is a hostile
+         thing to do to anyone squinting at a figure. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Apex OS — Designer Pools</title>
-    <meta name="theme-color" content="#1B1C1E">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏗️</text></svg>">
+    <!-- The app's ground, so the phone's chrome does not sit lighter than the screen. -->
+    <meta name="theme-color" content="#141517">
+    <meta name="color-scheme" content="dark">
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg">
+    <link rel="apple-touch-icon" href="./favicon.svg">
+    <link rel="mask-icon" href="./favicon.svg" color="#a1ccca">
 </head>
 <body>
     <div id="root"></div>

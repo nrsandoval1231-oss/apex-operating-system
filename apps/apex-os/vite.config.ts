@@ -10,6 +10,12 @@ const apiTarget = process.env['APEX_API_URL'] ?? 'http://127.0.0.1:4100';
 
 export default defineConfig({
   plugins: [react()],
+  /**
+   * The built app is served by the Gate API at /app, on the same origin as the
+   * API it calls, so it needs no dev proxy in front of it. The dev server below
+   * still serves from / with a proxy for fast iteration.
+   */
+  base: '/app/',
   server: {
     // Honour an assigned PORT so the app does not fight for a fixed one.
     ...(process.env['PORT'] ? { port: Number(process.env['PORT']) } : { port: 3000 }),

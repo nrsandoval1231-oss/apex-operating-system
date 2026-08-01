@@ -3,24 +3,33 @@ import { useJobs } from '../api/useJobs';
 import QueryState from '../components/QueryState';
 import {
   GATE_STATUS_LABEL,
-  JOB_STATUS_LABEL,
   formatContract,
-  gateBadgeClass,
-  gateSummaryLine,
   jobLocation,
   jobTitle,
+  milestoneTitle,
+  shortId,
 } from '../lib/jobDisplay';
 
+/**
+ * Every job, newest first. A schedule of work rather than a gallery of cards:
+ * the phase, the milestone, and the contract value are what distinguish one
+ * pool from another at a glance.
+ */
 export default function Projects() {
   const { data, error, loading, reload } = useJobs();
   const jobs = data ?? [];
 
   return (
-    <div>
-      <div className="section-header">
-        <h1 className="section-title">Projects</h1>
-        {data !== null && <span className="section-count">{jobs.length} total</span>}
-      </div>
+    <>
+      <header className="title-block">
+        <h1>Projects</h1>
+        {data !== null && (
+          <div className="stamp">
+            Active pools
+            <b>{jobs.length}</b>
+          </div>
+        )}
+      </header>
 
       <QueryState
         loading={loading}
@@ -32,45 +41,40 @@ export default function Projects() {
       />
 
       {jobs.map((job) => (
-        <Link
-          key={job.jobId}
-          to={`/projects/${job.jobId}`}
-          style={{ textDecoration: 'none', color: 'inherit' }}
-        >
-          <div className="card" style={{ cursor: 'pointer' }}>
-            <div className="card-header">
-              <div>
-                <div className="card-title">{jobTitle(job)}</div>
-                <div className="text-muted" style={{ fontSize: '12px' }}>{jobLocation(job)}</div>
-                <div className="text-muted" style={{ fontSize: '12px' }}>Job {job.jobId.slice(-6)}</div>
-              </div>
-              <span className={`card-badge ${job.status === 'active' ? 'badge-success' : 'badge-info'}`}>
-                {JOB_STATUS_LABEL[job.status]}
-              </span>
+        <Link key={job.jobId} to={`/projects/${job.jobId}`} className="row settle">
+          <div className="row-head">
+            <div style={{ minWidth: 0 }}>
+              <div className="row-who">{jobTitle(job)}</div>
+              <div className="row-where">{jobLocation(job)}</div>
             </div>
-
-            <div className="flex items-center justify-between mb-2">
-              <span style={{ fontSize: '13px', fontWeight: 500 }}>
-                {job.currentGate?.phase ?? 'No phase recorded'}
-              </span>
-              {job.currentGate !== null && (
-                <span className={`card-badge ${gateBadgeClass(job.currentGate.status)}`}>
-                  {GATE_STATUS_LABEL[job.currentGate.status]}
-                </span>
-              )}
-            </div>
-
-            <div className="flex items-center justify-between mt-2">
-              <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
-                {gateSummaryLine(job)}
-              </span>
-              <span style={{ fontSize: '14px', fontWeight: 600 }}>
-                {formatContract(job.contractCents)}
-              </span>
-            </div>
+            <span className="tag tag-dim">{shortId(job.jobId)}</span>
           </div>
+
+          <h3 className="row-action">
+            {job.project === null
+              ? 'Not opened as a project'
+              : job.project.currentPhaseTitle}
+          </h3>
+
+          <div className="row-foot">
+            <span className="due">
+              {job.project === null
+                ? 'No phase'
+                : `Phase ${job.project.currentPhaseSequence} of 9 · ${milestoneTitle(job.project.customerMilestone)}`}
+            </span>
+            <span className="money">{formatContract(job.contractCents)}</span>
+          </div>
+
+          {job.currentGate !== null && (
+            <div className="row-foot" style={{ marginTop: '10px' }}>
+              <span className="due">{job.currentGate.title}</span>
+              <span className={`tag ${job.currentGate.status === 'awaiting-countersign' ? 'tag-urgent' : job.currentGate.status === 'released' ? 'tag-clear' : 'tag-dim'}`}>
+                {GATE_STATUS_LABEL[job.currentGate.status]}
+              </span>
+            </div>
+          )}
         </Link>
       ))}
-    </div>
+    </>
   );
 }

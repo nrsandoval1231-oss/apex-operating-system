@@ -12,9 +12,18 @@ const ids = {
   gate: createCanonicalId('gate'),
   field: createCanonicalId('user'),
   office: createCanonicalId('user'),
+  superintendent: createCanonicalId('user'),
+  owner: createCanonicalId('user'),
 };
 const fieldActor: EventActor = { kind: 'user', userId: ids.field, role: 'field' };
 const officeActor: EventActor = { kind: 'user', userId: ids.office, role: 'office' };
+/**
+ * Pre-gunite is released by the superintendent, not the field lead — confirmed
+ * authority model, docs/decisions/construction-model.md §3.
+ */
+const superintendentActor: EventActor = { kind: 'user', userId: ids.superintendent, role: 'superintendent' };
+/** The owner countersigns pre-gunite, because gunite cannot be undone. */
+const ownerActor: EventActor = { kind: 'user', userId: ids.owner, role: 'admin' };
 
 let db: PGlite;
 let service: GateService;
@@ -25,8 +34,10 @@ beforeEach(async () => {
   await db.query(
     `insert into app_users (user_id, auth_user_id, role, display_name) values
      ($1, '00000000-0000-0000-0000-000000000001', 'field', 'Field Lead'),
-     ($2, '00000000-0000-0000-0000-000000000002', 'office', 'Office User')`,
-    [ids.field, ids.office],
+     ($2, '00000000-0000-0000-0000-000000000002', 'office', 'Office User'),
+     ($3, '00000000-0000-0000-0000-000000000003', 'superintendent', 'Site Super'),
+     ($4, '00000000-0000-0000-0000-000000000004', 'admin', 'Travis')`,
+    [ids.field, ids.office, ids.superintendent, ids.owner],
   );
   await db.query(
     `insert into leads (lead_id, intake_source, source_record_id, idempotency_key, accepted_payload)
@@ -44,7 +55,7 @@ beforeEach(async () => {
     [ids.revision, ids.job, 'a'.repeat(64), 'b'.repeat(64), ids.office],
   );
   service = new GateService(db);
-  await service.createPreGuniteGate({ gateInstanceId: ids.gate, jobId: ids.job });
+  await service.createGate({ gateInstanceId: ids.gate, jobId: ids.job, definitionKey: 'pre-gunite' });
 });
 
 const context = (key: string) => ({ idempotencyKey: key, correlationId: createCanonicalId('event') });
@@ -79,21 +90,35 @@ describe('persistent pre-gunite Gate', () => {
       }, context(`pass-${requirement.key}`));
     }
 
-    const release = await service.execute(ids.gate, {
-      type: 'release-gate', actor: fieldActor, at: '2026-07-29T14:10:00.000Z',
+    // Pre-gunite is irreversible, so the superintendent's signature holds the
+    // Gate open rather than releasing it.
+    const signoff = await service.execute(ids.gate, {
+      type: 'release-gate', actor: superintendentActor, at: '2026-07-29T14:10:00.000Z',
     }, context('release-gate-1'));
+    expect(signoff.events.map((event) => event.eventType)).toEqual(['gate.signoff_recorded']);
+    expect(signoff.state.status).toBe('awaiting-countersign');
+
+    const release = await service.execute(ids.gate, {
+      type: 'countersign-gate', actor: ownerActor, at: '2026-07-29T14:20:00.000Z',
+    }, context('countersign-gate-1'));
+    // Pre-gunite releases work, not money — it bears no draw.
     expect(release.events.map((event) => event.eventType)).toEqual([
-      'gate.released', 'draw.eligible', 'customer_update.published',
+      'gate.countersigned', 'gate.released', 'customer_update.published',
     ]);
 
     const reloaded = await new GateService(db).getGate(ids.gate);
     expect(reloaded.status).toBe('released');
     expect([...reloaded.requirements.values()].every((item) => item.status === 'passed')).toBe(true);
 
-    const draws = await db.query(`select draw_id from draw_eligibility where job_id = $1`, [ids.job]);
-    expect(draws.rows).toHaveLength(1);
+    const draws = await db.query(`select draw_id from job_draws where job_id = $1`, [ids.job]);
+    expect(draws.rows).toHaveLength(0);
     const projections = await service.getCustomerMilestones(ids.job);
     expect(projections).toHaveLength(1);
+    // The wording comes from the Gate definition, not from a hardcoded string.
+    expect(projections[0]).toMatchObject({
+      milestone: 'shell',
+      title: 'Ready for the concrete shell',
+    });
     expect(CustomerMilestoneProjectionSchema.safeParse(projections[0]).success).toBe(true);
     expect(projections[0]).not.toHaveProperty('evidenceIds');
     expect(projections[0]).not.toHaveProperty('margin');
@@ -113,7 +138,8 @@ describe('persistent pre-gunite Gate', () => {
     await service.execute(ids.gate, {
       type: 'start-gate', actor: fieldActor, at: '2026-07-29T14:00:00.000Z',
     }, context('start-for-kind-1'));
-    const proof = evidence('approved-plan-on-site', 'measurement');
+    // 'crew-qualification-confirmed' accepts documents and photos, not measurements.
+    const proof = evidence('crew-qualification-confirmed', 'measurement');
     await expect(service.execute(ids.gate, {
       type: 'add-evidence', actor: fieldActor, at: proof.capturedAt,
       requirementKey: proof.requirementKey, evidenceId: proof.evidenceId, kind: proof.kind,
@@ -124,6 +150,15 @@ describe('persistent pre-gunite Gate', () => {
     await expect(service.execute(ids.gate, {
       type: 'release-gate', actor: officeActor, at: '2026-07-29T14:10:00.000Z',
     }, context('office-release-1'))).rejects.toThrow(/not authorized/i);
+  });
+
+  it('honours the release authority named by the Gate definition', async () => {
+    const gate = await service.getGate(ids.gate);
+    expect(gate.releaseRoles).toEqual(['admin', 'superintendent']);
+    // The field lead captures the evidence but does not sign off the hold point.
+    await expect(service.execute(ids.gate, {
+      type: 'release-gate', actor: fieldActor, at: '2026-07-29T14:10:00.000Z',
+    }, context('field-release-1'))).rejects.toThrow(/not authorized/i);
   });
 });
 
@@ -179,7 +214,8 @@ describe('job summary read model', () => {
     expect(withGate?.currentGate).toMatchObject({
       gateInstanceId: ids.gate,
       definitionKey: 'pre-gunite',
-      definitionVersion: 1,
+      // A new Gate pins the active version, which is 2 since the PRD §9.4 baseline landed.
+      definitionVersion: 2,
       status: 'not-started',
     });
     expect(withGate?.approvedTakeoffRevisionId).toBe(ids.revision);
@@ -216,8 +252,11 @@ describe('job summary read model', () => {
   it('prefers an unreleased Gate over a newer released one', async () => {
     // A second definition is required: one gate instance per definition per job.
     await db.query(
-      `insert into gate_definitions (definition_key, version, title, phase, draw_code, customer_milestone, active)
-       values ('pre-deck', 1, 'Pre-deck release', 'pre-deck', 'pre-deck-draw', 'finishes', true)`,
+      `insert into gate_definitions
+         (definition_key, version, title, phase, phase_key, draw_code, customer_milestone,
+          customer_update_title, customer_update_summary, active, release_roles)
+       values ('pre-deck', 1, 'Pre-deck release', 'decking', 'decking', 'pre-deck-draw', 'finishes',
+               'Deck ready', 'The deck area is prepared.', true, array['admin'])`,
     );
     const released = createCanonicalId('gate');
     await db.query(
@@ -238,7 +277,7 @@ describe('job summary read model', () => {
     );
     const summary = await service.getJob(ids.job);
     expect(summary?.currentGate).toMatchObject({ gateInstanceId: ids.gate, status: 'released' });
-    expect(summary?.currentGate?.customerMilestone).toBe('pre-gunite-released');
+    expect(summary?.currentGate?.customerMilestone).toBe('shell');
   });
 
   it('returns null for a job that does not exist', async () => {

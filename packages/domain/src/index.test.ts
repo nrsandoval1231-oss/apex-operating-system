@@ -24,6 +24,9 @@ const readyState = (): GateState =>
     definitionKey: 'pre-gunite',
     definitionVersion: 1,
     approvedTakeoffRevisionId: ids.takeoffRevisionId,
+    releaseRoles: ['admin', 'superintendent', 'field'],
+    drawCode: 'draw-2',
+    customerMilestone: 'shell',
     requirements: [
       { key: 'steel-spacing', evidenceRequired: true },
       { key: 'bonding', evidenceRequired: true },
@@ -125,6 +128,7 @@ describe('Gate command authority and evidence separation', () => {
       definitionKey: 'pre-gunite',
       definitionVersion: 1,
       approvedTakeoffRevisionId: null,
+      releaseRoles: ['admin', 'field'],
       requirements: [],
     });
     expect(() => decideGateCommand(state, {

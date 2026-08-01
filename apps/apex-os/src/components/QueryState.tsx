@@ -2,11 +2,11 @@ import type { ReactNode } from 'react';
 import type { ApiError } from '../api/client';
 
 /**
- * Renders the non-success states of an API query in plain language.
+ * The non-success states of an API query, in plain language.
  *
- * Deliberately has no fallback to sample data: an empty or failed load must look
- * empty or failed, never like a real project. Returns null when there is data to
- * show, so the caller renders its own content.
+ * No fallback to sample data: an empty or failed load must look empty or failed,
+ * never like a real project. Returns null when there is data, so the caller
+ * renders its own content.
  */
 export default function QueryState({
   loading,
@@ -15,6 +15,7 @@ export default function QueryState({
   emptyTitle,
   emptyBody,
   onRetry,
+  quiet = false,
 }: {
   loading: boolean;
   error: ApiError | null;
@@ -22,20 +23,22 @@ export default function QueryState({
   emptyTitle: string;
   emptyBody: string;
   onRetry: () => void;
+  /** Set when this sits inside a section rather than owning the screen. */
+  quiet?: boolean;
 }): ReactNode {
   if (error !== null) {
     const needsToken = error.isAuthFailure;
+    // A dropped connection has already been retried once inside the client, so
+    // by the time it reaches here it is worth a person's attention.
+    const offline = error.status === 0;
     return (
-      <div className="empty-state" role="alert">
-        <div className="empty-state-icon">{needsToken ? '🔒' : '⚠️'}</div>
-        <div className="empty-state-text">{needsToken ? 'Not signed in' : 'Could not load'}</div>
-        <div className="empty-state-subtext">
-          {needsToken
-            ? 'Enter the pilot access token issued for this session to see live project data.'
-            : error.message}
-        </div>
+      <div className="state is-error" role="alert">
+        <h3>{needsToken ? 'Session expired' : offline ? 'No connection' : 'Could not load'}</h3>
+        <p>{needsToken
+          ? 'This pilot token is no longer valid. Sign out and paste a fresh one.'
+          : error.message}</p>
         {!needsToken && (
-          <button type="button" className="action-button secondary mt-2" onClick={onRetry}>
+          <button type="button" className="action action-quiet" onClick={onRetry}>
             Try again
           </button>
         )}
@@ -44,22 +47,20 @@ export default function QueryState({
   }
 
   if (loading) {
-    return (
-      <div className="empty-state" aria-busy="true">
-        <div className="empty-state-icon">⏳</div>
-        <div className="empty-state-text">Loading…</div>
-      </div>
-    );
+    return quiet
+      ? <p className="state-quiet" aria-busy="true">Loading…</p>
+      : <div className="state" aria-busy="true"><h3>Loading</h3></div>;
   }
 
   if (isEmpty) {
-    return (
-      <div className="empty-state">
-        <div className="empty-state-icon">📭</div>
-        <div className="empty-state-text">{emptyTitle}</div>
-        <div className="empty-state-subtext">{emptyBody}</div>
-      </div>
-    );
+    return quiet
+      ? <p className="state-quiet">{emptyBody}</p>
+      : (
+        <div className="state">
+          <h3>{emptyTitle}</h3>
+          <p>{emptyBody}</p>
+        </div>
+      );
   }
 
   return null;

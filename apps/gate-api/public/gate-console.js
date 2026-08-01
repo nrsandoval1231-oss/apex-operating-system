@@ -9,7 +9,9 @@ const request = async (path, options = {}) => {
   const response = await fetch(path, {
     ...options,
     headers: {
-      authorization: `Bearer ${state.token}`,
+      // Omitted when empty: the server may be in single-machine pilot mode,
+      // where a local request needs no token. It answers 403 if it is not.
+      ...(state.token ? { authorization: `Bearer ${state.token}` } : {}),
       'content-type': 'application/json',
       ...(options.idempotent ? { 'idempotency-key': crypto.randomUUID() } : {}),
       ...options.headers,
@@ -138,27 +140,83 @@ const render = () => {
   state.gate.requirements.forEach((requirement) => requirements.append(renderRequirement(requirement)));
   const passed = state.gate.requirements.filter((requirement) => requirement.status === 'passed' || requirement.status === 'overridden').length;
   byId('progress').textContent = `${passed} / ${state.gate.requirements.length} clear`;
-  const ready = passed === state.gate.requirements.length && state.gate.requirements.every((requirement) => !requirement.evidenceRequired || requirement.evidenceIds.length > 0) && state.gate.status !== 'released' && state.gate.status !== 'not-started';
+  const evidenceComplete = passed === state.gate.requirements.length
+    && state.gate.requirements.every((requirement) => !requirement.evidenceRequired || requirement.evidenceIds.length > 0);
+  const awaiting = state.gate.status === 'awaiting-countersign';
+  const ready = awaiting || (evidenceComplete && state.gate.status !== 'released' && state.gate.status !== 'not-started');
   const release = byId('release');
   release.disabled = !ready;
-  byId('release-help').textContent = state.gate.status === 'released' ? 'Released. Draw eligibility and the customer milestone were projected from this event.' : ready ? 'All required proof and evaluations are present.' : 'Release stays locked until every required item has evidence and a passing evaluation.';
+  release.textContent = awaiting
+    ? 'Countersign and release'
+    : state.gate.countersignRoles.length > 0 ? 'Sign off' : 'Release';
+  byId('release-help').textContent =
+    state.gate.status === 'released'
+      ? 'Released. Everything this Gate triggers was projected from that event.'
+      : awaiting
+        ? `Signed off. An owner other than the signer must countersign before this Gate releases.`
+        : ready
+          ? state.gate.countersignRoles.length > 0
+            ? 'All required proof is present. Signing off does not release the Gate; an owner must countersign.'
+            : 'All required proof and evaluations are present.'
+          : 'Release stays locked until every required item has evidence and a passing evaluation.';
+};
+
+/**
+ * Load the job's Gate plan into the picker. Apex runs seven Gate templates, so
+ * the console can no longer assume pre-gunite. Gates already opened are labelled
+ * with their state; the rest are labelled as not yet opened, never as skipped.
+ */
+const loadGateChoices = async () => {
+  const choice = byId('gate-choice');
+  const plan = await request(`/api/jobs/${state.jobId}/gates`);
+  clear(choice);
+  plan.forEach((entry) => {
+    const label = entry.status === null ? 'not opened' : entry.status;
+    const draw = entry.drawCode === null ? '' : ' · releases a draw';
+    const seal = entry.requiresCountersign ? ' · needs countersign' : '';
+    choice.append(element('option', '', `${entry.title} — ${label}${draw}${seal}`)).lastChild;
+    choice.lastChild.value = entry.definitionKey;
+  });
+  const outstanding = plan.find((entry) => entry.status !== 'released');
+  if (outstanding) choice.value = outstanding.definitionKey;
+  return plan;
+};
+
+const openSelectedGate = async () => {
+  const definitionKey = byId('gate-choice').value;
+  if (!definitionKey) throw new Error('Choose a Gate to open.');
+  state.gate = await request(`/api/jobs/${state.jobId}/gates/${definitionKey}`, { method: 'POST', body: '{}' });
+  render();
 };
 
 byId('open-job').addEventListener('click', async () => {
   setError('setup-error', '');
   state.jobId = jobInput.value.trim();
   state.token = tokenInput.value.trim();
-  if (!state.jobId || !state.token) return setError('setup-error', 'Job ID and bearer token are required.');
+  if (!state.jobId) return setError('setup-error', 'A Job ID is required.');
   sessionStorage.setItem('apex-job-id', state.jobId);
   sessionStorage.setItem('apex-gate-token', state.token);
   try {
-    state.gate = await request(`/api/jobs/${state.jobId}/gates/pre-gunite`, { method: 'POST', body: '{}' });
-    render();
+    await loadGateChoices();
+    await openSelectedGate();
   } catch (error) { setError('setup-error', error); }
 });
 
+byId('gate-choice').addEventListener('change', async () => {
+  if (!state.jobId || !state.token) return;
+  setError('setup-error', '');
+  try { await openSelectedGate(); } catch (error) { setError('setup-error', error); }
+});
+
 byId('release').addEventListener('click', (event) => run(event.currentTarget, async () => {
-  if (!confirm('Authorize gunite and project draw eligibility from this verified hold point?')) return;
-  const result = await request(`/api/gates/${state.gate.gateInstanceId}/release`, { method: 'POST', idempotent: true, body: '{}' });
+  const countersigning = state.gate.status === 'awaiting-countersign';
+  const prompt = countersigning
+    ? 'Countersign this hold point? This releases the Gate and the work it authorizes.'
+    : state.gate.countersignRoles.length > 0
+      ? 'Sign off this hold point? It will not release until an owner countersigns.'
+      : 'Release this Gate from the verified evidence above?';
+  if (!confirm(prompt)) return;
+  const path = countersigning ? 'countersign' : 'release';
+  const result = await request(`/api/gates/${state.gate.gateInstanceId}/${path}`, { method: 'POST', idempotent: true, body: '{}' });
   state.gate = result.state;
 }));

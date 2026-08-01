@@ -115,6 +115,8 @@ describe('operational schema', () => {
       'evidence_records',
       'requirement_evaluations',
       'events',
+      // This fixture runs only 0001 and 0002, so the table still carries its
+      // original name. The rename to `job_draws` lands in 0013.
       'draw_eligibility',
       'customer_milestone_projections',
     ]));

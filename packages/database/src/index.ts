@@ -15,6 +15,10 @@ export const OPERATIONAL_MIGRATIONS = [
   '0007_quantity_payload_digest.sql',
   '0008_proposal_versions.sql',
   '0009_job_binding.sql',
+  '0010_project_phase_model.sql',
+  '0011_gate_countersign.sql',
+  '0012_gate_templates.sql',
+  '0013_draw_schedule.sql',
 ] as const;
 
 export const STORAGE_MIGRATION = '0003_evidence_storage.sql';

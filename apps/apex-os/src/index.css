@@ -1,647 +1,772 @@
+/* =============================================================================
+   Apex OS — the plan sheet in the dark.
+
+   THESIS: an engineered plan sheet read one-handed in West Texas sun, not a
+   dashboard. Hairline rules, stamped phase markers, tabular figures, a title
+   block. It refuses the grid of equal rounded cards this category always ships.
+
+   Palette and faces are the approved Apex system (apex-website/src/styles/
+   global.css): charcoal ground, SAGE as the only brand and action colour, AMBER
+   for alerts and focus ONLY. Full rationale in DESIGN.md.
+   ============================================================================= */
+
+@import '@fontsource/oswald/500.css';
+@import '@fontsource/oswald/600.css';
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/500.css';
+@import '@fontsource-variable/jetbrains-mono/index.css';
+
 :root {
-  --primary: #1B1C1E;
-  --accent: #E0901B;
-  --bg: #f5f5f5;
-  --card: #ffffff;
-  --text: #1B1C1E;
-  --text-muted: #6b7280;
-  --border: #e5e7eb;
-  --success: #10b981;
-  --warning: #f59e0b;
-  --danger: #ef4444;
-  --info: #3b82f6;
+  /* Ground sits below the brand charcoal so panels can rise off it without a
+     shadow. Depth here is value, not blur. */
+  --ground: #141517;
+  --panel: #1b1c1e;
+  --panel-2: #212427;
+  --rule: #31353a;
+  --rule-bright: #454a50;
+
+  --ink: #f4f2ee;
+  --ink-2: #a8a49c;
+  --ink-3: #6f6b64;
+
+  --sage: #a1ccca;
+  --sage-d: #8ab8b6;
+  --sage-ink: #0f1817;
+
+  /* Alerts and focus only. Never brand, never a default action. */
+  --amber: #e0901b;
+  --pool: #4fb3c4;
+
+  --f-title: Oswald, 'Arial Narrow', system-ui, sans-serif;
+  --f-body: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --f-mono: 'JetBrains Mono Variable', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --gutter: 20px;
+  --tap: 48px;
 }
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+* { box-sizing: border-box; }
+
+html {
+  background: var(--ground);
+  /* Keeps the ground under the address bar on iOS rubber-band scroll. */
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  background: var(--bg);
-  color: var(--text);
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--f-body);
+  font-size: 15px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
 }
 
-#root {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
+/* Every figure in this app is a measurement, a date, or money. They line up. */
+.mono,
+.money,
+.tag,
+.metric {
+  font-family: var(--f-mono);
+  font-variant-numeric: tabular-nums;
 }
 
-/* Mobile-first responsive */
+/* ---------------------------------------------------------------- app frame */
+
 .app {
-  max-width: 480px;
+  min-height: 100dvh;
+  padding-bottom: calc(72px + env(safe-area-inset-bottom));
+}
+
+.sheet {
+  max-width: 720px;
   margin: 0 auto;
-  min-height: 100vh;
-  background: var(--bg);
+}
+
+/* --------------------------------------------------------------- title block
+   The drawing sheet's title block. Every screen opens with one, so you know
+   where you are without a breadcrumb trail. */
+
+.title-block {
+  padding: 22px var(--gutter) 14px;
+  border-bottom: 1px solid var(--rule-bright);
   display: flex;
-  flex-direction: column;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
 }
 
-@media (min-width: 768px) {
-  .app {
-    max-width: 100%;
-  }
+.title-block h1 {
+  margin: 0;
+  font-family: var(--f-title);
+  font-weight: 600;
+  font-size: 28px;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
-/* Header */
-.header {
-  background: var(--primary);
-  color: white;
-  padding: 16px 20px;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+.title-block .stamp {
+  font-family: var(--f-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  text-align: right;
+  flex-shrink: 0;
 }
 
-.header-title {
-  font-size: 20px;
-  font-weight: 700;
+.title-block .stamp b {
+  display: block;
+  color: var(--sage);
+  font-weight: 600;
+}
+
+/* ------------------------------------------------------------------ sections */
+
+.section-rule {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
+  padding: 26px var(--gutter) 10px;
 }
 
-.header-subtitle {
+.section-rule h2 {
+  margin: 0;
+  font-family: var(--f-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  flex-shrink: 0;
+}
+
+/* The rule runs out to the edge of the sheet, the way a section mark does. */
+.section-rule::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--rule);
+}
+
+.section-rule .count {
+  font-family: var(--f-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  color: var(--ink-3);
+  flex-shrink: 0;
+}
+
+/* ---------------------------------------------------------------------- rows
+   Full-bleed rows divided by hairlines. Not cards: a schedule on a drawing. */
+
+.row {
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: 18px var(--gutter);
+  border-bottom: 1px solid var(--rule);
+  background: var(--panel);
+  color: inherit;
+  text-align: left;
+  text-decoration: none;
+  border-left: 0;
+  border-right: 0;
+  border-top: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+.row:first-of-type { border-top: 1px solid var(--rule); }
+
+@media (hover: hover) {
+  .row:hover { background: var(--panel-2); }
+}
+
+.row:active { background: var(--panel-2); }
+
+/* Urgency is a stamp on the sheet, not a coloured bar down the side. */
+.row.is-urgent { background: linear-gradient(var(--panel), var(--panel)) padding-box; }
+.row.is-urgent::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 1px;
+  background: var(--amber);
+}
+
+.row.is-quiet { background: transparent; }
+@media (hover: hover) {
+  .row.is-quiet:hover { background: var(--panel); }
+}
+
+.row-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.row-who {
+  font-family: var(--f-title);
+  font-weight: 500;
+  font-size: 15px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.row-where {
   font-size: 12px;
-  opacity: 0.8;
+  color: var(--ink-3);
   margin-top: 2px;
 }
 
-/* Navigation */
-.nav {
-  display: flex;
-  background: var(--card);
-  border-bottom: 1px solid var(--border);
-  padding: 0 8px;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
-.nav-item {
-  padding: 12px 16px;
-  font-size: 14px;
+/* The action itself — the line read first. */
+.row-action {
+  font-family: var(--f-title);
   font-weight: 500;
-  color: var(--text-muted);
-  text-decoration: none;
-  white-space: nowrap;
-  border-bottom: 2px solid transparent;
-  transition: all 0.2s;
+  font-size: 22px;
+  line-height: 1.15;
+  letter-spacing: 0.01em;
+  margin: 0 0 8px;
+  color: var(--ink);
 }
 
-.nav-item:hover {
-  color: var(--text);
+.row.is-quiet .row-action {
+  font-size: 17px;
+  color: var(--ink);
 }
 
-.nav-item.active {
-  color: var(--accent);
-  border-bottom-color: var(--accent);
+/* The reason is the whole point of a card. It never truncates. */
+.row-reason {
+  margin: 0 0 14px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ink-2);
+  max-width: 60ch;
 }
 
-/* Main content */
-.main {
-  flex: 1;
-  padding: 16px;
-  overflow-y: auto;
-}
-
-/* Cards */
-.card {
-  background: var(--card);
-  border-radius: 12px;
-  padding: 16px;
-  margin-bottom: 12px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-  border: 1px solid var(--border);
-}
-
-.card-header {
+.row-foot {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 12px;
+  gap: 12px;
 }
 
-.card-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--text);
-}
+/* ---------------------------------------------------------------------- tags */
 
-.card-badge {
-  font-size: 11px;
+.tag {
+  display: inline-block;
+  font-size: 10.5px;
   font-weight: 600;
-  padding: 4px 8px;
-  border-radius: 20px;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  padding: 4px 8px;
+  border: 1px solid currentColor;
+  color: var(--ink-2);
+  white-space: nowrap;
 }
 
-.badge-urgent {
-  background: #fef2f2;
-  color: var(--danger);
+.tag-urgent { color: var(--amber); }
+.tag-clear { color: var(--sage); }
+.tag-pool { color: var(--pool); }
+.tag-dim { color: var(--ink-3); }
+
+/* A filled stamp for the one status that stops work. */
+.tag-stamp {
+  background: var(--amber);
+  border-color: var(--amber);
+  color: #241605;
 }
 
-.badge-warning {
-  background: #fffbeb;
-  color: var(--warning);
+.due {
+  font-family: var(--f-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
 }
 
-.badge-info {
-  background: #eff6ff;
-  color: var(--info);
-}
+.row.is-urgent .due { color: var(--amber); }
 
-.badge-success {
-  background: #f0fdf4;
-  color: var(--success);
-}
+/* -------------------------------------------------------------------- action */
 
-/* Action cards */
-.action-card {
-  background: var(--card);
-  border-radius: 12px;
-  padding: 16px;
-  margin-bottom: 12px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-  border-left: 4px solid var(--accent);
-}
-
-.action-card.urgent {
-  border-left-color: var(--danger);
-  background: linear-gradient(to right, #fef2f2, var(--card));
-}
-
-.action-card.warning {
-  border-left-color: var(--warning);
-  background: linear-gradient(to right, #fffbeb, var(--card));
-}
-
-.action-card.success {
-  border-left-color: var(--success);
-  background: linear-gradient(to right, #f0fdf4, var(--card));
-}
-
-.action-project {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text);
-  margin-bottom: 4px;
-}
-
-.action-location {
-  font-size: 12px;
-  color: var(--text-muted);
-  margin-bottom: 8px;
-}
-
-.action-description {
-  font-size: 14px;
-  color: var(--text);
-  margin-bottom: 12px;
-}
-
-.action-reason {
-  font-size: 12px;
-  color: var(--text-muted);
-  margin-bottom: 12px;
-  padding: 8px;
-  background: var(--bg);
-  border-radius: 6px;
-}
-
-.action-button {
+.action {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 10px 16px;
-  background: var(--primary);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  text-decoration: none;
-}
-
-.action-button:hover {
-  background: #2a2b2d;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-}
-
-.action-button.secondary {
-  background: var(--bg);
-  color: var(--text);
-  border: 1px solid var(--border);
-}
-
-.action-button.secondary:hover {
-  background: var(--border);
-}
-
-/* Gate checklist */
-.gate-checklist {
-  margin-top: 16px;
-}
-
-.checklist-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 12px;
-  background: var(--bg);
-  border-radius: 8px;
-  margin-bottom: 8px;
-}
-
-.checklist-item.completed {
-  background: #f0fdf4;
-}
-
-.checklist-checkbox {
-  width: 24px;
-  height: 24px;
-  border: 2px solid var(--border);
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
   justify-content: center;
+  /* Sized for a working hand, gloved or wet. Never below this. */
+  min-height: var(--tap);
+  padding: 0 20px;
+  font-family: var(--f-title);
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--sage);
+  background: transparent;
+  border: 1px solid var(--sage);
+  text-decoration: none;
   cursor: pointer;
-  flex-shrink: 0;
-  transition: all 0.2s;
-}
-
-.checklist-item.completed .checklist-checkbox {
-  background: var(--success);
-  border-color: var(--success);
-  color: white;
-}
-
-.checklist-content {
-  flex: 1;
-}
-
-.checklist-title {
-  font-size: 14px;
-  font-weight: 500;
-  margin-bottom: 4px;
-}
-
-.checklist-note {
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
-/* Progress bar */
-.progress-bar {
-  height: 6px;
-  background: var(--border);
-  border-radius: 3px;
-  overflow: hidden;
-  margin: 12px 0;
-}
-
-.progress-fill {
-  height: 100%;
-  background: var(--accent);
-  border-radius: 3px;
-  transition: width 0.3s;
-}
-
-/* Timeline */
-.timeline {
-  position: relative;
-  padding-left: 24px;
-}
-
-.timeline::before {
-  content: '';
-  position: absolute;
-  left: 6px;
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  background: var(--border);
-}
-
-.timeline-item {
-  position: relative;
-  padding-bottom: 20px;
-}
-
-.timeline-item::before {
-  content: '';
-  position: absolute;
-  left: -22px;
-  top: 6px;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: var(--card);
-  border: 2px solid var(--border);
-}
-
-.timeline-item.completed::before {
-  background: var(--success);
-  border-color: var(--success);
-}
-
-.timeline-item.current::before {
-  background: var(--accent);
-  border-color: var(--accent);
-  box-shadow: 0 0 0 4px rgba(224, 144, 27, 0.2);
-}
-
-.timeline-date {
-  font-size: 11px;
-  color: var(--text-muted);
-  margin-bottom: 4px;
-}
-
-.timeline-content {
-  font-size: 14px;
-}
-
-/* Section headers */
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-  margin-top: 24px;
-}
-
-.section-title {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--text);
-}
-
-.section-count {
-  font-size: 12px;
-  color: var(--text-muted);
-  background: var(--card);
-  padding: 4px 8px;
-  border-radius: 12px;
-}
-
-/* Empty state */
-.empty-state {
-  text-align: center;
-  padding: 48px 24px;
-  color: var(--text-muted);
-}
-
-.empty-state-icon {
-  font-size: 48px;
-  margin-bottom: 16px;
-}
-
-.empty-state-text {
-  font-size: 16px;
-  margin-bottom: 8px;
-}
-
-.empty-state-subtext {
-  font-size: 14px;
-}
-
-/* Customer view */
-.customer-header {
-  background: linear-gradient(135deg, var(--primary) 0%, #2a2b2d 100%);
-  color: white;
-  padding: 32px 20px;
-  text-align: center;
-}
-
-.customer-title {
-  font-size: 24px;
-  font-weight: 700;
-  margin-bottom: 8px;
-}
-
-.customer-subtitle {
-  font-size: 14px;
-  opacity: 0.9;
-}
-
-.milestone-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  margin: 24px 0;
-}
-
-.milestone-item {
-  text-align: center;
-  padding: 16px 8px;
-  background: var(--card);
-  border-radius: 12px;
-  border: 2px solid var(--border);
-}
-
-.milestone-item.completed {
-  border-color: var(--success);
-  background: #f0fdf4;
-}
-
-.milestone-item.current {
-  border-color: var(--accent);
-  background: #fffbeb;
-}
-
-.milestone-icon {
-  font-size: 24px;
-  margin-bottom: 8px;
-}
-
-.milestone-label {
-  font-size: 12px;
-  font-weight: 600;
-}
-
-/* Forms */
-.form-group {
-  margin-bottom: 16px;
-}
-
-.form-label {
-  display: block;
-  font-size: 14px;
-  font-weight: 500;
-  margin-bottom: 6px;
-  color: var(--text);
-}
-
-.form-input {
-  width: 100%;
-  padding: 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  font-size: 16px;
-  transition: border-color 0.2s;
-}
-
-.form-input:focus {
-  outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(224, 144, 27, 0.1);
-}
-
-/* Utility */
-.text-muted {
-  color: var(--text-muted);
-}
-
-.text-success {
-  color: var(--success);
-}
-
-.text-warning {
-  color: var(--warning);
-}
-
-.text-danger {
-  color: var(--danger);
-}
-
-.mt-4 {
-  margin-top: 16px;
-}
-
-.mb-4 {
-  margin-bottom: 16px;
-}
-
-.flex {
-  display: flex;
-}
-
-.items-center {
-  align-items: center;
-}
-
-.justify-between {
-  justify-content: space-between;
-}
-
-.gap-2 {
-  gap: 8px;
-}
-
-.gap-4 {
-  gap: 16px;
-}
-/* ---------------------------------------------------------------------------
-   Apex OS shell additions: pilot session bar, honest notices, fact lists.
-   --------------------------------------------------------------------------- */
-
-.session-bar {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 12px;
-  margin-bottom: 16px;
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-}
-
-.session-bar.connected {
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.session-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-muted);
-}
-
-.session-status {
-  font-size: 13px;
-  color: var(--text-muted);
-}
-
-.session-input {
-  flex: 1;
-  min-width: 0;
-  padding: 10px 12px;
-  font-size: 14px;
-  color: var(--text);
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-}
-
-.session-input:focus-visible,
-.action-button:focus-visible,
-.nav-item:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
-.session-button {
-  font-size: 12px;
-  padding: 8px 12px;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
-.action-button:disabled {
-  opacity: 0.5;
+@media (hover: hover) {
+  .action:hover { background: var(--sage); color: var(--sage-ink); }
+}
+
+.action:active { background: var(--sage); color: var(--sage-ink); }
+
+.action-solid {
+  background: var(--sage);
+  color: var(--sage-ink);
+  min-height: var(--tap);
+  width: 100%;
+}
+
+@media (hover: hover) {
+  .action-solid:hover { background: var(--sage-d); color: var(--sage-ink); }
+}
+
+.action:disabled,
+.action[aria-disabled='true'] {
+  color: var(--ink-3);
+  border-color: var(--rule);
+  background: transparent;
   cursor: not-allowed;
 }
 
-.notice {
-  padding: 10px 12px;
-  margin-bottom: 12px;
-  font-size: 12px;
-  line-height: 1.5;
-  color: var(--text-muted);
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-left: 3px solid var(--info);
-  border-radius: 6px;
+.action-quiet {
+  color: var(--ink-2);
+  border-color: var(--rule-bright);
 }
 
-.notice.warning {
-  color: var(--text);
-  border-left-color: var(--warning);
-  background: #fffbeb;
+@media (hover: hover) {
+  .action-quiet:hover { background: var(--panel-2); color: var(--ink); border-color: var(--ink-3); }
 }
 
-.fact-list {
+/* Amber carries focus because a sage ring on a sage button is invisible. */
+:where(a, button, input, select, textarea):focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}
+
+/* --------------------------------------------------------------- phase track
+   A dimension line. The numbers carry real information — phase 5 of 9 — so
+   they are shown. */
+
+.track {
+  list-style: none;
+  margin: 0;
+  padding: 18px var(--gutter) 22px;
+  display: grid;
+  gap: 0;
+}
+
+.track-line {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
-  font-size: 13px;
+  align-items: center;
+  gap: 6px;
+  padding: 0 var(--gutter) 6px;
 }
 
-.fact-list > div {
+.mark {
+  flex: 1;
+  height: 26px;
   display: flex;
-  gap: 8px;
-  justify-content: space-between;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--f-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-3);
+  border: 1px solid var(--rule);
+  background: transparent;
+}
+
+.mark.is-done {
+  color: var(--sage);
+  border-color: color-mix(in srgb, var(--sage) 40%, transparent);
+}
+
+.mark.is-current {
+  color: var(--sage-ink);
+  background: var(--sage);
+  border-color: var(--sage);
+}
+
+.track-caption {
+  padding: 0 var(--gutter) 20px;
+  display: flex;
   align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid var(--rule);
 }
 
-.fact-list dt {
-  color: var(--text-muted);
+.track-caption .now {
+  font-family: var(--f-title);
+  font-weight: 500;
+  font-size: 19px;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+}
+
+.track-caption .of {
+  font-family: var(--f-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------------ schedule
+   Two-column reading: a label and its figure, like a draw schedule or a
+   materials list on a plan. */
+
+.schedule {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.schedule li {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px var(--gutter);
+  border-bottom: 1px solid var(--rule);
+}
+
+.schedule .what {
+  font-family: var(--f-title);
+  font-weight: 500;
+  font-size: 15px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.schedule .note {
+  font-size: 12px;
+  color: var(--ink-3);
+  margin-top: 3px;
+  overflow-wrap: anywhere;
+}
+
+.schedule .figure {
+  text-align: right;
   flex-shrink: 0;
 }
 
-.fact-list dd {
-  text-align: right;
-  word-break: break-word;
+.money {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
 }
+
+.money.is-none { color: var(--ink-3); font-weight: 400; }
+
+.schedule .figure .tag { margin-top: 6px; }
+
+/* ------------------------------------------------------------------- totals */
+
+.totals {
+  margin: 0;
+  padding: 16px var(--gutter) 20px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 9px 16px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.totals dt {
+  font-family: var(--f-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+.totals dd {
+  margin: 0;
+  text-align: right;
+  font-family: var(--f-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.totals .lead dt { color: var(--sage); }
+.totals .lead dd { color: var(--sage); font-weight: 600; }
+
+/* ---------------------------------------------------------------- fact lists */
+
+.facts {
+  margin: 0;
+  padding: 4px var(--gutter) 18px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px 18px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.facts dt {
+  font-family: var(--f-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+.facts dd {
+  margin: 0;
+  text-align: right;
+  font-size: 14px;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+/* Absence is stated, never filled in with a guess. */
+.unset { color: var(--ink-3); }
+
+/* -------------------------------------------------------------------- notice */
+
+.notice {
+  margin: 0;
+  padding: 14px var(--gutter) 18px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--ink-3);
+  max-width: 60ch;
+  border-bottom: 1px solid var(--rule);
+}
+
+/* --------------------------------------------------------------- empty/error */
+
+.state {
+  padding: 40px var(--gutter);
+  text-align: center;
+  border-bottom: 1px solid var(--rule);
+}
+
+.state h3 {
+  margin: 0 0 8px;
+  font-family: var(--f-title);
+  font-weight: 500;
+  font-size: 19px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.state p {
+  margin: 0 auto 18px;
+  font-size: 14px;
+  color: var(--ink-2);
+  max-width: 44ch;
+}
+
+.state.is-error h3 { color: var(--amber); }
+
+.state-quiet {
+  padding: 16px var(--gutter) 22px;
+  font-size: 13px;
+  color: var(--ink-3);
+}
+
+/* ------------------------------------------------------------------- session */
+
+.session {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px var(--gutter);
+  background: var(--panel);
+  border-bottom: 1px solid var(--rule);
+  font-family: var(--f-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+.session .who { display: flex; align-items: center; gap: 8px; min-width: 0; }
+
+.session .dot {
+  width: 6px;
+  height: 6px;
+  background: var(--sage);
+  flex-shrink: 0;
+}
+
+.link-quiet {
+  background: none;
+  border: 0;
+  padding: 6px 2px;
+  font: inherit;
+  color: var(--ink-3);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .link-quiet:hover { color: var(--ink); }
+}
+
+/* -------------------------------------------------------------------- signin */
+
+.signin {
+  max-width: 460px;
+  margin: 0 auto;
+  padding: 48px var(--gutter);
+}
+
+.signin .lockup {
+  font-family: var(--f-title);
+  font-weight: 600;
+  font-size: 34px;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  margin: 0 0 6px;
+}
+
+.signin .lockup em {
+  font-style: normal;
+  color: var(--sage);
+}
+
+.signin .sub {
+  font-family: var(--f-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin: 0 0 32px;
+}
+
+.field { display: block; margin-bottom: 18px; }
+
+.field > span {
+  display: block;
+  font-family: var(--f-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  margin-bottom: 8px;
+}
+
+.field textarea,
+.field input {
+  width: 100%;
+  min-height: var(--tap);
+  padding: 12px 14px;
+  background: var(--panel);
+  border: 1px solid var(--rule-bright);
+  color: var(--ink);
+  font-family: var(--f-mono);
+  font-size: 13px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.field textarea::placeholder,
+.field input::placeholder { color: var(--ink-3); }
+
+.field textarea:focus,
+.field input:focus { border-color: var(--sage); }
+
+/* ---------------------------------------------------------------------- nav */
+
+.nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  background: var(--panel);
+  border-top: 1px solid var(--rule-bright);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* At phone width the two targets split the bar so either is under a thumb. */
+.nav-inner { display: flex; }
+
+.nav a {
+  flex: 1;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  text-decoration: none;
+  font-family: var(--f-title);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  border-top: 2px solid transparent;
+  margin-top: -1px;
+}
+
+.nav a[aria-current='page'] {
+  color: var(--sage);
+  border-top-color: var(--sage);
+}
+
+/* The count of things needing a decision. Amber, because that is what it is. */
+.nav .badge {
+  font-family: var(--f-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 4px 7px;
+  background: var(--amber);
+  color: #241605;
+}
+
+/* -------------------------------------------------------------------- motion
+   One authored moment: rows settle in like a sheet being laid down. Content is
+   visible by default, so a failed animation never hides work. */
+
+@keyframes settle {
+  from { opacity: 0.001; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+.settle {
+  animation: settle 420ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+.settle:nth-child(1) { animation-delay: 0ms; }
+.settle:nth-child(2) { animation-delay: 45ms; }
+.settle:nth-child(3) { animation-delay: 90ms; }
+.settle:nth-child(4) { animation-delay: 135ms; }
+.settle:nth-child(n + 5) { animation-delay: 180ms; }
 
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -650,21 +775,41 @@ body {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 
-/* The token row must stack on a phone: a full-width field beside a button
-   squeezes both below a usable touch target. */
-.session-bar:not(.connected) > .flex {
-  flex-wrap: wrap;
-}
+/* --------------------------------------------------------------- wider glass
+   The extra room goes to breathing space and a wider measure, not to stretched
+   rows or a second column that would break the reading order. */
 
-.session-bar:not(.connected) .session-input {
-  flex: 1 1 100%;
-}
+@media (min-width: 720px) {
+  :root { --gutter: 32px; }
+  .title-block h1 { font-size: 34px; }
+  .row-action { font-size: 24px; }
+  .app { padding-bottom: 0; }
 
-.session-bar:not(.connected) .session-button {
-  flex: 1 1 auto;
-  justify-content: center;
-  min-height: 44px;
+  .nav {
+    position: sticky;
+    top: 0;
+    bottom: auto;
+    border-top: 0;
+    border-bottom: 1px solid var(--rule-bright);
+  }
+
+  /* Above the fold the links stop stretching and sit in the content column,
+     so the tab rule ends where the tab ends rather than halfway across a
+     screen the content never uses. */
+  .nav a {
+    flex: 0 0 auto;
+    min-height: 52px;
+    padding: 0 var(--gutter) 0 0;
+    justify-content: flex-start;
+    gap: 8px;
+    border-top: 0;
+    border-bottom: 2px solid transparent;
+  }
+
+  .nav a:first-child { padding-left: 0; }
+  .nav a[aria-current='page'] { border-bottom-color: var(--sage); }
 }

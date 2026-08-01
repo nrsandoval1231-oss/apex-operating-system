@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-07-31
 
-**Program phase:** Phase 1 — Shared operational spine and controlled Gate vertical slice (Phase 0 preservation complete)
+**Program phase:** Phase 1 — Shared operational spine and controlled Gate vertical slice (Phase 0 preservation complete). Apex OS build plan Steps 1–4 and 6 complete; Step 7 (customer progress page) is next. Step 5 (inspections) remains blocked on Apex's inspection list and lead times.
 
 **Production status:** Not production-ready
 
@@ -173,10 +173,14 @@ Currently aligned:
 - Designer-owned canonical quantities flow directly into Proposal pricing with Calc provenance, revision pinning, and an order-sensitive quantity-payload SHA-256
 - Admin/office/field/customer row-level authorization policies
 
+- The nine confirmed construction phases, six customer milestones, and the §9.3
+  project record, keyed by Job ID
+
 Currently disconnected:
 
 - Proposal to lead/opportunity/job lifecycle
 - Job creation to Gate
+- Gate definitions to construction phases beyond pre-gunite
 - Gate events to draw release and QuickBooks
 - Customer view to approved operational events
 - Completed-job cost classification to pricing review, Meta, reviews, and commissions
@@ -276,7 +280,7 @@ PowerPoint visual rendering was not completed because the headless COM export ap
 
 ## Apex OS shell adoption — 2026-07-31
 
-The previously untracked `apex-os/` React prototype is now `apps/apex-os` inside the pnpm workspace and reads live data from the Gate API. See [`docs/plans/apex-os-v1-build-plan.md`](plans/apex-os-v1-build-plan.md) and [`PRD.md`](../PRD.md).
+The previously untracked `apex-os/` React prototype is now `apps/apex-os` inside the pnpm workspace and reads live data from the Gate API. See [`docs/plans/apex-os-v1-build-plan.md`](plans/apex-os-v1-build-plan.md) and [`PRD FINAL.md`](../PRD%20FINAL.md).
 
 | Commands | Result |
 |---|---|
@@ -300,6 +304,253 @@ Dependency decisions made during adoption:
 - React 19.2.8 and React Router 8.3.0 replace React 18 / Router 6. Router 6 and 7 both carried open advisories; Router 8 requires React 19. The app uses only core routing APIs, so the upgrade was contained.
 
 Not built in this slice: the action-card engine, the project/phase model, inspections, scheduled visits, draw schedules, the customer progress page, and the daily brief. The Today feed shows Gate status only and says so on screen.
+
+## Project and construction-phase model — 2026-07-31
+
+Build-plan Step 2. The nine confirmed construction phases, six customer
+milestones, §9.3 project record, and append-only phase history are now in the
+database and rendered by the Apex OS UI. Authority:
+[`docs/decisions/construction-model.md`](decisions/construction-model.md).
+
+| Commands | Result |
+|---|---|
+| `pnpm verify` | **121/121 root tests** and **1/1 integration test** passed; strict TypeScript project build and the app typecheck passed |
+| `pnpm --filter @apex/os build` | Vite production build passed |
+| Migration `0010` against the existing local dev database | Applied forward-only over pre-existing data; no row rewritten |
+| Browser verification | Projects list and Project detail render live phase, milestone, superintendent, target window, and risk from Postgres; no console errors |
+
+Added: `construction_phases`, `customer_milestones`, `projects`,
+`project_phase_transitions`, the `superintendent` role, and
+`gate_definitions.release_roles` / `.phase_key`.
+
+**Behaviour change to note:** a `field` user may capture evidence and evaluate
+requirements but **can no longer release a Gate**. Two existing tests asserted
+the old behaviour and were updated.
+
+Deliberate constraints in this slice:
+
+- Handover is derived from job completion, never from reaching phase 9. A pool
+  with water in it has not been handed over.
+- The phase and milestone tables refuse writes by statement; they change only by
+  migration, the same discipline `events` already has.
+- Phase skips and reversals are recorded, not forbidden — but the database
+  itself requires a reason for any move that is not one step forward.
+- A signed job is not automatically a job under construction. `project` is null
+  on the read model until someone opens it, and the UI says so.
+- No `project_id` is minted; the canonical chain stays lead → job.
+
+Not built in this slice: the six remaining gate templates, the action-card
+engine, inspections, scheduled visits, the draw schedule, the customer progress
+page, and the daily brief.
+
+## Two-signature Gate release — 2026-07-31
+
+Both open authority flags in §5 of the construction-model decision are now
+**resolved and built** (migration `0011_gate_countersign.sql`).
+
+| Decision | Built |
+|---|---|
+| §5.1 Pre-gunite requires an owner countersign | Sign-off puts the Gate in `awaiting-countersign`; only the countersign releases it |
+| §5.2 Money gates may be released by the owner **or** a superintendent | Draws no longer stall while the owner is unavailable |
+
+Authority now follows what cannot be undone rather than what can be credited.
+Every gate takes one signature from the owner or a superintendent, except
+pre-gunite, which takes both.
+
+| Commands | Result |
+|---|---|
+| `pnpm verify` | **134/134 root tests** and **1/1 integration test** passed; strict TypeScript project build and the app typecheck passed |
+| `pnpm --filter @apex/os build` | Vite production build passed |
+| HTTP verification against the local dev database | Field lead refused (409); superintendent sign-off produced `gate.signoff_recorded` and status `awaiting-countersign`; countersign by a non-countersign role refused (409); owner countersign produced `gate.countersigned`, `gate.released`, `draw.eligible`, `customer_update.published` |
+| Browser verification | Projects list and Project detail render the released Gate and live project record; no console errors. The intermediate `awaiting-countersign` screen was **not** exercised in the browser — its label and badge are covered by unit tests only |
+
+Deliberate constraints:
+
+- The countersign **blocks** the release. It is not recorded after the fact —
+  a confirmation that arrives after the pour protects nothing.
+- **The countersigner must be a different person than the signer**, enforced in
+  the domain and again by a database constraint. An authority control that lives
+  only in application code is one refactor away from not existing.
+- A definition whose countersign role is also its only release role is refused
+  at both layers, because nobody could ever sign it first.
+
+Consequence worth naming: a superintendent can now release a draw-bearing gate
+on his own signature. What remains between him and an invoice is the gate's own
+evidence requirements, the append-only audit trail, and the separate human
+confirmation that PRD §9.8 requires before invoicing. If that proves too loose,
+adding a countersign to the money gates is now one data change per definition.
+
+## Seven Gate templates — 2026-07-31
+
+Build-plan Step 3. The Gate engine now runs all seven confirmed templates instead
+of pre-gunite alone (migration `0012_gate_templates.sql`).
+
+| Gate | Phase | Draw | Signatures |
+|---|---|---|---|
+| Permit | P1 | — | one |
+| Excavation | P2 | Draw 1 | one |
+| Pre-gunite | before P5 | — | **two** |
+| Shell | P5 | Draw 2 | one |
+| Deck & tile | P7 | Draw 3 | one |
+| Equipment | P8 | — | one |
+| Final | P9 | Final Draw | one |
+
+| Commands | Result |
+|---|---|
+| `pnpm verify` | **149/149 root tests** and **1/1 integration test** passed; strict TypeScript project build and the app typecheck passed |
+| HTTP verification against the local dev database | Permit released with a customer update and **no draw**; Excavation released with `draw.eligible`; pre-gunite had already released under countersign. **Three Gate types completed on one job**, which is what PRD §21 requires |
+| Browser verification | Project detail lists all seven Gates with per-Gate draw and countersign labels; released, not-opened, and current states render distinctly; no console errors |
+
+What changed beyond seeding:
+
+- **Release consequences are per-definition.** Only the four draw-bearing Gates
+  emit `draw.eligible`. Previously every release created draw eligibility, so
+  releasing Permit or Equipment would have invented money.
+- **Customer wording comes from the definition**, not a hardcoded string. Before
+  this, all seven Gates would have told the customer "Pre-gunite release complete".
+- **Pre-gunite moved to version 2** carrying the eleven-item PRD §9.4 baseline,
+  up from five requirements. Version 1 is deactivated but intact, so the Gate
+  already released against it keeps its meaning.
+- **Gates are not forced into sequence.** A job imported mid-build can open Shell
+  before a Permit gate exists. The plan shows unopened Gates as "not opened",
+  never as skipped or passed.
+- The field console now picks a Gate instead of assuming pre-gunite, and knows
+  the difference between signing off and countersigning.
+
+**The checklists are not Apex's yet.** The decision document gives one line of
+"Verifies" per Gate, not procedures. Every requirement list except pre-gunite's
+was written from that line plus the draw schedule's "Covers" column. They are a
+starting point for Travis to correct before field use; correcting one means a new
+definition version, not an edit.
+
+Known residue: customer milestone projections created before this migration still
+carry the old `pre-gunite-released` milestone string, which is not one of the six
+confirmed milestones. This is seeded local test data. A real deployment would need
+a decision about historical projections rather than a silent rewrite.
+
+## Action-card engine and Today feed — 2026-07-31
+
+Build-plan Step 4. One derivation layer produces every card on the Today feed;
+the daily brief and notifications will be views of the same cards rather than
+parallel logic.
+
+Twelve card kinds, all derived from stored state:
+
+| Section | Cards |
+|---|---|
+| Things need you | countersign held, gate blocked, gate ready to sign, draw released but unbilled, no approved takeoff, job not opened as a project, no superintendent assigned, target completion passed |
+| Running | gate in progress with requirement counts, gate for the current phase not opened, recorded risk |
+| This week | next phase's gate, target completion approaching |
+
+| Commands | Result |
+|---|---|
+| `pnpm verify` | **192/192 root tests** and **1/1 integration test** passed; strict TypeScript project build and the app typecheck passed |
+| HTTP verification against the local dev database | Six card kinds derived from real state across two jobs, pinned to a day and byte-identical across repeat calls |
+| Browser verification | Today renders three sections with per-card action, reason, consequence, urgency, and link; empty sections say so explicitly; no console errors |
+
+Design decisions worth challenging:
+
+- **The derivation is pure and takes `today` as an argument.** It reads no clock
+  and no database, so the feed is reproducible and every rule is unit-testable
+  without fixtures. The API resolves the date; the rules never do.
+- **Card ids are derived, not minted** — `kind:jobId:subject`. The same condition
+  yields the same id on every refresh, which is what later makes snooze and
+  acknowledge possible without a table.
+- **A card must state a consequence or it is not generated.** "Gate is in
+  progress" is not a card; "all eleven clear, signing releases Draw 2" is.
+- **Finished jobs go silent.** Complete, closed, and cancelled jobs produce
+  nothing. Leaving their cards up teaches the owner to skim past the feed.
+- **Cards are suppressed when they would ask for the impossible.** A job with no
+  approved takeoff gets the takeoff card, not "open the Excavation gate" — the
+  Gate cannot open, and one accurate card beats two.
+
+Bug found and fixed while wiring this: the job read model was reporting the
+approved takeoff revision **off the current Gate** rather than off the job, so a
+job with an approved revision and no Gate yet reported having none. That was
+already wrong on the Project detail screen since Step 1; it would have put a
+false "approve a takeoff" card in front of the owner.
+
+Not built: snooze, delegate, and acknowledge (§9.5's feed rules), and the
+notification channels in §15. Both want the same card identity that now exists.
+
+## Draw schedule and ready-to-bill — 2026-07-31
+
+Build-plan Step 6, taken before Step 5 because inspections are still blocked on
+Apex's inspection list and lead times, and the draw schedule is fully confirmed.
+
+The 10 / 30 / 30 / 20 / 10 from Apex's contract, bound to the four draw-bearing
+Gates, with the Deposit released by contract signing.
+
+| Commands | Result |
+|---|---|
+| `pnpm verify` | **229/229 root tests** and **1/1 integration test** passed; strict TypeScript project build and the app typecheck passed |
+| Live dev database | The real Whitaker contract of **$152,041.73** split to **$15,204.17 / $45,612.51 / $45,612.51 / $30,408.34 / $15,204.20** — summing to the contract exactly |
+| HTTP verification | Confirming the deposit invoice moved $15,204.17 out of ready-to-bill; billing the same draw twice and billing an unearned draw both refused with 409 |
+| Browser verification | Project detail shows all five draws with amount, percentage, release condition, invoice reference, and the contract/ready/invoiced/collected/remaining summary; no console errors |
+
+Decisions worth challenging:
+
+- **One table, not two.** `draw_eligibility` was renamed to `job_draws` rather
+  than joined by a new schedule table. Two tables tracking the same money is how
+  a system starts disagreeing with itself about what it is owed.
+- **Basis points, integer cents, remainder on the final draw.** A percentage of
+  an odd total does not divide evenly. Every earlier draw is a clean floor of its
+  percentage and the last one carries the few cents, so the arithmetic has to be
+  explained once rather than five times. The allocator refuses to return at all
+  if the parts do not sum to the whole.
+- **Regenerating a schedule adopts what already happened.** A job that released
+  draw-bearing Gates before it had a schedule keeps those releases and gets its
+  amounts filled in. Status, release time, releasing Gate, and the amount on an
+  already-invoiced draw are never overwritten.
+- **Invoicing stays a human act with a name against it.** `invoiced_by` is
+  required by a database constraint, not by convention. Apex OS never issues an
+  invoice, and QuickBooks remains the financial authority.
+- **Money is the owner's and the office's.** Creating a schedule and confirming
+  an invoice are closed to `field` and to `superintendent`, unlike Gate release.
+
+Known residue on the dev database: the Whitaker job carries a legacy
+"Pre-gunite release" draw with no amount, created when every Gate release
+produced a draw. It is a true record of what the system did at the time and was
+left alone rather than deleted. A real deployment would need a decision about
+such rows rather than a silent rewrite.
+
+Still not built from §9.8: payment recording beyond a `paid` status, due-date
+tracking on the feed, and any QuickBooks synchronisation.
+
+## Single-origin serving and local pilot access — 2026-07-31
+
+Two changes made after the owner could not reliably open the app.
+
+**The Gate API now serves Apex OS at `/app`.** The Vite dev server previously
+proxied `/api` across to the API, and when that hop failed the app reported "no
+connection" while the API was running perfectly. One server, one origin, no
+proxy — and the same shape a deployment takes. Vite still serves `/` for fast
+iteration and should be ignored by anyone but a developer.
+
+**`GATE_LOCAL_USER` removes the token paste for single-machine use.** Pasting a
+short-lived JWT to look at your own jobs on your own laptop is friction with no
+security value: the server binds to loopback, so anything that can reach it can
+read the database file directly.
+
+It is deliberately hard to enable by accident, and each guard is tested:
+
+- Off unless `GATE_LOCAL_USER` names a real, active user.
+- Refused unless the connection came from a loopback address.
+- The listen host is fixed to `127.0.0.1` and is not configurable, because the
+  trade is only defensible while "anything that can reach it" means this machine.
+- A supplied token still wins, so roles remain switchable for testing.
+- The server prints a warning at startup whenever the mode is on.
+
+**This is not an authentication model.** A deployment reaching real users with
+`GATE_LOCAL_USER` set has no access control at all. Production identity —
+asymmetric/JWKS, TLS, provisioning, rotation — remains an open launch blocker.
+
+| Commands | Result |
+|---|---|
+| `pnpm verify` | **234/234 root tests** and **1/1 integration test** passed |
+| Tokenless local request | `GET /api/today` returns 200 with six cards and no Authorization header |
+| Without the flag | The same request returns 403 |
+| Unknown or inactive local user | Refused with 403 rather than assumed |
 
 ## Next controlled milestone
 

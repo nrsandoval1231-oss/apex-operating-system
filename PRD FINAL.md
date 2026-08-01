@@ -4,7 +4,7 @@
 **Powered by:** GATE v3  
 **Company:** Apex, Lubbock, Texas  
 **Version:** 1.0  
-**Status:** Build-ready draft  
+**Status:** Build-ready draft. Phases, gate templates, draw schedule, and gate authority confirmed 2026-07-31 — see [`docs/decisions/construction-model.md`](docs/decisions/construction-model.md).  
 **Initial customer:** Apex Designer Pools only
 
 ---
@@ -241,23 +241,19 @@ The product should encode Apex’s current process directly. Generalization is a
 
 ### 8.2 Construction phases
 
-The initial phase model should reflect Apex’s actual sequence and may be refined during implementation. Proposed baseline:
+**Confirmed 2026-07-31.** Apex’s actual construction sequence is nine phases. See [`docs/decisions/construction-model.md`](docs/decisions/construction-model.md).
 
-1. Contract and deposit
-2. Design finalization
-3. Engineering / permit
-4. Pre-construction planning
-5. Layout and excavation
-6. Steel and underground plumbing
-7. Pre-gunite hold
-8. Gunite / shell curing
-9. Tile, coping, and equipment preparation
-10. Decking and surrounding work
-11. Interior finish / plaster
-12. Fill and startup
-13. Final inspection and punch
-14. Customer handover
-15. Service-plan conversion
+1. Design, Engineering & Permitting
+2. Layout & Excavation
+3. Steel Reinforcement (Rebar)
+4. Plumbing & Electrical Rough-In
+5. Gunite/Shotcrete Concrete Pour
+6. Waterline Tile & Coping Installation
+7. Patio Decking & Hardscaping
+8. Pool Pad Equipment Hookup
+9. Interior Plaster Finish & Water Fill
+
+This replaces the fifteen-phase proposed baseline carried in earlier drafts of this document, which was never confirmed and must not be built.
 
 ### 8.3 Customer-facing milestones
 
@@ -349,15 +345,21 @@ Each gate includes:
 
 ### Initial gate templates
 
-1. Contract and deposit complete
-2. Design approval
-3. Permit / engineering ready
-4. Pre-excavation
-5. Pre-gunite
-6. Pre-deck
-7. Pre-plaster
-8. Fill and startup
-9. Final handover
+**Confirmed 2026-07-31.** Seven gates, four of them draw-bearing. See [`docs/decisions/construction-model.md`](docs/decisions/construction-model.md).
+
+| Gate | Position | Releases | Authority |
+|---|---|---|---|
+| Permit | End of P1 | — | Superintendent |
+| Excavation | End of P2 | Draw 1 (30%) | Owner |
+| Pre-gunite | Before P5 | — | Superintendent |
+| Shell | End of P5 | Draw 2 (30%) | Owner |
+| Deck & tile | End of P7 | Draw 3 (20%) | Owner |
+| Equipment | End of P8 | — | Superintendent |
+| Final | End of P9 | Final Draw (10%) | Owner |
+
+The Deposit (10%) is released by contract signing and is not gate-triggered.
+
+Two authority questions remain open and are recorded in §5 of the decisions document: whether the irreversible pre-gunite gate should also require owner confirmation, and whether money gates delegate when the owner is unavailable.
 
 ### Pre-gunite gate baseline
 
@@ -921,10 +923,10 @@ The following should be cut first if schedule or complexity grows:
 
 1. Which current tool is authoritative for active-project scheduling?
 2. Which current tool is authoritative for invoice and payment status?
-3. Who may pass each gate: field lead, project manager, or owner?
-4. What are Apex’s exact construction phases and required gate templates?
-5. Which draw schedules are standard versus contract-specific?
-6. Which inspections vary by jurisdiction?
+3. ~~Who may pass each gate: field lead, project manager, or owner?~~ **Resolved 2026-07-31** — Owner and Superintendent; owner alone on the four draw-bearing gates.
+4. ~~What are Apex’s exact construction phases and required gate templates?~~ **Resolved 2026-07-31** — nine phases (§8.2), seven gate templates (§9.4).
+5. ~~Which draw schedules are standard versus contract-specific?~~ **Resolved 2026-07-31** — standard schedule, sourced from Apex’s contract: 10 / 30 / 30 / 20 / 10.
+6. ~~Which inspections vary by jurisdiction?~~ **Resolved 2026-07-31** — no jurisdictional variation. The inspection list and per-inspection lead times remain open.
 7. Which customer messages may be sent automatically, if any?
 8. Where are existing project photos and documents stored?
 9. Which team members need access during the pilot?

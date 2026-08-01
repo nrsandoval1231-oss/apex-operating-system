@@ -1,13 +1,15 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { createHash } from 'node:crypto';
-import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
 import { dirname, extname, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { jwtVerify } from 'jose';
 import { z } from 'zod';
 import type { PGlite } from '@electric-sql/pglite';
 import {
+  ConstructionPhaseKeySchema,
   EventActorSchema,
+  STAFF_ROLES,
   createCanonicalId,
   idSchemas,
   type AppRole,
@@ -38,7 +40,56 @@ const extensions: Record<string, string> = {
   'video/mp4': '.mp4',
   'application/pdf': '.pdf',
 };
-const staffRoles: readonly AppRole[] = ['admin', 'office', 'field'];
+const staffRoles: readonly AppRole[] = STAFF_ROLES;
+
+/** The built Apex OS app, served from this origin so it needs no dev proxy. */
+const appDirectory = resolve(dirname(fileURLToPath(import.meta.url)), '../../apex-os/dist');
+
+/** Same policy as the console, plus self-hosted font files. */
+const APP_CSP = "default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; "
+  + "connect-src 'self'; img-src 'self' blob: data:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'";
+
+const APP_CONTENT_TYPES: Record<string, string> = {
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.woff2': 'font/woff2',
+  '.woff': 'font/woff',
+  '.svg': 'image/svg+xml',
+  '.png': 'image/png',
+  '.map': 'application/json; charset=utf-8',
+};
+
+const appContentType = (file: string): string =>
+  APP_CONTENT_TYPES[extname(file).toLowerCase()] ?? 'application/octet-stream';
+
+const readable = async (file: string): Promise<boolean> => {
+  try {
+    return (await stat(file)).isFile();
+  } catch {
+    return false;
+  }
+};
+
+const OpenProjectSchema = z.strictObject({
+  initialPhaseKey: ConstructionPhaseKeySchema.optional(),
+  superintendentUserId: idSchemas.user.nullable().optional(),
+});
+const DaySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+
+/** Confirming an invoice records what a human did in the accounting system. */
+const InvoiceConfirmationSchema = z.strictObject({
+  invoiceReference: z.string().min(1).max(160),
+  dueDate: DaySchema.optional(),
+});
+
+/** Shape only. Whether the definition exists is the service's call, not a regex's. */
+const GateDefinitionKeySchema = z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).max(120);
+
+const ChangePhaseSchema = z.strictObject({
+  toPhaseKey: ConstructionPhaseKeySchema,
+  reason: z.string().min(1).max(2000).optional(),
+});
 const publicDirectory = resolve(dirname(fileURLToPath(import.meta.url)), '../public');
 
 const matchesDeclaredMimeType = (content: Buffer, mimeType: string) => {
@@ -57,6 +108,11 @@ interface GateApiOptions {
   readonly jwtSecret: string;
   readonly evidenceDirectory: string;
   readonly maxEvidenceBytes?: number;
+  /**
+   * Canonical User ID to treat loopback requests as, with no token. Single-user
+   * local pilot only — see `authenticate` for the guards and the warning.
+   */
+  readonly localUserId?: string;
 }
 
 const sendJson = (response: ServerResponse, status: number, value: unknown) => {
@@ -89,7 +145,44 @@ export function createGateApi(options: GateApiOptions) {
   const evidenceRoot = resolve(options.evidenceDirectory);
   const maxEvidenceBytes = options.maxEvidenceBytes ?? 25_000_000;
 
+  /**
+   * Single-machine pilot access.
+   *
+   * When `localUserId` is configured, a request arriving from this machine is
+   * treated as that user and needs no token. It exists because pasting a
+   * short-lived JWT to look at your own jobs on your own laptop is friction with
+   * no security value: the server already binds to loopback, so anyone who can
+   * reach it can read the database file directly.
+   *
+   * It is deliberately hard to switch on by accident:
+   *   · off unless GATE_LOCAL_USER names a real, active user;
+   *   · refused unless the connection came from a loopback address;
+   *   · refused when the server is bound to anything but loopback (see main.ts).
+   *
+   * THIS IS NOT AN AUTHENTICATION MODEL. Production needs asymmetric/JWKS
+   * identity, TLS, provisioning, and rotation — an open launch blocker in
+   * docs/status.md. A deployment that reaches real users with this enabled has
+   * no access control at all.
+   */
+  const isLoopback = (request: IncomingMessage): boolean => {
+    const address = request.socket.remoteAddress ?? '';
+    return address === '127.0.0.1' || address === '::1' || address === '::ffff:127.0.0.1';
+  };
+
   const authenticate = async (request: IncomingMessage): Promise<EventActor> => {
+    if (options.localUserId !== undefined && !request.headers.authorization) {
+      if (!isLoopback(request)) {
+        throw new AuthError('Local pilot access is limited to this machine.');
+      }
+      const users = await options.db.query<{ role: AppRole }>(
+        `select role from app_users where user_id = $1 and active = true`,
+        [options.localUserId],
+      );
+      const role = users.rows[0]?.role;
+      if (role === undefined) throw new AuthError('The configured local pilot user is not active.');
+      return EventActorSchema.parse({ kind: 'user', userId: options.localUserId, role });
+    }
+
     try {
       const header = request.headers.authorization;
       if (!header?.startsWith('Bearer ')) throw new AuthError('Bearer authentication is required.');
@@ -140,14 +233,40 @@ export function createGateApi(options: GateApiOptions) {
       if (request.method === 'GET' && url.pathname === '/health') {
         return sendJson(response, 200, { status: 'ok' });
       }
-      if (request.method === 'GET' && ['/', '/gate-console.css', '/gate-console.js'].includes(url.pathname)) {
+      // The Apex OS app, served from the same origin as the API it calls.
+      //
+      // In development Vite proxies /api to this server, which adds a hop that
+      // can fail on its own and produces a "no connection" error that has
+      // nothing to do with the API. Serving the built app here removes the hop:
+      // one origin, one server, no proxy, and the same shape a deployment takes.
+      if (request.method === 'GET' && (url.pathname === '/app' || url.pathname.startsWith('/app/'))) {
+        const requested = url.pathname === '/app' ? '' : url.pathname.slice('/app/'.length);
+        const target = resolve(appDirectory, requested);
+        // Unknown paths fall back to index.html so client-side routes like
+        // /app/today survive a refresh.
+        const isAsset = requested !== '' && target.startsWith(`${appDirectory}${sep}`) && await readable(target);
+        const file = isAsset ? target : resolve(appDirectory, 'index.html');
+        const content = await readFile(file).catch(() => null);
+        if (content === null) {
+          return sendJson(response, 404, {
+            error: 'The Apex OS app has not been built. Run: pnpm --filter @apex/os build',
+          });
+        }
+        response.writeHead(200, {
+          'content-type': appContentType(file),
+          'content-length': content.length,
+          'content-security-policy': APP_CSP,
+          'referrer-policy': 'no-referrer',
+          'x-content-type-options': 'nosniff',
+          'cache-control': isAsset ? 'public, max-age=300' : 'no-store',
+        });
+        return response.end(content);
+      }
+
+      if (request.method === 'GET' && ['/', '/gate-console.css', '/gate-console.js', '/favicon.svg'].includes(url.pathname)) {
         const fileName = url.pathname === '/' ? 'index.html' : url.pathname.slice(1);
         const content = await readFile(resolve(publicDirectory, fileName));
-        const contentType = extname(fileName) === '.css'
-          ? 'text/css; charset=utf-8'
-          : extname(fileName) === '.js'
-            ? 'text/javascript; charset=utf-8'
-            : 'text/html; charset=utf-8';
+        const contentType = appContentType(fileName);
         response.writeHead(200, {
           'content-type': contentType,
           'content-length': content.length,
@@ -159,6 +278,15 @@ export function createGateApi(options: GateApiOptions) {
         return response.end(content);
       }
       const actor = await authenticate(request);
+
+      if (request.method === 'GET' && url.pathname === '/api/today') {
+        requireStaff(actor);
+        // The caller may pin the day for a reproducible feed; otherwise the
+        // server's date is used. The derivation itself never reads a clock.
+        const requested = url.searchParams.get('today');
+        const today = requested === null ? new Date().toISOString().slice(0, 10) : DaySchema.parse(requested);
+        return sendJson(response, 200, await service.getActionCards(today));
+      }
 
       if (request.method === 'GET' && url.pathname === '/api/jobs') {
         requireStaff(actor);
@@ -173,11 +301,92 @@ export function createGateApi(options: GateApiOptions) {
         return sendJson(response, 200, summary);
       }
 
-      const createMatch = url.pathname.match(/^\/api\/jobs\/(job_[0-9A-HJKMNP-TV-Z]{26})\/gates\/pre-gunite$/);
+      const projectMatch = url.pathname.match(/^\/api\/jobs\/(job_[0-9A-HJKMNP-TV-Z]{26})\/project$/);
+      if (projectMatch) {
+        requireStaff(actor);
+        const jobId = idSchemas.job.parse(projectMatch[1]);
+        if (request.method === 'GET') {
+          const project = await service.getProject(jobId);
+          if (project === null) return sendJson(response, 404, { error: 'This job has no construction project yet.' });
+          return sendJson(response, 200, project);
+        }
+        if (request.method === 'POST') {
+          const body = OpenProjectSchema.parse(await readJson(request));
+          const project = await service.openProject({
+            jobId,
+            actor,
+            idempotencyKey: idempotency(request),
+            ...(body.initialPhaseKey ? { initialPhaseKey: body.initialPhaseKey } : {}),
+            ...(body.superintendentUserId !== undefined ? { superintendentUserId: body.superintendentUserId } : {}),
+          });
+          return sendJson(response, 201, project);
+        }
+      }
+
+      const phaseMatch = url.pathname.match(/^\/api\/jobs\/(job_[0-9A-HJKMNP-TV-Z]{26})\/project\/phase$/);
+      if (request.method === 'POST' && phaseMatch) {
+        requireStaff(actor);
+        const jobId = idSchemas.job.parse(phaseMatch[1]);
+        const body = ChangePhaseSchema.parse(await readJson(request));
+        const project = await service.changeProjectPhase(jobId, {
+          actor,
+          at: new Date().toISOString(),
+          toPhaseKey: body.toPhaseKey,
+          ...(body.reason ? { reason: body.reason } : {}),
+        }, { idempotencyKey: idempotency(request) });
+        return sendJson(response, 200, project);
+      }
+
+      const historyMatch = url.pathname.match(/^\/api\/jobs\/(job_[0-9A-HJKMNP-TV-Z]{26})\/project\/history$/);
+      if (request.method === 'GET' && historyMatch) {
+        requireStaff(actor);
+        return sendJson(response, 200, await service.getProjectPhaseHistory(idSchemas.job.parse(historyMatch[1])));
+      }
+
+      const drawsMatch = url.pathname.match(/^\/api\/jobs\/(job_[0-9A-HJKMNP-TV-Z]{26})\/draws$/);
+      if (drawsMatch) {
+        requireStaff(actor);
+        const jobId = idSchemas.job.parse(drawsMatch[1]);
+        if (request.method === 'GET') {
+          return sendJson(response, 200, await service.getDrawSchedule(jobId));
+        }
+        if (request.method === 'POST') {
+          return sendJson(response, 201, await service.createDrawSchedule({
+            jobId, actor, idempotencyKey: idempotency(request),
+          }));
+        }
+      }
+
+      const invoiceMatch = url.pathname.match(
+        /^\/api\/jobs\/(job_[0-9A-HJKMNP-TV-Z]{26})\/draws\/([a-z0-9]+(?:-[a-z0-9]+)*)\/invoice$/,
+      );
+      if (request.method === 'POST' && invoiceMatch) {
+        requireStaff(actor);
+        const body = InvoiceConfirmationSchema.parse(await readJson(request));
+        return sendJson(response, 200, await service.markDrawInvoiced({
+          jobId: idSchemas.job.parse(invoiceMatch[1]),
+          drawCode: invoiceMatch[2] ?? '',
+          invoiceReference: body.invoiceReference,
+          actor,
+          ...(body.dueDate ? { dueDate: body.dueDate } : {}),
+        }));
+      }
+
+      const gateListMatch = url.pathname.match(/^\/api\/jobs\/(job_[0-9A-HJKMNP-TV-Z]{26})\/gates$/);
+      if (request.method === 'GET' && gateListMatch) {
+        requireStaff(actor);
+        return sendJson(response, 200, await service.listJobGates(idSchemas.job.parse(gateListMatch[1])));
+      }
+
+      const createMatch = url.pathname.match(/^\/api\/jobs\/(job_[0-9A-HJKMNP-TV-Z]{26})\/gates\/([a-z0-9]+(?:-[a-z0-9]+)*)$/);
       if (request.method === 'POST' && createMatch) {
         requireStaff(actor);
         const jobId = idSchemas.job.parse(createMatch[1]);
-        const state = await service.createPreGuniteGate({ gateInstanceId: createCanonicalId('gate'), jobId });
+        const state = await service.createGate({
+          gateInstanceId: createCanonicalId('gate'),
+          jobId,
+          definitionKey: GateDefinitionKeySchema.parse(createMatch[2]),
+        });
         return sendJson(response, 201, serializeGate(state));
       }
 
@@ -264,6 +473,16 @@ export function createGateApi(options: GateApiOptions) {
         const gateId = idSchemas.gate.parse(releaseMatch[1]);
         const result = await service.execute(gateId, {
           type: 'release-gate', actor, at: new Date().toISOString(),
+        }, { idempotencyKey: idempotency(request) });
+        return sendJson(response, 200, { ...result, state: serializeGate(result.state) });
+      }
+
+      const countersignMatch = url.pathname.match(/^\/api\/gates\/(gate_[0-9A-HJKMNP-TV-Z]{26})\/countersign$/);
+      if (request.method === 'POST' && countersignMatch) {
+        requireStaff(actor);
+        const gateId = idSchemas.gate.parse(countersignMatch[1]);
+        const result = await service.execute(gateId, {
+          type: 'countersign-gate', actor, at: new Date().toISOString(),
         }, { idempotencyKey: idempotency(request) });
         return sendJson(response, 200, { ...result, state: serializeGate(result.state) });
       }

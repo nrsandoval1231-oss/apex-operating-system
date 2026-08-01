@@ -1,14 +1,14 @@
 import { z } from 'zod';
 import { idSchemas } from './ids.js';
+import { ConstructionPhaseKeySchema, CustomerMilestoneKeySchema } from './project.js';
 
 /**
  * Operational read model for the Apex OS project list and Today feed.
  *
- * This is a projection over `jobs`, `leads`, `proposal_versions`, and
- * `gate_instances`. It is deliberately NOT the §9.3 project record — phase,
- * customer milestone, superintendent, target window, and risk are added in the
- * project/phase model step. Nothing here invents a fact the database does not
- * already hold: every optional field is nullable rather than defaulted.
+ * A projection over `jobs`, `leads`, `proposal_versions`, `projects`, and
+ * `gate_instances`. Nothing here invents a fact the database does not already
+ * hold: every optional field is nullable rather than defaulted, and `project` is
+ * null on a job that has not been opened as a construction project yet.
  */
 
 /**
@@ -28,7 +28,14 @@ export const JobLifecycleStatusSchema = z.enum([
 ]);
 export type JobLifecycleStatus = z.infer<typeof JobLifecycleStatusSchema>;
 
-export const GateInstanceStatusSchema = z.enum(['not-started', 'in-progress', 'blocked', 'released']);
+export const GateInstanceStatusSchema = z.enum([
+  'not-started',
+  'in-progress',
+  'blocked',
+  /** Signed by its first authority, waiting on the countersign that releases it. */
+  'awaiting-countersign',
+  'released',
+]);
 export type GateInstanceStatus = z.infer<typeof GateInstanceStatusSchema>;
 
 export const JobSummaryGateSchema = z.strictObject({
@@ -42,6 +49,24 @@ export const JobSummaryGateSchema = z.strictObject({
 });
 export type JobSummaryGate = z.infer<typeof JobSummaryGateSchema>;
 
+/**
+ * The §9.3 project facts carried on the summary. Null on a job that has no
+ * project record yet — a signed job is not automatically a job under
+ * construction, and the feed must not imply it is.
+ */
+export const JobSummaryProjectSchema = z.strictObject({
+  currentPhaseKey: ConstructionPhaseKeySchema,
+  currentPhaseTitle: z.string().min(1).max(200),
+  currentPhaseSequence: z.number().int().min(1).max(9),
+  customerMilestone: CustomerMilestoneKeySchema,
+  superintendentUserId: idSchemas.user.nullable(),
+  superintendentName: z.string().min(1).max(200).nullable(),
+  targetCompletionStart: z.string().date().nullable(),
+  targetCompletionEnd: z.string().date().nullable(),
+  riskNote: z.string().max(2000).nullable(),
+});
+export type JobSummaryProject = z.infer<typeof JobSummaryProjectSchema>;
+
 export const JobSummarySchema = z.strictObject({
   jobId: idSchemas.job,
   leadId: idSchemas.lead,
@@ -53,14 +78,39 @@ export const JobSummarySchema = z.strictObject({
   addressLine: z.string().min(1).max(300).nullable(),
   /** Signed proposal total. Null until a proposal version is signed and bound. */
   contractCents: z.number().int().nonnegative().nullable(),
-  /** Approved takeoff backing the current Gate, when one exists. */
+  /**
+   * The job's approved Designer takeoff revision. Null until one is approved.
+   * A Gate cannot open without it. There is at most one per job, enforced by a
+   * unique index rather than by convention.
+   */
   approvedTakeoffRevisionId: idSchemas.revision.nullable(),
   /** Most recent unreleased Gate, else the most recent released Gate, else null. */
   currentGate: JobSummaryGateSchema.nullable(),
+  /** §9.3 project record. Null until the job is opened as a construction project. */
+  project: JobSummaryProjectSchema.nullable(),
 });
 export type JobSummary = z.infer<typeof JobSummarySchema>;
 
 export const JobSummaryListSchema = z.array(JobSummarySchema);
+
+/**
+ * One row of a job's Gate plan: the template, and this job's instance of it when
+ * one exists. A null `gateInstanceId` means the Gate has not been opened — never
+ * that it was skipped or passed.
+ */
+export const JobGatePlanEntrySchema = z.strictObject({
+  definitionKey: z.string().min(1).max(120),
+  title: z.string().min(1).max(200),
+  sequence: z.number().int().positive().nullable(),
+  phaseKey: ConstructionPhaseKeySchema.nullable(),
+  /** Set on the four draw-bearing Gates only. */
+  drawCode: z.string().min(1).max(80).nullable(),
+  requiresCountersign: z.boolean(),
+  gateInstanceId: idSchemas.gate.nullable(),
+  status: GateInstanceStatusSchema.nullable(),
+});
+export type JobGatePlanEntry = z.infer<typeof JobGatePlanEntrySchema>;
+export const JobGatePlanSchema = z.array(JobGatePlanEntrySchema);
 
 const MAX_NAME = 200;
 const MAX_ADDRESS = 300;

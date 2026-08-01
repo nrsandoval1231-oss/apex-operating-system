@@ -1,4 +1,11 @@
-import type { JobSummary, JobSummaryGate } from '@apex/contracts';
+import {
+  CONSTRUCTION_PHASES,
+  CUSTOMER_MILESTONES,
+  type CustomerMilestoneKey,
+  type JobSummary,
+  type JobSummaryGate,
+  type JobSummaryProject,
+} from '@apex/contracts';
 
 /**
  * Presentation helpers for the job read model.
@@ -30,6 +37,7 @@ export const GATE_STATUS_LABEL: Record<JobSummaryGate['status'], string> = {
   'not-started': 'Not started',
   'in-progress': 'In progress',
   blocked: 'Blocked',
+  'awaiting-countersign': 'Needs countersign',
   released: 'Released',
 };
 
@@ -38,6 +46,9 @@ export const gateBadgeClass = (status: JobSummaryGate['status']): string => {
   switch (status) {
     case 'blocked': return 'badge-urgent';
     case 'in-progress': return 'badge-warning';
+    // A signed but unreleased Gate is work waiting on a person, not a problem
+    // with the work — but it is holding up the pour, so it reads as urgent.
+    case 'awaiting-countersign': return 'badge-urgent';
     case 'released': return 'badge-success';
     case 'not-started': return 'badge-info';
   }
@@ -49,6 +60,30 @@ export const JOB_STATUS_LABEL: Record<JobSummary['status'], string> = {
   complete: 'Complete',
   closed: 'Closed',
   cancelled: 'Cancelled',
+};
+
+const MILESTONE_TITLES = new Map(CUSTOMER_MILESTONES.map((m) => [m.key, m.title] as const));
+
+export const milestoneTitle = (key: CustomerMilestoneKey): string =>
+  MILESTONE_TITLES.get(key) ?? key;
+
+export const PHASE_COUNT = CONSTRUCTION_PHASES.length;
+
+/** "Phase 5 of 9 · Gunite/Shotcrete Concrete Pour", or the absence of a project. */
+export const phaseLine = (project: JobSummaryProject | null): string =>
+  project === null
+    ? 'Not opened as a construction project'
+    : `Phase ${project.currentPhaseSequence} of ${PHASE_COUNT} · ${project.currentPhaseTitle}`;
+
+/**
+ * The target completion window, exactly as recorded. A half-open window says so
+ * rather than inventing the missing end.
+ */
+export const targetWindow = (project: JobSummaryProject): string | null => {
+  const { targetCompletionStart: start, targetCompletionEnd: end } = project;
+  if (start === null && end === null) return null;
+  if (start !== null && end !== null) return `${start} – ${end}`;
+  return start !== null ? `From ${start}` : `By ${end}`;
 };
 
 /**
@@ -66,6 +101,8 @@ export const gateSummaryLine = (job: JobSummary): string => {
     case 'not-started': return `${title} — not started.`;
     case 'in-progress': return `${title} — evidence in progress.`;
     case 'blocked': return `${title} — blocked on a failed requirement.`;
+    case 'awaiting-countersign':
+      return `${title} — signed off, waiting on the owner's countersign before work may proceed.`;
     case 'released': return `${title} — released.`;
   }
 };

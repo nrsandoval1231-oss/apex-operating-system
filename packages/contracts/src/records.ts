@@ -2,8 +2,24 @@ import { z } from 'zod';
 import { idSchemas } from './ids.js';
 import { calculateQuantityPayloadSha256 } from './quantityDigest.js';
 
-export const AppRoleSchema = z.enum(['admin', 'office', 'field', 'customer']);
+/**
+ * `superintendent` was added 2026-07-31 for the confirmed authority model in
+ * `docs/decisions/construction-model.md`: two roles pass Gates, and the four
+ * draw-bearing Gates are the owner's alone. `admin` is the owner (Travis);
+ * `superintendent` is PRD §5.2's Project Manager / Superintendent, which the
+ * original four-role model had no seat for and was collapsing into `field`.
+ */
+export const AppRoleSchema = z.enum(['admin', 'office', 'superintendent', 'field', 'customer']);
 export type AppRole = z.infer<typeof AppRoleSchema>;
+
+/** Roles that see internal operational state. Customers are excluded by construction. */
+export const STAFF_ROLES = ['admin', 'office', 'superintendent', 'field'] as const satisfies readonly AppRole[];
+export type StaffRole = (typeof STAFF_ROLES)[number];
+
+/** Roles that may sign off a Gate release. Which of them may sign off *which* Gate is per-definition. */
+export const GATE_RELEASE_ROLES = ['admin', 'superintendent', 'field'] as const satisfies readonly AppRole[];
+export const GateReleaseRoleSchema = z.enum(GATE_RELEASE_ROLES);
+export type GateReleaseRole = (typeof GATE_RELEASE_ROLES)[number];
 
 export const EvidenceKindSchema = z.enum(['photo', 'video', 'document', 'measurement', 'inspection']);
 export type EvidenceKind = z.infer<typeof EvidenceKindSchema>;
@@ -43,6 +59,18 @@ export const GateDefinitionSchema = z.strictObject({
   phase: z.string().min(1).max(120),
   drawCode: z.string().min(1).max(80).nullable(),
   customerMilestone: z.string().min(1).max(120).nullable(),
+  /**
+   * Who may release this Gate. Per-definition rather than global because the
+   * confirmed authority model gives the owner the four draw-bearing Gates and
+   * the superintendent the three that release no money.
+   */
+  releaseRoles: z.array(GateReleaseRoleSchema).min(1),
+  /**
+   * Roles that must countersign before the Gate releases. Empty for every Gate
+   * but pre-gunite, where the owner countersigns because gunite cannot be undone.
+   * The countersign blocks the release rather than confirming it afterwards.
+   */
+  countersignRoles: z.array(GateReleaseRoleSchema),
   requirements: z.array(GateRequirementDefinitionSchema).min(1),
   active: z.boolean(),
 });

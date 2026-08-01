@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import type { AddressInfo } from 'node:net';
 import { PGlite } from '@electric-sql/pglite';
 import { applyOperationalMigrations } from '@apex/database';
-import { createCanonicalId } from '@apex/contracts';
+import { ActionCardListSchema, createCanonicalId } from '@apex/contracts';
 import { SignJWT } from 'jose';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createGateApi } from './server.js';
@@ -18,6 +18,8 @@ const ids = {
   field: createCanonicalId('user'),
   office: createCanonicalId('user'),
   customer: createCanonicalId('user'),
+  superintendent: createCanonicalId('user'),
+  owner: createCanonicalId('user'),
 };
 
 let db: PGlite;
@@ -25,7 +27,7 @@ let storage: string;
 let server: ReturnType<typeof createGateApi>;
 let baseUrl: string;
 
-const token = (userId: string, role: 'field' | 'office' | 'customer') =>
+const token = (userId: string, role: 'field' | 'office' | 'superintendent' | 'admin' | 'customer') =>
   new SignJWT({ app_role: role })
     .setProtectedHeader({ alg: 'HS256' })
     .setSubject(userId)
@@ -51,8 +53,10 @@ beforeEach(async () => {
     `insert into app_users (user_id, auth_user_id, role, display_name) values
      ($1, '00000000-0000-0000-0000-000000000011', 'field', 'Field Lead'),
      ($2, '00000000-0000-0000-0000-000000000012', 'office', 'Office User'),
-     ($3, '00000000-0000-0000-0000-000000000013', 'customer', 'Customer')`,
-    [ids.field, ids.office, ids.customer],
+     ($3, '00000000-0000-0000-0000-000000000013', 'customer', 'Customer'),
+     ($4, '00000000-0000-0000-0000-000000000014', 'superintendent', 'Site Super'),
+     ($5, '00000000-0000-0000-0000-000000000015', 'admin', 'Travis')`,
+    [ids.field, ids.office, ids.customer, ids.superintendent, ids.owner],
   );
   await db.query(
     `insert into leads (lead_id, intake_source, source_record_id, idempotency_key, accepted_payload)
@@ -135,13 +139,33 @@ describe('Gate HTTP vertical slice', () => {
     expect(proof.status).toBe(200);
     expect(proof.headers.get('cache-control')).toBe('private, no-store');
 
-    const release = await call(`/api/gates/${gate.gateInstanceId}/release`, field, {
+    // Pre-gunite takes two signatures: the superintendent signs, the owner
+    // countersigns. Gunite buries the rebar, so nobody releases it alone.
+    const superintendent = await token(ids.superintendent, 'superintendent');
+    const ownerToken = await token(ids.owner, 'admin');
+
+    const signoff = await call(`/api/gates/${gate.gateInstanceId}/release`, superintendent, {
       method: 'POST', body: '{}', headers: { 'idempotency-key': 'api-release-0001' },
+    });
+    expect(signoff.status).toBe(200);
+    const signed = await signoff.json() as { state: { status: string }; events: Array<{ eventType: string }> };
+    expect(signed.state.status).toBe('awaiting-countersign');
+    expect(signed.events.map((event) => event.eventType)).toEqual(['gate.signoff_recorded']);
+
+    // The same superintendent cannot finish the job on his own.
+    const selfCountersign = await call(`/api/gates/${gate.gateInstanceId}/countersign`, superintendent, {
+      method: 'POST', body: '{}', headers: { 'idempotency-key': 'api-self-countersign-1' },
+    });
+    expect(selfCountersign.status).toBe(409);
+
+    const release = await call(`/api/gates/${gate.gateInstanceId}/countersign`, ownerToken, {
+      method: 'POST', body: '{}', headers: { 'idempotency-key': 'api-countersign-0001' },
     });
     expect(release.status).toBe(200);
     const released = await release.json() as { state: { status: string }; events: Array<{ eventType: string }> };
     expect(released.state.status).toBe('released');
-    expect(released.events.map((event) => event.eventType)).toEqual(['gate.released', 'draw.eligible', 'customer_update.published']);
+    // Pre-gunite bears no draw, so releasing it creates no draw eligibility.
+    expect(released.events.map((event) => event.eventType)).toEqual(['gate.countersigned', 'gate.released', 'customer_update.published']);
 
     const milestones = await call(`/api/customer/jobs/${ids.job}/milestones`, customer);
     expect(milestones.status).toBe(200);
@@ -152,6 +176,194 @@ describe('Gate HTTP vertical slice', () => {
 
     const forbiddenInternal = await call(`/api/gates/${gate.gateInstanceId}`, customer);
     expect(forbiddenInternal.status).toBe(403);
+  });
+
+  it('opens a construction project, advances its phase, and keeps the history', async () => {
+    const office = await token(ids.office, 'office');
+    const superintendent = await token(ids.superintendent, 'superintendent');
+    const customer = await token(ids.customer, 'customer');
+
+    const before = await call(`/api/jobs/${ids.job}/project`, office);
+    expect(before.status).toBe(404);
+
+    const opened = await call(`/api/jobs/${ids.job}/project`, office, {
+      method: 'POST',
+      body: JSON.stringify({ initialPhaseKey: 'layout-excavation', superintendentUserId: ids.superintendent }),
+      headers: { 'idempotency-key': 'api-open-project-1' },
+    });
+    expect(opened.status).toBe(201);
+    expect(await opened.json()).toMatchObject({
+      currentPhaseKey: 'layout-excavation',
+      customerMilestone: 'excavation',
+      superintendentName: 'Site Super',
+    });
+
+    const skipped = await call(`/api/jobs/${ids.job}/project/phase`, superintendent, {
+      method: 'POST',
+      body: JSON.stringify({ toPhaseKey: 'gunite' }),
+      headers: { 'idempotency-key': 'api-skip-phase-1' },
+    });
+    expect(skipped.status).toBe(409);
+    expect(await skipped.json()).toMatchObject({ error: expect.stringMatching(/recorded reason/i) });
+
+    const advanced = await call(`/api/jobs/${ids.job}/project/phase`, superintendent, {
+      method: 'POST',
+      body: JSON.stringify({ toPhaseKey: 'steel-reinforcement' }),
+      headers: { 'idempotency-key': 'api-advance-phase-1' },
+    });
+    expect(advanced.status).toBe(200);
+    expect(await advanced.json()).toMatchObject({ currentPhaseKey: 'steel-reinforcement', customerMilestone: 'shell' });
+
+    const history = await call(`/api/jobs/${ids.job}/project/history`, office);
+    expect(await history.json()).toEqual([
+      expect.objectContaining({ fromPhaseKey: null, toPhaseKey: 'layout-excavation' }),
+      expect.objectContaining({ fromPhaseKey: 'layout-excavation', toPhaseKey: 'steel-reinforcement' }),
+    ]);
+
+    // The job summary now carries the project, and customers still see none of it.
+    const detail = await call(`/api/jobs/${ids.job}`, office);
+    expect(await detail.json()).toMatchObject({
+      project: { currentPhaseKey: 'steel-reinforcement', currentPhaseSequence: 3 },
+    });
+    for (const path of [`/api/jobs/${ids.job}/project`, `/api/jobs/${ids.job}/project/history`]) {
+      expect((await call(path, customer)).status).toBe(403);
+    }
+    const customerWrite = await call(`/api/jobs/${ids.job}/project/phase`, customer, {
+      method: 'POST',
+      body: JSON.stringify({ toPhaseKey: 'gunite', reason: 'no' }),
+      headers: { 'idempotency-key': 'api-customer-phase-1' },
+    });
+    expect(customerWrite.status).toBe(403);
+  });
+
+  it('requires a token when local pilot mode is off', async () => {
+    // The default server in this suite has no localUserId configured.
+    const anonymous = await fetch(`${baseUrl}/api/today`);
+    expect(anonymous.status).toBe(403);
+  });
+
+  it('serves a local request with no token when local pilot mode is on', async () => {
+    const local = createGateApi({
+      db, jwtSecret: secretText, evidenceDirectory: storage, localUserId: ids.office,
+    });
+    await new Promise<void>((done) => local.listen(0, '127.0.0.1', done));
+    const localUrl = `http://127.0.0.1:${(local.address() as AddressInfo).port}`;
+    try {
+      const feed = await fetch(`${localUrl}/api/today?today=2026-07-31`);
+      expect(feed.status).toBe(200);
+      expect(ActionCardListSchema.parse(await feed.json()).length).toBeGreaterThan(0);
+
+      // A token still wins when one is supplied, so roles stay switchable.
+      const asCustomer = await fetch(`${localUrl}/api/today`, {
+        headers: { authorization: `Bearer ${await token(ids.customer, 'customer')}` },
+      });
+      expect(asCustomer.status).toBe(403);
+
+      // An inactive or unknown local user is refused rather than assumed.
+      const unknown = createGateApi({
+        db, jwtSecret: secretText, evidenceDirectory: storage, localUserId: createCanonicalId('user'),
+      });
+      await new Promise<void>((done) => unknown.listen(0, '127.0.0.1', done));
+      const unknownUrl = `http://127.0.0.1:${(unknown.address() as AddressInfo).port}`;
+      try {
+        expect((await fetch(`${unknownUrl}/api/today`)).status).toBe(403);
+      } finally {
+        await new Promise((done) => unknown.close(done));
+      }
+    } finally {
+      await new Promise((done) => local.close(done));
+    }
+  });
+
+  it('refuses to create a draw schedule without a signed contract, and keeps money staff-only', async () => {
+    const office = await token(ids.office, 'office');
+    const field = await token(ids.field, 'field');
+    const customer = await token(ids.customer, 'customer');
+
+    // The seeded job has no signed proposal, so there is no total to divide.
+    const premature = await call(`/api/jobs/${ids.job}/draws`, office, {
+      method: 'POST', body: '{}', headers: { 'idempotency-key': 'api-draws-0001' },
+    });
+    expect(premature.status).toBe(409);
+
+    const empty = await call(`/api/jobs/${ids.job}/draws`, office);
+    expect(empty.status).toBe(200);
+    expect(await empty.json()).toMatchObject({ draws: [], collectedCents: 0 });
+
+    // Creating a schedule and confirming an invoice are the owner's and the
+    // office's, never the field's.
+    const fieldAttempt = await call(`/api/jobs/${ids.job}/draws`, field, {
+      method: 'POST', body: '{}', headers: { 'idempotency-key': 'api-draws-0002' },
+    });
+    expect(fieldAttempt.status).toBe(409);
+
+    const invoiceAttempt = await call(`/api/jobs/${ids.job}/draws/deposit/invoice`, field, {
+      method: 'POST',
+      body: JSON.stringify({ invoiceReference: 'QB-1' }),
+    });
+    expect(invoiceAttempt.status).toBe(409);
+
+    expect((await call(`/api/jobs/${ids.job}/draws`, customer)).status).toBe(403);
+  });
+
+  it('serves the action feed to staff, pinned to a day, and refuses customers', async () => {
+    const office = await token(ids.office, 'office');
+    const customer = await token(ids.customer, 'customer');
+
+    const feedResponse = await call('/api/today?today=2026-07-31', office);
+    expect(feedResponse.status).toBe(200);
+    const feed = ActionCardListSchema.parse(await feedResponse.json());
+    // The seeded job has an approved takeoff but no project record yet.
+    expect(feed.map((card) => card.kind)).toContain('project.unopened');
+    for (const card of feed) {
+      expect(card.reason.length).toBeGreaterThan(20);
+      expect(card.actionHref).toContain(ids.job);
+    }
+
+    // Same state, same day, same feed.
+    const repeat = await call('/api/today?today=2026-07-31', office);
+    expect(ActionCardListSchema.parse(await repeat.json()).map((card) => card.cardId))
+      .toEqual(feed.map((card) => card.cardId));
+
+    const badDay = await call('/api/today?today=yesterday', office);
+    expect(badDay.status).toBe(422);
+
+    expect((await call('/api/today', customer)).status).toBe(403);
+  });
+
+  it('serves the job gate plan and opens any confirmed template', async () => {
+    const office = await token(ids.office, 'office');
+    const customer = await token(ids.customer, 'customer');
+
+    const planResponse = await call(`/api/jobs/${ids.job}/gates`, office);
+    expect(planResponse.status).toBe(200);
+    const plan = await planResponse.json() as Array<Record<string, unknown>>;
+    expect(plan.map((entry) => entry.definitionKey)).toEqual([
+      'permit', 'excavation', 'pre-gunite', 'shell', 'deck-tile', 'equipment', 'final',
+    ]);
+    expect(plan.every((entry) => entry.gateInstanceId === null && entry.status === null)).toBe(true);
+
+    const opened = await call(`/api/jobs/${ids.job}/gates/excavation`, office, { method: 'POST', body: '{}' });
+    expect(opened.status).toBe(201);
+    expect(await opened.json()).toMatchObject({ definitionKey: 'excavation', status: 'not-started' });
+
+    const unknown = await call(`/api/jobs/${ids.job}/gates/demolition`, office, { method: 'POST', body: '{}' });
+    expect(unknown.status).toBe(409);
+
+    expect((await call(`/api/jobs/${ids.job}/gates`, customer)).status).toBe(403);
+  });
+
+  it('refuses a phase key outside the nine Apex builds', async () => {
+    const office = await token(ids.office, 'office');
+    await call(`/api/jobs/${ids.job}/project`, office, {
+      method: 'POST', body: '{}', headers: { 'idempotency-key': 'api-open-project-2' },
+    });
+    const invalid = await call(`/api/jobs/${ids.job}/project/phase`, office, {
+      method: 'POST',
+      body: JSON.stringify({ toPhaseKey: 'demolition' }),
+      headers: { 'idempotency-key': 'api-invalid-phase-1' },
+    });
+    expect(invalid.status).toBe(422);
   });
 
   it('serves the internal job list to staff and refuses customers', async () => {
@@ -188,8 +400,8 @@ describe('Gate HTTP vertical slice', () => {
     const summary = await detail.json() as { currentGate: Record<string, unknown> | null };
     expect(summary.currentGate).toMatchObject({
       definitionKey: 'pre-gunite',
-      definitionVersion: 1,
-      title: 'Pre-gunite release',
+      definitionVersion: 2,
+      title: 'Pre-gunite hold point',
       status: 'not-started',
     });
   });
