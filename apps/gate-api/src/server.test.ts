@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import type { AddressInfo } from 'node:net';
 import { PGlite } from '@electric-sql/pglite';
 import { applyOperationalMigrations } from '@apex/database';
-import { ActionCardListSchema, createCanonicalId } from '@apex/contracts';
+import { ActionCardListSchema, DailyBriefSchema, createCanonicalId } from '@apex/contracts';
 import { SignJWT } from 'jose';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createGateApi } from './server.js';
@@ -234,6 +234,28 @@ describe('Gate HTTP vertical slice', () => {
       headers: { 'idempotency-key': 'api-customer-phase-1' },
     });
     expect(customerWrite.status).toBe(403);
+  });
+
+  it('serves the daily brief, frozen per day, and refuses customers', async () => {
+    const office = await token(ids.office, 'office');
+    const customer = await token(ids.customer, 'customer');
+
+    const first = await call('/api/brief?date=2026-08-02', office);
+    expect(first.status).toBe(200);
+    const brief = DailyBriefSchema.parse(await first.json());
+    expect(brief.briefDate).toBe('2026-08-02');
+    expect(brief.previousBriefDate).toBeNull();
+
+    // Asking again returns the brief that was delivered, not a fresh one.
+    const again = DailyBriefSchema.parse(await (await call('/api/brief?date=2026-08-02', office)).json());
+    expect(again.briefId).toBe(brief.briefId);
+    expect(again.generatedAt).toBe(brief.generatedAt);
+
+    const nextDay = DailyBriefSchema.parse(await (await call('/api/brief?date=2026-08-03', office)).json());
+    expect(nextDay.previousBriefDate).toBe('2026-08-02');
+
+    expect((await call('/api/brief?date=nope', office)).status).toBe(422);
+    expect((await call('/api/brief', customer)).status).toBe(403);
   });
 
   it('requires a token when local pilot mode is off', async () => {

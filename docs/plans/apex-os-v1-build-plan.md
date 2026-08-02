@@ -2,7 +2,7 @@
 
 **Source PRD:** [`PRD FINAL.md`](../../PRD%20FINAL.md) (Apex OS v1, Designer Pools, powered by GATE v3)
 **Written:** 2026-07-31
-**Status:** Approved 2026-07-31. Steps 1–4 and 6 complete. Step 5 is blocked on Apex's inspection list; Step 7 is next.
+**Status:** Approved 2026-07-31. Steps 1–4, 6 and 8 complete. Step 5's inspection half is blocked on Apex's inspection list; its scheduled-visit half and Step 7 are next.
 **Construction model:** [`docs/decisions/construction-model.md`](../decisions/construction-model.md) — nine phases, seven gates, 10/30/30/20/10 draws, confirmed 2026-07-31.
 
 ---
@@ -187,8 +187,23 @@ Tokenized no-login link, rotation and revocation, access log, six milestones,
 approved-photo gallery, per-photo visibility toggle (§9.11). Exit: one real
 customer link is live.
 
-**Step 8 — Daily owner brief (small)**
-Render step 4's cards as one morning brief with links (§9.14). Exit: you use it.
+**Step 8 — Daily owner brief (small) — DONE 2026-08-02**
+Step 4's cards rendered as one morning brief with links (§9.14). It turned out
+to be small exactly because the card engine was built once as a derivation; the
+brief adds no judgment of its own about what matters.
+
+The decision that made it worth having: **the brief is generated once per day
+and frozen, while Today stays live.** The feed answers "what is true now"; the
+brief answers "what changed since yesterday". Without the freeze it would have
+been a second copy of the feed with a date on it.
+
+Verified across three consecutive days on the live database: a first brief with
+nothing new, a second comparing against it, then a draw invoiced and the third
+showing it cleared with ready-to-bill falling to zero and untouched items ageing.
+
+One thing to carry into §15 notifications: `amountCents` now lives on the action
+card. The brief's ready-to-bill total was briefly parsed out of card titles with
+a regex, which a copy change would have broken silently.
 
 Deferred to after the pilot, per §19's own cut list: full sales pipeline (§9.2),
 lead/n8n sync (§9.1), AI summaries and change-order detection (§9.13, §10),

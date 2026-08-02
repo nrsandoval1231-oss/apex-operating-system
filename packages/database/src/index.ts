@@ -19,6 +19,7 @@ export const OPERATIONAL_MIGRATIONS = [
   '0011_gate_countersign.sql',
   '0012_gate_templates.sql',
   '0013_draw_schedule.sql',
+  '0014_daily_brief.sql',
 ] as const;
 
 export const STORAGE_MIGRATION = '0003_evidence_storage.sql';

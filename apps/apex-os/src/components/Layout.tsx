@@ -35,6 +35,9 @@ export default function Layout() {
           <NavLink to="/projects">
             <span>Projects</span>
           </NavLink>
+          <NavLink to="/brief">
+            <span>Brief</span>
+          </NavLink>
         </div>
       </nav>
 

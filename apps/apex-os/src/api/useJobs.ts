@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import {
   ActionCardListSchema,
+  DailyBriefSchema,
   DrawScheduleSchema,
   JobGatePlanSchema,
   JobSummaryListSchema,
   JobSummarySchema,
   type ActionCard,
+  type DailyBrief,
   type DrawSchedule,
   type JobGatePlanEntry,
   type JobSummary,
@@ -86,6 +88,12 @@ const loadCards = (path: string, signal: AbortSignal): Promise<readonly ActionCa
 /** The §9.5 action feed, derived server-side from stored state. */
 export const useActionCards = (): Query<readonly ActionCard[]> =>
   useResource('/api/today', loadCards);
+
+const loadBrief = (path: string, signal: AbortSignal): Promise<DailyBrief> =>
+  apiGet(path, DailyBriefSchema, signal);
+
+/** Today's brief. Generated once per day by the server, then frozen. */
+export const useDailyBrief = (): Query<DailyBrief> => useResource('/api/brief', loadBrief);
 
 const loadDraws = (path: string, signal: AbortSignal): Promise<DrawSchedule> =>
   apiGet(path, DrawScheduleSchema, signal);

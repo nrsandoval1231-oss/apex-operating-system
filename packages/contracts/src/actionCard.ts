@@ -69,6 +69,15 @@ export const ActionCardSchema = z.strictObject({
   reason: z.string().min(1).max(500),
   /** Human-readable timing, e.g. "Held since 31 Jul". Null when nothing is due. */
   dueLabel: z.string().min(1).max(120).nullable(),
+  /**
+   * Money at stake, in cents, for cards that carry a figure. Null otherwise.
+   *
+   * Held as data rather than left inside the title, so anything that needs to
+   * total it — the daily brief, the §16 "value of draws released but not
+   * invoiced" metric — reads a number instead of parsing prose that a copy
+   * change would silently break.
+   */
+  amountCents: z.number().int().nonnegative().nullable(),
   /** The smallest workflow that completes the action. */
   actionLabel: z.string().min(1).max(80),
   actionHref: z.string().min(1).max(300),

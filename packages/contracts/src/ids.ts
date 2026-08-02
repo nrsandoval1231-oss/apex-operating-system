@@ -13,6 +13,7 @@ export const ID_KINDS = [
   'user',
   'draw',
   'customer_update',
+  'brief',
 ] as const;
 
 export type CanonicalIdKind = (typeof ID_KINDS)[number];
@@ -35,6 +36,7 @@ export const idSchemas = {
   user: canonicalIdSchema('user'),
   draw: canonicalIdSchema('draw'),
   customer_update: canonicalIdSchema('customer_update'),
+  brief: canonicalIdSchema('brief'),
 } as const;
 
 export const createCanonicalId = <Kind extends CanonicalIdKind>(kind: Kind, timestamp?: number): `${Kind}_${string}` =>
@@ -51,3 +53,4 @@ export type EvidenceId = z.infer<typeof idSchemas.evidence>;
 export type UserId = z.infer<typeof idSchemas.user>;
 export type DrawId = z.infer<typeof idSchemas.draw>;
 export type CustomerUpdateId = z.infer<typeof idSchemas.customer_update>;
+export type BriefId = z.infer<typeof idSchemas.brief>;

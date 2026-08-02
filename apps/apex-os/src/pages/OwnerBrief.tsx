@@ -1,137 +1,164 @@
 import { Link } from 'react-router';
-import { mockActionCards, mockProjects } from '../data/mockData';
+import type { BriefItem } from '@apex/contracts';
+import { useDailyBrief } from '../api/useJobs';
+import QueryState from '../components/QueryState';
+import { formatContract, shortId } from '../lib/jobDisplay';
+
+/**
+ * The daily owner brief — PRD §9.14.
+ *
+ * A view over the same action cards the Today screen renders. The brief is
+ * generated once each morning and then frozen, which is what lets it say what
+ * changed since yesterday; Today stays live. Nothing is derived independently
+ * here, so the two screens cannot disagree about what needs doing.
+ */
+
+const readableDate = (day: string): string => {
+  const parsed = Date.parse(`${day}T00:00:00Z`);
+  if (Number.isNaN(parsed)) return day;
+  return new Date(parsed).toLocaleDateString('en-US', {
+    weekday: 'long', month: 'long', day: 'numeric', timeZone: 'UTC',
+  });
+};
+
+const standingLabel = (days: number): string =>
+  days === 1 ? 'New today' : `Standing ${days} days`;
+
+function Item({ item }: { item: BriefItem }) {
+  const { card } = item;
+  return (
+    <li>
+      <div style={{ minWidth: 0 }}>
+        <div className="what">{card.title}</div>
+        <div className="note">
+          {card.customerName ?? `Job ${shortId(card.jobId)}`}
+          {' · '}
+          {standingLabel(item.standingDays)}
+          {card.dueLabel === null ? '' : ` · ${card.dueLabel}`}
+        </div>
+      </div>
+      <div className="figure">
+        <Link to={card.actionHref} className="action">Open</Link>
+      </div>
+    </li>
+  );
+}
+
+function Section({ title, items, empty }: { title: string; items: readonly BriefItem[]; empty: string }) {
+  return (
+    <>
+      <div className="section-rule">
+        <h2>{title}</h2>
+        {items.length > 0 && <span className="count">{items.length}</span>}
+      </div>
+      {items.length === 0
+        ? <p className="state-quiet">{empty}</p>
+        : <ul className="schedule">{items.map((item) => <Item key={item.card.cardId} item={item} />)}</ul>}
+    </>
+  );
+}
 
 export default function OwnerBrief() {
-  const today = new Date().toLocaleDateString('en-US', { 
-    weekday: 'long', 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric' 
-  });
+  const { data: brief, error, loading, reload } = useDailyBrief();
 
-  const urgentActions = mockActionCards.filter(c => c.type === 'urgent');
-  const readyToBill = mockActionCards.filter(c => c.type === 'success');
-  const atRiskProjects = mockProjects.filter(p => p.status === 'at-risk' || p.status === 'blocked');
+  if (brief === null) {
+    return (
+      <>
+        <header className="title-block"><h1>Brief</h1></header>
+        <QueryState
+          loading={loading} error={error} isEmpty={false}
+          emptyTitle="" emptyBody="" onRetry={reload}
+        />
+      </>
+    );
+  }
+
+  const needs = brief.needsYou.length;
+  const quiet = needs === 0 && brief.running.length === 0 && brief.thisWeek.length === 0;
+  const first = brief.previousBriefDate === null;
 
   return (
-    <div>
-      <div className="section-header">
-        <div>
-          <h1 className="section-title">Daily Brief</h1>
-          <p className="text-muted" style={{ fontSize: '14px' }}>{today}</p>
+    <>
+      <header className="title-block">
+        <h1>Brief</h1>
+        <div className="stamp">
+          {readableDate(brief.briefDate)}
+          <b>{needs === 0 ? 'Nothing needs you' : `${needs} need${needs === 1 ? 's' : ''} you`}</b>
         </div>
-      </div>
+      </header>
 
-      <p className="notice warning" role="note">
-        <strong>Sample data.</strong> Every figure below is illustrative. The real brief is
-        generated from action cards and is not built yet.
-      </p>
+      <dl className="totals">
+        <div style={{ display: 'contents' }} className="lead">
+          <dt>Ready to bill</dt>
+          <dd>{formatContract(brief.readyToBillCents)}</dd>
+        </div>
+        <dt>New</dt>
+        <dd>{first ? 'First brief' : brief.newSinceLast.length}</dd>
+        <dt>Cleared</dt>
+        <dd>{first ? '—' : brief.cleared.length}</dd>
+        <dt>Since</dt>
+        <dd>{brief.previousBriefDate ?? 'nothing yet'}</dd>
+      </dl>
 
-      {/* Summary cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '24px' }}>
-        <div className="card" style={{ textAlign: 'center', padding: '20px' }}>
-          <div style={{ fontSize: '32px', fontWeight: 700, color: 'var(--danger)' }}>{urgentActions.length}</div>
-          <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Urgent Actions</div>
+      {quiet && (
+        <div className="state">
+          <h3>All clear</h3>
+          <p>No gate, draw, or project record needs a decision this morning.</p>
         </div>
-        <div className="card" style={{ textAlign: 'center', padding: '20px' }}>
-          <div style={{ fontSize: '32px', fontWeight: 700, color: 'var(--warning)' }}>{atRiskProjects.length}</div>
-          <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>At Risk</div>
-        </div>
-        <div className="card" style={{ textAlign: 'center', padding: '20px' }}>
-          <div style={{ fontSize: '32px', fontWeight: 700, color: 'var(--success)' }}>{readyToBill.length}</div>
-          <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Ready to Bill</div>
-        </div>
-        <div className="card" style={{ textAlign: 'center', padding: '20px' }}>
-          <div style={{ fontSize: '32px', fontWeight: 700, color: 'var(--info)' }}>{mockProjects.length}</div>
-          <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Active Projects</div>
-        </div>
-      </div>
-
-      {/* Urgent actions */}
-      {urgentActions.length > 0 && (
-        <>
-          <h2 style={{ fontSize: '16px', fontWeight: 600, margin: '24px 0 12px', color: 'var(--danger)' }}>
-            🚨 Needs Your Attention
-          </h2>
-          {urgentActions.map(card => (
-            <div key={card.id} className="action-card urgent" style={{ marginBottom: '8px' }}>
-              <div className="action-project">{card.projectName}</div>
-              <div className="action-description">{card.title}</div>
-              <Link to={`/projects/${card.projectId}`} className="action-button" style={{ fontSize: '13px', padding: '8px 16px' }}>
-                Take Action
-              </Link>
-            </div>
-          ))}
-        </>
       )}
 
-      {/* At risk projects */}
-      {atRiskProjects.length > 0 && (
+      {brief.newSinceLast.length > 0 && (
+        <Section
+          title={`New since ${brief.previousBriefDate ?? 'the last brief'}`}
+          items={brief.newSinceLast}
+          empty=""
+        />
+      )}
+
+      {brief.cleared.length > 0 && (
         <>
-          <h2 style={{ fontSize: '16px', fontWeight: 600, margin: '24px 0 12px', color: 'var(--warning)' }}>
-            ⚠️ Projects at Risk
-          </h2>
-          {atRiskProjects.map(project => (
-            <div key={project.id} className="card" style={{ marginBottom: '8px' }}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <div style={{ fontWeight: 600 }}>{project.name}</div>
-                  <div className="text-muted" style={{ fontSize: '12px' }}>{project.nextAction}</div>
+          <div className="section-rule">
+            <h2>Cleared since then</h2>
+            <span className="count">{brief.cleared.length}</span>
+          </div>
+          <ul className="schedule">
+            {brief.cleared.map((item) => (
+              <li key={item.cardId}>
+                <div style={{ minWidth: 0 }}>
+                  <div className="what">{item.title}</div>
+                  <div className="note">{item.customerName ?? 'Resolved'}</div>
                 </div>
-                <Link to={`/projects/${project.id}`} className="action-button secondary" style={{ fontSize: '12px', padding: '6px 12px' }}>
-                  View
-                </Link>
-              </div>
-            </div>
-          ))}
+                <div className="figure"><span className="tag tag-clear">Done</span></div>
+              </li>
+            ))}
+          </ul>
         </>
       )}
 
-      {/* Ready to bill */}
-      {readyToBill.length > 0 && (
+      {!quiet && (
         <>
-          <h2 style={{ fontSize: '16px', fontWeight: 600, margin: '24px 0 12px', color: 'var(--success)' }}>
-            💰 Ready to Bill
-          </h2>
-          {readyToBill.map(card => (
-            <div key={card.id} className="action-card success" style={{ marginBottom: '8px' }}>
-              <div className="action-project">{card.projectName}</div>
-              <div className="action-description">{card.description}</div>
-              <button className="action-button" style={{ fontSize: '13px', padding: '8px 16px', background: 'var(--success)' }}>
-                Create Invoice
-              </button>
-            </div>
-          ))}
+          <Section title="Things need you" items={brief.needsYou} empty="Nothing is waiting on a decision." />
+          <Section title="Running" items={brief.running} empty="No work in progress to check." />
+          <Section title="This week" items={brief.thisWeek} empty="Nothing scheduled in the next fortnight." />
         </>
       )}
 
-      {/* This week */}
-      <h2 style={{ fontSize: '16px', fontWeight: 600, margin: '24px 0 12px' }}>
-        📅 This Week
-      </h2>
-      <div className="card">
-        <div className="flex items-center justify-between" style={{ padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
-          <div>
-            <div style={{ fontWeight: 500 }}>Gunite — Smith Residence</div>
-            <div className="text-muted" style={{ fontSize: '12px' }}>Tomorrow, 7:00 AM</div>
+      {/* Named rather than omitted: a brief silently missing four of its nine
+          PRD sections reads as "all clear" on subjects it never checked. */}
+      <div className="section-rule"><h2>Not covered yet</h2></div>
+      <dl className="facts">
+        {brief.notCovered.map((subject) => (
+          <div key={subject} style={{ display: 'contents' }}>
+            <dt>{subject}</dt>
+            <dd className="unset">Not built</dd>
           </div>
-          <span className="card-badge badge-warning">Crew scheduled</span>
-        </div>
-        <div className="flex items-center justify-between" style={{ padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
-          <div>
-            <div style={{ fontWeight: 500 }}>City Inspection — Johnson Pool</div>
-            <div className="text-muted" style={{ fontSize: '12px' }}>Thursday, 10:00 AM</div>
-          </div>
-          <span className="card-badge badge-info">Requested</span>
-        </div>
-        <div className="flex items-center justify-between" style={{ padding: '8px 0' }}>
-          <div>
-            <div style={{ fontWeight: 500 }}>Deck Crew — Davis Pool</div>
-            <div className="text-muted" style={{ fontSize: '12px' }}>Friday, 8:00 AM</div>
-          </div>
-          <span className="card-badge badge-info">Confirmed</span>
-        </div>
-      </div>
-    </div>
+        ))}
+      </dl>
+
+      <p className="notice">
+        Generated {new Date(brief.generatedAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+        {' '}and frozen for the day. Today stays live if you want the current picture.
+      </p>
+    </>
   );
 }

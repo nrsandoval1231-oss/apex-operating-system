@@ -5,6 +5,7 @@ import {
   CustomerMilestoneProjectionSchema,
   DRAW_CODES,
   DRAW_SCHEDULE_TEMPLATE,
+  DailyBriefSchema,
   DrawScheduleSchema,
   JobDrawSchema,
   JobSummarySchema,
@@ -16,6 +17,7 @@ import {
   type ConstructionPhaseKey,
   type CustomerMilestoneKey,
   type CustomerMilestoneProjection,
+  type DailyBrief,
   type DrawSchedule,
   type JobDraw,
   type EvidenceId,
@@ -31,6 +33,7 @@ import {
 import {
   DomainRuleError,
   allocateDrawAmounts,
+  buildDailyBrief,
   customerMilestoneFor,
   drawCodeForGate,
   decideGateCommand,
@@ -45,6 +48,7 @@ import {
   type DomainEventDraft,
   type GateCommand,
   type GateState,
+  type PreviousBrief,
   type ProjectPhaseState,
 } from '@apex/domain';
 
@@ -935,6 +939,71 @@ export class GateService {
    */
   async getActionCards(today: string): Promise<readonly ActionCard[]> {
     return deriveCards(await this.readCardSnapshot(), today);
+  }
+
+  /**
+   * The day's brief — PRD §9.14.
+   *
+   * Generated once per date and frozen. Asking again on the same day returns
+   * the brief that was delivered that morning rather than a fresh one, which is
+   * what lets it answer "what changed since yesterday" at all. The Today feed
+   * remains the live view.
+   */
+  async getDailyBrief(briefDate: string): Promise<DailyBrief> {
+    const existing = await this.db.query<{ payload: unknown }>(
+      'select payload from daily_briefs where brief_date = $1',
+      [briefDate],
+    );
+    if (existing.rows[0]) return DailyBriefSchema.parse(existing.rows[0].payload);
+
+    const previousRow = await this.db.query<{ brief_date: string | Date; payload: unknown }>(
+      `select brief_date, payload from daily_briefs
+       where brief_date < $1 order by brief_date desc limit 1`,
+      [briefDate],
+    );
+    const previousBrief = previousRow.rows[0]
+      ? DailyBriefSchema.parse(previousRow.rows[0].payload)
+      : null;
+
+    // Everything the previous brief carried, so today can tell new from
+    // standing and name anything that has since cleared.
+    const previous: PreviousBrief | null = previousBrief === null ? null : {
+      briefDate: previousBrief.briefDate,
+      items: [...previousBrief.needsYou, ...previousBrief.running, ...previousBrief.thisWeek]
+        .map((item) => ({ cardId: item.card.cardId, standingDays: item.standingDays })),
+      titles: Object.fromEntries(
+        [...previousBrief.needsYou, ...previousBrief.running, ...previousBrief.thisWeek]
+          .map((item) => [item.card.cardId, {
+            title: item.card.title,
+            customerName: item.card.customerName,
+          }] as const),
+      ),
+    };
+
+    const brief = buildDailyBrief({
+      briefId: createCanonicalId('brief'),
+      briefDate,
+      generatedAt: new Date().toISOString(),
+      cards: await this.getActionCards(briefDate),
+      previous,
+    });
+
+    const cardIds = [...brief.needsYou, ...brief.running, ...brief.thisWeek]
+      .map((item) => item.card.cardId);
+    await this.db.query(
+      `insert into daily_briefs (brief_id, brief_date, generated_at, payload, card_ids)
+       values ($1, $2, $3, $4, $5)
+       on conflict (brief_date) do nothing`,
+      [brief.briefId, briefDate, brief.generatedAt, brief, cardIds],
+    );
+
+    // A concurrent request may have won the insert. The delivered brief is the
+    // one that was stored, not the one this call happened to build.
+    const stored = await this.db.query<{ payload: unknown }>(
+      'select payload from daily_briefs where brief_date = $1',
+      [briefDate],
+    );
+    return DailyBriefSchema.parse(stored.rows[0]?.payload ?? brief);
   }
 
   private async readCardSnapshot(): Promise<readonly CardJobSnapshot[]> {

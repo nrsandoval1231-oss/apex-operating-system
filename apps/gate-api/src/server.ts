@@ -288,6 +288,16 @@ export function createGateApi(options: GateApiOptions) {
         return sendJson(response, 200, await service.getActionCards(today));
       }
 
+      if (request.method === 'GET' && url.pathname === '/api/brief') {
+        requireStaff(actor);
+        const requested = url.searchParams.get('date');
+        const briefDate = requested === null ? new Date().toISOString().slice(0, 10) : DaySchema.parse(requested);
+        // Generates the day's brief on first read and returns the stored one
+        // afterwards, so repeating this request is safe and always returns the
+        // brief that was actually delivered that morning.
+        return sendJson(response, 200, await service.getDailyBrief(briefDate));
+      }
+
       if (request.method === 'GET' && url.pathname === '/api/jobs') {
         requireStaff(actor);
         return sendJson(response, 200, await service.listJobs());

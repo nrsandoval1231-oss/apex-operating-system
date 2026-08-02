@@ -123,6 +123,7 @@ interface CardDraft {
   readonly title: string;
   readonly reason: string;
   readonly dueLabel?: string | null;
+  readonly amountCents?: number | null;
   readonly actionLabel: string;
   readonly actionHref: string;
 }
@@ -138,6 +139,7 @@ const build = (job: CardJobSnapshot, draft: CardDraft): ActionCard => ({
   title: draft.title,
   reason: draft.reason,
   dueLabel: draft.dueLabel ?? null,
+  amountCents: draft.amountCents ?? null,
   actionLabel: draft.actionLabel,
   actionHref: draft.actionHref,
 });
@@ -306,6 +308,7 @@ export function deriveJobCards(job: CardJobSnapshot, today: string): readonly Ac
       dueLabel: Number.isNaN(days)
         ? 'Ready to bill'
         : dayCountLabel(days, 'Billable for', 'Billable for', 'Billable today'),
+      amountCents: draw.amountCents,
       actionLabel: 'Confirm invoice',
       actionHref: detail,
     }));

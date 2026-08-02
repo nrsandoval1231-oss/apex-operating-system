@@ -1,8 +1,8 @@
 # Apex Current Status
 
-**Last updated:** 2026-07-31
+**Last updated:** 2026-08-02
 
-**Program phase:** Phase 1 — Shared operational spine and controlled Gate vertical slice (Phase 0 preservation complete). Apex OS build plan Steps 1–4 and 6 complete; Step 7 (customer progress page) is next. Step 5 (inspections) remains blocked on Apex's inspection list and lead times.
+**Program phase:** Phase 1 — Shared operational spine and controlled Gate vertical slice (Phase 0 preservation complete). Apex OS build plan Steps 1–4, 6 and 8 complete; Step 7 (customer progress page) and the scheduled-visit half of Step 5 are next. Step 5's inspection half remains blocked on Apex's inspection list and lead times.
 
 **Production status:** Not production-ready
 
@@ -551,6 +551,44 @@ asymmetric/JWKS, TLS, provisioning, rotation — remains an open launch blocker.
 | Tokenless local request | `GET /api/today` returns 200 with six cards and no Authorization header |
 | Without the flag | The same request returns 403 |
 | Unknown or inactive local user | Refused with 403 rather than assumed |
+
+## Daily owner brief — 2026-08-02
+
+Build-plan Step 8. A view over the action cards rather than new logic, so the
+brief and the Today feed cannot disagree about what needs doing.
+
+**The brief is generated once per day and frozen; Today stays live.** That is
+the whole difference between them. The feed answers "what is true now"; the
+brief answers "what changed since yesterday", and a brief that rewrote itself
+through the day could not answer the second question at all. Migration `0014`
+stores the delivered payload and makes `daily_briefs` append-only for the same
+reason the event log is: a delivered brief records what someone was told that
+morning.
+
+| Commands | Result |
+|---|---|
+| `pnpm verify` | **261/261 root tests** and **1/1 integration test** passed; strict TypeScript build and app typecheck passed |
+| Live database, three consecutive days | Aug 1 first brief (nothing new, nothing cleared) → Aug 2 compares against it, everything standing 2 days → Draw 1 invoiced → Aug 3 shows it under **Cleared**, ready-to-bill drops $45,612.51 → $0, and the untouched items age to 3 days |
+| Browser | Renders at 375px with no overflow, 48px targets, three nav items; no console errors |
+
+What it carries: things-need-you / running / this-week, what is new since the
+last brief, what has cleared, how many days each item has been standing, and the
+total a passed Gate has made billable.
+
+Decisions worth challenging:
+
+- **`amountCents` moved onto the action card.** The brief's ready-to-bill total
+  was briefly parsed out of card titles with a regex; a copy change would have
+  broken the figure silently. Money is data now, which also gives §16's "value
+  of draws released but not invoiced" a number to read.
+- **Nothing is "new" on a first brief.** There is no previous state to be new
+  against, and calling every open item new would overstate the morning.
+- **The brief names the four PRD §9.14 sections it cannot answer** —
+  inspections, schedule conflicts, customer decisions, startup checks. A brief
+  silently missing four of its nine sections reads as "all clear" on subjects it
+  has never looked at.
+
+The sample-data brief prototype is gone; the screen is wired to real state.
 
 ## Next controlled milestone
 
