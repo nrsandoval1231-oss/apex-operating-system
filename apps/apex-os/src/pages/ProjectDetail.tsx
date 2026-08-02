@@ -1,6 +1,6 @@
 import { Link, useParams } from 'react-router';
-import { CONSTRUCTION_PHASES, type DrawStatus } from '@apex/contracts';
-import { useDrawSchedule, useJob, useJobGates } from '../api/useJobs';
+import { CONSTRUCTION_PHASES, type DrawStatus, type VisitStatus } from '@apex/contracts';
+import { useDrawSchedule, useJob, useJobGates, useJobSchedule } from '../api/useJobs';
 import QueryState from '../components/QueryState';
 import {
   GATE_STATUS_LABEL,
@@ -27,6 +27,20 @@ const DRAW_TAG: Readonly<Record<DrawStatus, string>> = {
   paid: 'tag-clear',
 };
 
+const VISIT_STATUS_LABEL: Readonly<Record<VisitStatus, string>> = {
+  planned: 'Planned',
+  confirmed: 'Confirmed',
+  done: 'Done',
+  cancelled: 'Cancelled',
+};
+
+const VISIT_TAG: Readonly<Record<VisitStatus, string>> = {
+  planned: 'tag-dim',
+  confirmed: 'tag-pool',
+  done: 'tag-clear',
+  cancelled: 'tag-dim',
+};
+
 const GATE_TAG = (status: string | null): string => {
   if (status === null) return 'tag-dim';
   if (status === 'released') return 'tag-clear';
@@ -37,7 +51,7 @@ const GATE_TAG = (status: string | null): string => {
 /** Work still to be built on this screen, stated rather than implied. */
 const PENDING = [
   ['Checklists and photos', 'Requirement checklists and evidence capture run in the Gate field console.'],
-  ['Inspections and crew', 'Deadlines and same-crew conflict detection.'],
+  ['Inspections', 'Deadlines and last-safe-request dates, once Apex confirms its inspection list.'],
   ['Customer page', 'Tokenized link, approved photos, and access log.'],
 ] as const;
 
@@ -47,7 +61,10 @@ export default function ProjectDetail() {
   const gates = useJobGates(id);
   const gatePlan = gates.data ?? [];
   const draws = useDrawSchedule(id);
-  const schedule = draws.data;
+  const drawPlan = draws.data;
+  const schedule = useJobSchedule(id);
+  const visits = schedule.data?.visits ?? [];
+  const conflicts = schedule.data?.conflicts ?? [];
 
   if (job === null) {
     return (
@@ -179,29 +196,84 @@ export default function ProjectDetail() {
         </ul>
       )}
 
+      {/* -------------------------------------------------------- schedule */}
+
+      <div className="section-rule">
+        <h2>Schedule</h2>
+        {conflicts.length > 0 && <span className="count">{conflicts.length} conflict{conflicts.length === 1 ? '' : 's'}</span>}
+      </div>
+
+      <QueryState
+        loading={schedule.loading}
+        error={schedule.error}
+        isEmpty={visits.length === 0}
+        emptyTitle="Nothing booked"
+        emptyBody="No subcontractor visits are scheduled on this job."
+        onRetry={schedule.reload}
+        quiet
+      />
+
+      {visits.length > 0 && (
+        <ul className="schedule">
+          {visits.map((visit) => {
+            const against = conflicts.filter((conflict) => conflict.visitId === visit.visitId);
+            return (
+              <li key={visit.visitId}>
+                <div style={{ minWidth: 0 }}>
+                  <div className="what">{visit.subcontractorName}</div>
+                  <div className="note">
+                    {[
+                      visit.trade,
+                      visit.startsOn === visit.endsOn ? visit.startsOn : `${visit.startsOn} – ${visit.endsOn}`,
+                      visit.rescheduleCount > 0
+                        ? `Moved ${visit.rescheduleCount} time${visit.rescheduleCount === 1 ? '' : 's'}`
+                        : null,
+                    ].filter(Boolean).join(' · ')}
+                  </div>
+                  {/* The conflict is stated on the row it belongs to, in full.
+                      A count alone would make the owner go hunting for it. */}
+                  {against.map((conflict) => (
+                    <div key={conflict.kind + conflict.visitId} className="note" style={{ color: 'var(--amber)', marginTop: '6px' }}>
+                      {conflict.kind === 'crew-double-booked'
+                        ? `Also booked on ${conflict.otherJobName ?? 'another job'} for ${conflict.overlapStartsOn}${conflict.overlapEndsOn === conflict.overlapStartsOn ? '' : ` – ${conflict.overlapEndsOn}`}`
+                        : `Booked before the ${conflict.gateTitle} gate has released`}
+                    </div>
+                  ))}
+                </div>
+                <div className="figure">
+                  <span className={`tag ${against.length > 0 ? 'tag-stamp' : VISIT_TAG[visit.status]}`}>
+                    {against.length > 0 ? 'Conflict' : VISIT_STATUS_LABEL[visit.status]}
+                  </span>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
       {/* ----------------------------------------------------------- draws */}
 
       <div className="section-rule">
         <h2>Draws</h2>
-        {schedule !== null && schedule.eligibleUnbilledCents > 0 && (
-          <span className="count">{formatContract(schedule.eligibleUnbilledCents)} ready</span>
+        {drawPlan !== null && drawPlan.eligibleUnbilledCents > 0 && (
+          <span className="count">{formatContract(drawPlan.eligibleUnbilledCents)} ready</span>
         )}
       </div>
 
       <QueryState
         loading={draws.loading}
         error={draws.error}
-        isEmpty={schedule !== null && schedule.draws.length === 0}
+        isEmpty={drawPlan !== null && drawPlan.draws.length === 0}
         emptyTitle="No draw schedule"
         emptyBody="This job has no draw schedule, so no gate release can make anything billable."
         onRetry={draws.reload}
         quiet
       />
 
-      {schedule !== null && schedule.draws.length > 0 && (
+      {drawPlan !== null && drawPlan.draws.length > 0 && (
         <>
           <ul className="schedule">
-            {schedule.draws.map((draw) => (
+            {drawPlan.draws.map((draw) => (
               <li key={draw.drawId}>
                 <div style={{ minWidth: 0 }}>
                   <div className="what">{draw.label}</div>
@@ -229,16 +301,16 @@ export default function ProjectDetail() {
           <dl className="totals">
             <div style={{ display: 'contents' }} className="lead">
               <dt>Ready to bill</dt>
-              <dd>{formatContract(schedule.eligibleUnbilledCents)}</dd>
+              <dd>{formatContract(drawPlan.eligibleUnbilledCents)}</dd>
             </div>
             <dt>Contract</dt>
-            <dd>{formatContract(schedule.contractCents)}</dd>
+            <dd>{formatContract(drawPlan.contractCents)}</dd>
             <dt>Invoiced</dt>
-            <dd>{formatContract(schedule.invoicedCents)}</dd>
+            <dd>{formatContract(drawPlan.invoicedCents)}</dd>
             <dt>Collected</dt>
-            <dd>{formatContract(schedule.collectedCents)}</dd>
+            <dd>{formatContract(drawPlan.collectedCents)}</dd>
             <dt>Remaining</dt>
-            <dd>{formatContract(schedule.remainingCents)}</dd>
+            <dd>{formatContract(drawPlan.remainingCents)}</dd>
           </dl>
 
           <p className="notice">

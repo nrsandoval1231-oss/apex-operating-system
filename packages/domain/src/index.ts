@@ -17,6 +17,7 @@ export * from './project.js';
 export * from './cards.js';
 export * from './draws.js';
 export * from './brief.js';
+export * from './schedule.js';
 
 export type RequirementStatus = 'pending' | 'passed' | 'failed' | 'overridden';
 export type GateStatus = 'not-started' | 'in-progress' | 'blocked' | 'awaiting-countersign' | 'released';

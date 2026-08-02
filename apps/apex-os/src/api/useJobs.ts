@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
+import { z } from 'zod';
 import {
   ActionCardListSchema,
   DailyBriefSchema,
+  ScheduledVisitListSchema,
+  VisitConflictSchema,
   DrawScheduleSchema,
   JobGatePlanSchema,
   JobSummaryListSchema,
@@ -88,6 +91,19 @@ const loadCards = (path: string, signal: AbortSignal): Promise<readonly ActionCa
 /** The §9.5 action feed, derived server-side from stored state. */
 export const useActionCards = (): Query<readonly ActionCard[]> =>
   useResource('/api/today', loadCards);
+
+const JobScheduleSchema = z.strictObject({
+  visits: ScheduledVisitListSchema,
+  conflicts: z.array(VisitConflictSchema),
+});
+export type JobSchedule = z.infer<typeof JobScheduleSchema>;
+
+const loadSchedule = (path: string, signal: AbortSignal): Promise<JobSchedule> =>
+  apiGet(path, JobScheduleSchema, signal);
+
+/** A job's booked visits and any conflict detected against them. */
+export const useJobSchedule = (jobId: string | undefined): Query<JobSchedule> =>
+  useResource(jobId === undefined ? null : `/api/jobs/${jobId}/visits`, loadSchedule);
 
 const loadBrief = (path: string, signal: AbortSignal): Promise<DailyBrief> =>
   apiGet(path, DailyBriefSchema, signal);

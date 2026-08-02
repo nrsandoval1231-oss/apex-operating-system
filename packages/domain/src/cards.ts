@@ -58,6 +58,18 @@ export interface CardProjectSnapshot {
   readonly riskNote: string | null;
 }
 
+/** A visit on this job, with any conflict already detected against it. */
+export interface CardVisitSnapshot {
+  readonly visitId: string;
+  readonly subcontractorName: string;
+  readonly trade: string;
+  readonly phaseTitle: string;
+  readonly startsOn: string;
+  readonly endsOn: string;
+  /** Plain-language conflict descriptions; empty when the visit is clean. */
+  readonly conflicts: readonly { readonly kind: string; readonly description: string }[];
+}
+
 export interface CardJobSnapshot {
   readonly jobId: JobId;
   readonly customerName: string | null;
@@ -71,6 +83,7 @@ export interface CardJobSnapshot {
   readonly project: CardProjectSnapshot | null;
   readonly gates: readonly CardGateSnapshot[];
   readonly draws: readonly CardDrawSnapshot[];
+  readonly visits: readonly CardVisitSnapshot[];
 }
 
 /** Days before the target completion date that the job starts appearing in This Week. */
@@ -328,6 +341,53 @@ export function deriveJobCards(job: CardJobSnapshot, today: string): readonly Ac
       actionLabel: 'Create schedule',
       actionHref: detail,
     }));
+  }
+
+  // --- Schedule -----------------------------------------------------------
+  //
+  // A conflict is urgent whatever the date: a crew double-booked next week is
+  // still a phone call that has to happen today, because the other job's owner
+  // is planning around the same day.
+
+  for (const visit of job.visits) {
+    const window = visit.startsOn === visit.endsOn
+      ? readableDay(visit.startsOn)
+      : `${readableDay(visit.startsOn)} – ${readableDay(visit.endsOn)}`;
+    const startsIn = daysBetween(today, visit.startsOn);
+
+    for (const conflict of visit.conflicts) {
+      cards.push(build(job, {
+        kind: conflict.kind === 'crew-double-booked' ? 'schedule.crew-conflict' : 'schedule.before-gate',
+        group: 'needs-you',
+        urgency: 'urgent',
+        subject: `${visit.visitId}:${conflict.kind}`,
+        title: conflict.kind === 'crew-double-booked'
+          ? `${visit.subcontractorName} is double-booked`
+          : `${visit.trade} booked before its gate`,
+        reason: conflict.description,
+        dueLabel: Number.isNaN(startsIn)
+          ? window
+          : `${window} · ${dayCountLabel(startsIn, 'started', 'in', 'starts today')}`,
+        actionLabel: 'Open project',
+        actionHref: detail,
+      }));
+    }
+
+    // Clean visits are worth knowing about, but only the imminent ones and only
+    // as something to expect rather than something to do.
+    if (visit.conflicts.length === 0 && !Number.isNaN(startsIn) && startsIn >= 0 && startsIn <= 7) {
+      cards.push(build(job, {
+        kind: 'schedule.upcoming',
+        group: 'this-week',
+        urgency: 'routine',
+        subject: visit.visitId,
+        title: `${visit.subcontractorName} — ${visit.trade}`,
+        reason: `${visit.phaseTitle}. Booked and clear of conflicts.`,
+        dueLabel: `${window} · ${dayCountLabel(startsIn, 'started', 'in', 'starts today')}`,
+        actionLabel: 'View project',
+        actionHref: detail,
+      }));
+    }
   }
 
   // --- The project record itself ------------------------------------------

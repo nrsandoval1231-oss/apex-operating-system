@@ -77,6 +77,20 @@ const OpenProjectSchema = z.strictObject({
 });
 const DaySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
+const ScheduleVisitSchema = z.strictObject({
+  subcontractorId: idSchemas.subcontractor,
+  phaseKey: ConstructionPhaseKeySchema,
+  startsOn: DaySchema,
+  endsOn: DaySchema,
+  note: z.string().max(2000).optional(),
+});
+
+const MoveVisitSchema = z.strictObject({
+  startsOn: DaySchema,
+  endsOn: DaySchema,
+  reason: z.string().min(1).max(2000).optional(),
+});
+
 /** Confirming an invoice records what a human did in the accounting system. */
 const InvoiceConfirmationSchema = z.strictObject({
   invoiceReference: z.string().min(1).max(160),
@@ -351,6 +365,48 @@ export function createGateApi(options: GateApiOptions) {
       if (request.method === 'GET' && historyMatch) {
         requireStaff(actor);
         return sendJson(response, 200, await service.getProjectPhaseHistory(idSchemas.job.parse(historyMatch[1])));
+      }
+
+      if (request.method === 'GET' && url.pathname === '/api/subcontractors') {
+        requireStaff(actor);
+        return sendJson(response, 200, await service.listSubcontractors());
+      }
+
+      const visitsMatch = url.pathname.match(/^\/api\/jobs\/(job_[0-9A-HJKMNP-TV-Z]{26})\/visits$/);
+      if (visitsMatch) {
+        requireStaff(actor);
+        const jobId = idSchemas.job.parse(visitsMatch[1]);
+        if (request.method === 'GET') {
+          return sendJson(response, 200, {
+            visits: await service.listJobVisits(jobId),
+            conflicts: await service.getJobVisitConflicts(jobId),
+          });
+        }
+        if (request.method === 'POST') {
+          const body = ScheduleVisitSchema.parse(await readJson(request));
+          return sendJson(response, 201, await service.scheduleVisit({
+            jobId,
+            subcontractorId: body.subcontractorId,
+            phaseKey: body.phaseKey,
+            startsOn: body.startsOn,
+            endsOn: body.endsOn,
+            actor,
+            ...(body.note ? { note: body.note } : {}),
+          }));
+        }
+      }
+
+      const moveMatch = url.pathname.match(/^\/api\/visits\/(visit_[0-9A-HJKMNP-TV-Z]{26})\/move$/);
+      if (request.method === 'POST' && moveMatch) {
+        requireStaff(actor);
+        const body = MoveVisitSchema.parse(await readJson(request));
+        return sendJson(response, 200, await service.rescheduleVisit({
+          visitId: idSchemas.visit.parse(moveMatch[1]),
+          startsOn: body.startsOn,
+          endsOn: body.endsOn,
+          actor,
+          ...(body.reason ? { reason: body.reason } : {}),
+        }));
       }
 
       const drawsMatch = url.pathname.match(/^\/api\/jobs\/(job_[0-9A-HJKMNP-TV-Z]{26})\/draws$/);

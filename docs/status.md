@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-08-02
 
-**Program phase:** Phase 1 — Shared operational spine and controlled Gate vertical slice (Phase 0 preservation complete). Apex OS build plan Steps 1–4, 6 and 8 complete; Step 7 (customer progress page) and the scheduled-visit half of Step 5 are next. Step 5's inspection half remains blocked on Apex's inspection list and lead times.
+**Program phase:** Phase 1 — Shared operational spine and controlled Gate vertical slice (Phase 0 preservation complete). Apex OS build plan Steps 1–4, 6, 8 and the scheduled-visit half of Step 5 complete; Step 7 (customer progress page) is next. Step 5's inspection half remains blocked on Apex's inspection list and lead times.
 
 **Production status:** Not production-ready
 
@@ -589,6 +589,57 @@ Decisions worth challenging:
   has never looked at.
 
 The sample-data brief prototype is gone; the screen is wired to real state.
+
+## Subcontractor visits and crew conflicts — 2026-08-02
+
+The half of build-plan Step 5 that is not blocked (PRD §9.6). Inspections still
+need Apex's inspection list, requesters, and lead times before §9.7 can be built;
+crew scheduling needs none of that.
+
+Migration `0015` adds subcontractors, dated visits, an append-only reschedule
+history, and `gate_definitions.blocks_phase_key`.
+
+**Two detections, both provable from stored facts:**
+
+1. The same crew claimed by two different jobs on overlapping days.
+2. Work booked into a phase whose guarding Gate has not released.
+
+It reports nothing else. Material lead times, weather, travel, and crew capacity
+are Apex's judgment, and a warning the system cannot substantiate teaches the
+owner to dismiss the ones that matter. §9.6 explicitly does not ask for schedule
+optimisation and none is done.
+
+| Commands | Result |
+|---|---|
+| `pnpm verify` | **296/296 root tests** and **1/1 integration test** passed |
+| Live database | A real double-booking staged across both pilot jobs — Lubbock Gunite Co. on Whitaker and Johnson for 2026-08-06 — surfaces on both projects and on the feed as urgent, alongside two before-gate warnings |
+| Browser | Project detail shows a Schedule section stating each conflict in full on the row it belongs to; no console errors |
+
+Decisions worth challenging:
+
+- **`blocks_phase_key` is stated, not inferred.** "The gate before this phase" is
+  not derivable from sequence: pre-gunite sits *on* the gunite phase and guards
+  it, while every other gate sits at the end of the phase before the one it
+  guards. Inferring from ordering would get the one irreversible gate wrong.
+- **A conflicting booking is stored, not refused.** The crew genuinely is
+  double-booked the moment someone writes it down; refusing the write would put
+  that fact outside the system where nothing can surface it.
+- **A move is recorded rather than the dates overwritten.** A crew told Tuesday
+  and now expected Thursday is a fact somebody will have to answer for.
+- **Dates, not times.** A gunite crew is booked for Tuesday, not 09:00–14:30.
+  Modelling hours would invent precision Apex does not have.
+- **Scheduling is closed to the field role.** Booking someone else's day is an
+  office and superintendent act.
+
+**Known noise, not yet changed:** a double-booking produces one card per job, so
+one phone call currently shows as two urgent cards on the feed. That is correct
+per job and correct on the project screens, but it may read as duplication on a
+single-owner feed. Collapsing it is a small change if wanted.
+
+Still not built from §9.6: notifying affected internal users after a schedule
+change, which needs the §15 notification channels. Nothing is sent to
+subcontractors, which satisfies "external notifications require approval in v1"
+by construction rather than by control.
 
 ## Next controlled milestone
 

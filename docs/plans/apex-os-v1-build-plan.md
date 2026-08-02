@@ -2,7 +2,7 @@
 
 **Source PRD:** [`PRD FINAL.md`](../../PRD%20FINAL.md) (Apex OS v1, Designer Pools, powered by GATE v3)
 **Written:** 2026-07-31
-**Status:** Approved 2026-07-31. Steps 1–4, 6 and 8 complete. Step 5's inspection half is blocked on Apex's inspection list; its scheduled-visit half and Step 7 are next.
+**Status:** Approved 2026-07-31. Steps 1–4, 6, 8 and Step 5's scheduled-visit half complete. Step 5's inspection half is blocked on Apex's inspection list; Step 7 is next.
 **Construction model:** [`docs/decisions/construction-model.md`](../decisions/construction-model.md) — nine phases, seven gates, 10/30/30/20/10 draws, confirmed 2026-07-31.
 
 ---
@@ -150,7 +150,7 @@ The daily brief (Step 8) and the §15 notifications should be views over these
 cards, not new logic. Snooze, delegate, and acknowledge are not built; the derived
 card id is the identity they will need.
 
-**Step 5 — Inspections and scheduled visits (large) — BLOCKED, taken out of order**
+**Step 5 — Inspections and scheduled visits (large) — HALF DONE 2026-08-02**
 The inspection half cannot be built: §9.7's last-safe-request-date logic needs
 the list of inspections, who requests each, and each one's lead time. None of
 that is confirmed. The jurisdiction dimension is already closed (single regime,

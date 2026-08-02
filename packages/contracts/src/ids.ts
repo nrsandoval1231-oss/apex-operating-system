@@ -14,6 +14,8 @@ export const ID_KINDS = [
   'draw',
   'customer_update',
   'brief',
+  'sub',
+  'visit',
 ] as const;
 
 export type CanonicalIdKind = (typeof ID_KINDS)[number];
@@ -37,6 +39,9 @@ export const idSchemas = {
   draw: canonicalIdSchema('draw'),
   customer_update: canonicalIdSchema('customer_update'),
   brief: canonicalIdSchema('brief'),
+  /** Prefix is `sub_`: the word is long and this appears in every visit row. */
+  subcontractor: canonicalIdSchema('sub'),
+  visit: canonicalIdSchema('visit'),
 } as const;
 
 export const createCanonicalId = <Kind extends CanonicalIdKind>(kind: Kind, timestamp?: number): `${Kind}_${string}` =>
@@ -54,3 +59,5 @@ export type UserId = z.infer<typeof idSchemas.user>;
 export type DrawId = z.infer<typeof idSchemas.draw>;
 export type CustomerUpdateId = z.infer<typeof idSchemas.customer_update>;
 export type BriefId = z.infer<typeof idSchemas.brief>;
+export type SubcontractorId = z.infer<typeof idSchemas.subcontractor>;
+export type VisitId = z.infer<typeof idSchemas.visit>;

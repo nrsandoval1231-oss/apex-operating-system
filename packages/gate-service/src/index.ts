@@ -9,6 +9,8 @@ import {
   DrawScheduleSchema,
   JobDrawSchema,
   JobSummarySchema,
+  ScheduledVisitSchema,
+  SubcontractorSchema,
   constructionPhase,
   createCanonicalId,
   readLeadIdentity,
@@ -20,6 +22,9 @@ import {
   type DailyBrief,
   type DrawSchedule,
   type JobDraw,
+  type ScheduledVisit,
+  type Subcontractor,
+  type VisitConflict,
   type EvidenceId,
   type EvidenceKind,
   type EventActor,
@@ -35,6 +40,8 @@ import {
   allocateDrawAmounts,
   buildDailyBrief,
   customerMilestoneFor,
+  describeConflict,
+  detectVisitConflicts,
   drawCodeForGate,
   decideGateCommand,
   decidePhaseChange,
@@ -48,6 +55,7 @@ import {
   type DomainEventDraft,
   type GateCommand,
   type GateState,
+  type PhaseGuard,
   type PreviousBrief,
   type ProjectPhaseState,
 } from '@apex/domain';
@@ -73,6 +81,31 @@ export interface CommandContext {
 
 /** Roles that may open a construction project or change its phase. */
 const PROJECT_AUTHORITY = ['admin', 'office', 'superintendent'] as const;
+
+/** Roles that may book or move a crew. The field does not commit other people's time. */
+const SCHEDULE_AUTHORITY = ['admin', 'office', 'superintendent'] as const;
+
+interface VisitRow {
+  visit_id: string;
+  job_id: string;
+  subcontractor_id: string;
+  subcontractor_name: string;
+  trade: string;
+  phase_key: string;
+  starts_on: string | Date;
+  ends_on: string | Date;
+  status: ScheduledVisit['status'];
+  note: string | null;
+  reschedule_count: string;
+}
+
+const visitSelect = `
+  select v.visit_id, v.job_id, v.subcontractor_id, s.name as subcontractor_name, s.trade,
+         v.phase_key, v.starts_on, v.ends_on, v.status, v.note,
+         (select count(*) from visit_reschedules r where r.visit_id = v.visit_id)::text as reschedule_count
+  from scheduled_visits v
+  join subcontractors s on s.subcontractor_id = v.subcontractor_id
+`;
 
 /**
  * Roles that may create a draw schedule or confirm an invoice. Deliberately
@@ -211,6 +244,20 @@ const readDate = (value: string | Date | null): string | null => {
   const iso = value instanceof Date ? value.toISOString() : new Date(value).toISOString();
   return iso.slice(0, 10);
 };
+
+const toVisit = (row: VisitRow): ScheduledVisit => ScheduledVisitSchema.parse({
+  visitId: row.visit_id,
+  jobId: row.job_id,
+  subcontractorId: row.subcontractor_id,
+  subcontractorName: row.subcontractor_name,
+  trade: row.trade,
+  phaseKey: row.phase_key,
+  startsOn: readDate(row.starts_on),
+  endsOn: readDate(row.ends_on),
+  status: row.status,
+  note: row.note,
+  rescheduleCount: Number(row.reschedule_count),
+});
 
 const toJobSummary = (row: JobSummaryRow): JobSummary => {
   const identity = readLeadIdentity(row.accepted_payload);
@@ -929,6 +976,190 @@ export class GateService {
     return this.getDrawSchedule(input.jobId);
   }
 
+  /** Every subcontractor Apex works with. */
+  async listSubcontractors(): Promise<readonly Subcontractor[]> {
+    const result = await this.db.query<{
+      subcontractor_id: string; name: string; trade: string; contact: string | null; active: boolean;
+    }>('select subcontractor_id, name, trade, contact, active from subcontractors order by trade, name');
+    return result.rows.map((row) => SubcontractorSchema.parse({
+      subcontractorId: row.subcontractor_id,
+      name: row.name,
+      trade: row.trade,
+      contact: row.contact,
+      active: row.active,
+    }));
+  }
+
+  /**
+   * Book a crew onto a job — PRD §9.6.
+   *
+   * A conflicting booking is stored, not refused. The crew genuinely is
+   * double-booked the moment someone writes it down, and refusing the write
+   * would leave that fact outside the system where nothing can surface it.
+   */
+  async scheduleVisit(input: {
+    jobId: JobId;
+    subcontractorId: string;
+    phaseKey: ConstructionPhaseKey;
+    startsOn: string;
+    endsOn: string;
+    actor: EventActor;
+    note?: string;
+  }): Promise<ScheduledVisit> {
+    if (input.actor.kind !== 'user') throw new DomainRuleError('Scheduling a visit requires an authenticated human actor.');
+    if (!SCHEDULE_AUTHORITY.includes(input.actor.role as (typeof SCHEDULE_AUTHORITY)[number])) {
+      throw new DomainRuleError(`Role ${input.actor.role} may not schedule a subcontractor visit.`);
+    }
+    if (input.endsOn < input.startsOn) {
+      throw new DomainRuleError('A visit cannot end before it starts.');
+    }
+
+    const visitId = createCanonicalId('visit');
+    await this.db.query(
+      `insert into scheduled_visits
+       (visit_id, job_id, subcontractor_id, phase_key, starts_on, ends_on, note, created_by)
+       values ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [visitId, input.jobId, input.subcontractorId, input.phaseKey,
+        input.startsOn, input.endsOn, input.note ?? null, input.actor.userId],
+    );
+    const visit = (await this.listJobVisits(input.jobId)).find((row) => row.visitId === visitId);
+    if (!visit) throw new Error('Visit was not persisted.');
+    return visit;
+  }
+
+  /**
+   * Move a visit — PRD §9.6.
+   *
+   * The move is recorded rather than the dates simply overwritten: a crew told
+   * Tuesday and now expected Thursday is a fact somebody will have to answer
+   * for. External notification stays manual in v1, so nothing is sent.
+   */
+  async rescheduleVisit(input: {
+    visitId: string;
+    startsOn: string;
+    endsOn: string;
+    actor: EventActor;
+    reason?: string;
+  }): Promise<ScheduledVisit> {
+    if (input.actor.kind !== 'user') throw new DomainRuleError('Moving a visit requires an authenticated human actor.');
+    if (!SCHEDULE_AUTHORITY.includes(input.actor.role as (typeof SCHEDULE_AUTHORITY)[number])) {
+      throw new DomainRuleError(`Role ${input.actor.role} may not move a subcontractor visit.`);
+    }
+    if (input.endsOn < input.startsOn) throw new DomainRuleError('A visit cannot end before it starts.');
+
+    const current = await this.db.query<{
+      job_id: string; starts_on: string | Date; ends_on: string | Date; status: string;
+    }>('select job_id, starts_on, ends_on, status from scheduled_visits where visit_id = $1', [input.visitId]);
+    const row = current.rows[0];
+    if (!row) throw new DomainRuleError(`Unknown visit: ${input.visitId}.`);
+    if (row.status === 'done' || row.status === 'cancelled') {
+      throw new DomainRuleError('A completed or cancelled visit cannot be moved.');
+    }
+    const from = { startsOn: readDate(row.starts_on)!, endsOn: readDate(row.ends_on)! };
+    if (from.startsOn === input.startsOn && from.endsOn === input.endsOn) {
+      throw new DomainRuleError('That visit is already on those dates.');
+    }
+
+    await this.db.transaction(async (tx) => {
+      await tx.query(
+        `insert into visit_reschedules
+         (visit_id, from_starts_on, from_ends_on, to_starts_on, to_ends_on, reason, moved_by)
+         values ($1, $2, $3, $4, $5, $6, $7)`,
+        [input.visitId, from.startsOn, from.endsOn, input.startsOn, input.endsOn,
+          input.reason ?? null, (input.actor as { userId: string }).userId],
+      );
+      await tx.query(
+        'update scheduled_visits set starts_on = $2, ends_on = $3, updated_at = now() where visit_id = $1',
+        [input.visitId, input.startsOn, input.endsOn],
+      );
+    });
+
+    const moved = (await this.listJobVisits(row.job_id as JobId)).find((v) => v.visitId === input.visitId);
+    if (!moved) throw new Error('Visit disappeared after being moved.');
+    return moved;
+  }
+
+  /** A job's visits, in date order. */
+  async listJobVisits(jobId: JobId): Promise<readonly ScheduledVisit[]> {
+    const result = await this.db.query<VisitRow>(
+      `${visitSelect} where v.job_id = $1 order by v.starts_on, v.visit_id`,
+      [jobId],
+    );
+    return result.rows.map(toVisit);
+  }
+
+  /** Conflicts on one job, detected against every live visit in the system. */
+  async getJobVisitConflicts(jobId: JobId): Promise<readonly VisitConflict[]> {
+    const { conflictsByJob } = await this.readScheduleSnapshot();
+    return conflictsByJob.get(jobId) ?? [];
+  }
+
+  /**
+   * Every live visit and the conflicts across them.
+   *
+   * Detection has to see the whole schedule at once: a double-booking is only
+   * visible from outside either job.
+   */
+  private async readScheduleSnapshot(): Promise<{
+    visitsByJob: Map<string, ScheduledVisit[]>;
+    conflictsByJob: Map<string, VisitConflict[]>;
+  }> {
+    const rows = await this.db.query<VisitRow>(`${visitSelect} order by v.starts_on, v.visit_id`);
+    const visits = rows.rows.map(toVisit);
+
+    const names = await this.db.query<{ job_id: string; accepted_payload: unknown }>(
+      'select j.job_id, l.accepted_payload from jobs j join leads l on l.lead_id = j.lead_id',
+    );
+    const jobNames = Object.fromEntries(
+      names.rows.map((row) => [row.job_id, readLeadIdentity(row.accepted_payload).customerName] as const),
+    );
+
+    // Which Gate guards which phase, and whether it has released on each job.
+    const guards = await this.db.query<{
+      job_id: string; blocks_phase_key: string; title: string; status: string | null;
+    }>(`
+      select j.job_id, gd.blocks_phase_key, gd.title, gi.status
+      from jobs j
+      cross join gate_definitions gd
+      left join gate_instances gi
+        on gi.job_id = j.job_id and gi.definition_key = gd.definition_key
+      where gd.active = true and gd.blocks_phase_key is not null
+    `);
+    const guardsByJob = new Map<string, PhaseGuard[]>();
+    for (const row of guards.rows) {
+      const list = guardsByJob.get(row.job_id) ?? [];
+      list.push({
+        phaseKey: row.blocks_phase_key as ConstructionPhaseKey,
+        gateTitle: row.title,
+        gateStatus: row.status,
+        released: row.status === 'released',
+      });
+      guardsByJob.set(row.job_id, list);
+    }
+
+    const conflicts = detectVisitConflicts({
+      visits,
+      guards: [...guardsByJob.values()].flat(),
+      jobNames,
+    });
+
+    const visitsByJob = new Map<string, ScheduledVisit[]>();
+    for (const visit of visits) {
+      visitsByJob.set(visit.jobId, [...(visitsByJob.get(visit.jobId) ?? []), visit]);
+    }
+
+    // A conflict belongs to the job whose visit it is about.
+    const visitJob = new Map(visits.map((visit) => [visit.visitId, visit.jobId] as const));
+    const conflictsByJob = new Map<string, VisitConflict[]>();
+    for (const conflict of conflicts) {
+      const jobId = visitJob.get(conflict.visitId);
+      if (jobId === undefined) continue;
+      conflictsByJob.set(jobId, [...(conflictsByJob.get(jobId) ?? []), conflict]);
+    }
+
+    return { visitsByJob, conflictsByJob };
+  }
+
   /**
    * The action-card feed — PRD §9.5.
    *
@@ -1008,6 +1239,8 @@ export class GateService {
 
   private async readCardSnapshot(): Promise<readonly CardJobSnapshot[]> {
     const jobs = await this.db.query<JobSummaryRow>(jobSummaryQuery('all'));
+    const { visitsByJob, conflictsByJob } = await this.readScheduleSnapshot();
+    const phaseTitle = (key: string) => constructionPhase(key as ConstructionPhaseKey).title;
 
     // Requirement progress per open Gate. `evidence_required` requirements are
     // counted separately from those that have evidence, so a Gate is only ever
@@ -1135,6 +1368,19 @@ export class GateService {
         },
         gates: gatesByJob.get(summary.jobId) ?? [],
         draws: drawsByJob.get(summary.jobId) ?? [],
+        visits: (visitsByJob.get(summary.jobId) ?? [])
+          .filter((visit) => visit.status === 'planned' || visit.status === 'confirmed')
+          .map((visit) => ({
+            visitId: visit.visitId,
+            subcontractorName: visit.subcontractorName,
+            trade: visit.trade,
+            phaseTitle: phaseTitle(visit.phaseKey),
+            startsOn: visit.startsOn,
+            endsOn: visit.endsOn,
+            conflicts: (conflictsByJob.get(summary.jobId) ?? [])
+              .filter((conflict) => conflict.visitId === visit.visitId)
+              .map((conflict) => ({ kind: conflict.kind, description: describeConflict(conflict) })),
+          })),
       };
     });
   }

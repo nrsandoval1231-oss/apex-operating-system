@@ -44,6 +44,7 @@ const job = (overrides: Partial<CardJobSnapshot> = {}): CardJobSnapshot => ({
   },
   gates: [],
   draws: [],
+  visits: [],
   ...overrides,
 });
 
