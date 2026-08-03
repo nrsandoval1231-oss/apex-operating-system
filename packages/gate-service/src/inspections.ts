@@ -1,4 +1,4 @@
-import type { PGlite } from '@electric-sql/pglite';
+import type { Database } from '@apex/database';
 import {
   InspectionResultSchema,
   InspectionTypeSchema,
@@ -125,7 +125,7 @@ const requireInspectionRole = (actor: EventActor, action: string): { userId: str
 };
 
 export class InspectionService {
-  constructor(private readonly db: PGlite) {}
+  constructor(private readonly db: Database) {}
 
   /** The seven inspections Apex has to pass, in build order. */
   async listInspectionTypes(): Promise<readonly InspectionType[]> {

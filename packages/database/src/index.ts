@@ -2,6 +2,9 @@ import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PGlite } from '@electric-sql/pglite';
+import type { MigrationClient } from './client.js';
+
+export * from './client.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const migrationsDirectory = resolve(here, '../migrations');
@@ -27,8 +30,6 @@ export const OPERATIONAL_MIGRATIONS = [
 ] as const;
 
 export const STORAGE_MIGRATION = '0003_evidence_storage.sql';
-
-type MigrationClient = Pick<PGlite, 'exec' | 'query'>;
 
 export async function applyOperationalMigrations(db: MigrationClient): Promise<void> {
   await db.exec(`

@@ -5,7 +5,7 @@ import { dirname, extname, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { jwtVerify } from 'jose';
 import { z } from 'zod';
-import type { PGlite } from '@electric-sql/pglite';
+import type { Database } from '@apex/database';
 import {
   ConstructionPhaseKeySchema,
   EventActorSchema,
@@ -183,7 +183,7 @@ const matchesDeclaredMimeType = (content: Buffer, mimeType: string) => {
 };
 
 interface GateApiOptions {
-  readonly db: PGlite;
+  readonly db: Database;
   readonly jwtSecret: string;
   readonly evidenceDirectory: string;
   readonly maxEvidenceBytes?: number;

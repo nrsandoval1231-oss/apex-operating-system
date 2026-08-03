@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import type { PGlite, Transaction } from '@electric-sql/pglite';
+import type { Database, Queryable } from '@apex/database';
 import {
   ApexEventSchema,
   CustomerMilestoneProjectionSchema,
@@ -160,7 +160,7 @@ export interface ExecuteResult {
   readonly duplicate: boolean;
 }
 
-type QueryClient = Pick<PGlite, 'query'> | Transaction;
+type QueryClient = Queryable;
 
 interface JobSummaryRow {
   job_id: string;
@@ -330,7 +330,7 @@ const commandKey = (value: string) => {
 };
 
 export class GateService {
-  constructor(private readonly db: PGlite) {}
+  constructor(private readonly db: Database) {}
 
   /**
    * Open a Gate of the given definition on a job.
@@ -774,7 +774,7 @@ export class GateService {
     };
   }
 
-  private async writeEvent(tx: Transaction, input: {
+  private async writeEvent(tx: Queryable, input: {
     eventType: 'project.created' | 'project.phase_changed';
     jobId: JobId;
     actor: EventActor;
@@ -1472,7 +1472,7 @@ export class GateService {
     }
   }
 
-  private async persistEvent(tx: Transaction, event: ApexEvent) {
+  private async persistEvent(tx: Queryable, event: ApexEvent) {
     await tx.query(
       `insert into events
        (event_id, schema_version, event_type, occurred_at, recorded_at, actor, lead_id, job_id, correlation_id, causation_event_id, idempotency_key, payload)
@@ -1486,7 +1486,7 @@ export class GateService {
   }
 
   private async projectEvent(
-    tx: Transaction,
+    tx: Queryable,
     event: ApexEvent,
     gate: { definitionKey: string; definitionVersion: number } | null = null,
   ) {

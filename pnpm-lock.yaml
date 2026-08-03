@@ -75,15 +75,16 @@ importers:
       '@apex/gate-service':
         specifier: workspace:*
         version: link:../../packages/gate-service
-      '@electric-sql/pglite':
-        specifier: 0.5.4
-        version: 0.5.4
       jose:
         specifier: 6.2.4
         version: 6.2.4
       zod:
         specifier: 4.4.3
         version: 4.4.3
+    devDependencies:
+      '@electric-sql/pglite':
+        specifier: 0.5.4
+        version: 0.5.4
 
   packages/contracts:
     dependencies:
@@ -120,6 +121,7 @@ importers:
       '@apex/domain':
         specifier: workspace:*
         version: link:../domain
+    devDependencies:
       '@electric-sql/pglite':
         specifier: 0.5.4
         version: 0.5.4

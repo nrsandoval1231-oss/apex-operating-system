@@ -12,8 +12,10 @@
     "@apex/database": "workspace:*",
     "@apex/domain": "workspace:*",
     "@apex/gate-service": "workspace:*",
-    "@electric-sql/pglite": "0.5.4",
     "jose": "6.2.4",
     "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.4"
   }
 }

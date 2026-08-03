@@ -1,5 +1,5 @@
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
-import type { PGlite } from '@electric-sql/pglite';
+import type { Database } from '@apex/database';
 import {
   CustomerLinkSchema,
   CustomerLinkStatusSchema,
@@ -141,7 +141,7 @@ export class CustomerService {
   private readonly contact: CustomerContact | null;
   private readonly basePath: string;
 
-  constructor(private readonly db: PGlite, options: CustomerServiceOptions = {}) {
+  constructor(private readonly db: Database, options: CustomerServiceOptions = {}) {
     this.contact = options.contact ?? null;
     this.basePath = options.basePath ?? '/c';
   }
