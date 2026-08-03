@@ -1,8 +1,9 @@
 # Apex OS — Deployment Plan
 
 **Written:** 2026-08-03
-**Status:** Slices 1 and 2 complete. Slices 3–9 sequenced below; two decisions
-needed before slice 4.
+**Status:** Slices 1, 2, and 5 complete. **Both open decisions were made on
+2026-08-03** (§6): Render plus a hosted identity provider, and RLS retired
+honestly for the pilot. Slices 3, 4, and 6–9 remain; none is blocked.
 **Why now:** every feature in the v1 build plan is complete and all content is
 approved. Deployment is the only remaining workstream between this and a pilot.
 
@@ -48,7 +49,7 @@ change based on which host or provider you pick.
 | 1 | ~~Services bind directly to `PGlite`~~ | Done | Yes |
 | 2 | ~~No real Postgres adapter; migrations run on boot with no lock~~ | Done | Yes |
 | 3 | Evidence is written to the local filesystem | Medium | Yes |
-| 4 | **RLS policies exist but are inert** — see §4 | Medium–large | Yes |
+| 4 | ~~**RLS policies exist but are inert**~~ — retired, see §4 | Done | Yes |
 | 5 | Symmetric HS256 pilot JWT; no JWKS, no rotation | Medium | Mostly |
 | 6 | `GATE_LOCAL_USER` disables authentication entirely | Small | Yes |
 | 7 | Customer links are path-only; no public origin configured | Small | Yes |
@@ -138,7 +139,7 @@ Spaces then works without further code change. Evidence is private and served
 through the API, which already enforces both staff and customer paths, so no
 public bucket and no signed-URL scheme is needed for the pilot.
 
-**Slice 4 — Identity (medium). NEEDS A DECISION.**
+**Slice 4 — Identity (medium). Decision made; provider values still needed.**
 Replace the symmetric HS256 pilot secret with asymmetric verification against a
 JWKS endpoint, keyed by issuer and audience from configuration, with key caching
 and rotation handled by the library. Also delete `GATE_LOCAL_USER` from any
@@ -146,8 +147,19 @@ non-loopback path — today it is guarded by a loopback check and a bind address
 which is sound for a laptop and not something that should exist in a deployed
 image at all.
 
-**Slice 5 — Decide and act on RLS (medium–large). NEEDS A DECISION.**
-See §4 and §6.
+**Slice 5 — RLS retired honestly (small, once decided). DONE 2026-08-03.**
+Migration `0019_rls_retired.sql` disables row-level security explicitly, so
+`pg_tables.rowsecurity` is false and the schema stops asserting a protection that
+was not running. The policy definitions are kept: they are correct as written,
+cost nothing while inactive, and re-enabling later is a switch rather than
+archaeology. Two tests hold the line — no table claims RLS, and the policies are
+still there.
+
+The migration header states the three things that must happen *together* to
+activate it, because none works alone: a non-owning role (or FORCE), the
+`request.jwt.claims` plumbing, and a decision about the tokenized customer route,
+which authenticates nobody by design and would deny everything under these
+policies.
 
 **Slice 6 — Operational hygiene (small).**
 Structured JSON logging with a request id; a health check that actually tests the
@@ -172,9 +184,42 @@ rotate a customer link in production, and what to do when the database is
 unreachable. Real draws and real evidence make an untested restore procedure a
 liability rather than a formality.
 
-## 6. Decisions needed
+## 6. Decisions — both made 2026-08-03
 
-Two, and only the second is urgent — slices 1 through 3 proceed without either.
+**A. Render, plus a hosted identity provider.** Least operational surface: TLS,
+certificate renewal, and backups are the platform's problem rather than Apex's,
+which is the work most likely to go wrong and least related to building pools.
+
+Worth recording because it made the choice smaller than it looked: **the customer
+progress page uses unguessable tokens, not accounts**, so the identity provider
+only ever covers Apex staff — roughly five to ten people. This is not a
+customer-identity purchase.
+
+Auth0 or Clerk is still open, and deliberately does not block slice 4: the code
+verifies against a JWKS endpoint with issuer and audience read from
+configuration, so it is identical either way. Only the values differ, and those
+arrive when the account does.
+
+**B. RLS retired honestly for the pilot.** Built as slice 5 above.
+
+The reasoning changed during the analysis and the change is worth keeping. The
+initial lean was to make RLS real. What moved it: the highest-risk surface — the
+customer page never leaking internal data — is already protected *structurally*
+by `buildCustomerPage`, which constructs the payload from a narrow input rather
+than filtering a wide one. A new column cannot reach a customer even if everyone
+forgets it exists, which is a stronger guarantee than a runtime policy. What was
+left for RLS to defend is staff role boundaries between about eight trusted
+employees reaching the database through one API — already enforced in domain code
+with tests.
+
+So RLS here defends against a bug in our own API. Real, but bounded, and
+activating it carries its own risk of denying something that works today.
+Revisit before multi-user access, a second API client, or anyone getting direct
+SQL access.
+
+### The original framing, kept
+
+Two, and only the second was urgent — slices 1 through 3 proceeded without either.
 
 **A. Where does it run, and what issues identity?**
 

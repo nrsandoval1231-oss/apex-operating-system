@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { PGlite } from '@electric-sql/pglite';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { OPERATIONAL_MIGRATIONS } from './index.js';
+import { OPERATIONAL_MIGRATIONS, applyOperationalMigrations } from './index.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const migration = async (name: string) => readFile(resolve(here, '../migrations', name), 'utf8');
@@ -284,5 +284,37 @@ describe('operational schema', () => {
       'plumbing-pressure-test',
     ]);
     expect(requirements.rows.some((row) => row.requirement_key.includes('chem'))).toBe(false);
+  });
+});
+
+/**
+ * Row-level security is retired, not silently bypassed — migration 0019.
+ *
+ * The state this asserts against is the one 0019 exists to end: tables that
+ * reported `rowsecurity = true` while every policy was skipped, because the
+ * connection owned the tables and nothing ever set `request.jwt.claims`. The
+ * schema asserted a protection that was not running.
+ */
+describe('retired row-level security', () => {
+  it('leaves no table claiming a protection that is not enforced', async () => {
+    const db = new PGlite();
+    await applyOperationalMigrations(db);
+    const enabled = await db.query<{ tablename: string }>(
+      `select tablename from pg_tables
+       where schemaname = 'public' and rowsecurity = true
+       order by tablename`,
+    );
+    expect(enabled.rows.map((row) => row.tablename)).toEqual([]);
+  });
+
+  it('keeps the policy definitions, so re-enabling is a decision and not archaeology', async () => {
+    const db = new PGlite();
+    await applyOperationalMigrations(db);
+    const policies = await db.query<{ count: string }>(
+      `select count(*)::text as count from pg_policies where schemaname = 'public'`,
+    );
+    // Correct as written and free while inactive. Deleting them would make
+    // turning RLS on later a rewrite rather than a switch.
+    expect(Number(policies.rows[0]?.count)).toBeGreaterThan(20);
   });
 });
