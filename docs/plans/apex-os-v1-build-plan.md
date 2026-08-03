@@ -2,7 +2,7 @@
 
 **Source PRD:** [`PRD FINAL.md`](../../PRD%20FINAL.md) (Apex OS v1, Designer Pools, powered by GATE v3)
 **Written:** 2026-07-31
-**Status:** Approved 2026-07-31. **Steps 1–8 are complete and every MVP item in §19 is built.** Nothing in this plan is blocked. What remains before a pilot is deployment, and Travis's sign-off on content proposed rather than dictated by Apex — the inspection list and lead times, twelve added checklist items, and the nine customer-facing phase descriptions, all in `docs/inspections-and-gate-checklists-2026-08-03.md`.
+**Status:** Approved 2026-07-31. **Steps 1–8 are complete and every MVP item in §19 is built.** The inspection list, lead times, twelve added checklist items, and the nine customer-facing phase descriptions were approved as written by Travis Sandoval on 2026-08-03 (`docs/inspections-and-gate-checklists-2026-08-03.md`). **Nothing in this plan is blocked and no content is awaiting sign-off.** The only remaining gap before a pilot is deployment — see the launch blockers in `docs/status.md`.
 **Construction model:** [`docs/decisions/construction-model.md`](../decisions/construction-model.md) — nine phases, seven gates, 10/30/30/20/10 draws, confirmed 2026-07-31.
 
 ---
@@ -122,12 +122,13 @@ The engine changes that mattered more than the seeding:
 Exit condition met: Permit, Excavation, and pre-gunite all completed on one job
 against the live local database — the three Gate types PRD §21 asks for.
 
-**Caveat carried forward, and acted on 2026-08-03:** the requirement checklists
-for the six new Gates were written from the decision document's one-line
-"Verifies" plus the draw schedule's "Covers". They are not Apex's procedures.
-Migration `0017` revised them against the 2021 ISPSC — adding twelve items, three
-of them safety items that were missing entirely — and they still need Travis's
-review. Definitions are versioned, so correcting one is a new version, not an edit.
+**Caveat carried forward, and closed 2026-08-03:** the requirement checklists for
+the six new Gates were written from the decision document's one-line "Verifies"
+plus the draw schedule's "Covers", so they were never Apex's procedures. Migration
+`0017` revised them against the 2021 ISPSC — adding twelve items, three of them
+safety items that were missing entirely — and Travis approved the result as
+written. They are now Apex's procedures. Definitions stay versioned, so a future
+correction is a new version, not an edit.
 
 **Step 4 — Action-card engine + Today feed (large) — DONE 2026-07-31**
 One pure derivation in `packages/domain/src/cards.ts` produces twelve card kinds
@@ -156,8 +157,9 @@ card id is the identity they will need.
 The scheduled-visit half (§9.6) landed 2026-08-02. The inspection half (§9.7)
 landed 2026-08-03 in migration `0018`, after the blocking question was answered:
 the list, requesters, and lead times are derived from the 2021 ISPSC and NEC 680
-— the adopted code, already confirmed — and proposed for Travis's approval rather
-than left open. Built ahead of that approval by explicit instruction.
+— the adopted code, already confirmed — and approved as written by Travis on
+2026-08-03. Built ahead of that approval by explicit instruction; the approval
+arrived without corrections.
 
 Four decisions worth challenging:
 
@@ -241,7 +243,7 @@ telling a stranger that a token used to be valid tells them the scheme is real.
 **Copy caveat, same shape as the gate checklists:** the nine per-phase
 descriptions in `packages/domain/src/customer.ts` are written from the
 construction model, not dictated by Apex. They are the company's voice speaking
-to its customers and Travis should read them before the first real link goes out.
+to its customers, and Travis approved them as written on 2026-08-03.
 
 **Step 8 — Daily owner brief (small) — DONE 2026-08-02**
 Step 4's cards rendered as one morning brief with links (§9.14). It turned out

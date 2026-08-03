@@ -1,17 +1,19 @@
-# Inspections and gate checklists — proposed for approval
+# Inspections and gate checklists — APPROVED
 
 **Date:** 2026-08-03
-**For:** Travis Sandoval
-**Action needed:** read, correct anything wrong, initial the bottom of each part.
+**Approved:** 2026-08-03 by Travis Sandoval, as written, with no corrections.
+**Status:** This document is no longer a proposal. It is the authority for the
+inspection list, the lead times, and the seven gate checklists, and it is built —
+migrations `0017_gate_checklist_v2.sql` and `0018_inspections.sql`.
 
-The v1 build is finished. This document proposes the last two pieces of content
-the system needs — the inspection list and the seven gate checklists — worked out
-in full rather than left open. Everything here is a proposal you approve or
-correct, not a questionnaire.
+Everything below stands as approved. The nine ⟨A1⟩-style markers and the register
+at the end were the open assumptions at the time of writing; approval converted
+each into a confirmed decision, and they are kept rather than deleted because
+what a decision replaced is worth being able to read later.
 
-Where a value was derived rather than confirmed by Apex, it carries a marker like
-⟨A1⟩ and is listed in the assumptions register at the end. There are nine of them.
-Reading only that register is a legitimate way to review this document.
+Corrections after this point land as a **new checklist version and a new
+migration**, never as an edit — a Gate already passed keeps the checklist its
+field lead was actually asked for.
 
 ---
 
@@ -84,7 +86,7 @@ unbuilt item in the plan.
 
 ---
 
-**Part 1 approved:** ☐ as written ☐ with corrections marked   Initials: ______
+**Part 1 approved as written — Travis Sandoval, 2026-08-03.**
 
 ---
 
@@ -263,7 +265,7 @@ version of that checklist and never rewrites a gate already passed.
 
 ---
 
-**Part 2 approved:** ☐ as written ☐ with corrections marked   Initials: ______
+**Part 2 approved as written — Travis Sandoval, 2026-08-03.**
 
 ---
 
@@ -274,9 +276,9 @@ about in the stated direction, and each is a small change to correct.
 
 | # | Assumption | If wrong |
 |---|---|---|
-| A1 | Apex builds only inside Lubbock city limits | County work is a second regime; the model has no jurisdiction dimension and would need one |
+| A1 | Apex builds only inside Lubbock city limits | **Confirmed.** County work would be a second regime and a new migration, not a column default |
 | A2 | Steel, bonding, and pressure test are separate inspections | If combined, delete two rows — no other effect |
-| A3 | 2 business days routine / 3 for finals | Deliberately long. If real turnaround is next-day, tightening each row sharpens the warnings |
+| A3 | 2 business days routine / 3 for finals | **Confirmed as the planning numbers.** Still deliberately long: if observed turnaround is next-day, tightening each row is one number and only sharpens the warnings |
 | A4 | Electrical and plumbing inspections are requested by the sub who holds that licence | Change the "requested by" column; it only decides whose card it is |
 | A5 | Gas heater is common enough to warrant a standing gas inspection | If Apex rarely fits gas heat, mark rows 5 and Equipment item 5 conditional |
 | A6 | Requests go through a city portal | Free-text field; correct in place |
@@ -284,17 +286,20 @@ about in the stated direction, and each is a small change to correct.
 | A8 | HOA approval is worth tracking on the Permit gate | Drop the item if Apex does not handle this |
 | A9 | Heater clearance check applies only to gas heaters | Reword for electric or heat-pump equipment |
 
-**The one that matters most is A3.** Every other assumption is a naming or
+**A3 remains the one worth revisiting.** Every other assumption is a naming or
 routing detail. Lead time is the number the whole inspection feature computes
-from, and it is the one thing here that no code can derive — it is however long
-Lubbock actually takes.
+from, and it is the one thing no code can derive — it is however long Lubbock
+actually takes. Approved as a conservative planning figure, not as a measurement;
+the first few real inspections will say whether it can be tightened.
 
 ---
 
-# One more thing, already done
+# The customer-facing wording
 
-The customer progress page is finished and live. The wording a homeowner reads
-about their own build at each of the nine phases was written in-house and needs
-no decision from you — but it is Apex's voice speaking to Apex's customers, so it
-is worth five minutes on screen before the first link goes out. Ask to see it on
-a phone.
+Also approved 2026-08-03, as written. The nine per-phase descriptions a homeowner
+reads on their progress page (`packages/domain/src/customer.ts`, `PHASE_COPY`)
+are now Apex's approved voice rather than a draft awaiting review.
+
+Same rule as the checklists: changing the wording is a code change with a test,
+not a database edit, and the page will never carry a per-phase date — Apex OS
+holds a target completion window, not a schedule anyone committed to.

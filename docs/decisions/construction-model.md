@@ -2,7 +2,7 @@
 
 **Recorded:** 2026-07-31
 **Source:** Nick Sandoval, this session
-**Status:** Confirmed for build. **All open flags resolved 2026-07-31** — see §5.
+**Status:** Confirmed for build. **All open flags resolved 2026-07-31** — see §5. **Inspection list, lead times, and the revised gate checklists approved by Travis Sandoval 2026-08-03** — see §6 and `docs/inspections-and-gate-checklists-2026-08-03.md`.
 **Resolves:** PRD §20 Q3 (gate authority), Q4 (phases and gate templates), Q5 (draw schedules), Q6 (jurisdictions)
 **Built:** migrations `0010_project_phase_model.sql` (phases, milestones, project record, superintendent role) and `0011_gate_countersign.sql` (two-signature pre-gunite, money-gate delegation)
 **Unblocks:** Build plan Step 2 (project + phase model), Step 3 (generalize gate engine), Step 6 (draw schedule)
@@ -109,7 +109,12 @@ Consequence worth naming: a superintendent can now release a draw on his own sig
 
 **Confirmed: no jurisdictional variation.** All Apex work falls under a single inspection regime (City of Lubbock, 2021 ISPSC per `Apex Designer/README.md`). PRD §20 Q6 is closed. The inspection entity does not need a jurisdiction dimension.
 
-**Still open for build-plan Step 5:** which inspections exist, who requests each one, and what lead time each requires. The last-safe-request-date logic in PRD §9.7 cannot be built without these. Also unconfirmed: whether Apex ever builds outside city limits into county, where the regime would differ.
+~~**Still open for build-plan Step 5:** which inspections exist, who requests each one, and what lead time each requires.~~ **RESOLVED 2026-08-03.** Approved by Travis Sandoval against `docs/inspections-and-gate-checklists-2026-08-03.md`: seven inspections, their requesters, and their lead times, derived from the 2021 ISPSC and NEC 680 and built in migration `0018_inspections.sql`.
+
+Two things that approval also settled:
+
+- **Apex builds inside city limits only.** The county question is closed, and the inspection model correctly has no jurisdiction dimension. If Apex ever takes county work, that is a new migration and not a column default.
+- **Lead times are two business days for routine trade inspections, three for finals.** These are deliberately conservative planning numbers rather than measured turnaround — the error is one-directional, so a lead time that is too long warns a day early rather than a day late. They can be tightened to observed turnaround at any time, one number per row, and doing so only sharpens the warnings.
 
 ## 7. Still open
 
@@ -130,6 +135,6 @@ Consequence worth naming: a superintendent can now release a draw on his own sig
 - **Step 2** can now build the real 9-phase model instead of PRD §8.2's unconfirmed 15-phase baseline.
 - **Step 3** has a concrete target: six additional gate templates against the existing pre-gunite slice.
 - **Step 6** has a real draw schedule with named release conditions.
-- **Step 5** remains blocked on the inspection list, though the jurisdiction dimension is now removed.
+- ~~**Step 5** remains blocked on the inspection list~~ — unblocked and built 2026-08-03; see §6.
 
 PRD §8.2 should be updated to match §1 above, and PRD §20 Q3-Q6 marked resolved with a pointer to this document.

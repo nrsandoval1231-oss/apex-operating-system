@@ -2,7 +2,9 @@
 
 **Last updated:** 2026-08-03
 
-**Program phase:** Phase 1 — Shared operational spine and controlled Gate vertical slice (Phase 0 preservation complete). **Apex OS build plan Steps 1–8 are complete, and every MVP item in PRD §19 is built.** Nothing in the plan is now blocked on code or on an unanswered question. What remains before a pilot is deployment (loopback, no TLS, symmetric pilot JWT — see launch blockers below) and Travis's sign-off on content that was proposed rather than dictated by Apex: the inspection list and lead times, the twelve added gate checklist items, and the nine customer-facing phase descriptions. All three are in `docs/inspections-and-gate-checklists-2026-08-03.md` and are versioned, so corrections land as a new version rather than an edit.
+**Program phase:** Phase 1 — Shared operational spine and controlled Gate vertical slice (Phase 0 preservation complete). **Apex OS build plan Steps 1–8 are complete, every MVP item in PRD §19 is built, and all content is approved.** Travis Sandoval approved the inspection list and lead times, the twelve added gate checklist items, and the nine customer-facing phase descriptions as written on 2026-08-03 (`docs/inspections-and-gate-checklists-2026-08-03.md`). Nothing is blocked on code and nothing is awaiting sign-off.
+
+**The only thing between this and a pilot is deployment.** Everything runs on loopback with embedded Postgres and a symmetric pilot JWT. A pilot with three to five real projects and a live customer link needs a managed environment, TLS, and real identity — see the launch blockers below. That is now the single remaining workstream.
 
 **Production status:** Not production-ready
 
@@ -417,11 +419,12 @@ What changed beyond seeding:
 - The field console now picks a Gate instead of assuming pre-gunite, and knows
   the difference between signing off and countersigning.
 
-**The checklists are not Apex's yet.** The decision document gives one line of
-"Verifies" per Gate, not procedures. Every requirement list except pre-gunite's
-was written from that line plus the draw schedule's "Covers" column. They are a
-starting point for Travis to correct before field use; correcting one means a new
-definition version, not an edit.
+**The checklists were not Apex's yet — resolved 2026-08-03.** The decision
+document gives one line of "Verifies" per Gate, not procedures, so every
+requirement list except pre-gunite's was written from that line plus the draw
+schedule's "Covers" column. Migration `0017` revised them against the 2021 ISPSC
+and Travis approved the result as written. They are Apex's procedures now.
+Correcting one still means a new definition version, not an edit.
 
 Known residue: customer milestone projections created before this migration still
 carry the old `pre-gunite-released` milestone string, which is not one of the six
@@ -706,9 +709,8 @@ Decisions worth challenging:
 2. **Contact route.** `APEX_CUSTOMER_CONTACT_PHONE` is unset by default and the
    page then shows no call or text button. A page printing a number nobody
    configured is worse than one printing none.
-3. **Copy review.** The nine per-phase customer descriptions in
-   `packages/domain/src/customer.ts` were written from the construction model,
-   not dictated by Apex. Same caveat as the six new gate checklists.
+3. ~~**Copy review.**~~ Closed 2026-08-03: the nine per-phase customer
+   descriptions in `packages/domain/src/customer.ts` were approved as written.
 
 Not built from §9.11: nothing. Deliberately out of scope: customer-submitted
 answers, and any per-phase date on the page — Apex OS holds a target completion
@@ -719,8 +721,9 @@ system cannot keep.
 
 Build-plan Step 5's inspection half (PRD §9.7), which had been blocked since the
 plan was written, plus twelve additions to the gate checklists. Content proposed
-in `docs/inspections-and-gate-checklists-2026-08-03.md` and **built ahead of
-Travis's approval by explicit instruction**; corrections land as a new version.
+in `docs/inspections-and-gate-checklists-2026-08-03.md`, built ahead of approval
+by explicit instruction, and **approved as written by Travis Sandoval on
+2026-08-03 with no corrections**. Future corrections land as a new version.
 
 **Migration `0017`** copies all seven active gate definitions forward a version
 and adds twelve requirement items. Three are safety items that were missing
@@ -767,8 +770,12 @@ Decisions worth challenging:
   revisiting the first time someone misses an inspection over Thanksgiving.
 
 **Open launch blockers this does not close:** deployment and identity, unchanged.
-And the content itself — the inspection list, the lead times, and the twelve
-checklist items are proposals until Travis initials them.
+The content itself is no longer open — approved 2026-08-03.
+
+**Worth revisiting once real inspections run:** the lead times were approved as
+conservative planning figures, not as measurements. If Lubbock actually turns
+these around next-day, tightening each row is one number and makes every warning
+sharper. Nothing breaks in the meantime; the deadlines simply fire a day early.
 
 ## Next controlled milestone
 

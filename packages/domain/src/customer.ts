@@ -28,11 +28,15 @@ import {
  * internal notes — is enforced by absence rather than by a deny-list somebody
  * has to remember to extend.
  *
- * COPY CAVEAT: the nine phase descriptions below are written from the confirmed
- * construction model (docs/decisions/construction-model.md), not dictated by
- * Apex. They are the company's voice speaking to its customers and Travis should
- * read them before the first real link goes out — the same caveat the six new
- * gate checklists carry.
+ * COPY: the nine phase descriptions below were written from the confirmed
+ * construction model (docs/decisions/construction-model.md) and APPROVED as
+ * written by Travis Sandoval on 2026-08-03. They are Apex's voice speaking to
+ * Apex's customers, so changing one is a deliberate act with a test behind it,
+ * not a tidy-up.
+ *
+ * What must not creep in: a per-phase date. Apex OS holds a target completion
+ * window, not a schedule anyone committed to, and a date here is a promise the
+ * system cannot keep.
  */
 
 /** What a homeowner is told while a phase is current, and what follows it. */
