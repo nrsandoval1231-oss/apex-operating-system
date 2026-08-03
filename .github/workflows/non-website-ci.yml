@@ -80,6 +80,9 @@ jobs:
         run: |
           docker run --rm --network host minio/mc alias set ci http://localhost:9000 apexkey apexsecret123
           docker run --rm --network host minio/mc mb --ignore-existing ci/apex-evidence
+          # Printed so a bucket problem is visible here rather than inferred
+          # from a 404 several steps later.
+          docker run --rm --network host minio/mc ls ci
       - uses: pnpm/action-setup@v4
         with:
           version: 11.18.0

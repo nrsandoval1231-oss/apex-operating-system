@@ -90,17 +90,13 @@ export class S3EvidenceStorage implements EvidenceStorage {
       },
     });
     if (response.status === 412) throw new ObjectExistsError(key);
-    if (!response.ok) {
-      throw new Error(`Evidence upload failed: ${response.status} ${await this.detail(response)}`);
-    }
+    if (!response.ok) throw await this.failure('upload', 'PUT', url, response);
   }
 
   async get(key: string): Promise<Buffer | null> {
     const response = await this.client.fetch(this.urlFor(key), { method: 'GET' });
     if (response.status === 404) return null;
-    if (!response.ok) {
-      throw new Error(`Evidence read failed: ${response.status} ${await this.detail(response)}`);
-    }
+    if (!response.ok) throw await this.failure('read', 'GET', this.urlFor(key), response);
     return Buffer.from(await response.arrayBuffer());
   }
 
@@ -109,7 +105,7 @@ export class S3EvidenceStorage implements EvidenceStorage {
     // S3 answers 204 whether or not the object was there, which is the
     // idempotence the port asks for.
     if (!response.ok && response.status !== 404) {
-      throw new Error(`Evidence delete failed: ${response.status} ${await this.detail(response)}`);
+      throw await this.failure('delete', 'DELETE', this.urlFor(key), response);
     }
   }
 
@@ -127,12 +123,29 @@ export class S3EvidenceStorage implements EvidenceStorage {
     return `S3-compatible bucket ${this.options.bucket} at ${this.options.endpoint}`;
   }
 
-  /** Providers return XML on error; the first 200 characters is enough to act on. */
-  private async detail(response: Response): Promise<string> {
+  /**
+   * Errors name the request that failed, not just the status.
+   *
+   * Written after a CI failure where "upload failed: 404" was true and useless:
+   * the same status can mean a missing bucket, a missing object, or a wrong
+   * endpoint, and without the URL there is nothing to tell them apart.
+   * Credentials are never in the URL — they are in the Authorization header —
+   * so this is safe to log.
+   */
+  private async failure(
+    action: string,
+    method: string,
+    url: string,
+    response: Response,
+  ): Promise<Error> {
+    let body = '(no body)';
     try {
-      return (await response.text()).slice(0, 200);
+      body = (await response.text()).slice(0, 300).replace(/\s+/g, ' ').trim();
     } catch {
-      return '(no body)';
+      // Keep the placeholder; the status and URL are the useful part anyway.
     }
+    return new Error(
+      `Evidence ${action} failed: ${method} ${url} -> ${response.status} ${response.statusText}. ${body}`,
+    );
   }
 }
