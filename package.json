@@ -9,8 +9,9 @@
     "test:watch": "vitest",
     "typecheck": "tsc -b && tsc --noEmit -p apps/apex-os/tsconfig.json",
     "build": "pnpm typecheck",
-    "verify": "pnpm test && pnpm typecheck",
-    "//test": "No --exclude flag: the root vitest.config.ts already includes only packages/** and apps/**, so integration-tests/ cannot match. An unquoted integration-tests/** glob was expanded by POSIX shells (but not by cmd.exe), which turned the second expanded path into a positional filter and made every CI run fail while Windows passed."
+    "verify": "pnpm typecheck && pnpm test",
+    "//test": "No --exclude flag: the root vitest.config.ts already includes only packages/** and apps/**, so integration-tests/ cannot match. An unquoted integration-tests/** glob was expanded by POSIX shells (but not by cmd.exe), which turned the second expanded path into a positional filter and made every CI run fail while Windows passed.",
+    "//verify": "typecheck FIRST: it runs tsc -b, which emits the dist/ that the workspace packages' exports point at. Running tests first fails on a fresh clone (and in CI) with 'Failed to resolve entry for package @apex/contracts'."
   },
   "devDependencies": {
     "@types/node": "latest",
