@@ -154,7 +154,13 @@ Phase 0 goals:
 1. The preserved `gate-v3.jsx` prototype remains sample-driven; the new operational slice is a separate controlled-pilot implementation.
 2. Local persistence is embedded PostgreSQL and private filesystem storage, not the managed production deployment profile.
 3. Pilot JWT authentication uses a local symmetric secret; production requires asymmetric/JWKS identity, TLS, provisioning, rotation, and access logging.
-4. Evidence freshness/expiration and inspection-request scheduling are not implemented.
+4. Evidence freshness/expiration are not implemented.
+5. **The Designer contract test does not run in CI.** `Apex Designer/` is a
+   separate preserved component (ADR-0002) and is gitignored here, so
+   `integration-tests/designer-contract.test.ts` skips on any clone without both
+   repositories side by side. It is a real test where it runs and no signal
+   where it does not. Making it run in CI needs the Designer repository checked
+   out in the workflow with a deploy key.
 5. QuickBooks synchronization is not connected; release only creates canonical draw eligibility.
 6. Schedule authority remains disconnected.
 7. Chemistry remains explicitly outside field deployment until separately approved.
