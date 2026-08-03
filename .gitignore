@@ -1,5 +1,15 @@
 # Generated dependencies and outputs
 **/node_modules/
+
+# This is a pnpm workspace (pnpm-workspace.yaml, pnpm-lock.yaml). An npm install
+# run here replaces the workspace symlinks with stale copies, so a newly added
+# file in packages/* becomes invisible to tsc and to every other package until
+# `pnpm install` repairs it. Ignoring the lockfile keeps that mistake local
+# instead of committing it for everyone.
+/package-lock.json
+**/package-lock.json
+/yarn.lock
+**/yarn.lock
 **/dist/
 **/build/
 **/coverage/
