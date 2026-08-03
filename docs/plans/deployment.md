@@ -1,8 +1,8 @@
 # Apex OS — Deployment Plan
 
 **Written:** 2026-08-03
-**Status:** Slice 1 in progress. Slices 2–9 sequenced below; two decisions needed
-before slice 4.
+**Status:** Slices 1 and 2 complete. Slices 3–9 sequenced below; two decisions
+needed before slice 4.
 **Why now:** every feature in the v1 build plan is complete and all content is
 approved. Deployment is the only remaining workstream between this and a pilot.
 
@@ -45,8 +45,8 @@ change based on which host or provider you pick.
 
 | # | Blocker | Cost | Independent |
 |---|---|---|---|
-| 1 | Services bind directly to `PGlite` | Small | Yes |
-| 2 | No real Postgres adapter; migrations run on boot with no lock | Medium | Yes |
+| 1 | ~~Services bind directly to `PGlite`~~ | Done | Yes |
+| 2 | ~~No real Postgres adapter; migrations run on boot with no lock~~ | Done | Yes |
 | 3 | Evidence is written to the local filesystem | Medium | Yes |
 | 4 | **RLS policies exist but are inert** — see §4 | Medium–large | Yes |
 | 5 | Symmetric HS256 pilot JWT; no JWKS, no rotation | Medium | Mostly |
@@ -103,11 +103,33 @@ Introduce a narrow `Database` interface in `@apex/database` covering exactly wha
 the services use, and depend on that instead. PGlite satisfies it structurally,
 so every existing test keeps passing unchanged and nothing is rewritten twice.
 
-**Slice 2 — A real Postgres adapter (medium).**
-A `pg`-backed implementation of the port, plus the two things embedded Postgres
-let us ignore: a connection pool, and an advisory lock around migrations so two
-instances starting at once cannot race the same `0018`. Integration tests run
-against a real Postgres in CI.
+**Slice 2 — A real Postgres adapter (medium). DONE 2026-08-03.**
+`PostgresDatabase` implements the port over a `pg` pool, with the two things
+embedded Postgres let us ignore: pooled transactions that release their client on
+every path, and a session-level advisory lock around migrations so two instances
+starting together cannot race the same `0018`. CI now runs a Postgres 16 service
+container and the adapter is tested against it.
+
+Three decisions worth challenging:
+
+1. **`date` is parsed as a string, not a `Date`.** node-postgres turns a bare
+   `date` into a JS `Date` at *local* midnight, which moves the calendar day
+   backwards in any timezone east of UTC. Every date here is a calendar day with
+   no time in it, and the services already accept strings, so overriding the
+   parser removes the ambiguity instead of managing it — and makes Postgres
+   behave exactly as PGlite does, which is what lets one suite cover both.
+   `timestamptz` is deliberately left alone: it carries a real instant.
+2. **TLS is on with verification for any non-local host, and there is no option
+   to leave it on with verification off.** That combination looks encrypted and
+   authenticates nothing. `sslmode=disable` is honoured because it is an
+   explicit statement.
+3. **The database is chosen by the presence of `DATABASE_URL`,** not a mode
+   flag, so there is no way to point at a real database and still be running the
+   embedded one.
+
+Also lands the graceful-shutdown half of slice 6: SIGTERM finishes in-flight
+requests and closes the pool, so a routine deploy cannot cut an evidence upload
+half-written.
 
 **Slice 3 — An evidence storage port (medium).**
 Four call sites in `server.ts` do filesystem I/O. Behind a `Storage` port with a

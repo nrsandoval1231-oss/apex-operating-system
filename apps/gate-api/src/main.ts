@@ -1,5 +1,10 @@
 import { resolve } from 'node:path';
-import { createLocalDatabase } from '@apex/database';
+import {
+  PostgresDatabase,
+  applyOperationalMigrations,
+  createLocalDatabase,
+  type Database,
+} from '@apex/database';
 import { createGateApi } from './server.js';
 
 const secret = process.env.GATE_JWT_SECRET;
@@ -46,7 +51,35 @@ const customerContact = contactPhone
   }
   : undefined;
 
-const db = await createLocalDatabase(dataDirectory);
+/**
+ * Managed Postgres when DATABASE_URL is set, embedded Postgres otherwise.
+ *
+ * Chosen by the presence of the variable rather than by a mode flag, so there is
+ * no way to point at a real database and still be running the embedded one.
+ * Migrations run under an advisory lock on the managed path: two instances
+ * starting together would otherwise race the same migration, and the loser
+ * would crash-loop.
+ */
+const databaseUrl = process.env.DATABASE_URL?.trim();
+let db: Database;
+let closeDatabase: () => Promise<void> = async () => undefined;
+
+if (databaseUrl) {
+  const postgres = PostgresDatabase.create({
+    url: databaseUrl,
+    ...(process.env.DATABASE_CA_CERT ? { caCertificate: process.env.DATABASE_CA_CERT } : {}),
+    ...(process.env.DATABASE_MAX_CONNECTIONS
+      ? { maxConnections: Number(process.env.DATABASE_MAX_CONNECTIONS) }
+      : {}),
+  });
+  await postgres.withMigrationLock((client) => applyOperationalMigrations(client));
+  db = postgres;
+  closeDatabase = () => postgres.close();
+  console.log('Database            managed Postgres');
+} else {
+  db = await createLocalDatabase(dataDirectory);
+  console.log(`Database            embedded Postgres at ${dataDirectory}`);
+}
 const server = createGateApi({
   db,
   jwtSecret: secret,
@@ -54,6 +87,22 @@ const server = createGateApi({
   ...(localUserId ? { localUserId } : {}),
   ...(customerContact ? { customerContact } : {}),
 });
+
+/**
+ * Finish what is in flight before exiting.
+ *
+ * An evidence upload cut off mid-write leaves a file with no row pointing at
+ * it, which is the one kind of orphan this system should not create on a
+ * routine deploy.
+ */
+for (const signal of ['SIGTERM', 'SIGINT'] as const) {
+  process.on(signal, () => {
+    console.log(`\n${signal} received; finishing in-flight requests.`);
+    server.close(() => {
+      void closeDatabase().then(() => process.exit(0));
+    });
+  });
+}
 
 server.listen(port, HOST, () => {
   console.log(`Apex OS             http://${HOST}:${port}/app`);

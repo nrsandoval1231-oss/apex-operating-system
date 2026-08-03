@@ -5,6 +5,7 @@ import { PGlite } from '@electric-sql/pglite';
 import type { MigrationClient } from './client.js';
 
 export * from './client.js';
+export * from './postgres.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const migrationsDirectory = resolve(here, '../migrations');
