@@ -213,10 +213,16 @@ describe('conflicts on the action feed', () => {
     await book(ids.jobA);
     await book(ids.jobB);
     const cards = await service.getActionCards('2026-08-02');
-    const conflict = cards.find((card) => card.kind === 'schedule.crew-conflict');
+    // A double-booking raises a card on BOTH jobs — an owner looking at either
+    // one has to see it. Picking the first card of that kind therefore depends
+    // on which job id happens to sort first, so this names the job it means.
+    const conflict = cards.find(
+      (card) => card.kind === 'schedule.crew-conflict' && card.jobId === ids.jobA,
+    );
     expect(conflict).toMatchObject({ group: 'needs-you', urgency: 'urgent' });
     expect(conflict?.title).toContain('Lubbock Gunite');
     expect(conflict?.reason).toContain('Mike Johnson');
+    expect(cards.filter((card) => card.kind === 'schedule.crew-conflict')).toHaveLength(2);
   });
 
   it('puts work booked ahead of its gate in front of the owner', async () => {

@@ -13,12 +13,14 @@ import {
   createCanonicalId,
   idSchemas,
   type AppRole,
+  type CustomerContact,
   type EventActor,
   type GateInstanceId,
   type JobId,
 } from '@apex/contracts';
 import { DomainRuleError } from '@apex/domain';
-import { GateService } from '@apex/gate-service';
+import { CustomerService, GateService, InspectionService } from '@apex/gate-service';
+import { renderClosedPage, renderCustomerPage } from './customerPage.js';
 
 const EvidenceUploadSchema = z.strictObject({
   requirementKey: z.string().min(1).max(120),
@@ -104,6 +106,69 @@ const ChangePhaseSchema = z.strictObject({
   toPhaseKey: ConstructionPhaseKeySchema,
   reason: z.string().min(1).max(2000).optional(),
 });
+
+/** Calling an inspection in. The city may or may not give a date at the time. */
+const RequestInspectionSchema = z.strictObject({
+  requestedOn: DaySchema,
+  scheduledFor: DaySchema.optional(),
+  /** Overrides the deadline derived from crew bookings. */
+  neededBy: DaySchema.optional(),
+});
+
+const InspectionResultInputSchema = z.strictObject({
+  outcome: z.enum(['passed', 'failed', 'waived']),
+  occurredOn: DaySchema,
+  note: z.string().min(1).max(2000).optional(),
+  corrections: z.string().min(1).max(2000).optional(),
+});
+
+const LinkReasonSchema = z.strictObject({
+  reason: z.string().min(1).max(2000).optional(),
+});
+
+/** Publishing a photo to a customer, or taking it back down. */
+const PhotoVisibilitySchema = z.strictObject({
+  visible: z.boolean(),
+  /** Written for the customer. The internal caption is never shown to them. */
+  caption: z.string().min(1).max(300).nullable().optional(),
+});
+
+const RaiseDecisionSchema = z.strictObject({
+  title: z.string().min(1).max(200),
+  detail: z.string().min(1).max(2000),
+  consequence: z.string().min(1).max(500),
+  neededBy: DaySchema.optional(),
+});
+
+const ResolveDecisionSchema = z.strictObject({
+  status: z.enum(['answered', 'withdrawn']),
+  answerNote: z.string().min(1).max(2000).optional(),
+});
+
+/**
+ * The customer link token, as it appears in a URL.
+ *
+ * 32 random bytes, base64url. Checked here so a malformed path never reaches a
+ * query, and so the shape is stated in one place that the service also asserts.
+ */
+const CustomerTokenSchema = z.string().regex(/^[A-Za-z0-9_-]{43}$/);
+
+/**
+ * Headers every customer-facing response carries.
+ *
+ * `noindex` because a link forwarded into anything a crawler reads must not
+ * become a search result. `no-referrer` because the token is in the path and a
+ * referrer header would hand it to any host an image or link points at.
+ * `no-store` on the HTML because a shared family laptop should not have the
+ * page in its back-button cache.
+ */
+const CUSTOMER_HEADERS = {
+  'x-robots-tag': 'noindex, nofollow, noarchive',
+  'referrer-policy': 'no-referrer',
+  'x-content-type-options': 'nosniff',
+  'content-security-policy': "default-src 'none'; style-src 'self'; img-src 'self'; "
+    + "base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+} as const;
 const publicDirectory = resolve(dirname(fileURLToPath(import.meta.url)), '../public');
 
 const matchesDeclaredMimeType = (content: Buffer, mimeType: string) => {
@@ -127,6 +192,12 @@ interface GateApiOptions {
    * local pilot only — see `authenticate` for the guards and the warning.
    */
   readonly localUserId?: string;
+  /**
+   * How a customer reaches Apex from their progress page (§9.11's call/text
+   * route). Omitted by default: the page prints no number rather than a wrong
+   * one. Set from APEX_CUSTOMER_CONTACT_PHONE — see main.ts.
+   */
+  readonly customerContact?: CustomerContact;
 }
 
 const sendJson = (response: ServerResponse, status: number, value: unknown) => {
@@ -134,6 +205,20 @@ const sendJson = (response: ServerResponse, status: number, value: unknown) => {
   response.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'content-length': Buffer.byteLength(body) });
   response.end(body);
 };
+
+/**
+ * What the access log records about a customer request.
+ *
+ * The address is coarsened to a network prefix inside the service, and the user
+ * agent is truncated. Nothing else is taken: this log exists to notice a link
+ * being passed around, not to profile the person reading it.
+ */
+const accessContext = (request: IncomingMessage) => ({
+  ...(request.socket.remoteAddress ? { remoteAddress: request.socket.remoteAddress } : {}),
+  ...(typeof request.headers['user-agent'] === 'string'
+    ? { userAgent: request.headers['user-agent'] }
+    : {}),
+});
 
 const readJson = async (request: IncomingMessage, limit = 35_000_000): Promise<unknown> => {
   const chunks: Buffer[] = [];
@@ -156,6 +241,12 @@ export function createGateApi(options: GateApiOptions) {
   if (Buffer.byteLength(options.jwtSecret) < 32) throw new Error('GATE_JWT_SECRET must be at least 32 bytes.');
   const secret = new TextEncoder().encode(options.jwtSecret);
   const service = new GateService(options.db);
+  const customers = new CustomerService(options.db, {
+    ...(options.customerContact ? { contact: options.customerContact } : {}),
+    basePath: '/c',
+  });
+  const customerPhone = options.customerContact?.phone ?? null;
+  const inspections = new InspectionService(options.db);
   const evidenceRoot = resolve(options.evidenceDirectory);
   const maxEvidenceBytes = options.maxEvidenceBytes ?? 25_000_000;
 
@@ -277,7 +368,71 @@ export function createGateApi(options: GateApiOptions) {
         return response.end(content);
       }
 
-      if (request.method === 'GET' && ['/', '/gate-console.css', '/gate-console.js', '/favicon.svg'].includes(url.pathname)) {
+      /* ------------------------------------------------------------------
+       * The customer progress page — PRD §9.11.
+       *
+       * EVERYTHING BELOW THIS COMMENT AND ABOVE `authenticate` IS PUBLIC.
+       * These two routes are the only ones in Apex OS that answer a request
+       * carrying no identity at all. Authorization is the token: it names one
+       * job, it can be revoked, and every read of it is recorded.
+       *
+       * They are placed here, ahead of `authenticate`, deliberately — a
+       * customer has no account to authenticate with, and a route that fell
+       * through to the staff authenticator would either 403 the customer or,
+       * worse, treat a loopback request as the local pilot user.
+       * ------------------------------------------------------------------ */
+
+      const customerPhotoMatch = url.pathname.match(
+        /^\/c\/([A-Za-z0-9_-]{43})\/photo\/(evidence_[0-9A-HJKMNP-TV-Z]{26})$/,
+      );
+      if (request.method === 'GET' && customerPhotoMatch) {
+        const result = await customers.getPhoto(
+          CustomerTokenSchema.parse(customerPhotoMatch[1]),
+          idSchemas.evidence.parse(customerPhotoMatch[2]),
+          accessContext(request),
+        );
+        if (result.outcome !== 'served') {
+          response.writeHead(404, { ...CUSTOMER_HEADERS, 'content-type': 'text/plain; charset=utf-8' });
+          return response.end('Not found');
+        }
+        const path = resolve(evidenceRoot, result.storageKey);
+        if (!path.startsWith(`${evidenceRoot}${sep}`)) throw new InputError('Invalid evidence storage path.');
+        const content = await readFile(path);
+        response.writeHead(200, {
+          ...CUSTOMER_HEADERS,
+          'content-type': result.mimeType,
+          'content-length': content.length,
+          // Ten minutes on the customer's own device. Re-downloading a gallery
+          // over cellular every time they check the page is a real cost, and
+          // the trade is stated rather than hidden: for that long after a
+          // revocation, photos already on that device still open.
+          'cache-control': 'private, max-age=600',
+        });
+        return response.end(content);
+      }
+
+      const customerPageMatch = url.pathname.match(/^\/c\/([A-Za-z0-9_-]{43})$/);
+      if (request.method === 'GET' && customerPageMatch) {
+        const result = await customers.getPage(
+          CustomerTokenSchema.parse(customerPageMatch[1]),
+          accessContext(request),
+        );
+        // A revoked link and a token that never existed render the same page
+        // and return the same status. Distinguishing them would tell a stranger
+        // that they had found a real link scheme.
+        const body = result.outcome === 'served'
+          ? renderCustomerPage(result.page)
+          : renderClosedPage(customerPhone);
+        response.writeHead(result.outcome === 'served' ? 200 : 404, {
+          ...CUSTOMER_HEADERS,
+          'content-type': 'text/html; charset=utf-8',
+          'content-length': Buffer.byteLength(body),
+          'cache-control': 'no-store',
+        });
+        return response.end(body);
+      }
+
+      if (request.method === 'GET' && ['/', '/gate-console.css', '/gate-console.js', '/favicon.svg', '/customer.css'].includes(url.pathname)) {
         const fileName = url.pathname === '/' ? 'index.html' : url.pathname.slice(1);
         const content = await readFile(resolve(publicDirectory, fileName));
         const contentType = appContentType(fileName);
@@ -551,6 +706,167 @@ export function createGateApi(options: GateApiOptions) {
           type: 'countersign-gate', actor, at: new Date().toISOString(),
         }, { idempotencyKey: idempotency(request) });
         return sendJson(response, 200, { ...result, state: serializeGate(result.state) });
+      }
+
+
+      /* ------------------------------------------------- inspections (§9.7) */
+
+      if (request.method === 'GET' && url.pathname === '/api/inspection-types') {
+        requireStaff(actor);
+        return sendJson(response, 200, await inspections.listInspectionTypes());
+      }
+
+      const jobInspectionsMatch = url.pathname.match(
+        /^\/api\/jobs\/(job_[0-9A-HJKMNP-TV-Z]{26})\/inspections$/,
+      );
+      if (request.method === 'GET' && jobInspectionsMatch) {
+        requireStaff(actor);
+        // All seven come back every time. An inspection nobody has touched is
+        // returned with a null status, because "not requested" is a state the
+        // feed has to act on rather than a row that is missing.
+        return sendJson(response, 200, await inspections.listJobInspections(
+          idSchemas.job.parse(jobInspectionsMatch[1]),
+        ));
+      }
+
+      const requestInspectionMatch = url.pathname.match(
+        /^\/api\/jobs\/(job_[0-9A-HJKMNP-TV-Z]{26})\/inspections\/([a-z0-9]+(?:-[a-z0-9]+)*)\/request$/,
+      );
+      if (request.method === 'POST' && requestInspectionMatch) {
+        requireStaff(actor);
+        const body = RequestInspectionSchema.parse(await readJson(request));
+        return sendJson(response, 200, await inspections.requestInspection({
+          jobId: idSchemas.job.parse(requestInspectionMatch[1]),
+          inspectionKey: requestInspectionMatch[2] ?? '',
+          requestedOn: body.requestedOn,
+          actor,
+          ...(body.scheduledFor ? { scheduledFor: body.scheduledFor } : {}),
+          ...(body.neededBy ? { neededBy: body.neededBy } : {}),
+        }));
+      }
+
+      const inspectionResultMatch = url.pathname.match(
+        /^\/api\/jobs\/(job_[0-9A-HJKMNP-TV-Z]{26})\/inspections\/([a-z0-9]+(?:-[a-z0-9]+)*)\/result$/,
+      );
+      if (inspectionResultMatch) {
+        requireStaff(actor);
+        const jobId = idSchemas.job.parse(inspectionResultMatch[1]);
+        const key = inspectionResultMatch[2] ?? '';
+        if (request.method === 'GET') {
+          return sendJson(response, 200, await inspections.listResults(jobId, key));
+        }
+        if (request.method === 'POST') {
+          const body = InspectionResultInputSchema.parse(await readJson(request));
+          return sendJson(response, 200, await inspections.recordResult({
+            jobId,
+            inspectionKey: key,
+            outcome: body.outcome,
+            occurredOn: body.occurredOn,
+            actor,
+            ...(body.note ? { note: body.note } : {}),
+            ...(body.corrections ? { corrections: body.corrections } : {}),
+          }));
+        }
+      }
+
+      /* --------------------------------------------- customer page, staff side */
+
+      const linkMatch = url.pathname.match(/^\/api\/jobs\/(job_[0-9A-HJKMNP-TV-Z]{26})\/customer-link$/);
+      if (linkMatch) {
+        requireStaff(actor);
+        const jobId = idSchemas.job.parse(linkMatch[1]);
+        if (request.method === 'GET') {
+          return sendJson(response, 200, await customers.getLinkStatus(jobId));
+        }
+        if (request.method === 'POST') {
+          // The response body carries the token in the clear. It is the only
+          // time it exists outside the customer's browser, and it is not
+          // recoverable afterwards — rotate to get a new one.
+          return sendJson(response, 201, await customers.issueLink({ jobId, actor }));
+        }
+        if (request.method === 'DELETE') {
+          const body = LinkReasonSchema.parse(await readJson(request).catch(() => ({})));
+          return sendJson(response, 200, await customers.revokeLink({
+            jobId, actor, ...(body.reason ? { reason: body.reason } : {}),
+          }));
+        }
+      }
+
+      const rotateMatch = url.pathname.match(
+        /^\/api\/jobs\/(job_[0-9A-HJKMNP-TV-Z]{26})\/customer-link\/rotate$/,
+      );
+      if (request.method === 'POST' && rotateMatch) {
+        requireStaff(actor);
+        const body = LinkReasonSchema.parse(await readJson(request).catch(() => ({})));
+        return sendJson(response, 201, await customers.rotateLink({
+          jobId: idSchemas.job.parse(rotateMatch[1]),
+          actor,
+          ...(body.reason ? { reason: body.reason } : {}),
+        }));
+      }
+
+      const previewMatch = url.pathname.match(
+        /^\/api\/jobs\/(job_[0-9A-HJKMNP-TV-Z]{26})\/customer-preview$/,
+      );
+      if (request.method === 'GET' && previewMatch) {
+        requireStaff(actor);
+        // Exactly what the customer would see, without minting a token for a
+        // staff screen and without logging Apex's own checks as customer reads.
+        return sendJson(response, 200, await customers.previewPage(idSchemas.job.parse(previewMatch[1])));
+      }
+
+      const photosMatch = url.pathname.match(/^\/api\/jobs\/(job_[0-9A-HJKMNP-TV-Z]{26})\/photos$/);
+      if (request.method === 'GET' && photosMatch) {
+        requireStaff(actor);
+        return sendJson(response, 200, await customers.listJobPhotos(idSchemas.job.parse(photosMatch[1])));
+      }
+
+      const visibilityMatch = url.pathname.match(
+        /^\/api\/evidence\/(evidence_[0-9A-HJKMNP-TV-Z]{26})\/visibility$/,
+      );
+      if (request.method === 'POST' && visibilityMatch) {
+        requireStaff(actor);
+        const body = PhotoVisibilitySchema.parse(await readJson(request));
+        return sendJson(response, 200, await customers.setPhotoVisibility({
+          evidenceId: idSchemas.evidence.parse(visibilityMatch[1]),
+          visible: body.visible,
+          actor,
+          ...(body.caption !== undefined ? { caption: body.caption } : {}),
+        }));
+      }
+
+      const decisionsMatch = url.pathname.match(/^\/api\/jobs\/(job_[0-9A-HJKMNP-TV-Z]{26})\/decisions$/);
+      if (decisionsMatch) {
+        requireStaff(actor);
+        const jobId = idSchemas.job.parse(decisionsMatch[1]);
+        if (request.method === 'GET') {
+          return sendJson(response, 200, await customers.listDecisions(jobId));
+        }
+        if (request.method === 'POST') {
+          const body = RaiseDecisionSchema.parse(await readJson(request));
+          return sendJson(response, 201, await customers.raiseDecision({
+            jobId,
+            title: body.title,
+            detail: body.detail,
+            consequence: body.consequence,
+            actor,
+            ...(body.neededBy ? { neededBy: body.neededBy } : {}),
+          }));
+        }
+      }
+
+      const resolveMatch = url.pathname.match(
+        /^\/api\/decisions\/(decision_[0-9A-HJKMNP-TV-Z]{26})\/resolve$/,
+      );
+      if (request.method === 'POST' && resolveMatch) {
+        requireStaff(actor);
+        const body = ResolveDecisionSchema.parse(await readJson(request));
+        return sendJson(response, 200, await customers.resolveDecision({
+          decisionId: idSchemas.customerDecision.parse(resolveMatch[1]),
+          status: body.status,
+          actor,
+          ...(body.answerNote ? { answerNote: body.answerNote } : {}),
+        }));
       }
 
       const customerMatch = url.pathname.match(/^\/api\/customer\/jobs\/(job_[0-9A-HJKMNP-TV-Z]{26})\/milestones$/);

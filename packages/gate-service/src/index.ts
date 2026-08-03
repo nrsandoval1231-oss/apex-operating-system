@@ -32,6 +32,7 @@ import {
   type GateInstanceId,
   type GateReleaseRole,
   type JobId,
+  type JobInspection,
   type JobSummary,
   type UserId,
 } from '@apex/contracts';
@@ -59,6 +60,7 @@ import {
   type PreviousBrief,
   type ProjectPhaseState,
 } from '@apex/domain';
+import { InspectionService } from './inspections.js';
 
 export interface EvidenceWrite {
   readonly evidenceId: EvidenceId;
@@ -507,7 +509,12 @@ export class GateService {
     }
 
     const state = await this.getGate(gateInstanceId);
+    // Authority and the checklist are decided first, by the pure engine. The
+    // inspection guard runs only on a release that is otherwise good: someone
+    // with no authority to release must be told exactly that, and must not
+    // learn the job's inspection state on the way to being refused.
     const drafts = decideGateCommand(state, command);
+    if (command.type === 'release-gate') await this.assertInspectionsClear(state);
     if (command.type === 'add-evidence') this.assertEvidenceContext(command, context.evidence, state.jobId);
     const correlationId = context.correlationId ?? createCanonicalId('event');
     const persisted: ApexEvent[] = [];
@@ -1242,6 +1249,16 @@ export class GateService {
     const { visitsByJob, conflictsByJob } = await this.readScheduleSnapshot();
     const phaseTitle = (key: string) => constructionPhase(key as ConstructionPhaseKey).title;
 
+    // Inspections are read per job rather than in one sweep: the deadline
+    // fallback joins each job's own crew bookings, and a single query across
+    // every job would have to repeat that correlation anyway.
+    const inspections = new InspectionService(this.db);
+    const inspectionsByJob = new Map<string, readonly JobInspection[]>();
+    for (const row of jobs.rows) {
+      const jobId = row.job_id as JobId;
+      inspectionsByJob.set(jobId, await inspections.listJobInspections(jobId));
+    }
+
     // Requirement progress per open Gate. `evidence_required` requirements are
     // counted separately from those that have evidence, so a Gate is only ever
     // reported ready when both are satisfied.
@@ -1368,6 +1385,7 @@ export class GateService {
         },
         gates: gatesByJob.get(summary.jobId) ?? [],
         draws: drawsByJob.get(summary.jobId) ?? [],
+        inspections: inspectionsByJob.get(summary.jobId) ?? [],
         visits: (visitsByJob.get(summary.jobId) ?? [])
           .filter((visit) => visit.status === 'planned' || visit.status === 'confirmed')
           .map((visit) => ({
@@ -1408,6 +1426,35 @@ export class GateService {
       ...(row.media_url ? { mediaUrl: row.media_url } : {}),
       publishedAt: new Date(row.published_at).toISOString(),
     }));
+  }
+
+  /**
+   * Refuse to release a Gate that the city has not cleared — PRD §9.7.
+   *
+   * This lives in the service rather than in `decideGateCommand` on purpose.
+   * Inspection state belongs to a different aggregate, and folding it into
+   * `GateState` would make the pure Gate decision depend on a second table it
+   * would then need loaded everywhere. The rule is still a hard refusal, not a
+   * warning: "block dependent work when a required inspection has not passed"
+   * has to mean the release fails, or it means nothing.
+   *
+   * Waiving is the escape hatch, and it is a recorded act with a stated reason
+   * rather than a flag someone can clear.
+   */
+  private async assertInspectionsClear(state: GateState): Promise<void> {
+    const inspections = new InspectionService(this.db);
+    const blocking = await inspections.blockingFor(state.jobId, state.definitionKey);
+    if (blocking.length === 0) return;
+    const outstanding = blocking
+      .map((inspection) => {
+        const where = inspection.status === null ? 'not requested' : inspection.status;
+        return `${inspection.title} (${where})`;
+      })
+      .join(', ');
+    throw new DomainRuleError(
+      `This Gate cannot release until its inspections have passed: ${outstanding}. `
+      + 'Record the result, or waive the inspection with a reason if it does not apply to this pool.',
+    );
   }
 
   private assertEvidenceContext(
@@ -1559,3 +1606,6 @@ export class GateService {
     }
   }
 }
+
+export * from './customer.js';
+export * from './inspections.js';

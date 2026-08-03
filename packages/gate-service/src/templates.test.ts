@@ -1,9 +1,10 @@
 import { PGlite } from '@electric-sql/pglite';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { applyOperationalMigrations } from '@apex/database';
-import { createCanonicalId, type EventActor } from '@apex/contracts';
+import { createCanonicalId, type EventActor, type JobId } from '@apex/contracts';
 import { DomainRuleError } from '@apex/domain';
 import { GateService } from './index.js';
+import { InspectionService } from './inspections.js';
 
 /**
  * The seven Gate templates running as one engine.
@@ -54,6 +55,32 @@ beforeEach(async () => {
   service = new GateService(db);
 });
 
+/**
+ * The city's part of a release.
+ *
+ * §9.7 blocks a Gate until every inspection that gates it has a result, so a
+ * test that releases a Gate has to play the inspector too. Driven off
+ * `inspection_types` rather than a hard-coded list, so a Gate that gains an
+ * inspection later does not silently stop being covered here.
+ */
+const clearInspections = async (definitionKey: string) => {
+  const types = await db.query<{ inspection_key: string }>(
+    'select inspection_key from inspection_types where blocks_definition_key = $1',
+    [definitionKey],
+  );
+  const inspections = new InspectionService(db);
+  for (const row of types.rows) {
+    await inspections.recordResult({
+      jobId: ids.job as JobId,
+      inspectionKey: row.inspection_key,
+      outcome: 'passed',
+      occurredOn: '2026-07-29',
+      actor: owner,
+    });
+  }
+};
+
+
 const at = '2026-07-31T17:00:00.000Z';
 
 /** Take a Gate from opened to signed, attaching evidence for every requirement. */
@@ -81,6 +108,7 @@ const runToSignature = async (definitionKey: string, actor: EventActor = superin
     }, { idempotencyKey: `pass-${definitionKey}-${requirement.key}` });
   }
 
+  await clearInspections(definitionKey);
   const result = await service.execute(gateInstanceId, {
     type: 'release-gate', actor, at,
   }, { idempotencyKey: `release-${definitionKey}` });
@@ -169,12 +197,15 @@ describe('running three Gate types on one job', () => {
       .toEqual(['gate.countersigned', 'gate.released', 'customer_update.published']);
   });
 
-  it('carries the eleven PRD §9.4 requirements on pre-gunite', async () => {
+  it('carries the PRD §9.4 baseline on pre-gunite, plus anti-entrapment', async () => {
     const gateInstanceId = createCanonicalId('gate');
     const gate = await service.createGate({ gateInstanceId, jobId: ids.job, definitionKey: 'pre-gunite' });
-    expect(gate.definitionVersion).toBe(2);
-    expect(gate.requirements.size).toBe(11);
+    // v3 adds the suction-outlet check to the eleven-item §9.4 baseline. It has
+    // to happen here because the shell buries the plumbing.
+    expect(gate.definitionVersion).toBe(3);
+    expect(gate.requirements.size).toBe(12);
     expect([...gate.requirements.keys()]).toContain('plumbing-pressure-test');
+    expect([...gate.requirements.keys()]).toContain('anti-entrapment-installed');
     expect([...gate.requirements.values()].every((r) => r.evidenceRequired)).toBe(true);
   });
 });
@@ -193,11 +224,18 @@ describe('opening Gates', () => {
   });
 
   it('refuses a superseded definition version', async () => {
-    // Pre-gunite v1 is inactive; asking for pre-gunite resolves to v2.
+    // v1 and v2 are inactive; asking for pre-gunite resolves to the live v3.
     const gate = await service.createGate({
       gateInstanceId: createCanonicalId('gate'), jobId: ids.job, definitionKey: 'pre-gunite',
     });
-    expect(gate.definitionVersion).toBe(2);
+    expect(gate.definitionVersion).toBe(3);
+    const retired = await db.query<{ count: string }>(
+      `select count(*)::text as count from gate_definitions
+       where definition_key = 'pre-gunite' and active = false`,
+    );
+    // Retired, never deleted: a Gate already running against an older checklist
+    // keeps the one its field lead was actually asked for.
+    expect(Number(retired.rows[0]?.count)).toBe(2);
   });
 
   it('does not force Gates into sequence, so a job imported mid-build can open Shell first', async () => {

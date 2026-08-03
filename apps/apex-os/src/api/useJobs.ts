@@ -2,18 +2,26 @@ import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import { z } from 'zod';
 import {
   ActionCardListSchema,
+  CustomerLinkStatusSchema,
   DailyBriefSchema,
+  JobInspectionListSchema,
+  JobPhotoListSchema,
   ScheduledVisitListSchema,
+  StaffCustomerDecisionListSchema,
   VisitConflictSchema,
   DrawScheduleSchema,
   JobGatePlanSchema,
   JobSummaryListSchema,
   JobSummarySchema,
   type ActionCard,
+  type CustomerLinkStatus,
   type DailyBrief,
   type DrawSchedule,
   type JobGatePlanEntry,
+  type JobInspection,
+  type JobPhoto,
   type JobSummary,
+  type StaffCustomerDecision,
 } from '@apex/contracts';
 import { ApiError, apiGet } from './client';
 import { getToken, subscribeToToken } from './session';
@@ -124,3 +132,43 @@ const loadGatePlan = (path: string, signal: AbortSignal): Promise<readonly JobGa
 /** The job's seven Gate templates and whichever of them have been opened. */
 export const useJobGates = (jobId: string | undefined): Query<readonly JobGatePlanEntry[]> =>
   useResource(jobId === undefined ? null : `/api/jobs/${jobId}/gates`, loadGatePlan);
+
+const loadInspections = (path: string, signal: AbortSignal): Promise<readonly JobInspection[]> =>
+  apiGet(path, JobInspectionListSchema, signal);
+
+/**
+ * Every inspection on the job — PRD §9.7.
+ *
+ * All seven come back every time. One nobody has touched arrives with a null
+ * status, because "not requested" is the state most likely to stop a pour.
+ */
+export const useJobInspections = (jobId: string | undefined): Query<readonly JobInspection[]> =>
+  useResource(jobId === undefined ? null : `/api/jobs/${jobId}/inspections`, loadInspections);
+
+/* ------------------------------------------------------- customer page (§9.11) */
+
+const loadLinkStatus = (path: string, signal: AbortSignal): Promise<CustomerLinkStatus> =>
+  apiGet(path, CustomerLinkStatusSchema, signal);
+
+/**
+ * The job's customer link, its history, and the recorded reads.
+ *
+ * The token is not part of this payload and never will be: it exists in the
+ * clear once, in the response to issuing or rotating, and is not recoverable.
+ */
+export const useCustomerLink = (jobId: string | undefined): Query<CustomerLinkStatus> =>
+  useResource(jobId === undefined ? null : `/api/jobs/${jobId}/customer-link`, loadLinkStatus);
+
+const loadPhotos = (path: string, signal: AbortSignal): Promise<readonly JobPhoto[]> =>
+  apiGet(path, JobPhotoListSchema, signal);
+
+/** Every gate photo on the job, published or not. */
+export const useJobPhotos = (jobId: string | undefined): Query<readonly JobPhoto[]> =>
+  useResource(jobId === undefined ? null : `/api/jobs/${jobId}/photos`, loadPhotos);
+
+const loadDecisions = (path: string, signal: AbortSignal): Promise<readonly StaffCustomerDecision[]> =>
+  apiGet(path, StaffCustomerDecisionListSchema, signal);
+
+/** What Apex is waiting on from this customer. */
+export const useJobDecisions = (jobId: string | undefined): Query<readonly StaffCustomerDecision[]> =>
+  useResource(jobId === undefined ? null : `/api/jobs/${jobId}/decisions`, loadDecisions);

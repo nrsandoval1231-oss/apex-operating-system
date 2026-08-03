@@ -1,6 +1,7 @@
 import { Link, useParams } from 'react-router';
 import { CONSTRUCTION_PHASES, type DrawStatus, type VisitStatus } from '@apex/contracts';
-import { useDrawSchedule, useJob, useJobGates, useJobSchedule } from '../api/useJobs';
+import { useDrawSchedule, useJob, useJobGates, useJobInspections, useJobSchedule } from '../api/useJobs';
+import Inspections from '../components/Inspections';
 import QueryState from '../components/QueryState';
 import {
   GATE_STATUS_LABEL,
@@ -51,8 +52,6 @@ const GATE_TAG = (status: string | null): string => {
 /** Work still to be built on this screen, stated rather than implied. */
 const PENDING = [
   ['Checklists and photos', 'Requirement checklists and evidence capture run in the Gate field console.'],
-  ['Inspections', 'Deadlines and last-safe-request dates, once Apex confirms its inspection list.'],
-  ['Customer page', 'Tokenized link, approved photos, and access log.'],
 ] as const;
 
 export default function ProjectDetail() {
@@ -63,6 +62,11 @@ export default function ProjectDetail() {
   const draws = useDrawSchedule(id);
   const drawPlan = draws.data;
   const schedule = useJobSchedule(id);
+  const inspections = useJobInspections(id);
+  // One clock for the whole screen, read once. The inspection rules take today
+  // as an argument for the same reason the card engine does: the same state has
+  // to produce the same answer every time it is asked.
+  const today = new Date().toISOString().slice(0, 10);
   const visits = schedule.data?.visits ?? [];
   const conflicts = schedule.data?.conflicts ?? [];
 
@@ -331,6 +335,23 @@ export default function ProjectDetail() {
             : job.approvedTakeoffRevisionId.slice(-12)}
         </dd>
       </dl>
+
+      {/* ----------------------------------------------------- inspections */}
+
+      {id !== undefined && <Inspections jobId={id} query={inspections} today={today} />}
+
+      {/* --------------------------------------------------------- customer */}
+
+      <div className="section-rule"><h2>Customer</h2></div>
+      <p className="state-quiet">
+        The link the customer opens, which photos they can see, and what Apex is
+        waiting on them for.
+      </p>
+      <div style={{ marginTop: '12px' }}>
+        <Link to={`/projects/${job.jobId}/customer`} className="action">
+          Customer page
+        </Link>
+      </div>
 
       <div className="section-rule"><h2>Not built yet</h2></div>
       <dl className="facts">

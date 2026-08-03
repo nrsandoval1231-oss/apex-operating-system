@@ -1,0 +1,308 @@
+/* =============================================================================
+   The customer progress page — PRD §9.11.
+
+   THESIS: this is not the field tool. Apex OS is a dark, dense instrument for
+   someone working; this is a homeowner on a phone in their kitchen, months into
+   a build, wanting to know that things are moving. So it borrows the palette of
+   the Apex website — warm paper, charcoal, sage — because that is where a
+   customer's expectations of this company already come from.
+
+   No web fonts. A customer opens this on cellular and the page must arrive
+   before the fonts would have. System stacks carry it.
+   ============================================================================= */
+
+:root {
+  color-scheme: light;
+
+  --paper: #f6f4ef;
+  --card: #ffffff;
+  --line: #d4cfc5;
+  --char: #1b1c1e;
+  --ink: #141517;
+  --steel: #54585e;
+
+  /* Brand sage is 1.59:1 on paper — decoration only, never small text.
+     `--sage-ink` is the darkened form for anything that has to be read. */
+  --sage: #a1ccca;
+  --sage-ink: #2f6b68;
+  --pool: #0e6e7c;
+  --amber: #9b6200;
+
+  --radius: 14px;
+  --f: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 16px/1.6 var(--f);
+  -webkit-text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* --------------------------------------------------------------- masthead */
+
+.masthead {
+  background: var(--char);
+  color: #f4f2ee;
+  padding: 34px 20px 30px;
+}
+
+.masthead .brand {
+  margin: 0 0 14px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--sage);
+}
+
+.masthead h1 {
+  margin: 0;
+  font-size: clamp(28px, 7vw, 40px);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  font-weight: 600;
+}
+
+.masthead .address {
+  margin: 10px 0 0;
+  color: #b8b4ac;
+  font-size: 15px;
+}
+
+/* ------------------------------------------------------------------ blocks */
+
+main {
+  width: min(640px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 20px 0 8px;
+}
+
+.block {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 22px;
+  margin: 16px 0;
+}
+
+.block h2 {
+  margin: 0 0 12px;
+  font-size: 20px;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+.block p { margin: 0 0 12px; }
+.block p:last-child { margin-bottom: 0; }
+
+.eyebrow {
+  margin: 0 0 6px !important;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--sage-ink);
+}
+
+/* The status block is the answer to the question that brought them here. */
+.block-status { border-left: 5px solid var(--sage); }
+.block-status .next {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  color: var(--steel);
+}
+
+/* ------------------------------------------------------------------- track */
+
+.track {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.step {
+  display: grid;
+  grid-template-columns: 26px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.step:last-child { border-bottom: 0; padding-bottom: 0; }
+
+.dot {
+  width: 14px;
+  height: 14px;
+  margin-left: 5px;
+  border-radius: 50%;
+  border: 2px solid var(--line);
+  background: transparent;
+}
+
+.is-done .dot { background: var(--sage-ink); border-color: var(--sage-ink); }
+.is-current .dot {
+  background: var(--sage);
+  border-color: var(--sage-ink);
+  box-shadow: 0 0 0 4px rgba(161, 204, 202, 0.35);
+}
+
+.step-title { font-weight: 500; }
+.is-upcoming .step-title { color: var(--steel); }
+.is-current .step-title { font-weight: 700; }
+
+.step-state {
+  font-size: 12.5px;
+  color: var(--steel);
+  text-align: right;
+}
+.is-current .step-state { color: var(--sage-ink); font-weight: 700; }
+
+/* ----------------------------------------------------------------- asks */
+
+/* The one block that is allowed to demand attention: it is the only thing on
+   the page the customer has to do something about. */
+.block-ask { border-left: 5px solid var(--amber); }
+
+.ask {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+.ask:last-of-type { border-bottom: 0; }
+
+.ask h3 { margin: 0 0 6px; font-size: 17px; }
+.ask p { margin: 0 0 8px; }
+
+.ask .consequence { color: var(--amber); font-weight: 600; }
+.ask .by { font-size: 14px; color: var(--steel); }
+
+.ask-how {
+  margin-top: 14px !important;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  color: var(--steel);
+  font-size: 15px;
+}
+
+/* --------------------------------------------------------------- gallery */
+
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.gallery figure { margin: 0; }
+
+.gallery img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 10px;
+  background: #e9e5de;
+  border: 1px solid var(--line);
+}
+
+.gallery figcaption {
+  margin-top: 7px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.gallery .caption { display: block; }
+.gallery .when { display: block; color: var(--steel); font-size: 12px; }
+
+/* --------------------------------------------------------------- updates */
+
+.updates {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.updates li {
+  position: relative;
+  padding: 0 0 18px 20px;
+  border-left: 2px solid var(--line);
+}
+.updates li:last-child { padding-bottom: 0; border-left-color: transparent; }
+
+.updates li::before {
+  content: '';
+  position: absolute;
+  left: -7px;
+  top: 7px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--card);
+  border: 2px solid var(--pool);
+}
+
+.updates time {
+  display: block;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--steel);
+}
+
+.updates h3 { margin: 3px 0 4px; font-size: 16px; }
+.updates p { margin: 0; color: var(--steel); }
+
+/* --------------------------------------------------------------- contact */
+
+.block-contact { background: var(--char); border-color: var(--char); color: #f4f2ee; }
+.block-contact h2 { color: #f4f2ee; }
+.block-contact p { color: #c9c5bd; }
+
+.contact-actions { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+
+.btn {
+  flex: 1 1 140px;
+  /* 48px so it is a comfortable target on a phone held one-handed. */
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 18px;
+  border-radius: 10px;
+  background: var(--sage);
+  color: #0f1817;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: #f4f2ee;
+  border: 1.5px solid #4a4d51;
+}
+
+.block-status .btn { background: var(--sage-ink); color: #fff; }
+.block-status .btn-ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+
+/* ---------------------------------------------------------------- footer */
+
+footer {
+  width: min(640px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 26px 0 40px;
+  color: var(--steel);
+  font-size: 13px;
+  text-align: center;
+}
+
+footer p { margin: 0 0 6px; }
+footer .private { max-width: 46ch; margin: 8px auto 0; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .block { transition: none; }
+}

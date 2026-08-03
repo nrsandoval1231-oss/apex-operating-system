@@ -81,3 +81,47 @@ export const apiGet = async <T>(path: string, schema: ZodType<T>, signal?: Abort
   }
   return parsed.data;
 };
+
+/**
+ * A request that changes something.
+ *
+ * Deliberately not retried. `apiGet` retries a dropped read because reading
+ * twice costs nothing; issuing a customer link twice, or revoking one twice, is
+ * not the same thing at all. A write that fails is reported and left to a
+ * person to repeat.
+ */
+export const apiSend = async <T>(
+  path: string,
+  schema: ZodType<T>,
+  init: { method: 'POST' | 'DELETE'; body?: unknown } ,
+): Promise<T> => {
+  const token = getToken();
+  let response: Response;
+  try {
+    response = await fetch(path, {
+      method: init.method,
+      headers: {
+        ...(token === '' ? {} : { authorization: `Bearer ${token}` }),
+        'content-type': 'application/json',
+        accept: 'application/json',
+      },
+      body: JSON.stringify(init.body ?? {}),
+    });
+  } catch {
+    throw new ApiError('Could not reach the Apex API. The connection failed rather than the request.', 0);
+  }
+
+  const body: unknown = await response.json().catch(() => null);
+  if (!response.ok) {
+    const message = typeof body === 'object' && body !== null && typeof (body as { error?: unknown }).error === 'string'
+      ? (body as { error: string }).error
+      : `Request failed with HTTP ${response.status}.`;
+    throw new ApiError(message, response.status);
+  }
+
+  const parsed = schema.safeParse(body);
+  if (!parsed.success) {
+    throw new ApiError('The Apex API returned data this build does not understand.', response.status);
+  }
+  return parsed.data;
+};

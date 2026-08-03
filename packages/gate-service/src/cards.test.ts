@@ -1,8 +1,9 @@
 import { PGlite } from '@electric-sql/pglite';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { applyOperationalMigrations } from '@apex/database';
-import { ActionCardListSchema, createCanonicalId, type ActionCard, type EventActor } from '@apex/contracts';
+import { ActionCardListSchema, createCanonicalId, type ActionCard, type EventActor, type JobId } from '@apex/contracts';
 import { GateService } from './index.js';
+import { InspectionService } from './inspections.js';
 
 /**
  * The action-card feed over real persisted state.
@@ -50,6 +51,31 @@ beforeEach(async () => {
   );
   service = new GateService(db);
 });
+
+/**
+ * The city's part of a release.
+ *
+ * §9.7 blocks a Gate until every inspection that gates it has a result, so a
+ * test that releases a Gate has to play the inspector too. Driven off
+ * `inspection_types` rather than a hard-coded list, so a Gate that gains an
+ * inspection later does not silently stop being covered here.
+ */
+const clearInspections = async (definitionKey: string) => {
+  const types = await db.query<{ inspection_key: string }>(
+    'select inspection_key from inspection_types where blocks_definition_key = $1',
+    [definitionKey],
+  );
+  const inspections = new InspectionService(db);
+  for (const row of types.rows) {
+    await inspections.recordResult({
+      jobId: ids.job as JobId,
+      inspectionKey: row.inspection_key,
+      outcome: 'passed',
+      occurredOn: '2026-07-29',
+      actor: owner,
+    });
+  }
+};
 
 const addApprovedTakeoff = () => db.query(
   `insert into takeoff_revisions
@@ -102,6 +128,7 @@ const runGate = async (definitionKey: string, stop: 'started' | 'evidence' | 're
   }
   if (stop === 'ready') return gateInstanceId;
 
+  await clearInspections(definitionKey);
   await service.execute(gateInstanceId, { type: 'release-gate', actor: superintendent, at }, { idempotencyKey: `r-${definitionKey}` });
   return gateInstanceId;
 };
@@ -133,7 +160,7 @@ describe('the feed reads gate progress from the database', () => {
   it('counts evidence and evaluations separately', async () => {
     await runGate('excavation', 'started');
     const started = byKind(await cards(), 'gate.in-progress');
-    expect(started?.title).toBe('Excavation: 0 of 4 clear');
+    expect(started?.title).toBe('Excavation: 0 of 6 clear');
     expect(started?.reason).toMatch(/missing their required evidence/i);
 
     await runGate('excavation', 'evidence');

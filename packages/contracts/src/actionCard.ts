@@ -43,6 +43,12 @@ export const CardKindSchema = z.enum([
   'schedule.crew-conflict',
   'schedule.before-gate',
   'schedule.upcoming',
+  /** Past the last day it could be requested and still arrive in time. */
+  'inspection.overdue',
+  /** Today is that last day. */
+  'inspection.due',
+  /** Failed, with corrections outstanding. */
+  'inspection.failed',
   'takeoff.missing',
   'project.unopened',
   'project.unassigned',

@@ -8,10 +8,11 @@
     "build": "vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "//typecheck": "Run from the workspace root (pnpm typecheck) — TypeScript is a root dev dependency."
+    "//typecheck": "Run from the workspace root (pnpm typecheck) \u2014 TypeScript is a root dev dependency."
   },
   "dependencies": {
     "@apex/contracts": "workspace:*",
+    "@apex/domain": "workspace:*",
     "@fontsource-variable/jetbrains-mono": "^5.3.0",
     "@fontsource/inter": "^5.3.0",
     "@fontsource/oswald": "^5.3.0",

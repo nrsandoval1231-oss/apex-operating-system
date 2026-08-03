@@ -144,6 +144,18 @@ describe('Gate HTTP vertical slice', () => {
     const superintendent = await token(ids.superintendent, 'superintendent');
     const ownerToken = await token(ids.owner, 'admin');
 
+    // And the city has to have cleared it. Three inspections gate the pour, and
+    // the release refuses until each is recorded — which is §9.7's "block
+    // dependent work" meaning the release actually fails, not that a warning
+    // was shown.
+    for (const key of ['pool-steel-structural', 'equipotential-bonding', 'plumbing-pressure-test']) {
+      const recorded = await call(`/api/jobs/${ids.job}/inspections/${key}/result`, superintendent, {
+        method: 'POST',
+        body: JSON.stringify({ outcome: 'passed', occurredOn: '2026-07-29' }),
+      });
+      expect(recorded.status).toBe(200);
+    }
+
     const signoff = await call(`/api/gates/${gate.gateInstanceId}/release`, superintendent, {
       method: 'POST', body: '{}', headers: { 'idempotency-key': 'api-release-0001' },
     });
@@ -422,7 +434,7 @@ describe('Gate HTTP vertical slice', () => {
     const summary = await detail.json() as { currentGate: Record<string, unknown> | null };
     expect(summary.currentGate).toMatchObject({
       definitionKey: 'pre-gunite',
-      definitionVersion: 2,
+      definitionVersion: 3,
       title: 'Pre-gunite hold point',
       status: 'not-started',
     });
@@ -464,5 +476,155 @@ describe('Gate HTTP vertical slice', () => {
       }),
     });
     expect(mismatchedMime.status).toBe(422);
+  });
+});
+
+/**
+ * The customer progress page over HTTP — PRD §9.11.
+ *
+ * The service tests cover token handling and the projection. What is checked
+ * here is what actually crosses the wire on the only route in Apex OS that
+ * answers an unauthenticated request: the headers, the status codes, and the
+ * absence of anything internal in the rendered bytes.
+ */
+describe('customer progress page', () => {
+  /** Upload one real photo through the normal field path so bytes exist on disk. */
+  const publishAPhoto = async (caption?: string): Promise<string> => {
+    const field = await token(ids.field, 'field');
+    const office = await token(ids.office, 'office');
+    const create = await call(`/api/jobs/${ids.job}/gates/pre-gunite`, field, { method: 'POST', body: '{}' });
+    const gate = await create.json() as { gateInstanceId: string; requirements: Array<{ key: string }> };
+    await call(`/api/gates/${gate.gateInstanceId}/start`, field, {
+      method: 'POST', body: '{}', headers: { 'idempotency-key': 'customer-start-0001' },
+    });
+    const upload = await call(`/api/gates/${gate.gateInstanceId}/evidence`, field, {
+      method: 'POST', headers: { 'idempotency-key': 'customer-proof-0001' },
+      body: JSON.stringify({
+        requirementKey: gate.requirements[0]?.key,
+        kind: 'photo',
+        mimeType: 'image/jpeg',
+        contentBase64: Buffer.concat([Buffer.from([0xff, 0xd8, 0xff]), Buffer.from('pixels')]).toString('base64'),
+        capturedAt: '2026-07-29T15:00:00.000Z',
+        caption: 'Bar spacing short at the north wall — Ruiz Steel redoing',
+      }),
+    });
+    const { evidenceId } = await upload.json() as { evidenceId: string };
+    const published = await call(`/api/evidence/${evidenceId}/visibility`, office, {
+      method: 'POST',
+      body: JSON.stringify({ visible: true, ...(caption ? { caption } : {}) }),
+    });
+    expect(published.status).toBe(200);
+    return evidenceId;
+  };
+
+  const issue = async (): Promise<string> => {
+    const office = await token(ids.office, 'office');
+    const response = await call(`/api/jobs/${ids.job}/customer-link`, office, { method: 'POST', body: '{}' });
+    expect(response.status).toBe(201);
+    const { url } = await response.json() as { url: string };
+    return url;
+  };
+
+  it('serves the page to a request carrying no credentials at all', async () => {
+    const url = await issue();
+    const page = await fetch(`${baseUrl}${url}`);
+    expect(page.status).toBe(200);
+    expect(await page.text()).toContain('Your build');
+    // Search engines, referrers, and shared-machine caches are all ways a token
+    // in a URL escapes. Each is closed by a header.
+    expect(page.headers.get('x-robots-tag')).toContain('noindex');
+    expect(page.headers.get('referrer-policy')).toBe('no-referrer');
+    expect(page.headers.get('cache-control')).toBe('no-store');
+    expect(page.headers.get('content-security-policy')).toContain("default-src 'none'");
+  });
+
+  it('renders nothing internal', async () => {
+    await db.query(
+      `insert into projects (job_id, current_phase_key, risk_note, created_by)
+       values ($1, 'gunite', 'Ruiz Steel is behind and the pour may slip a week', $2)`,
+      [ids.job, ids.owner],
+    );
+    await publishAPhoto();
+    const html = await (await fetch(`${baseUrl}${await issue()}`)).text();
+    // §9.11's hide list, checked against the bytes that actually leave the box.
+    expect(html).not.toMatch(/Ruiz Steel/);
+    expect(html).not.toMatch(/pre-gunite/i);
+    expect(html).not.toMatch(/risk|draw|invoice|contract|takeoff|checklist/i);
+    expect(html).not.toContain(ids.job);
+  });
+
+  it('serves a published photo and refuses an unpublished one', async () => {
+    const url = await issue();
+    const evidenceId = await publishAPhoto();
+    const photo = await fetch(`${baseUrl}${url}/photo/${evidenceId}`);
+    expect(photo.status).toBe(200);
+    expect(photo.headers.get('content-type')).toBe('image/jpeg');
+
+    const office = await token(ids.office, 'office');
+    await call(`/api/evidence/${evidenceId}/visibility`, office, {
+      method: 'POST', body: JSON.stringify({ visible: false }),
+    });
+    expect((await fetch(`${baseUrl}${url}/photo/${evidenceId}`)).status).toBe(404);
+  });
+
+  it('answers a revoked link and an invented one identically', async () => {
+    const url = await issue();
+    const office = await token(ids.office, 'office');
+    await call(`/api/jobs/${ids.job}/customer-link`, office, { method: 'DELETE', body: '{}' });
+
+    const revoked = await fetch(`${baseUrl}${url}`);
+    const invented = await fetch(`${baseUrl}/c/${'z'.repeat(43)}`);
+    // A stranger must not be able to tell a real link scheme from a wrong guess.
+    expect(revoked.status).toBe(404);
+    expect(invented.status).toBe(404);
+    expect(await revoked.text()).toBe(await invented.text());
+  });
+
+  it('closes the old link when the link is rotated', async () => {
+    const first = await issue();
+    const office = await token(ids.office, 'office');
+    const rotated = await call(`/api/jobs/${ids.job}/customer-link/rotate`, office, {
+      method: 'POST', body: JSON.stringify({ reason: 'Forwarded to a stranger' }),
+    });
+    expect(rotated.status).toBe(201);
+    const { url: second } = await rotated.json() as { url: string };
+    expect((await fetch(`${baseUrl}${first}`)).status).toBe(404);
+    expect((await fetch(`${baseUrl}${second}`)).status).toBe(200);
+  });
+
+  it('keeps link management behind staff authentication', async () => {
+    const customer = await token(ids.customer, 'customer');
+    expect((await fetch(`${baseUrl}/api/jobs/${ids.job}/customer-link`)).status).toBe(403);
+    // A signed-in customer may read their own milestones; they may not read or
+    // mint the token that opens the page.
+    expect((await call(`/api/jobs/${ids.job}/customer-link`, customer)).status).toBe(403);
+    expect((await call(`/api/jobs/${ids.job}/customer-link`, customer, { method: 'POST', body: '{}' })).status).toBe(403);
+  });
+
+  it('records the read and shows it to staff', async () => {
+    const url = await issue();
+    await fetch(`${baseUrl}${url}`);
+    const office = await token(ids.office, 'office');
+    const status = await (await call(`/api/jobs/${ids.job}/customer-link`, office)).json() as {
+      active: { pageViews: number } | null;
+      recentAccesses: Array<{ resource: string; outcome: string }>;
+    };
+    expect(status.active?.pageViews).toBe(1);
+    expect(status.recentAccesses[0]).toMatchObject({ resource: 'page', outcome: 'served' });
+    // The token itself is never handed back, only its effects.
+    expect(JSON.stringify(status)).not.toContain(url.replace('/c/', ''));
+  });
+
+  it('previews the page for staff without minting a token or logging a visit', async () => {
+    await issue();
+    const office = await token(ids.office, 'office');
+    const preview = await call(`/api/jobs/${ids.job}/customer-preview`, office);
+    expect(preview.status).toBe(200);
+    const page = await preview.json() as { headline: string };
+    expect(page.headline).toBe('Getting ready to start');
+    const status = await (await call(`/api/jobs/${ids.job}/customer-link`, office)).json() as {
+      active: { pageViews: number } | null;
+    };
+    expect(status.active?.pageViews).toBe(0);
   });
 });

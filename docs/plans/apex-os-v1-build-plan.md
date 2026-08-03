@@ -2,7 +2,7 @@
 
 **Source PRD:** [`PRD FINAL.md`](../../PRD%20FINAL.md) (Apex OS v1, Designer Pools, powered by GATE v3)
 **Written:** 2026-07-31
-**Status:** Approved 2026-07-31. Steps 1–4, 6, 8 and Step 5's scheduled-visit half complete. Step 5's inspection half is blocked on Apex's inspection list; Step 7 is next.
+**Status:** Approved 2026-07-31. **Steps 1–8 are complete and every MVP item in §19 is built.** Nothing in this plan is blocked. What remains before a pilot is deployment, and Travis's sign-off on content proposed rather than dictated by Apex — the inspection list and lead times, twelve added checklist items, and the nine customer-facing phase descriptions, all in `docs/inspections-and-gate-checklists-2026-08-03.md`.
 **Construction model:** [`docs/decisions/construction-model.md`](../decisions/construction-model.md) — nine phases, seven gates, 10/30/30/20/10 draws, confirmed 2026-07-31.
 
 ---
@@ -22,7 +22,7 @@ What already exists and passes tests (`pnpm verify`, 50/50 root + 1 integration)
 | §9.9 Photos and field evidence | migrations `0003_evidence_storage`, private bucket, byte hashing, MIME refusal | Built |
 | §13 Permissions / audit | migrations `0002_rls` — admin/office/field/customer row-level policies; append-only event history | Built |
 | §9.8 Draw readiness | draw-eligibility projection on gate release | Partial — eligibility only, no draw schedule |
-| §9.11 Customer progress page | customer-safe projection + `/customer` endpoint that refuses internal state | Partial — data layer only |
+| §9.11 Customer progress page | tokenized link, access log, published photos, server-rendered page at `/c/<token>` | Built (Step 7) |
 | §17 Idempotent ingestion | idempotency keys on Gate commands, intake idempotency tests | Built |
 | Field UI | `apps/gate-api/public` — authenticated field console | Built, narrow |
 
@@ -47,10 +47,10 @@ Against PRD §19, the true MVP is nine items. Here is the real gap:
 | 2 | Construction phases | Done — 9 confirmed phases + 6 customer milestones, migration `0010` |
 | 3 | Gates with checklists and photos | **Small** — generalize the pre-gunite slice to the 7 confirmed gate templates |
 | 4 | Today action feed | Large — card generation engine is entirely new; UI mock exists |
-| 5 | Inspection deadlines | Large — new entity, new lead-time/deadline logic |
+| 5 | Inspection deadlines | Done — migration `0018`, seven inspections, last-safe-request dates, release blocking |
 | 6 | Sub conflict detection | Medium — new scheduled-visit entity + overlap detection |
 | 7 | Draw-release cards | Medium — draw schedule table on top of existing eligibility |
-| 8 | Customer progress page | Small–medium — projection exists; needs tokenized link, rotation, access log, UI |
+| 8 | Customer progress page | Done — migration `0016`, tokenized link, rotation, access log, published photos, server-rendered page |
 | 9 | Daily owner brief | Small — derives from #4 once cards exist |
 
 Biggest single new build is the **action-card engine** (#4). Everything on the
@@ -122,10 +122,12 @@ The engine changes that mattered more than the seeding:
 Exit condition met: Permit, Excavation, and pre-gunite all completed on one job
 against the live local database — the three Gate types PRD §21 asks for.
 
-**Caveat carried forward:** the requirement checklists for the six new Gates are
-written from the decision document's one-line "Verifies" plus the draw schedule's
-"Covers". They are not Apex's procedures and need Travis's review before field
-use. Definitions are versioned, so correcting one is a new version, not an edit.
+**Caveat carried forward, and acted on 2026-08-03:** the requirement checklists
+for the six new Gates were written from the decision document's one-line
+"Verifies" plus the draw schedule's "Covers". They are not Apex's procedures.
+Migration `0017` revised them against the 2021 ISPSC — adding twelve items, three
+of them safety items that were missing entirely — and they still need Travis's
+review. Definitions are versioned, so correcting one is a new version, not an edit.
 
 **Step 4 — Action-card engine + Today feed (large) — DONE 2026-07-31**
 One pure derivation in `packages/domain/src/cards.ts` produces twelve card kinds
@@ -150,14 +152,30 @@ The daily brief (Step 8) and the §15 notifications should be views over these
 cards, not new logic. Snooze, delegate, and acknowledge are not built; the derived
 card id is the identity they will need.
 
-**Step 5 — Inspections and scheduled visits (large) — HALF DONE 2026-08-02**
-The inspection half cannot be built: §9.7's last-safe-request-date logic needs
-the list of inspections, who requests each, and each one's lead time. None of
-that is confirmed. The jurisdiction dimension is already closed (single regime,
-City of Lubbock), so the remaining gap is purely Apex's own list.
+**Step 5 — Inspections and scheduled visits (large) — DONE 2026-08-03**
+The scheduled-visit half (§9.6) landed 2026-08-02. The inspection half (§9.7)
+landed 2026-08-03 in migration `0018`, after the blocking question was answered:
+the list, requesters, and lead times are derived from the 2021 ISPSC and NEC 680
+— the adopted code, already confirmed — and proposed for Travis's approval rather
+than left open. Built ahead of that approval by explicit instruction.
 
-The scheduled-visit half — same-crew overlap and prerequisite-gate warnings
-(§9.6) — is **not** blocked and can be built whenever it is wanted.
+Four decisions worth challenging:
+
+1. **Lead times are rounded up, not estimated.** Two business days routine,
+   three for finals. The error is one-directional: too long warns a day early,
+   which is harmless; too short warns a day late, which is a crew standing on a
+   job that cannot work. This is the one value no code can derive.
+2. **The deadline is anchored to the crew booking.** An inspection with no live
+   visit booked into the phase its Gate guards shows *no deadline at all*.
+   Without a planned date there is genuinely nothing to be late for, and
+   inventing urgency is how a feed teaches its reader to ignore it.
+3. **A release actually fails.** "Block dependent work" is enforced in the
+   service, not surfaced as a warning — but *after* authority and the checklist,
+   so someone with no right to release is told that rather than being handed the
+   job's inspection state. Getting that order wrong was the one real bug in this
+   step.
+4. **An untouched inspection blocks.** Null status counts as outstanding,
+   because "nobody wrote anything down" is the failure mode, not the safe case.
 
 **Step 6 — Draw schedule and ready-to-bill (medium) — DONE 2026-07-31**
 Migration `0013_draw_schedule.sql` renames `draw_eligibility` to `job_draws` and
@@ -182,10 +200,48 @@ Decisions worth challenging:
    release a draw-bearing Gate but cannot create a schedule or confirm an
    invoice. Those are the owner's and the office's.
 
-**Step 7 — Customer progress page (small–medium) — NEXT**
-Tokenized no-login link, rotation and revocation, access log, six milestones,
-approved-photo gallery, per-photo visibility toggle (§9.11). Exit: one real
-customer link is live.
+**Step 7 — Customer progress page (small–medium) — DONE 2026-08-03**
+Migration `0016_customer_page.sql` adds the tokenized link, its access log,
+per-photo customer visibility, and the decisions Apex is waiting on. Exit
+condition met: a link issued on the live database serves a real page — six
+milestones, three published photos, two open decisions, and a call/text route —
+to a request carrying no credentials at all.
+
+It was the smallest step by volume and the one that needed the most care, because
+it is the only surface a person outside the company can reach. Five decisions
+shaped it, each worth challenging:
+
+1. **The page is not part of the Apex OS bundle.** It is server-rendered by the
+   Gate API at `/c/<token>` with no JavaScript. Routing it inside the staff SPA
+   would have shipped every staff screen, the pilot-token sign-in, and the `/api`
+   client to a homeowner's phone — and left them one refactor away from being
+   reachable. What the customer receives is a string of HTML and nothing else.
+2. **The payload is built, never filtered.** `buildCustomerPage` in
+   `@apex/domain` constructs each field from a narrow input that never carries a
+   contract value, a risk note, a visit, or a draw. §9.11's hide list is enforced
+   by absence rather than by a deny-list somebody has to remember to extend. A
+   new column on `projects` is invisible to a customer until a line is written to
+   include it.
+3. **Only the hash of the token is stored.** It exists in the clear once, in the
+   response to issuing or rotating, and cannot be recovered — a leaked backup
+   hands out no working links. Issuing twice is refused rather than silently
+   rotating: "send them their link" must not be able to perform "invalidate the
+   link they already have".
+4. **A photo is invisible until someone publishes it**, and the internal caption
+   is never shown. Gate evidence is photographed to prove a bar spacing, and its
+   caption may name a subcontractor or quote a checklist item. Publishing asks
+   for a caption written for the customer, or shows none.
+5. **The page takes no input.** A tile selection submitted from a link with no
+   login is not evidence that the customer made it. §9.11's decisions are shown
+   and answered by phone or text, which a staff member writes down.
+
+A revoked link and an invented one return the same status and the same bytes:
+telling a stranger that a token used to be valid tells them the scheme is real.
+
+**Copy caveat, same shape as the gate checklists:** the nine per-phase
+descriptions in `packages/domain/src/customer.ts` are written from the
+construction model, not dictated by Apex. They are the company's voice speaking
+to its customers and Travis should read them before the first real link goes out.
 
 **Step 8 — Daily owner brief (small) — DONE 2026-08-02**
 Step 4's cards rendered as one morning brief with links (§9.14). It turned out

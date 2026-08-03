@@ -5,6 +5,8 @@ export * from './actionCard.js';
 export * from './draws.js';
 export * from './brief.js';
 export * from './schedule.js';
+export * from './customer.js';
+export * from './inspections.js';
 export * from './events.js';
 export * from './quantityDigest.js';
 export * from './jobSummary.js';

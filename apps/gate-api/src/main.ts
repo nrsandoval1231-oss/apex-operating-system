@@ -27,17 +27,42 @@ if (localUserId !== undefined && !/^user_[0-9A-HJKMNP-TV-Z]{26}$/.test(localUser
   throw new Error('GATE_LOCAL_USER must be a canonical user_<ULID> identifier.');
 }
 
+/**
+ * The number a customer calls or texts from their progress page (§9.11).
+ *
+ * Unset by default. A page that prints a number nobody configured is worse than
+ * one that prints none: a customer will dial it at the moment they most wanted
+ * an answer and reach nobody.
+ */
+const contactPhone = process.env.APEX_CUSTOMER_CONTACT_PHONE?.trim();
+if (contactPhone !== undefined && contactPhone !== '' && !/^\+[1-9]\d{6,14}$/.test(contactPhone)) {
+  throw new Error('APEX_CUSTOMER_CONTACT_PHONE must be in E.164 form, e.g. +18065551234.');
+}
+const customerContact = contactPhone
+  ? {
+    phone: contactPhone,
+    label: process.env.APEX_CUSTOMER_CONTACT_LABEL?.trim()
+      || 'Call or text us any time — we would rather answer a question than have you wonder.',
+  }
+  : undefined;
+
 const db = await createLocalDatabase(dataDirectory);
 const server = createGateApi({
   db,
   jwtSecret: secret,
   evidenceDirectory,
   ...(localUserId ? { localUserId } : {}),
+  ...(customerContact ? { customerContact } : {}),
 });
 
 server.listen(port, HOST, () => {
   console.log(`Apex OS             http://${HOST}:${port}/app`);
   console.log(`Gate field console  http://${HOST}:${port}/`);
+  if (customerContact === undefined) {
+    console.warn(
+      '  !  No APEX_CUSTOMER_CONTACT_PHONE set: customer progress pages will show no call or text route.',
+    );
+  }
   if (localUserId) {
     console.warn(
       `\n  !  LOCAL PILOT MODE: requests from this machine act as ${localUserId} with no token.`

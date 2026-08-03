@@ -21,6 +21,9 @@ export const OPERATIONAL_MIGRATIONS = [
   '0013_draw_schedule.sql',
   '0014_daily_brief.sql',
   '0015_scheduled_visits.sql',
+  '0016_customer_page.sql',
+  '0017_gate_checklist_v2.sql',
+  '0018_inspections.sql',
 ] as const;
 
 export const STORAGE_MIGRATION = '0003_evidence_storage.sql';

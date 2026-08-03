@@ -1,11 +1,13 @@
 import {
   constructionPhase,
   type ActionCard,
+  type JobInspection,
   type CardGroup,
   type CardUrgency,
   type ConstructionPhaseKey,
   type JobId,
 } from '@apex/contracts';
+import { describeInspection, inspectionPressure } from './inspections.js';
 
 /**
  * The action-card derivation — PRD §9.5.
@@ -84,6 +86,12 @@ export interface CardJobSnapshot {
   readonly gates: readonly CardGateSnapshot[];
   readonly draws: readonly CardDrawSnapshot[];
   readonly visits: readonly CardVisitSnapshot[];
+  /**
+   * Every inspection on the job, recorded or not. Carried whole rather than
+   * pre-filtered: the derivation decides what is urgent, and a caller that
+   * filtered first would be making that judgment somewhere else.
+   */
+  readonly inspections: readonly JobInspection[];
 }
 
 /** Days before the target completion date that the job starts appearing in This Week. */
@@ -388,6 +396,42 @@ export function deriveJobCards(job: CardJobSnapshot, today: string): readonly Ac
         actionHref: detail,
       }));
     }
+  }
+
+  // --- Inspections --------------------------------------------------------
+  //
+  // This is the card the whole inspection feature exists to produce. The
+  // deadline is not the inspection date; it is the last day the request can go
+  // in and still arrive before the work needs it, which is `lastSafeRequestOn`.
+  //
+  // Nothing is emitted for an inspection with no deadline. An inspection whose
+  // work nobody has booked genuinely has no last safe day, and a card that
+  // cannot state one would be urgency the system cannot justify.
+
+  for (const inspection of job.inspections) {
+    const pressure = inspectionPressure(inspection, today);
+    if (pressure === 'clear' || pressure === 'ahead' || pressure === 'unscheduled') continue;
+
+    const kind = inspection.status === 'failed'
+      ? 'inspection.failed'
+      : pressure === 'overdue' ? 'inspection.overdue' : 'inspection.due';
+
+    cards.push(build(job, {
+      kind,
+      group: 'needs-you',
+      // A failed inspection and a missed request date both stop the same work.
+      urgency: 'urgent',
+      subject: `inspection:${inspection.inspectionKey}`,
+      title: inspection.status === 'failed'
+        ? `${inspection.title} failed — corrections needed`
+        : `Request ${inspection.title.toLowerCase()}`,
+      reason: describeInspection(inspection, today),
+      dueLabel: inspection.lastSafeRequestOn === null
+        ? null
+        : `Request by ${readableDay(inspection.lastSafeRequestOn)}`,
+      actionLabel: 'Open project',
+      actionHref: detail,
+    }));
   }
 
   // --- The project record itself ------------------------------------------

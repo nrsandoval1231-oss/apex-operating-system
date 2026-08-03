@@ -1,8 +1,8 @@
 # Apex Current Status
 
-**Last updated:** 2026-08-02
+**Last updated:** 2026-08-03
 
-**Program phase:** Phase 1 — Shared operational spine and controlled Gate vertical slice (Phase 0 preservation complete). Apex OS build plan Steps 1–4, 6, 8 and the scheduled-visit half of Step 5 complete; Step 7 (customer progress page) is next. Step 5's inspection half remains blocked on Apex's inspection list and lead times.
+**Program phase:** Phase 1 — Shared operational spine and controlled Gate vertical slice (Phase 0 preservation complete). **Apex OS build plan Steps 1–8 are complete, and every MVP item in PRD §19 is built.** Nothing in the plan is now blocked on code or on an unanswered question. What remains before a pilot is deployment (loopback, no TLS, symmetric pilot JWT — see launch blockers below) and Travis's sign-off on content that was proposed rather than dictated by Apex: the inspection list and lead times, the twelve added gate checklist items, and the nine customer-facing phase descriptions. All three are in `docs/inspections-and-gate-checklists-2026-08-03.md` and are versioned, so corrections land as a new version rather than an edit.
 
 **Production status:** Not production-ready
 
@@ -640,6 +640,135 @@ Still not built from §9.6: notifying affected internal users after a schedule
 change, which needs the §15 notification channels. Nothing is sent to
 subcontractors, which satisfies "external notifications require approval in v1"
 by construction rather than by control.
+
+## Customer progress page — 2026-08-03
+
+Build-plan Step 7 (PRD §9.11), and the last MVP item. Migration `0016` adds the
+tokenized link, its access log, per-photo customer visibility, and the decisions
+Apex is waiting on from a customer.
+
+This is the only surface in Apex OS that a person outside the company can reach,
+and it has no login. Every decision below follows from that.
+
+**The page is not part of the Apex OS bundle.** It is server-rendered by the Gate
+API at `/c/<token>` and contains no JavaScript at all. Routing it inside the
+staff single-page app would have shipped every staff screen, the pilot-token
+sign-in, and the `/api` client that carries a bearer token to a homeowner's
+phone. A customer receives a string of HTML and a stylesheet.
+
+**The payload is built, never filtered.** `buildCustomerPage` in `@apex/domain`
+constructs each field from an input type that never carries a contract value, a
+risk note, a subcontractor, a visit, or a draw. §9.11's hide list is enforced by
+absence, so a new column on `projects` cannot reach a customer by being
+forgotten about.
+
+**Only the SHA-256 of the token is stored.** The token exists in the clear once,
+in the response to issuing or rotating, and is not recoverable. A leaked backup
+hands out no working links.
+
+| Commands | Result |
+|---|---|
+| `pnpm verify` | **348/348 root tests** and **1/1 integration test** passed (52 new: 14 projection, 30 service, 8 over HTTP) |
+| Live database | A link issued on a seeded pilot job serves the real page — six milestones with Shell current, three published photos, two open decisions, one milestone update, and a call/text route — to a request carrying no credentials |
+| Browser | Customer page renders at 375px with no console errors; raising a decision from the staff screen puts it on the customer page immediately; rotating the link 404s the old one |
+
+Decisions worth challenging:
+
+- **Issuing twice is refused, not silently a rotation.** "Send the customer their
+  link" and "invalidate the link they already have" are different intentions and
+  one must not perform the other by accident.
+- **A revoked link and an invented one are indistinguishable** — same status,
+  same bytes. Telling a stranger a token used to be valid tells them the scheme
+  is real and worth guessing at. The revoked read is still logged internally,
+  which is the point of keeping the log.
+- **A photo is invisible until published, and the internal caption is never
+  shown.** Gate evidence proves a bar spacing; its caption may name a
+  subcontractor or quote a checklist item. Only `kind = 'photo'` can be
+  published, enforced by a check constraint.
+- **The page takes no input.** A tile selection submitted from a link with no
+  login is not evidence the customer made it. Decisions are displayed and
+  answered by phone or text, which a staff member records.
+- **The access log is coarse on purpose.** An IPv4 /24 or IPv6 /48 and a
+  truncated user agent — enough to notice a link being read from three cities,
+  not enough to profile the person reading it. An unknown token records nothing;
+  there is no link to attach it to.
+- **Photos are cached for ten minutes on the customer's own device.**
+  Re-downloading a gallery over cellular on every visit is a real cost. The trade
+  is stated rather than hidden: for that long after a revocation, photos already
+  on that device still open.
+
+**Open launch blockers this does not close:**
+
+1. **Deployment.** The Gate API binds to loopback, so a link issued today reaches
+   nobody outside the machine that issued it. A live customer link needs the
+   managed environment and TLS already tracked below. The staff screen says so
+   rather than letting someone send a link that cannot open.
+2. **Contact route.** `APEX_CUSTOMER_CONTACT_PHONE` is unset by default and the
+   page then shows no call or text button. A page printing a number nobody
+   configured is worse than one printing none.
+3. **Copy review.** The nine per-phase customer descriptions in
+   `packages/domain/src/customer.ts` were written from the construction model,
+   not dictated by Apex. Same caveat as the six new gate checklists.
+
+Not built from §9.11: nothing. Deliberately out of scope: customer-submitted
+answers, and any per-phase date on the page — Apex OS holds a target completion
+window, not a schedule anyone committed to, and a date there is a promise the
+system cannot keep.
+
+## Inspections and gate checklist v-next — 2026-08-03
+
+Build-plan Step 5's inspection half (PRD §9.7), which had been blocked since the
+plan was written, plus twelve additions to the gate checklists. Content proposed
+in `docs/inspections-and-gate-checklists-2026-08-03.md` and **built ahead of
+Travis's approval by explicit instruction**; corrections land as a new version.
+
+**Migration `0017`** copies all seven active gate definitions forward a version
+and adds twelve requirement items. Three are safety items that were missing
+entirely: VGB-compliant anti-entrapment outlet covers (ISPSC §310) at pre-gunite
+*and* at final, and the safety barrier, gates, and alarms (ISPSC §305) at final.
+A pool could previously pass every Gate in Apex OS and be handed over with no
+compliant barrier. Thirty-four checklist items become forty-six.
+
+**Migration `0018`** adds the seven inspections, their lead times, and where each
+one stands per job. The list is derived from the 2021 ISPSC and NEC 680 — the
+adopted code, already confirmed in the construction model — sequenced against the
+nine phases. It is fixed by migration, like the phase model.
+
+| Commands | Result |
+|---|---|
+| `pnpm verify` | **396/396 root tests** and **1/1 integration test** passed (48 new: 22 deadline logic, 24 service and feed, plus the vertical slice now clearing inspections) |
+| Live database | A job with the gunite crew booked for 13 Aug shows all three pre-gunite inspections due 11 Aug, derived from the booking; a failed bonding inspection carries its corrections; the four inspections with nothing booked behind them show no deadline at all |
+| Browser | Project detail renders the Inspections section with deadlines, corrections, and call-in/result actions; no console errors |
+
+Decisions worth challenging:
+
+- **Lead times are rounded up, not estimated.** Two business days for routine
+  trade inspections, three for finals. The error is one-directional: too long
+  warns a day early, which is harmless; too short warns a day late, which is a
+  crew standing on a job that cannot proceed. Tighten once real turnaround is
+  known — it is one number per row.
+- **The deadline is anchored to the crew booking.** `neededBy` falls back to the
+  earliest live scheduled visit in the blocked Gate's phase. The alternatives —
+  the project's target window, or phase sequence — are too coarse or invented. An
+  inspection with no booking behind it shows **no deadline at all**, because
+  without a planned date there genuinely is nothing to be late for.
+- **A release actually fails.** §9.7's "block dependent work" is enforced in
+  `GateService.execute`, not surfaced as a warning. Waiving is the escape hatch
+  and is a recorded act with a stated reason.
+- **The guard runs after authority and the checklist, not before.** First
+  written the other way round, which meant an unauthorised user was told about
+  inspection state instead of being refused. Order now: authority → requirements
+  → inspections.
+- **An untouched inspection blocks.** Null status counts as outstanding. A system
+  that only looked at recorded rows would let a pour proceed because nobody had
+  written anything down — which is the failure mode, not the safe case.
+- **Weekends only, no holiday calendar.** A city holiday makes a deadline one day
+  optimistic. The rounded-up lead times absorb roughly that much; worth
+  revisiting the first time someone misses an inspection over Thanksgiving.
+
+**Open launch blockers this does not close:** deployment and identity, unchanged.
+And the content itself — the inspection list, the lead times, and the twelve
+checklist items are proposals until Travis initials them.
 
 ## Next controlled milestone
 

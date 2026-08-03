@@ -1,9 +1,10 @@
 import { PGlite } from '@electric-sql/pglite';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { applyOperationalMigrations } from '@apex/database';
-import { createCanonicalId, CustomerMilestoneProjectionSchema, type EvidenceKind, type EventActor } from '@apex/contracts';
+import { createCanonicalId, CustomerMilestoneProjectionSchema, type EvidenceKind, type EventActor, type JobId } from '@apex/contracts';
 import { DomainRuleError } from '@apex/domain';
 import { GateService } from './index.js';
+import { InspectionService } from './inspections.js';
 
 const ids = {
   lead: createCanonicalId('lead'),
@@ -58,6 +59,31 @@ beforeEach(async () => {
   await service.createGate({ gateInstanceId: ids.gate, jobId: ids.job, definitionKey: 'pre-gunite' });
 });
 
+/**
+ * The city's part of a release.
+ *
+ * §9.7 blocks a Gate until every inspection that gates it has a result, so a
+ * test that releases a Gate has to play the inspector too. Driven off
+ * `inspection_types` rather than a hard-coded list, so a Gate that gains an
+ * inspection later does not silently stop being covered here.
+ */
+const clearInspections = async (definitionKey: string) => {
+  const types = await db.query<{ inspection_key: string }>(
+    'select inspection_key from inspection_types where blocks_definition_key = $1',
+    [definitionKey],
+  );
+  const inspections = new InspectionService(db);
+  for (const row of types.rows) {
+    await inspections.recordResult({
+      jobId: ids.job as JobId,
+      inspectionKey: row.inspection_key,
+      outcome: 'passed',
+      occurredOn: '2026-07-29',
+      actor: ownerActor,
+    });
+  }
+};
+
 const context = (key: string) => ({ idempotencyKey: key, correlationId: createCanonicalId('event') });
 const evidence = (requirementKey: string, kind: EvidenceKind = 'photo') => ({
   evidenceId: createCanonicalId('evidence'),
@@ -89,6 +115,10 @@ describe('persistent pre-gunite Gate', () => {
         requirementKey: requirement.key, outcome: 'passed',
       }, context(`pass-${requirement.key}`));
     }
+
+    // The city clears the pour before anyone signs for it: §9.7 refuses the
+    // release outright until every inspection gating this Gate has a result.
+    await clearInspections('pre-gunite');
 
     // Pre-gunite is irreversible, so the superintendent's signature holds the
     // Gate open rather than releasing it.
@@ -215,7 +245,7 @@ describe('job summary read model', () => {
       gateInstanceId: ids.gate,
       definitionKey: 'pre-gunite',
       // A new Gate pins the active version, which is 2 since the PRD §9.4 baseline landed.
-      definitionVersion: 2,
+      definitionVersion: 3,
       status: 'not-started',
     });
     expect(withGate?.approvedTakeoffRevisionId).toBe(ids.revision);
