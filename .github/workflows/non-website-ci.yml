@@ -77,12 +77,19 @@ jobs:
           done
           echo "MinIO did not become ready"; docker logs minio; exit 1
       - name: Create the evidence bucket
+        env:
+          MC_HOST_ci: http://apexkey:apexsecret123@localhost:9000
         run: |
-          docker run --rm --network host minio/mc alias set ci http://localhost:9000 apexkey apexsecret123
-          docker run --rm --network host minio/mc mb --ignore-existing ci/apex-evidence
-          # Printed so a bucket problem is visible here rather than inferred
-          # from a 404 several steps later.
-          docker run --rm --network host minio/mc ls ci
+          # MC_HOST_<alias> rather than `mc alias set`: every `docker run --rm`
+          # gets a fresh config, so an alias set in one container is gone in the
+          # next. `mc mb` then treats `ci/apex-evidence` as a LOCAL DIRECTORY,
+          # creates it inside the throwaway container, prints "Bucket created
+          # successfully", and exits 0 — while MinIO never receives a bucket.
+          docker run --rm --network host -e MC_HOST_ci minio/mc mb --ignore-existing ci/apex-evidence
+          docker run --rm --network host -e MC_HOST_ci minio/mc ls ci
+          # Fails the step if the bucket is not really on the server, so this
+          # cannot silently succeed again.
+          docker run --rm --network host -e MC_HOST_ci minio/mc stat ci/apex-evidence
       - uses: pnpm/action-setup@v4
         with:
           version: 11.18.0
