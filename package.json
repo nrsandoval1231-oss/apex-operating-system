@@ -5,11 +5,12 @@
   "type": "module",
   "packageManager": "pnpm@11.18.0",
   "scripts": {
-    "test": "vitest run --exclude integration-tests/** --maxWorkers=1 && vitest run --config integration-tests/vitest.config.ts --maxWorkers=1",
+    "test": "vitest run --maxWorkers=1 && vitest run --config integration-tests/vitest.config.ts --maxWorkers=1",
     "test:watch": "vitest",
     "typecheck": "tsc -b && tsc --noEmit -p apps/apex-os/tsconfig.json",
     "build": "pnpm typecheck",
-    "verify": "pnpm test && pnpm typecheck"
+    "verify": "pnpm test && pnpm typecheck",
+    "//test": "No --exclude flag: the root vitest.config.ts already includes only packages/** and apps/**, so integration-tests/ cannot match. An unquoted integration-tests/** glob was expanded by POSIX shells (but not by cmd.exe), which turned the second expanded path into a positional filter and made every CI run fail while Windows passed."
   },
   "devDependencies": {
     "@types/node": "latest",
