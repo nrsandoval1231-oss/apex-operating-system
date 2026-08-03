@@ -12,6 +12,7 @@
     "@apex/database": "workspace:*",
     "@apex/domain": "workspace:*",
     "@apex/gate-service": "workspace:*",
+    "@apex/storage": "workspace:*",
     "jose": "6.2.4",
     "zod": "4.4.3"
   },

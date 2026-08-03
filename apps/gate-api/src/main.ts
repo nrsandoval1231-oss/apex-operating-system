@@ -5,6 +5,7 @@ import {
   createLocalDatabase,
   type Database,
 } from '@apex/database';
+import { LocalEvidenceStorage, S3EvidenceStorage, type EvidenceStorage } from '@apex/storage';
 import { createGateApi } from './server.js';
 
 const secret = process.env.GATE_JWT_SECRET;
@@ -12,6 +13,37 @@ if (!secret) throw new Error('GATE_JWT_SECRET is required.');
 
 const dataDirectory = resolve(process.env.GATE_DATA_DIRECTORY ?? './var/gate-db');
 const evidenceDirectory = resolve(process.env.GATE_EVIDENCE_DIRECTORY ?? './var/gate-evidence');
+
+/**
+ * Evidence storage — object storage when configured, local filesystem otherwise.
+ *
+ * Same rule as the database: selected by the presence of configuration rather
+ * than a mode flag, so there is no way to be pointed at a bucket and still be
+ * writing to disk. Partial S3 configuration is a hard failure rather than a
+ * silent fallback — evidence quietly landing on an ephemeral container disk is
+ * exactly the kind of thing nobody notices until it is needed.
+ */
+const s3Endpoint = process.env.S3_ENDPOINT?.trim();
+const s3Parts = {
+  bucket: process.env.S3_BUCKET?.trim(),
+  accessKeyId: process.env.S3_ACCESS_KEY_ID?.trim(),
+  secretAccessKey: process.env.S3_SECRET_ACCESS_KEY?.trim(),
+};
+if (s3Endpoint) {
+  const missing = Object.entries(s3Parts).filter(([, value]) => !value).map(([name]) => name);
+  if (missing.length > 0) {
+    throw new Error(`S3_ENDPOINT is set but these are missing: ${missing.join(', ')}.`);
+  }
+}
+const storage: EvidenceStorage = s3Endpoint
+  ? new S3EvidenceStorage({
+    endpoint: s3Endpoint,
+    bucket: s3Parts.bucket!,
+    accessKeyId: s3Parts.accessKeyId!,
+    secretAccessKey: s3Parts.secretAccessKey!,
+    region: process.env.S3_REGION?.trim() || 'auto',
+  })
+  : new LocalEvidenceStorage(evidenceDirectory);
 const port = Number(process.env.PORT ?? 4100);
 if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('PORT must be an integer from 1 to 65535.');
 
@@ -83,7 +115,7 @@ if (databaseUrl) {
 const server = createGateApi({
   db,
   jwtSecret: secret,
-  evidenceDirectory,
+  storage,
   ...(localUserId ? { localUserId } : {}),
   ...(customerContact ? { customerContact } : {}),
 });
@@ -105,6 +137,7 @@ for (const signal of ['SIGTERM', 'SIGINT'] as const) {
 }
 
 server.listen(port, HOST, () => {
+  console.log(`Evidence            ${storage.describe()}`);
   console.log(`Apex OS             http://${HOST}:${port}/app`);
   console.log(`Gate field console  http://${HOST}:${port}/`);
   if (customerContact === undefined) {

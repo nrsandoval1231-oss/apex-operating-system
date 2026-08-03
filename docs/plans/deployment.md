@@ -1,7 +1,7 @@
 # Apex OS — Deployment Plan
 
 **Written:** 2026-08-03
-**Status:** Slices 1, 2, and 5 complete. **Both open decisions were made on
+**Status:** Slices 1, 2, 3, and 5 complete. **Both open decisions were made on
 2026-08-03** (§6): Render plus a hosted identity provider, and RLS retired
 honestly for the pilot. Slices 3, 4, and 6–9 remain; none is blocked.
 **Why now:** every feature in the v1 build plan is complete and all content is
@@ -48,7 +48,7 @@ change based on which host or provider you pick.
 |---|---|---|---|
 | 1 | ~~Services bind directly to `PGlite`~~ | Done | Yes |
 | 2 | ~~No real Postgres adapter; migrations run on boot with no lock~~ | Done | Yes |
-| 3 | Evidence is written to the local filesystem | Medium | Yes |
+| 3 | ~~Evidence is written to the local filesystem~~ | Done | Yes |
 | 4 | ~~**RLS policies exist but are inert**~~ — retired, see §4 | Done | Yes |
 | 5 | Symmetric HS256 pilot JWT; no JWKS, no rotation | Medium | Mostly |
 | 6 | `GATE_LOCAL_USER` disables authentication entirely | Small | Yes |
@@ -132,12 +132,39 @@ Also lands the graceful-shutdown half of slice 6: SIGTERM finishes in-flight
 requests and closes the pool, so a routine deploy cannot cut an evidence upload
 half-written.
 
-**Slice 3 — An evidence storage port (medium).**
-Four call sites in `server.ts` do filesystem I/O. Behind a `Storage` port with a
-local adapter (unchanged for dev) and an S3-compatible adapter. Any of R2, S3, or
-Spaces then works without further code change. Evidence is private and served
-through the API, which already enforces both staff and customer paths, so no
-public bucket and no signed-URL scheme is needed for the pilot.
+**Slice 3 — An evidence storage port (medium). DONE 2026-08-03.**
+New `@apex/storage` package: an `EvidenceStorage` port with a local filesystem
+adapter and an S3-compatible one. R2, S3, B2, and Spaces all work without further
+code change — only the endpoint differs. CI runs MinIO and tests the S3 adapter
+against it.
+
+Four decisions worth challenging:
+
+1. **Storage is write-once.** `put` refuses to replace an existing object. The
+   key carries a freshly minted evidence ULID, so a collision means a bug
+   upstream — and silently overwriting proof that a Gate was released against is
+   the worst failure this component could have. The S3 adapter guards twice
+   (a HEAD, then `If-None-Match: *`) because a provider that does not support
+   conditional writes ignores the header silently.
+2. **Keys are validated centrally, by allow-list.** The same key becomes a
+   filesystem path in one adapter and a URL path in the other, so `..` is a
+   traversal in both. `assertStorageKey` runs before either adapter sees it, and
+   the local adapter still re-checks the resolved path — the last line before a
+   write lands on a disk is worth being paranoid at.
+3. **A missing object is `null`, not a throw.** A row can outlive its bytes if a
+   restore was partial, and both the staff and customer routes have to answer
+   404 for that rather than 500.
+4. **No presigned URLs.** Evidence is served through the API on both paths,
+   which is where authorization and the customer access log already live. A
+   presigned URL would be an unrevokable, unlogged door onto the one thing this
+   system exists to keep trustworthy.
+
+`aws4fetch` over the AWS SDK: four operations, none needing multipart, so a few
+kilobytes of signing beats tens of megabytes of client.
+
+Partial S3 configuration is a startup failure rather than a fallback to disk —
+evidence quietly landing on an ephemeral container filesystem is exactly what
+nobody notices until it is needed.
 
 **Slice 4 — Identity (medium). Decision made; provider values still needed.**
 Replace the symmetric HS256 pilot secret with asymmetric verification against a

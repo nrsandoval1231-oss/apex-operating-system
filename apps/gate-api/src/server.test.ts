@@ -7,6 +7,7 @@ import { applyOperationalMigrations } from '@apex/database';
 import { ActionCardListSchema, DailyBriefSchema, createCanonicalId } from '@apex/contracts';
 import { SignJWT } from 'jose';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { LocalEvidenceStorage } from '@apex/storage';
 import { createGateApi } from './server.js';
 
 const secretText = 'test-only-secret-that-is-more-than-thirty-two-bytes';
@@ -73,7 +74,7 @@ beforeEach(async () => {
      values ($1, $2, 1, 'approved', 'designer-test', 'quantity-v1', $3, $4, repeat('c', 64), '[{"code":"pool.water-volume","value":1,"unit":"gal","calcId":"fixture.calc"}]', '[{"id":"fixture.calc","label":"Fixture quantity","formula":"Q = 1","inputs":[],"value":1,"unit":"gal"}]', $5, now(), $5)`,
     [ids.revision, ids.job, 'a'.repeat(64), 'b'.repeat(64), ids.office],
   );
-  server = createGateApi({ db, jwtSecret: secretText, evidenceDirectory: storage, maxEvidenceBytes: 1024 });
+  server = createGateApi({ db, jwtSecret: secretText, storage: new LocalEvidenceStorage(storage), maxEvidenceBytes: 1024 });
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
   const address = server.address() as AddressInfo;
   baseUrl = `http://127.0.0.1:${address.port}`;
@@ -278,7 +279,7 @@ describe('Gate HTTP vertical slice', () => {
 
   it('serves a local request with no token when local pilot mode is on', async () => {
     const local = createGateApi({
-      db, jwtSecret: secretText, evidenceDirectory: storage, localUserId: ids.office,
+      db, jwtSecret: secretText, storage: new LocalEvidenceStorage(storage), localUserId: ids.office,
     });
     await new Promise<void>((done) => local.listen(0, '127.0.0.1', done));
     const localUrl = `http://127.0.0.1:${(local.address() as AddressInfo).port}`;
@@ -295,7 +296,7 @@ describe('Gate HTTP vertical slice', () => {
 
       // An inactive or unknown local user is refused rather than assumed.
       const unknown = createGateApi({
-        db, jwtSecret: secretText, evidenceDirectory: storage, localUserId: createCanonicalId('user'),
+        db, jwtSecret: secretText, storage: new LocalEvidenceStorage(storage), localUserId: createCanonicalId('user'),
       });
       await new Promise<void>((done) => unknown.listen(0, '127.0.0.1', done));
       const unknownUrl = `http://127.0.0.1:${(unknown.address() as AddressInfo).port}`;

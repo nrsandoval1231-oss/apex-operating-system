@@ -55,8 +55,31 @@ jobs:
           --health-retries 5
     env:
       DATABASE_URL: postgres://apex:apex@localhost:5432/apex_test
+      S3_ENDPOINT: http://localhost:9000
+      S3_BUCKET: apex-evidence
+      S3_ACCESS_KEY_ID: apexkey
+      S3_SECRET_ACCESS_KEY: apexsecret123
+      S3_REGION: us-east-1
     steps:
       - uses: actions/checkout@v4
+      # MinIO speaks the S3 API. Run as a step rather than a service container
+      # because the image needs a command (`server /data`), which the services
+      # block cannot set.
+      - name: Start MinIO
+        run: |
+          docker run -d --name minio -p 9000:9000             -e MINIO_ROOT_USER=apexkey             -e MINIO_ROOT_PASSWORD=apexsecret123             minio/minio server /data
+          for attempt in $(seq 1 40); do
+            if curl -sf http://localhost:9000/minio/health/live > /dev/null; then
+              echo "MinIO ready after ${attempt} attempt(s)"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "MinIO did not become ready"; docker logs minio; exit 1
+      - name: Create the evidence bucket
+        run: |
+          docker run --rm --network host minio/mc alias set ci http://localhost:9000 apexkey apexsecret123
+          docker run --rm --network host minio/mc mb --ignore-existing ci/apex-evidence
       - uses: pnpm/action-setup@v4
         with:
           version: 11.18.0

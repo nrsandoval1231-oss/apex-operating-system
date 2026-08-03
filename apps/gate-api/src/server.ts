@@ -1,11 +1,12 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { createHash } from 'node:crypto';
-import { mkdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
+import { readFile, stat } from 'node:fs/promises';
 import { dirname, extname, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { jwtVerify } from 'jose';
 import { z } from 'zod';
 import type { Database } from '@apex/database';
+import { StorageKeyError, type EvidenceStorage } from '@apex/storage';
 import {
   ConstructionPhaseKeySchema,
   EventActorSchema,
@@ -185,7 +186,12 @@ const matchesDeclaredMimeType = (content: Buffer, mimeType: string) => {
 interface GateApiOptions {
   readonly db: Database;
   readonly jwtSecret: string;
-  readonly evidenceDirectory: string;
+  /**
+   * Where gate evidence lives. A port, not a directory: the local adapter backs
+   * development and the S3-compatible one backs deployment, and the API cannot
+   * tell them apart.
+   */
+  readonly storage: EvidenceStorage;
   readonly maxEvidenceBytes?: number;
   /**
    * Canonical User ID to treat loopback requests as, with no token. Single-user
@@ -247,7 +253,7 @@ export function createGateApi(options: GateApiOptions) {
   });
   const customerPhone = options.customerContact?.phone ?? null;
   const inspections = new InspectionService(options.db);
-  const evidenceRoot = resolve(options.evidenceDirectory);
+  const storage = options.storage;
   const maxEvidenceBytes = options.maxEvidenceBytes ?? 25_000_000;
 
   /**
@@ -395,9 +401,13 @@ export function createGateApi(options: GateApiOptions) {
           response.writeHead(404, { ...CUSTOMER_HEADERS, 'content-type': 'text/plain; charset=utf-8' });
           return response.end('Not found');
         }
-        const path = resolve(evidenceRoot, result.storageKey);
-        if (!path.startsWith(`${evidenceRoot}${sep}`)) throw new InputError('Invalid evidence storage path.');
-        const content = await readFile(path);
+        const content = await storage.get(result.storageKey);
+        // A row can outlive its bytes if a restore was partial. The customer
+        // gets the same "not found" as an unpublished photo rather than a 500.
+        if (content === null) {
+          response.writeHead(404, { ...CUSTOMER_HEADERS, 'content-type': 'text/plain; charset=utf-8' });
+          return response.end('Not found');
+        }
         response.writeHead(200, {
           ...CUSTOMER_HEADERS,
           'content-type': result.mimeType,
@@ -639,12 +649,10 @@ export function createGateApi(options: GateApiOptions) {
         const gate = await service.getGate(gateId);
         const evidenceId = createCanonicalId('evidence');
         const storageKey = `${gate.jobId}/${gateId}/${evidenceId}${extensions[body.mimeType]}`;
-        const finalPath = resolve(evidenceRoot, storageKey);
-        if (!finalPath.startsWith(`${evidenceRoot}${sep}`)) throw new InputError('Invalid evidence storage path.');
-        const temporaryPath = `${finalPath}.upload`;
-        await mkdir(dirname(finalPath), { recursive: true });
-        await writeFile(temporaryPath, content, { flag: 'wx' });
-        await rename(temporaryPath, finalPath);
+        // Bytes first, then the row: an object with no row is invisible and
+        // collectable, whereas a row with no object is a Gate citing evidence
+        // that cannot be produced.
+        await storage.put(storageKey, content, body.mimeType);
         try {
           const result = await service.execute(gateId, {
             type: 'add-evidence', actor, at: body.capturedAt,
@@ -665,12 +673,12 @@ export function createGateApi(options: GateApiOptions) {
             },
           });
           if (result.duplicate) {
-            await rm(finalPath, { force: true });
+            await storage.remove(storageKey);
             return sendJson(response, 200, { ...result, state: serializeGate(result.state) });
           }
           return sendJson(response, 201, { ...result, state: serializeGate(result.state), evidenceId });
         } catch (error) {
-          await rm(finalPath, { force: true });
+          await storage.remove(storageKey);
           throw error;
         }
       }
@@ -885,9 +893,8 @@ export function createGateApi(options: GateApiOptions) {
         );
         const proof = rows.rows[0];
         if (!proof) return sendJson(response, 404, { error: 'Evidence not found.' });
-        const path = resolve(evidenceRoot, proof.storage_key);
-        if (!path.startsWith(`${evidenceRoot}${sep}`)) throw new InputError('Invalid evidence storage path.');
-        const content = await readFile(path);
+        const content = await storage.get(proof.storage_key);
+        if (content === null) return sendJson(response, 404, { error: 'Evidence bytes are missing for this record.' });
         response.writeHead(200, { 'content-type': proof.mime_type, 'content-length': content.length, 'cache-control': 'private, no-store' });
         return response.end(content);
       }
@@ -895,6 +902,7 @@ export function createGateApi(options: GateApiOptions) {
       return sendJson(response, 404, { error: 'Route not found.' });
     } catch (error) {
       if (error instanceof AuthError) return sendJson(response, 403, { error: error.message });
+      if (error instanceof StorageKeyError) return sendJson(response, 422, { error: error.message });
       if (error instanceof InputError || error instanceof z.ZodError) return sendJson(response, 422, { error: error instanceof Error ? error.message : 'Invalid input.' });
       if (error instanceof DomainRuleError) return sendJson(response, 409, { error: error.message });
       if (error instanceof Error && error.name === 'JWTExpired') return sendJson(response, 403, { error: 'Authentication expired.' });
