@@ -1,7 +1,7 @@
 # Apex OS — Deployment Plan
 
 **Written:** 2026-08-03
-**Status:** Slices 1, 2, 3, and 5 complete. **Both open decisions were made on
+**Status:** Slices 1–5 complete. **Both open decisions were made on
 2026-08-03** (§6): Render plus a hosted identity provider, and RLS retired
 honestly for the pilot. Slices 3, 4, and 6–9 remain; none is blocked.
 **Why now:** every feature in the v1 build plan is complete and all content is
@@ -50,8 +50,8 @@ change based on which host or provider you pick.
 | 2 | ~~No real Postgres adapter; migrations run on boot with no lock~~ | Done | Yes |
 | 3 | ~~Evidence is written to the local filesystem~~ | Done | Yes |
 | 4 | ~~**RLS policies exist but are inert**~~ — retired, see §4 | Done | Yes |
-| 5 | Symmetric HS256 pilot JWT; no JWKS, no rotation | Medium | Mostly |
-| 6 | `GATE_LOCAL_USER` disables authentication entirely | Small | Yes |
+| 5 | ~~Symmetric HS256 pilot JWT; no JWKS, no rotation~~ | Done | Yes |
+| 6 | ~~`GATE_LOCAL_USER` disables authentication entirely~~ | Done | Yes |
 | 7 | Customer links are path-only; no public origin configured | Small | Yes |
 | 8 | No container, no deploy config, no TLS termination | Medium | **No** |
 | 9 | No structured logging, health checks are shallow, no graceful shutdown | Small | Yes |
@@ -166,13 +166,33 @@ Partial S3 configuration is a startup failure rather than a fallback to disk —
 evidence quietly landing on an ephemeral container filesystem is exactly what
 nobody notices until it is needed.
 
-**Slice 4 — Identity (medium). Decision made; provider values still needed.**
-Replace the symmetric HS256 pilot secret with asymmetric verification against a
-JWKS endpoint, keyed by issuer and audience from configuration, with key caching
-and rotation handled by the library. Also delete `GATE_LOCAL_USER` from any
-non-loopback path — today it is guarded by a loopback check and a bind address,
-which is sound for a laptop and not something that should exist in a deployed
-image at all.
+**Slice 4 — Identity (medium). DONE 2026-08-03.**
+Staff tokens are verified against the provider's published JWKS — issuer,
+audience, and an asymmetric-only algorithm allow-list — with `jose` handling key
+caching and refetch on an unknown `kid`, so provider key rotation is a non-event.
+Auth0, Clerk, and WorkOS differ only in configuration values.
+
+Three decisions worth challenging:
+
+1. **The token proves who; the database decides what they may do.** A role claim
+   is never read. Verification maps `sub` to `app_users.oidc_subject`
+   (migration `0020`) and takes the role from that row. Trusting a claim would
+   put Apex's authorization model inside the identity provider, where adding a
+   superintendent becomes an IdP configuration change and a mis-set claim
+   becomes a privilege escalation. It also means deactivating someone in Apex is
+   sufficient — no waiting on the provider to revoke.
+2. **Exactly one identity mechanism, enforced in `createGateApi`.** A provider
+   and a shared secret together would be a second, unaudited door into every
+   staff endpoint, and the deployment would look correctly configured from
+   outside. With a provider configured there is no shared secret at all, so
+   there is nothing to leak or rotate.
+3. **`GATE_LOCAL_USER` cannot coexist with a provider, or with a non-loopback
+   bind.** Both are startup failures rather than warnings.
+
+The algorithm allow-list is the load-bearing detail and has its own test: a
+token signed HS256 using the *public* key as the shared secret is refused. That
+is the classic JWT confusion attack, and without the allow-list it would mint
+admin access from public information.
 
 **Slice 5 — RLS retired honestly (small, once decided). DONE 2026-08-03.**
 Migration `0019_rls_retired.sql` disables row-level security explicitly, so

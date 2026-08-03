@@ -452,9 +452,22 @@ describe('Gate HTTP vertical slice', () => {
     expect(unauthenticated.status).toBe(403);
     const invalid = await call(`/api/jobs/${ids.job}/gates/pre-gunite`, 'not-a-valid-token', { method: 'POST' });
     expect(invalid.status).toBe(403);
-    const mismatchedRole = await token(ids.field, 'office');
-    const mismatched = await call(`/api/jobs/${ids.job}/gates/pre-gunite`, mismatchedRole, { method: 'POST' });
-    expect(mismatched.status).toBe(403);
+    /*
+     * A role claim in a token is inert.
+     *
+     * This used to assert that a token whose `app_role` disagreed with the
+     * database was rejected. Since deployment slice 4 the claim is not read at
+     * all — the role comes from `app_users` — so there is nothing left to
+     * disagree. The stronger property is asserted instead: a field lead holding
+     * a token that claims `office` is still a field lead, and an office-only
+     * action is refused on the strength of the row rather than the claim.
+     */
+    const claimsOffice = await token(ids.field, 'office');
+    const escalation = await call(`/api/jobs/${ids.job}/draws`, claimsOffice, {
+      method: 'POST', body: '{}', headers: { 'idempotency-key': 'claim-escalation-1' },
+    });
+    expect(escalation.status).toBe(409);
+    expect(await escalation.text()).toMatch(/may not/i);
     const field = await token(ids.field, 'field');
     const create = await call(`/api/jobs/${ids.job}/gates/pre-gunite`, field, { method: 'POST', body: '{}' });
     const gate = await create.json() as { gateInstanceId: string };

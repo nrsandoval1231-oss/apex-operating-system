@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto';
 import { readFile, stat } from 'node:fs/promises';
 import { dirname, extname, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { jwtVerify } from 'jose';
+import { createRemoteJWKSet, jwtVerify, type JWTVerifyGetKey } from 'jose';
 import { z } from 'zod';
 import type { Database } from '@apex/database';
 import { StorageKeyError, type EvidenceStorage } from '@apex/storage';
@@ -183,9 +183,34 @@ const matchesDeclaredMimeType = (content: Buffer, mimeType: string) => {
   }
 };
 
+/**
+ * Real identity — deployment plan slice 4.
+ *
+ * When present, staff tokens are verified against the provider's published
+ * JWKS instead of a shared secret. Works with Auth0, Clerk, WorkOS, or anything
+ * else OIDC: only these values differ.
+ */
+export interface OidcOptions {
+  /** The `iss` every token must carry, e.g. https://apex.us.auth0.com/ */
+  readonly issuer: string;
+  /** The `aud` every token must carry. A token minted for another API is not
+   *  a token for this one, and without this check it would be accepted. */
+  readonly audience: string;
+  /** Defaults to `<issuer>/.well-known/jwks.json`, which is where Auth0 and
+   *  Clerk publish. Override for a provider that does not. */
+  readonly jwksUri?: string;
+}
+
 interface GateApiOptions {
   readonly db: Database;
-  readonly jwtSecret: string;
+  /**
+   * The pilot's symmetric secret. Required only when `oidc` is absent; a
+   * deployment with a real provider configures no shared secret at all, so
+   * there is none to leak or rotate.
+   */
+  readonly jwtSecret?: string;
+  /** Set in any deployed environment; absent on a laptop. */
+  readonly oidc?: OidcOptions;
   /**
    * Where gate evidence lives. A port, not a directory: the local adapter backs
    * development and the S3-compatible one backs deployment, and the API cannot
@@ -244,8 +269,26 @@ const serializeGate = (state: Awaited<ReturnType<GateService['getGate']>>) => ({
 });
 
 export function createGateApi(options: GateApiOptions) {
-  if (Buffer.byteLength(options.jwtSecret) < 32) throw new Error('GATE_JWT_SECRET must be at least 32 bytes.');
-  const secret = new TextEncoder().encode(options.jwtSecret);
+  /*
+   * EXACTLY ONE IDENTITY MECHANISM, enforced here rather than in `main.ts`, so
+   * the invariant lives with the thing it protects and is unit-testable.
+   *
+   * Accepting self-minted HS256 tokens alongside a real provider would be a
+   * second, unaudited door into every staff endpoint — and from the outside the
+   * deployment would look correctly configured.
+   */
+  if (options.oidc !== undefined && options.jwtSecret !== undefined) {
+    throw new Error(
+      'Configure an identity provider or a shared secret, not both: accepting self-minted '
+      + 'tokens alongside a real provider is a second, unaudited door.',
+    );
+  }
+  if (options.oidc === undefined) {
+    if (!options.jwtSecret || Buffer.byteLength(options.jwtSecret) < 32) {
+      throw new Error('GATE_JWT_SECRET must be at least 32 bytes when no identity provider is configured.');
+    }
+  }
+  const secret = new TextEncoder().encode(options.jwtSecret ?? '');
   const service = new GateService(options.db);
   const customers = new CustomerService(options.db, {
     ...(options.customerContact ? { contact: options.customerContact } : {}),
@@ -254,6 +297,17 @@ export function createGateApi(options: GateApiOptions) {
   const customerPhone = options.customerContact?.phone ?? null;
   const inspections = new InspectionService(options.db);
   const storage = options.storage;
+
+  /**
+   * The provider's signing keys, fetched lazily and cached by `jose`, which
+   * refetches when a token arrives with an unknown `kid`. That is what makes
+   * provider key rotation a non-event here rather than an outage.
+   */
+  const jwks: JWTVerifyGetKey | null = options.oidc
+    ? createRemoteJWKSet(new URL(
+      options.oidc.jwksUri ?? `${options.oidc.issuer.replace(/\/+$/, '')}/.well-known/jwks.json`,
+    ))
+    : null;
   const maxEvidenceBytes = options.maxEvidenceBytes ?? 25_000_000;
 
   /**
@@ -297,22 +351,73 @@ export function createGateApi(options: GateApiOptions) {
     try {
       const header = request.headers.authorization;
       if (!header?.startsWith('Bearer ')) throw new AuthError('Bearer authentication is required.');
-      const { payload } = await jwtVerify(header.slice(7), secret, {
-        algorithms: ['HS256'],
-        issuer: 'apex-gate',
-        audience: 'apex-gate-api',
-      });
-      const actor = EventActorSchema.parse({ kind: 'user', userId: payload.sub, role: payload.app_role });
-      if (actor.kind !== 'user') throw new AuthError('User authentication is required.');
-      const users = await options.db.query<{ role: AppRole }>(
-        `select role from app_users where user_id = $1 and active = true`, [actor.userId],
+      const token = header.slice(7);
+
+      /*
+       * THE TOKEN PROVES WHO; THIS DATABASE DECIDES WHAT THEY MAY DO.
+       *
+       * Both paths below end the same way: resolve a row in `app_users` and take
+       * the role from that row. A role claim is never trusted, on either path.
+       * Putting Apex's authorization model inside the identity provider would
+       * make adding a superintendent an IdP configuration change, and would make
+       * a mis-set claim a privilege escalation.
+       */
+      const subject = jwks !== null
+        ? await verifyWithProvider(token)
+        : await verifyWithPilotSecret(token);
+
+      const users = await options.db.query<{ user_id: string; role: AppRole }>(
+        subject.kind === 'oidc'
+          ? `select user_id, role from app_users where oidc_subject = $1 and active = true`
+          : `select user_id, role from app_users where user_id = $1 and active = true`,
+        [subject.value],
       );
-      if (users.rows[0]?.role !== actor.role) throw new AuthError('User access or role is no longer active.');
-      return actor;
+      const row = users.rows[0];
+      if (!row) throw new AuthError('No active Apex user is linked to this identity.');
+      return EventActorSchema.parse({ kind: 'user', userId: row.user_id, role: row.role });
     } catch (error) {
       if (error instanceof AuthError) throw error;
       throw new AuthError('Authentication is invalid or expired.');
     }
+  };
+
+  /**
+   * Verify against the provider's JWKS.
+   *
+   * `algorithms` is an allow-list of asymmetric signatures, and that is the
+   * whole point: without it a token signed with HS256 using the *public* key as
+   * the shared secret would verify, which is the classic JWT confusion attack.
+   * Issuer and audience are both checked — a token minted by this provider for
+   * a different API is not a token for this one.
+   */
+  const verifyWithProvider = async (token: string): Promise<{ kind: 'oidc'; value: string }> => {
+    const oidc = options.oidc!;
+    const { payload } = await jwtVerify(token, jwks!, {
+      algorithms: ['RS256', 'RS384', 'RS512', 'ES256', 'ES384'],
+      issuer: oidc.issuer,
+      audience: oidc.audience,
+    });
+    if (typeof payload.sub !== 'string' || payload.sub.length === 0) {
+      throw new AuthError('The identity provider issued a token with no subject.');
+    }
+    return { kind: 'oidc', value: payload.sub };
+  };
+
+  /**
+   * The pilot's symmetric path, used only when no provider is configured.
+   *
+   * Kept so a laptop and the test suite have a way in without standing up an
+   * identity provider. `main.ts` refuses to start with both configured, so this
+   * cannot quietly remain reachable in a deployment.
+   */
+  const verifyWithPilotSecret = async (token: string): Promise<{ kind: 'pilot'; value: string }> => {
+    const { payload } = await jwtVerify(token, secret, {
+      algorithms: ['HS256'],
+      issuer: 'apex-gate',
+      audience: 'apex-gate-api',
+    });
+    if (typeof payload.sub !== 'string') throw new AuthError('Token has no subject.');
+    return { kind: 'pilot', value: payload.sub };
   };
 
   const requireStaff = (actor: EventActor) => {

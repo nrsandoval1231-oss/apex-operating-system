@@ -8,8 +8,29 @@ import {
 import { LocalEvidenceStorage, S3EvidenceStorage, type EvidenceStorage } from '@apex/storage';
 import { createGateApi } from './server.js';
 
+/**
+ * Identity — a real provider when configured, the pilot's shared secret when not.
+ *
+ * Never both. A deployment that reached real users while still accepting
+ * self-minted HS256 tokens would have an unaudited second door into every
+ * staff endpoint, and it would look configured from the outside.
+ */
+const oidcIssuer = process.env.APEX_OIDC_ISSUER?.trim();
+const oidcAudience = process.env.APEX_OIDC_AUDIENCE?.trim();
+if (Boolean(oidcIssuer) !== Boolean(oidcAudience)) {
+  throw new Error('APEX_OIDC_ISSUER and APEX_OIDC_AUDIENCE must be set together.');
+}
+const oidc = oidcIssuer && oidcAudience
+  ? {
+    issuer: oidcIssuer,
+    audience: oidcAudience,
+    ...(process.env.APEX_OIDC_JWKS_URI?.trim() ? { jwksUri: process.env.APEX_OIDC_JWKS_URI.trim() } : {}),
+  }
+  : undefined;
+
+// Both-configured and neither-configured are refused by `createGateApi`, which
+// is where that invariant is enforced and tested.
 const secret = process.env.GATE_JWT_SECRET;
-if (!secret) throw new Error('GATE_JWT_SECRET is required.');
 
 const dataDirectory = resolve(process.env.GATE_DATA_DIRECTORY ?? './var/gate-db');
 const evidenceDirectory = resolve(process.env.GATE_EVIDENCE_DIRECTORY ?? './var/gate-evidence');
@@ -63,6 +84,21 @@ const localUserId = process.env.GATE_LOCAL_USER?.trim() || undefined;
 if (localUserId !== undefined && !/^user_[0-9A-HJKMNP-TV-Z]{26}$/.test(localUserId)) {
   throw new Error('GATE_LOCAL_USER must be a canonical user_<ULID> identifier.');
 }
+/*
+ * The local bypass cannot coexist with real identity. It removes authentication
+ * for anything that can reach the server, which is defensible on a laptop and
+ * indefensible anywhere a provider has been configured — and a deployed image
+ * carrying it would look authenticated while being wide open.
+ */
+if (localUserId !== undefined && oidc) {
+  throw new Error(
+    'GATE_LOCAL_USER is set alongside an identity provider. It disables authentication '
+    + 'entirely and must not exist in a deployed environment.',
+  );
+}
+if (localUserId !== undefined && HOST !== '127.0.0.1' && HOST !== '::1') {
+  throw new Error(`GATE_LOCAL_USER is only permitted while bound to loopback, not ${HOST}.`);
+}
 
 /**
  * The number a customer calls or texts from their progress page (§9.11).
@@ -114,7 +150,8 @@ if (databaseUrl) {
 }
 const server = createGateApi({
   db,
-  jwtSecret: secret,
+  ...(secret ? { jwtSecret: secret } : {}),
+  ...(oidc ? { oidc } : {}),
   storage,
   ...(localUserId ? { localUserId } : {}),
   ...(customerContact ? { customerContact } : {}),
@@ -138,6 +175,7 @@ for (const signal of ['SIGTERM', 'SIGINT'] as const) {
 
 server.listen(port, HOST, () => {
   console.log(`Evidence            ${storage.describe()}`);
+  console.log(`Identity            ${oidc ? `${oidc.issuer} (audience ${oidc.audience})` : 'local pilot secret'}`);
   console.log(`Apex OS             http://${HOST}:${port}/app`);
   console.log(`Gate field console  http://${HOST}:${port}/`);
   if (customerContact === undefined) {
