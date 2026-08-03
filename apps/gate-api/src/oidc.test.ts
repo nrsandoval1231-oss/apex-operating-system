@@ -95,7 +95,11 @@ beforeEach(async () => {
     oidc: {
       issuer: ISSUER,
       audience: AUDIENCE,
+      clientId: 'apex-staff-app',
       jwksUri: `http://127.0.0.1:${jwksPort}/jwks.json`,
+      // Supplied directly so the test does not depend on a discovery document.
+      authorizationEndpoint: `${ISSUER}/authorize`,
+      tokenEndpoint: `${ISSUER}/oauth/token`,
     },
   });
   await new Promise<void>((done) => api.listen(0, '127.0.0.1', done));
@@ -209,6 +213,38 @@ describe('mapping an identity to an Apex user', () => {
   });
 });
 
+describe('telling the staff app how to sign someone in', () => {
+  it('publishes the provider details a PKCE flow needs', async () => {
+    const config = await (await fetch(`${baseUrl}/api/auth/config`)).json() as Record<string, unknown>;
+    expect(config).toEqual({
+      mode: 'oidc',
+      issuer: ISSUER,
+      audience: AUDIENCE,
+      clientId: 'apex-staff-app',
+      authorizationEndpoint: `${ISSUER}/authorize`,
+      tokenEndpoint: `${ISSUER}/oauth/token`,
+    });
+  });
+
+  it('is reachable without a token, because a signed-out browser asks first', async () => {
+    // Everything it returns is public by design — an issuer, an audience, a
+    // public client id, and two URLs the provider itself publishes. A browser
+    // client cannot hold a secret, so there is none here to leak.
+    expect((await fetch(`${baseUrl}/api/auth/config`)).status).toBe(200);
+  });
+
+  it('allows the provider origin in the staff app CSP', async () => {
+    // The PKCE token exchange is a cross-origin POST to the provider. A bare
+    // `connect-src 'self'` blocks it, and the symptom from the user's side is
+    // that sign-in silently does nothing.
+    const app = await fetch(`${baseUrl}/app`);
+    const csp = app.headers.get('content-security-policy') ?? '';
+    expect(csp).toContain(`connect-src 'self' ${new URL(ISSUER).origin}`);
+    // Only that origin — not a wildcard.
+    expect(csp).not.toContain('connect-src *');
+  });
+});
+
 describe('refusing to run with two doors open', () => {
   it('will not start with both a provider and a shared secret', () => {
     // A deployment accepting self-minted tokens beside a real provider would
@@ -217,7 +253,7 @@ describe('refusing to run with two doors open', () => {
       db,
       storage: new LocalEvidenceStorage(evidence),
       jwtSecret: 'a-local-development-secret-that-is-long-enough',
-      oidc: { issuer: ISSUER, audience: AUDIENCE },
+      oidc: { issuer: ISSUER, audience: AUDIENCE, clientId: 'apex-staff-app' },
     })).toThrow(/not both/i);
   });
 

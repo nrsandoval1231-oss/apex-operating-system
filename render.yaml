@@ -28,6 +28,10 @@ services:
         sync: false
       - key: APEX_OIDC_AUDIENCE
         sync: false
+      # The public client id of the staff single-page application. Public by
+      # design — the login flow is PKCE and no client secret exists anywhere.
+      - key: APEX_OIDC_CLIENT_ID
+        sync: false
 
       # Evidence. Cloudflare R2 or S3; the endpoint is the only provider-specific part.
       - key: S3_ENDPOINT

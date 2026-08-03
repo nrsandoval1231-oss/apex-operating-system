@@ -441,6 +441,13 @@ describe('Gate HTTP vertical slice', () => {
     });
   });
 
+  it('tells a signed-out browser that this environment has no provider', async () => {
+    const config = await (await fetch(`${baseUrl}/api/auth/config`)).json();
+    // The screen branches on this rather than on a build flag, so a local
+    // environment cannot offer a sign-in button that leads nowhere.
+    expect(config).toEqual({ mode: 'pilot' });
+  });
+
   it('reports liveness and readiness separately', async () => {
     // Liveness checks nothing but the process. A platform restarting the
     // container because the database blipped would turn a recoverable outage

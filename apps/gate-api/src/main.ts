@@ -17,13 +17,18 @@ import { createGateApi } from './server.js';
  */
 const oidcIssuer = process.env.APEX_OIDC_ISSUER?.trim();
 const oidcAudience = process.env.APEX_OIDC_AUDIENCE?.trim();
-if (Boolean(oidcIssuer) !== Boolean(oidcAudience)) {
-  throw new Error('APEX_OIDC_ISSUER and APEX_OIDC_AUDIENCE must be set together.');
+const oidcClientId = process.env.APEX_OIDC_CLIENT_ID?.trim();
+const oidcParts = { APEX_OIDC_ISSUER: oidcIssuer, APEX_OIDC_AUDIENCE: oidcAudience, APEX_OIDC_CLIENT_ID: oidcClientId };
+const oidcSet = Object.entries(oidcParts).filter(([, value]) => Boolean(value));
+if (oidcSet.length > 0 && oidcSet.length < 3) {
+  const missing = Object.entries(oidcParts).filter(([, value]) => !value).map(([name]) => name);
+  throw new Error(`Identity is partly configured; these are missing: ${missing.join(', ')}.`);
 }
-const oidc = oidcIssuer && oidcAudience
+const oidc = oidcIssuer && oidcAudience && oidcClientId
   ? {
     issuer: oidcIssuer,
     audience: oidcAudience,
+    clientId: oidcClientId,
     ...(process.env.APEX_OIDC_JWKS_URI?.trim() ? { jwksUri: process.env.APEX_OIDC_JWKS_URI.trim() } : {}),
   }
   : undefined;

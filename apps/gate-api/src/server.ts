@@ -58,9 +58,20 @@ const appDirectory = process.env.APEX_APP_DIR?.trim()
   ? resolve(process.env.APEX_APP_DIR.trim())
   : resolve(dirname(fileURLToPath(import.meta.url)), '../../apex-os/dist');
 
-/** Same policy as the console, plus self-hosted font files. */
-const APP_CSP = "default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; "
-  + "connect-src 'self'; img-src 'self' blob: data:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'";
+/**
+ * The staff app's policy — same as the console, plus self-hosted fonts.
+ *
+ * `connect-src` has to include the identity provider's origin. The PKCE token
+ * exchange is a cross-origin POST from the browser to the provider's token
+ * endpoint, and a bare `'self'` blocks it — silently, from the user's side, as
+ * "sign-in does nothing". Only the origin is allowed, not the whole internet.
+ */
+const appCsp = (issuer: string | undefined): string => {
+  const providerOrigin = issuer === undefined ? '' : ` ${new URL(issuer).origin}`;
+  return "default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; "
+    + `connect-src 'self'${providerOrigin}; img-src 'self' blob: data:; `
+    + "object-src 'none'; base-uri 'none'; frame-ancestors 'none'";
+};
 
 const APP_CONTENT_TYPES: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
@@ -209,6 +220,22 @@ export interface OidcOptions {
   /** Defaults to `<issuer>/.well-known/jwks.json`, which is where Auth0 and
    *  Clerk publish. Override for a provider that does not. */
   readonly jwksUri?: string;
+  /**
+   * The public client id the staff app authenticates with.
+   *
+   * Public by design: a browser application cannot keep a secret, which is why
+   * the login flow is Authorization Code with PKCE and no client secret exists
+   * anywhere in this system.
+   */
+  readonly clientId: string;
+  /**
+   * Overrides OIDC discovery. Normally absent — the endpoints are read from
+   * `<issuer>/.well-known/openid-configuration`, because Auth0 and Clerk do not
+   * agree on their paths and hard-coding either one would silently bind this to
+   * a single vendor.
+   */
+  readonly authorizationEndpoint?: string;
+  readonly tokenEndpoint?: string;
 }
 
 interface GateApiOptions {
@@ -323,11 +350,75 @@ export function createGateApi(options: GateApiOptions) {
    * refetches when a token arrives with an unknown `kid`. That is what makes
    * provider key rotation a non-event here rather than an outage.
    */
-  const jwks: JWTVerifyGetKey | null = options.oidc
-    ? createRemoteJWKSet(new URL(
-      options.oidc.jwksUri ?? `${options.oidc.issuer.replace(/\/+$/, '')}/.well-known/jwks.json`,
-    ))
-    : null;
+  /**
+   * The provider's endpoints, discovered once and remembered.
+   *
+   * Discovery happens here rather than in the browser so the staff app makes one
+   * request to its own origin instead of two to a third party, and so a provider
+   * that is slow or down produces a server-side error with a log line rather
+   * than a blank screen.
+   *
+   * ALL THREE endpoints come from the same document, including `jwks_uri`. An
+   * earlier version discovered the authorize and token endpoints but guessed the
+   * keys at `<issuer>/.well-known/jwks.json`. Auth0 and Clerk both happen to
+   * publish there, so it worked — until it was pointed at a provider that does
+   * not, and then every token failed verification with nothing to explain why.
+   * Reading the value the provider states removes the guess.
+   */
+  interface ProviderEndpoints {
+    readonly authorizationEndpoint: string;
+    readonly tokenEndpoint: string;
+    readonly jwksUri: string;
+  }
+  let endpoints: ProviderEndpoints | null = null;
+
+  const providerEndpoints = async (): Promise<ProviderEndpoints> => {
+    if (endpoints !== null) return endpoints;
+    const oidc = options.oidc!;
+    const base = oidc.issuer.replace(/\/+$/, '');
+
+    // Fully stated: do not fetch at all. This is what the tests use, and what a
+    // provider with no discovery document would need.
+    if (oidc.authorizationEndpoint && oidc.tokenEndpoint && oidc.jwksUri) {
+      endpoints = {
+        authorizationEndpoint: oidc.authorizationEndpoint,
+        tokenEndpoint: oidc.tokenEndpoint,
+        jwksUri: oidc.jwksUri,
+      };
+      return endpoints;
+    }
+
+    const response = await fetch(`${base}/.well-known/openid-configuration`);
+    if (!response.ok) {
+      throw new Error(`OIDC discovery failed: ${response.status} at ${base}/.well-known/openid-configuration`);
+    }
+    const document = await response.json() as {
+      authorization_endpoint?: string;
+      token_endpoint?: string;
+      jwks_uri?: string;
+    };
+    const authorizationEndpoint = oidc.authorizationEndpoint ?? document.authorization_endpoint;
+    const tokenEndpoint = oidc.tokenEndpoint ?? document.token_endpoint;
+    const jwksUri = oidc.jwksUri ?? document.jwks_uri;
+    if (!authorizationEndpoint || !tokenEndpoint || !jwksUri) {
+      throw new Error(
+        'OIDC discovery document is missing authorization_endpoint, token_endpoint, or jwks_uri.',
+      );
+    }
+    endpoints = { authorizationEndpoint, tokenEndpoint, jwksUri };
+    return endpoints;
+  };
+
+  /**
+   * The provider's signing keys, fetched on first use and cached by `jose`,
+   * which refetches when a token arrives with an unknown `kid`. That is what
+   * makes provider key rotation a non-event here rather than an outage.
+   */
+  let jwksSet: JWTVerifyGetKey | null = null;
+  const providerJwks = async (): Promise<JWTVerifyGetKey> => {
+    if (jwksSet === null) jwksSet = createRemoteJWKSet(new URL((await providerEndpoints()).jwksUri));
+    return jwksSet;
+  };
   const maxEvidenceBytes = options.maxEvidenceBytes ?? 25_000_000;
 
   /**
@@ -382,7 +473,7 @@ export function createGateApi(options: GateApiOptions) {
        * make adding a superintendent an IdP configuration change, and would make
        * a mis-set claim a privilege escalation.
        */
-      const subject = jwks !== null
+      const subject = options.oidc !== undefined
         ? await verifyWithProvider(token)
         : await verifyWithPilotSecret(token);
 
@@ -412,7 +503,7 @@ export function createGateApi(options: GateApiOptions) {
    */
   const verifyWithProvider = async (token: string): Promise<{ kind: 'oidc'; value: string }> => {
     const oidc = options.oidc!;
-    const { payload } = await jwtVerify(token, jwks!, {
+    const { payload } = await jwtVerify(token, await providerJwks(), {
       algorithms: ['RS256', 'RS384', 'RS512', 'ES256', 'ES384'],
       issuer: oidc.issuer,
       audience: oidc.audience,
@@ -513,7 +604,7 @@ export function createGateApi(options: GateApiOptions) {
         response.writeHead(200, {
           'content-type': appContentType(file),
           'content-length': content.length,
-          'content-security-policy': APP_CSP,
+          'content-security-policy': appCsp(options.oidc?.issuer),
           'referrer-policy': 'no-referrer',
           'x-content-type-options': 'nosniff',
           'cache-control': isAsset ? 'public, max-age=300' : 'no-store',
@@ -603,6 +694,30 @@ export function createGateApi(options: GateApiOptions) {
         });
         return response.end(content);
       }
+      /*
+       * How the staff app should sign a person in — unauthenticated by
+       * necessity, since it is what a signed-out browser asks for first.
+       *
+       * Everything here is public by design: an issuer, an audience, a public
+       * client id, and two endpoint URLs the provider itself publishes. No
+       * secret exists to leak, because a browser client cannot hold one.
+       */
+      if (request.method === 'GET' && url.pathname === '/api/auth/config') {
+        if (options.oidc === undefined) {
+          // Local development: the paste-a-token screen is still the way in.
+          return sendJson(response, 200, { mode: 'pilot' });
+        }
+        const resolved = await providerEndpoints();
+        return sendJson(response, 200, {
+          mode: 'oidc',
+          issuer: options.oidc.issuer,
+          audience: options.oidc.audience,
+          clientId: options.oidc.clientId,
+          authorizationEndpoint: resolved.authorizationEndpoint,
+          tokenEndpoint: resolved.tokenEndpoint,
+        });
+      }
+
       const actor = await authenticate(request);
 
       if (request.method === 'GET' && url.pathname === '/api/today') {

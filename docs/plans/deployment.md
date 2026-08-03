@@ -1,7 +1,9 @@
 # Apex OS — Deployment Plan
 
 **Written:** 2026-08-03
-**Status:** All nine slices complete. Every remaining step needs an account, not code — see `docs/runbooks/deployment.md`. **Both open decisions were made on
+**Status:** All nine slices complete, plus slice 10 (staff sign-in), which was
+a gap found while walking through the Render setup: slice 4 built token
+*verification* and nothing built token *acquisition*. Every remaining step needs an account, not code — see `docs/runbooks/deployment.md`. **Both open decisions were made on
 2026-08-03** (§6): Render plus a hosted identity provider, and RLS retired
 honestly for the pilot. Slices 3, 4, and 6–9 remain; none is blocked.
 **Why now:** every feature in the v1 build plan is complete and all content is
@@ -355,6 +357,42 @@ what Apex is actually good at.
 I lean toward making it real, but it is genuinely a judgment about how much
 belt-and-braces a five-project pilot warrants, and the honest retirement is a
 respectable answer.
+
+**Slice 10 — Staff sign-in (medium). DONE 2026-08-03.**
+Authorization Code with PKCE in the staff app. Slice 4 verified provider tokens
+but left the sign-in screen as "paste a pilot token", so configuring Auth0 would
+have left staff unable to get in at all. That was an omission in slice 4, not a
+new requirement.
+
+Four decisions worth challenging:
+
+1. **The mode comes from the server, not a build flag.** `/api/auth/config`
+   reports `pilot` or `oidc`, and the sign-in screen renders accordingly — so it
+   cannot offer a button that leads nowhere, and a local checkout keeps the
+   paste-token path with an honest explanation of why.
+2. **Discovery covers all three endpoints.** Authorize, token, *and* JWKS come
+   from `.well-known/openid-configuration`. An earlier version guessed the keys
+   at `<issuer>/.well-known/jwks.json`; Auth0 and Clerk both publish there, so it
+   worked until it was pointed at a provider that does not — and then every token
+   failed verification with nothing to explain why.
+3. **The CSP had to learn the provider's origin.** The token exchange is a
+   cross-origin POST, and `connect-src 'self'` blocks it *in the browser* — which
+   looks identical to the provider refusing. Only that origin is added, not a
+   wildcard.
+4. **The access token lives in `sessionStorage`.** Tab-scoped and gone when the
+   browser closes, which matters on a shared office machine, but readable by any
+   script on the origin. The app's CSP is `script-src 'self'` with no inline
+   scripts and no third-party origins, which is what makes that acceptable. The
+   stronger option is a backend-for-frontend holding an httpOnly cookie; that is
+   a real change to the API and is recorded here rather than pretended away.
+
+No refresh tokens: an expired token returns the sign-in screen. Rotation in a
+public client is a lot of machinery for staff who sign in once a day.
+
+Verified against a locally generated OIDC provider — discovery, redirect, the
+provider checking the PKCE challenge, the code exchange, and the API accepting
+the resulting RS256 token — so the flow has actually been run before Auth0
+exists.
 
 ## 7. What is not in this plan
 

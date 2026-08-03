@@ -42,13 +42,17 @@ export default function Layout() {
       </nav>
 
       <div className="sheet">
-        {/* Only worth a strip when there is a session to end. A local pilot has
-            no credential, so showing "sign out" would offer to undo nothing. */}
+        {/* Only worth a strip when there is a session to end. A single-machine
+            pilot with GATE_LOCAL_USER has no credential at all, so showing
+            "sign out" there would offer to undo nothing. */}
         {signedInWithToken && (
           <div className="session">
             <span className="who">
               <span className="dot" aria-hidden="true" />
-              Pilot session
+              {/* Not "pilot session": the same bar shows after a real provider
+                  sign-in, and a label that names the wrong mechanism is the
+                  kind of small untruth that makes people distrust the rest. */}
+              Signed in
             </span>
             <button type="button" className="link-quiet" onClick={() => setToken('')}>
               Sign out

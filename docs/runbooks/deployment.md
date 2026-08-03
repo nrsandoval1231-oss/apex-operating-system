@@ -28,10 +28,30 @@ It covers **Apex staff only** — roughly five to ten people. Customers never si
 in; the progress page is authorised by an unguessable token. Do not buy or
 configure anything for customer identity.
 
-Create an **API** (Auth0) or a **JWT template / audience** (Clerk) whose
-identifier becomes `APEX_OIDC_AUDIENCE`. Without an audience the tokens are for
-"the tenant" rather than for this API, and a token minted for anything else in
-the same tenant would be accepted here.
+Two objects are needed, and both matter.
+
+**An API** (Auth0) or **JWT template** (Clerk) whose identifier becomes
+`APEX_OIDC_AUDIENCE`. Without an audience the tokens are for "the tenant" rather
+than for this API, and a token minted for anything else in the same tenant would
+be accepted here.
+
+**A Single Page Application client**, whose id becomes `APEX_OIDC_CLIENT_ID`.
+It must be a public client — the staff app uses Authorization Code with PKCE and
+there is no client secret anywhere in this system, because a browser cannot keep
+one. Configure:
+
+| Setting | Value | Why |
+|---|---|---|
+| Allowed Callback URLs | `https://apex.<domain>/app/callback` | Where the provider returns the browser |
+| **Allowed Web Origins** | `https://apex.<domain>` | **Easy to miss.** The PKCE token exchange is a cross-origin POST from the browser to the provider. Without this, CORS blocks it and sign-in silently does nothing |
+| Grant types | Authorization Code (+ PKCE) | Implicit and password grants should be off |
+
+The API reads the provider's `.well-known/openid-configuration` at startup and
+takes the authorize, token, **and JWKS** endpoints from it, so nothing about
+Auth0's or Clerk's URL layout is hard-coded. It also adds the provider's origin
+to the staff app's `connect-src` CSP — without that the token exchange is
+blocked by the browser rather than by the provider, which looks identical from
+the outside.
 
 ### Object storage permissions
 
@@ -54,6 +74,7 @@ is what survives an operator mistake.
 # 2. Fill the secrets marked `sync: false` in the Render dashboard:
 #      APEX_OIDC_ISSUER            https://<tenant>.us.auth0.com/
 #      APEX_OIDC_AUDIENCE          https://api.apex.<domain>
+#      APEX_OIDC_CLIENT_ID         <SPA client id>
 #      S3_ENDPOINT                 https://<account>.r2.cloudflarestorage.com
 #      S3_BUCKET                   apex-evidence
 #      S3_ACCESS_KEY_ID            …
@@ -239,11 +260,25 @@ rather than failing on the first request:
 
 ### A staff member cannot sign in
 
-In order:
+Work out *where* it fails first — the two halves look the same to the user.
 
-1. Do they exist at the provider, and have they signed in there at least once?
-2. Does `app_users.oidc_subject` match their subject exactly? It is
-   case-sensitive and includes the `auth0|` prefix.
+**The button does nothing, or the browser returns with an error.** That is the
+provider half:
+
+- Check the browser console for a CORS error on the token endpoint. If present,
+  `Allowed Web Origins` at the provider does not include this origin.
+- Check `Allowed Callback URLs` includes `https://apex.<domain>/app/callback`
+  exactly, including the `/app` segment.
+- `curl -s https://apex.<domain>/api/auth/config` should return `mode: "oidc"`
+  with the provider's real authorize and token endpoints. `mode: "pilot"` means
+  the identity variables are not set on the service.
+
+**They sign in, come back, and are shown the sign-in screen again.** That is the
+Apex half — the token is valid and there is no matching user:
+
+1. Have they signed in at the provider at least once, so a subject exists?
+2. Does `app_users.oidc_subject` match it exactly? Case-sensitive, and it
+   includes the `auth0|` prefix.
 3. Is `active` true?
 
 A valid token for someone with no row is refused. That is authentication

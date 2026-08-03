@@ -5,6 +5,7 @@ import Projects from './pages/Projects';
 import ProjectDetail from './pages/ProjectDetail';
 import OwnerBrief from './pages/OwnerBrief';
 import CustomerPage from './pages/CustomerPage';
+import AuthCallback from './pages/AuthCallback';
 
 /**
  * Only wired screens are routed.
@@ -17,6 +18,9 @@ import CustomerPage from './pages/CustomerPage';
 export default function App() {
   return (
     <Routes>
+      {/* Outside the shell: the shell renders sign-in whenever the API is
+          refusing, and during the callback it is — there is no token yet. */}
+      <Route path="callback" element={<AuthCallback />} />
       <Route path="/" element={<Layout />}>
         <Route index element={<Navigate to="/today" replace />} />
         <Route path="today" element={<TodayFeed />} />
