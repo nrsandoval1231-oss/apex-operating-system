@@ -65,6 +65,31 @@ const storage: EvidenceStorage = s3Endpoint
     region: process.env.S3_REGION?.trim() || 'auto',
   })
   : new LocalEvidenceStorage(evidenceDirectory);
+/**
+ * The origin customers reach this server on — deployment plan slice 7.
+ *
+ * Validated at startup rather than trusted: a trailing path or a bare hostname
+ * would produce links that look right and open nothing, and the person who
+ * finds out is a homeowner tapping a text message.
+ */
+const publicOrigin = process.env.APEX_PUBLIC_ORIGIN?.trim().replace(/\/+$/, '') || undefined;
+if (publicOrigin !== undefined) {
+  let parsed: URL;
+  try {
+    parsed = new URL(publicOrigin);
+  } catch {
+    throw new Error(`APEX_PUBLIC_ORIGIN must be an absolute URL, e.g. https://apex.example.com — got ${publicOrigin}`);
+  }
+  if (parsed.pathname !== '/' || parsed.search || parsed.hash) {
+    throw new Error('APEX_PUBLIC_ORIGIN must be an origin with no path, query, or fragment.');
+  }
+  const localHost = parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1';
+  if (parsed.protocol !== 'https:' && !localHost) {
+    // The token is in the URL. Over http it crosses the network in the clear.
+    throw new Error('APEX_PUBLIC_ORIGIN must use https, because the customer link token is in the URL.');
+  }
+}
+
 const port = Number(process.env.PORT ?? 4100);
 if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('PORT must be an integer from 1 to 65535.');
 
@@ -152,6 +177,7 @@ const server = createGateApi({
   db,
   ...(secret ? { jwtSecret: secret } : {}),
   ...(oidc ? { oidc } : {}),
+  ...(publicOrigin ? { publicOrigin } : {}),
   storage,
   ...(localUserId ? { localUserId } : {}),
   ...(customerContact ? { customerContact } : {}),
@@ -176,6 +202,7 @@ for (const signal of ['SIGTERM', 'SIGINT'] as const) {
 server.listen(port, HOST, () => {
   console.log(`Evidence            ${storage.describe()}`);
   console.log(`Identity            ${oidc ? `${oidc.issuer} (audience ${oidc.audience})` : 'local pilot secret'}`);
+  console.log(`Customer links      ${publicOrigin ? `${publicOrigin}/c/…` : 'this machine only (APEX_PUBLIC_ORIGIN unset)'}`);
   console.log(`Apex OS             http://${HOST}:${port}/app`);
   console.log(`Gate field console  http://${HOST}:${port}/`);
   if (customerContact === undefined) {

@@ -130,8 +130,21 @@ export type CustomerLink = z.infer<typeof CustomerLinkSchema>;
 /** Issue and rotate return this once. `url` cannot be recovered afterwards. */
 export const IssuedCustomerLinkSchema = z.strictObject({
   link: CustomerLinkSchema,
-  /** The full path a customer opens, token included. Shown once. */
+  /**
+   * What the customer opens, token included. Shown once and never recoverable.
+   *
+   * A complete URL when a public origin is configured; a path otherwise. The
+   * flag below says which, so the staff screen never presents a loopback-only
+   * link as something that can be sent to a homeowner.
+   */
   url: z.string().min(1).max(400),
+  /**
+   * True when this URL is reachable from outside the machine serving it.
+   *
+   * False on a laptop. The distinction matters because the failure it prevents
+   * is silent: a link that looks correct, sends cleanly, and opens nothing.
+   */
+  publiclyReachable: z.boolean(),
 });
 export type IssuedCustomerLink = z.infer<typeof IssuedCustomerLinkSchema>;
 

@@ -22,6 +22,7 @@ import {
 import { DomainRuleError } from '@apex/domain';
 import { CustomerService, GateService, InspectionService } from '@apex/gate-service';
 import { renderClosedPage, renderCustomerPage } from './customerPage.js';
+import { log, redactPath } from './log.js';
 
 const EvidenceUploadSchema = z.strictObject({
   requirementKey: z.string().min(1).max(120),
@@ -212,6 +213,15 @@ interface GateApiOptions {
   /** Set in any deployed environment; absent on a laptop. */
   readonly oidc?: OidcOptions;
   /**
+   * The origin a customer reaches this server on, e.g. https://apex.example.com
+   * — deployment plan slice 7.
+   *
+   * Absent on a laptop, where the issued link is a path and the staff screen
+   * says plainly that it only works on this machine. Set in a deployment, the
+   * issued link is a complete URL that can be texted to a homeowner.
+   */
+  readonly publicOrigin?: string;
+  /**
    * Where gate evidence lives. A port, not a directory: the local adapter backs
    * development and the S3-compatible one backs deployment, and the API cannot
    * tell them apart.
@@ -292,6 +302,7 @@ export function createGateApi(options: GateApiOptions) {
   const service = new GateService(options.db);
   const customers = new CustomerService(options.db, {
     ...(options.customerContact ? { contact: options.customerContact } : {}),
+    ...(options.publicOrigin ? { publicOrigin: options.publicOrigin } : {}),
     basePath: '/c',
   });
   const customerPhone = options.customerContact?.phone ?? null;
@@ -446,8 +457,30 @@ export function createGateApi(options: GateApiOptions) {
   const handler = async (request: IncomingMessage, response: ServerResponse) => {
     try {
       const url = new URL(request.url ?? '/', 'http://localhost');
+      /*
+       * Liveness: is this process running. Deliberately checks nothing else —
+       * a platform restarting the container because the database blipped would
+       * turn a recoverable outage into a crash loop.
+       */
       if (request.method === 'GET' && url.pathname === '/health') {
         return sendJson(response, 200, { status: 'ok' });
+      }
+
+      /*
+       * Readiness: can this instance actually serve. Checks the two
+       * dependencies it cannot work without, and answers 503 when either is
+       * down so a load balancer stops sending traffic here.
+       *
+       * Booleans only. An unauthenticated endpoint should not describe *why*
+       * something is broken.
+       */
+      if (request.method === 'GET' && url.pathname === '/ready') {
+        const [database, evidence] = await Promise.all([
+          options.db.query('select 1').then(() => true).catch(() => false),
+          storage.isReachable(),
+        ]);
+        const ready = database && evidence;
+        return sendJson(response, ready ? 200 : 503, { status: ready ? 'ready' : 'degraded', database, evidence });
       }
       // The Apex OS app, served from the same origin as the API it calls.
       //
@@ -1011,12 +1044,38 @@ export function createGateApi(options: GateApiOptions) {
       if (error instanceof InputError || error instanceof z.ZodError) return sendJson(response, 422, { error: error instanceof Error ? error.message : 'Invalid input.' });
       if (error instanceof DomainRuleError) return sendJson(response, 409, { error: error.message });
       if (error instanceof Error && error.name === 'JWTExpired') return sendJson(response, 403, { error: 'Authentication expired.' });
-      console.error(error);
+      log.error('request.failed', error, {
+        method: request.method ?? '',
+        path: redactPath(new URL(request.url ?? '/', 'http://localhost').pathname),
+      });
       return sendJson(response, 500, { error: 'Internal server error.' });
     }
   };
 
-  return createServer((request, response) => void handler(request, response));
+  /**
+   * One line per request, after it completes.
+   *
+   * The path is redacted before it is written: a customer token lives in the
+   * URL, and a log stream is retained and searchable. Health and readiness
+   * checks are not logged — a platform probes them every few seconds and they
+   * would bury everything else.
+   */
+  const logged = (request: IncomingMessage, response: ServerResponse) => {
+    const started = Date.now();
+    const path = redactPath(new URL(request.url ?? '/', 'http://localhost').pathname);
+    if (path === '/health' || path === '/ready') return void handler(request, response);
+    response.on('finish', () => {
+      log.info('request', {
+        method: request.method ?? '',
+        path,
+        status: response.statusCode,
+        durationMs: Date.now() - started,
+      });
+    });
+    return void handler(request, response);
+  };
+
+  return createServer(logged);
 }
 
 class AuthError extends Error {}

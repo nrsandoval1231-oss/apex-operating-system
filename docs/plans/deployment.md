@@ -1,7 +1,7 @@
 # Apex OS — Deployment Plan
 
 **Written:** 2026-08-03
-**Status:** Slices 1–5 complete. **Both open decisions were made on
+**Status:** Slices 1–7 complete. **Both open decisions were made on
 2026-08-03** (§6): Render plus a hosted identity provider, and RLS retired
 honestly for the pilot. Slices 3, 4, and 6–9 remain; none is blocked.
 **Why now:** every feature in the v1 build plan is complete and all content is
@@ -52,9 +52,9 @@ change based on which host or provider you pick.
 | 4 | ~~**RLS policies exist but are inert**~~ — retired, see §4 | Done | Yes |
 | 5 | ~~Symmetric HS256 pilot JWT; no JWKS, no rotation~~ | Done | Yes |
 | 6 | ~~`GATE_LOCAL_USER` disables authentication entirely~~ | Done | Yes |
-| 7 | Customer links are path-only; no public origin configured | Small | Yes |
+| 7 | ~~Customer links are path-only; no public origin configured~~ | Done | Yes |
 | 8 | No container, no deploy config, no TLS termination | Medium | **No** |
-| 9 | No structured logging, health checks are shallow, no graceful shutdown | Small | Yes |
+| 9 | ~~No structured logging, shallow health checks, no graceful shutdown~~ | Done | Yes |
 | 10 | No backup or restore procedure for a database holding real draws | Medium | **No** |
 
 Seven of ten are provider-independent, which is why the sequence below starts
@@ -208,12 +208,43 @@ activate it, because none works alone: a non-owning role (or FORCE), the
 which authenticates nobody by design and would deny everything under these
 policies.
 
-**Slice 6 — Operational hygiene (small).**
-Structured JSON logging with a request id; a health check that actually tests the
-database and storage rather than returning `{status:'ok'}` unconditionally;
-graceful shutdown so an in-flight evidence upload is not cut off; and startup
-validation that refuses to boot on missing or malformed configuration rather than
-failing on the first request.
+**Slice 6 — Operational hygiene (small). DONE 2026-08-03.**
+Structured JSON logging, split liveness and readiness probes, and startup
+validation. Graceful shutdown landed with slice 2.
+
+Three decisions worth challenging:
+
+1. **Request paths are redacted before they are logged.** A customer link token
+   is a bearer credential that lives in the URL path, and a log stream is
+   retained, searchable, and visible to anyone with dashboard access. Writing raw
+   paths would hand out working links and undo the point of storing only the
+   hash. Redaction matches the *token shape* rather than the route, so it also
+   covers a mistyped or probing request — which is precisely where a token would
+   otherwise leak, because it never reaches a handler that knows to be careful.
+2. **`/health` and `/ready` are different things.** Liveness checks nothing but
+   the process: a platform restarting the container because the database blipped
+   would turn a recoverable outage into a crash loop. Readiness checks the
+   database and evidence storage and answers 503, so a load balancer stops
+   sending traffic. It returns booleans and no error text — an unauthenticated
+   endpoint should not explain *why* something is broken.
+3. **Health and readiness are not logged.** A platform probes them every few
+   seconds and they would bury everything else.
+
+**Slice 7 — Public origin (small). DONE 2026-08-03.**
+`APEX_PUBLIC_ORIGIN` makes an issued customer link a complete URL that can be
+texted to a homeowner. Absent, the link stays a path and is flagged
+`publiclyReachable: false`, which is what the staff screen uses to warn.
+
+Two decisions worth challenging:
+
+1. **The warning is shown only when it is true.** It used to be hard-coded, and
+   would have become a lie the moment a public origin existed. A stale warning
+   teaches people to ignore the real ones.
+2. **The origin must be https unless it is localhost, and is validated at
+   startup.** The token is in the URL, so http would put a live credential on
+   the wire in the clear. A trailing path or a bare hostname is rejected too:
+   the failure it prevents is silent, and the person who discovers it is a
+   homeowner tapping a link that opens nothing.
 
 **Slice 7 — Public origin (small).**
 `CustomerService` builds links as `/c/<token>`. It needs an absolute origin so a

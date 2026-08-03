@@ -137,6 +137,24 @@ describe('issuing a link', () => {
   });
 });
 
+describe('the issued link', () => {
+  it('is a path, marked not publicly reachable, when no origin is configured', async () => {
+    const issued = await customers.issueLink({ jobId: ids.job, actor: owner });
+    expect(issued.url).toMatch(/^\/c\//);
+    // The staff screen uses this to decide whether to warn. A link that looks
+    // right, sends cleanly, and opens nothing is the failure being prevented.
+    expect(issued.publiclyReachable).toBe(false);
+  });
+
+  it('is a complete URL when a public origin is configured', async () => {
+    const deployed = new CustomerService(db, { publicOrigin: 'https://apex.example.com/' });
+    const issued = await deployed.issueLink({ jobId: ids.otherJob, actor: owner });
+    // Trailing slash on the origin must not produce a doubled one.
+    expect(issued.url).toMatch(/^https:\/\/apex\.example\.com\/c\/[A-Za-z0-9_-]{43}$/);
+    expect(issued.publiclyReachable).toBe(true);
+  });
+});
+
 describe('rotation and revocation', () => {
   it('closes the old link the moment a new one is issued', async () => {
     const first = await customers.issueLink({ jobId: ids.job, actor: owner });

@@ -441,6 +441,32 @@ describe('Gate HTTP vertical slice', () => {
     });
   });
 
+  it('reports liveness and readiness separately', async () => {
+    // Liveness checks nothing but the process. A platform restarting the
+    // container because the database blipped would turn a recoverable outage
+    // into a crash loop.
+    const health = await fetch(`${baseUrl}/health`);
+    expect(health.status).toBe(200);
+
+    // Readiness checks the two dependencies the instance cannot serve without.
+    const ready = await fetch(`${baseUrl}/ready`);
+    expect(ready.status).toBe(200);
+    expect(await ready.json()).toEqual({ status: 'ready', database: true, evidence: true });
+
+    // Neither needs a token: the platform probing them has none.
+    expect(health.headers.get('content-type')).toContain('application/json');
+  });
+
+  it('answers 503 when a dependency it needs is gone', async () => {
+    await db.close();
+    const ready = await fetch(`${baseUrl}/ready`);
+    // A load balancer has to stop sending traffic here, which it only does on
+    // a non-2xx. Reporting healthy while unable to serve is the failure this
+    // endpoint exists to prevent.
+    expect(ready.status).toBe(503);
+    expect(await ready.json()).toMatchObject({ status: 'degraded', database: false });
+  });
+
   it('requires authentication and idempotency headers', async () => {
     const health = await fetch(`${baseUrl}/health`);
     expect(health.status).toBe(200);

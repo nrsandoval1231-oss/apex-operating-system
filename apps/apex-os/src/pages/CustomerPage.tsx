@@ -192,7 +192,9 @@ export default function CustomerPage() {
         <div className="state" style={{ borderColor: 'var(--sage)' }}>
           <h3>Send this to the customer now</h3>
           <p className="mono" style={{ wordBreak: 'break-all', color: 'var(--ink)' }}>
-            {window.location.origin}{issued.url}
+            {/* Absolute once a public origin is configured; a path before that,
+                which only means anything alongside the warning below. */}
+            {issued.publiclyReachable ? issued.url : `${window.location.origin}${issued.url}`}
           </p>
           <p>
             {/* Said plainly, because the alternative is someone closing this tab
@@ -203,7 +205,9 @@ export default function CustomerPage() {
           <button
             type="button"
             className="action action-quiet"
-            onClick={() => void navigator.clipboard?.writeText(`${window.location.origin}${issued.url}`)}
+            onClick={() => void navigator.clipboard?.writeText(
+              issued.publiclyReachable ? issued.url : `${window.location.origin}${issued.url}`,
+            )}
           >
             Copy link
           </button>
@@ -270,13 +274,17 @@ export default function CustomerPage() {
             </div>
           )}
 
-          <p className="notice">
-            {/* The pilot binds to loopback. A link copied from here reaches
-                nobody outside this machine, and saying so beats a customer
-                being sent something that cannot open. */}
-            In the local pilot this link only works on this machine. A customer-reachable
-            link needs the deployed environment — see docs/status.md.
-          </p>
+          {/* Said only when it is true. The warning existed because a link
+              copied from a laptop reaches nobody; once a public origin is
+              configured it would be false, and a stale warning teaches people
+              to ignore the real ones. */}
+          {issued !== null && !issued.publiclyReachable && (
+            <p className="notice">
+              This link only works on this machine. Sending it to a customer would give
+              them something that opens nothing. A customer-reachable link needs
+              APEX_PUBLIC_ORIGIN set in a deployed environment.
+            </p>
+          )}
         </>
       )}
 

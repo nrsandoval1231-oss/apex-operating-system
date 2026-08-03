@@ -135,15 +135,24 @@ export interface CustomerServiceOptions {
   readonly contact?: CustomerContact;
   /** Path prefix the public page is mounted at. Used to build the link. */
   readonly basePath?: string;
+  /**
+   * The origin a customer reaches this server on — deployment plan slice 7.
+   *
+   * Absent on a laptop, where an issued link is a path and is marked as not
+   * publicly reachable. Set in a deployment, an issued link is a complete URL.
+   */
+  readonly publicOrigin?: string;
 }
 
 export class CustomerService {
   private readonly contact: CustomerContact | null;
   private readonly basePath: string;
+  private readonly publicOrigin: string | null;
 
   constructor(private readonly db: Database, options: CustomerServiceOptions = {}) {
     this.contact = options.contact ?? null;
     this.basePath = options.basePath ?? '/c';
+    this.publicOrigin = options.publicOrigin?.replace(/\/+$/, '') ?? null;
   }
 
   /* ------------------------------------------------------------------ links */
@@ -604,7 +613,12 @@ export class CustomerService {
     const link = status.history.find((entry) => entry.linkId === linkId);
     if (!link) throw new Error('Customer link was not persisted.');
     // The only moment the token exists outside the customer's browser.
-    return { link, url: `${this.basePath}/${token}` };
+    const path = `${this.basePath}/${token}`;
+    return {
+      link,
+      url: this.publicOrigin === null ? path : `${this.publicOrigin}${path}`,
+      publiclyReachable: this.publicOrigin !== null,
+    };
   }
 
   private async activeLinkRow(jobId: JobId): Promise<LinkRow | null> {
