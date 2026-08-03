@@ -109,12 +109,22 @@ export class S3EvidenceStorage implements EvidenceStorage {
     }
   }
 
+  /**
+   * HeadBucket — the operation that exists to answer exactly this question.
+   *
+   * A zero-key ListObjectsV2 was tried first and was wrong: MinIO answered 200
+   * to it for a bucket that did not exist, so the readiness check reported a
+   * missing bucket as healthy. HEAD on the bucket is unambiguous — 200 when it
+   * is there and reachable with these credentials, 404 when it is not, 403 when
+   * the credentials cannot see it.
+   */
   async isReachable(): Promise<boolean> {
     try {
-      // Listing zero keys proves credentials and bucket without reading data.
-      const response = await this.client.fetch(`${this.base}?list-type=2&max-keys=0`, { method: 'GET' });
+      const response = await this.client.fetch(this.base, { method: 'HEAD' });
       return response.ok;
     } catch {
+      // A DNS or connection failure is unreachable, not an exception the
+      // health endpoint should propagate.
       return false;
     }
   }
