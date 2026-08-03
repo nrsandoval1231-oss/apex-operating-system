@@ -1,0 +1,296 @@
+# Apex OS — deployment runbook
+
+**Written:** 2026-08-03 (deployment plan slice 9)
+**Applies to:** Render web service `apex-os` + Render Postgres `apex-postgres`,
+Cloudflare R2 or S3 for evidence, Auth0 or Clerk for staff identity.
+
+This is the operational half. `docs/plans/deployment.md` says why the system is
+built this way; this says what to type, in what order, and what to do when it
+goes wrong.
+
+---
+
+## 1. Before the first deploy
+
+Four accounts. None of them can be created by anyone but you, and none of the
+secrets should ever reach git.
+
+| # | Thing | What you end up with |
+|---|---|---|
+| 1 | Render account, repo connected | The blueprint in `render.yaml` picked up |
+| 2 | Object storage bucket (R2 or S3) | Endpoint, bucket name, key id, secret |
+| 3 | Identity tenant (Auth0 or Clerk) | Issuer URL, API audience identifier |
+| 4 | A domain, pointed at Render | `https://…` for `APEX_PUBLIC_ORIGIN` |
+
+### The identity tenant is smaller than it looks
+
+It covers **Apex staff only** — roughly five to ten people. Customers never sign
+in; the progress page is authorised by an unguessable token. Do not buy or
+configure anything for customer identity.
+
+Create an **API** (Auth0) or a **JWT template / audience** (Clerk) whose
+identifier becomes `APEX_OIDC_AUDIENCE`. Without an audience the tokens are for
+"the tenant" rather than for this API, and a token minted for anything else in
+the same tenant would be accepted here.
+
+### Object storage permissions
+
+The application needs `GetObject`, `PutObject`, `DeleteObject`, and
+`HeadBucket` — nothing more. **Do not grant `CreateBucket`.** Create the bucket
+by hand; the code has no call for it, and a running app that can create buckets
+can also be talked into creating one.
+
+Keep versioning **on**. Evidence is write-once in the application, but versioning
+is what survives an operator mistake.
+
+---
+
+## 2. First deploy
+
+```bash
+# 1. Render → New → Blueprint → select this repo. It reads render.yaml and
+#    creates the web service and the database. Do not deploy yet.
+
+# 2. Fill the secrets marked `sync: false` in the Render dashboard:
+#      APEX_OIDC_ISSUER            https://<tenant>.us.auth0.com/
+#      APEX_OIDC_AUDIENCE          https://api.apex.<domain>
+#      S3_ENDPOINT                 https://<account>.r2.cloudflarestorage.com
+#      S3_BUCKET                   apex-evidence
+#      S3_ACCESS_KEY_ID            …
+#      S3_SECRET_ACCESS_KEY        …
+#      APEX_PUBLIC_ORIGIN          https://apex.<domain>
+#      APEX_CUSTOMER_CONTACT_PHONE +1806…        (optional)
+#
+#    DATABASE_URL is supplied by Render from the database. Do not type it.
+
+# 3. Deploy.
+```
+
+**`GATE_JWT_SECRET` and `GATE_LOCAL_USER` must not be set.** The first is a
+shared secret beside a real provider — a second, unaudited door; `createGateApi`
+refuses to start with both. The second disables authentication entirely; `main.ts`
+refuses to start with it on a non-loopback bind, which this service is. Both
+refusals are covered by tests, and CI starts the real image with
+`GATE_LOCAL_USER` set to prove the container fails rather than serves.
+
+### Migrations run themselves
+
+On boot, under a Postgres advisory lock. Two instances starting together cannot
+race: the second blocks, then finds every migration already recorded and applies
+none. There is no separate migrate step and no manual command to forget.
+
+### Verify the deploy
+
+```bash
+curl -sf https://apex.<domain>/ready
+```
+
+Expect `{"status":"ready","database":true,"evidence":true}`. Anything else means
+do not proceed — see §6.
+
+Then, in order:
+
+1. `https://apex.<domain>/app` loads and asks you to sign in.
+2. Sign in. If it refuses, the account exists at the provider but not in
+   `app_users` — see §3.
+3. Open a project, then its Customer page. Issue a link. The URL should begin
+   with your domain, **not** a bare `/c/…`, and the "only works on this machine"
+   warning should be absent.
+4. Open that link on a phone, on cellular, with wifi off. This is the only test
+   that proves the thing the pilot exists for.
+
+---
+
+## 3. Adding a staff member
+
+Two steps, in this order. Neither works alone.
+
+```sql
+-- 2. After they have signed in once at the provider, take their subject
+--    (Auth0: `auth0|…`; Clerk: `user_…`) and link it.
+insert into app_users (user_id, auth_user_id, oidc_subject, role, display_name)
+values (
+  'user_' || upper(substr(md5(random()::text), 1, 26)),  -- or mint a real ULID
+  gen_random_uuid(),
+  'auth0|REPLACE-ME',
+  'superintendent',        -- admin | office | superintendent | field | customer
+  'Name'
+);
+```
+
+1. Invite them in the provider.
+2. Run the insert above.
+
+**The role comes from this table, never from the token.** A claim saying `admin`
+grants nothing. That means adding a superintendent is a database change, not an
+identity-provider change — deliberately, so authorization stays where it can be
+audited.
+
+### Removing someone
+
+```sql
+update app_users set active = false where oidc_subject = 'auth0|…';
+```
+
+This is sufficient on its own and takes effect on their next request. Do not wait
+on the provider to revoke; disabling them there as well is good practice but is
+not what stops access.
+
+---
+
+## 4. Deploying a change
+
+`autoDeploy` is off. A push does not deploy; deploying is a decision.
+
+1. Confirm CI is green on `main`. It builds and *runs* the container against a
+   real Postgres and a real object store, so a green run means the image boots.
+2. Render → the service → Manual Deploy → the commit.
+3. Watch the log for `Database managed Postgres`, `Evidence S3-compatible…`,
+   `Identity https://…`, and `Customer links https://…`. Those four lines are the
+   configuration the process actually resolved, not what the dashboard claims.
+4. `curl -sf https://apex.<domain>/ready`.
+
+### Rolling back
+
+Render → Deploys → the previous successful deploy → Redeploy.
+
+**Rolling back the image does not roll back the database.** Every migration here
+is additive — new tables and columns, plus `0017`'s new *versions* of gate
+definitions rather than edits to existing ones — so an older image runs against a
+newer schema. That is the property that makes rollback safe, and it is worth
+preserving: a migration that drops or renames a column breaks it.
+
+If a deploy has to be rolled back **and** a migration must be undone, write a new
+forward migration that reverses it. Do not edit or delete an applied migration.
+
+---
+
+## 5. Backup and restore
+
+Render takes daily automatic backups on paid plans. That is not a restore
+procedure — an untested backup is a belief, not a control.
+
+### Test the restore once, before the pilot carries real money
+
+```bash
+# 1. Render → Database → Backups → Restore to a NEW database.
+# 2. Point a scratch deploy at it:
+#      DATABASE_URL=<restored database>
+# 3. Check the three things that matter:
+```
+
+```sql
+-- Gates that released, with their evidence still attached.
+select count(*) from gate_instances where status = 'released';
+select count(*) from evidence_records;
+
+-- Money.
+select draw_code, status, amount_cents from job_draws order by sequence;
+
+-- Customer links: the hashes must survive, because a restore that loses them
+-- silently invalidates every link Apex has already sent.
+select count(*) from customer_links where revoked_at is null;
+```
+
+**Evidence bytes are not in the database.** They are in object storage, which has
+its own lifecycle. A database restore to a point before an upload leaves rows
+pointing at objects that exist — harmless. A restore of the *bucket* to a point
+before an upload leaves rows pointing at nothing: the API answers 404 for those
+photos and the readiness check still passes, because the bucket is reachable. If
+you ever restore the bucket, audit for it:
+
+```sql
+select evidence_id, storage_key from evidence_records order by created_at desc limit 50;
+```
+
+and spot-check that `GET /api/evidence/<id>` returns bytes.
+
+---
+
+## 6. When something is wrong
+
+### `/ready` returns 503
+
+The body says which dependency. Booleans only — an unauthenticated endpoint does
+not explain itself.
+
+- `"database": false` — Render database down, restarting, or connection limit
+  reached. Check Render's database status first. The app reconnects on its own;
+  the pool logs an idle-client error rather than crashing.
+- `"evidence": false` — bucket unreachable, credentials rotated or revoked, or
+  the bucket was deleted. `HeadBucket` is what is failing.
+
+The service stays up while degraded, by design: the platform stops routing to it
+rather than restarting it, because restarting does not fix a dependency.
+
+### The container will not start
+
+Read the first lines of the log. Startup validation fails loudly and specifically
+rather than failing on the first request:
+
+| Message contains | Cause |
+|---|---|
+| `not both` | `GATE_JWT_SECRET` set alongside the provider. Remove the secret. |
+| `loopback` | `GATE_LOCAL_USER` set. It must not exist here at all. |
+| `must use https` | `APEX_PUBLIC_ORIGIN` is http. The link token is in the URL. |
+| `must be an origin with no path` | `APEX_PUBLIC_ORIGIN` has a trailing path. |
+| `S3_ENDPOINT is set but these are missing` | Partial storage configuration. |
+| `must be set together` | Only one of issuer/audience is set. |
+
+### A staff member cannot sign in
+
+In order:
+
+1. Do they exist at the provider, and have they signed in there at least once?
+2. Does `app_users.oidc_subject` match their subject exactly? It is
+   case-sensitive and includes the `auth0|` prefix.
+3. Is `active` true?
+
+A valid token for someone with no row is refused. That is authentication
+succeeding and authorization correctly declining.
+
+### A customer says their link does not work
+
+```sql
+select link_id, issued_at, revoked_at, revoked_reason
+from customer_links where job_id = 'job_…' order by issued_at desc;
+```
+
+- Revoked → issue a new one. There is no un-revoke, by design.
+- Live but they still cannot open it → check the access log. A row with
+  `outcome = 'refused-revoked'` means they are holding an older link.
+
+```sql
+select a.occurred_at, a.resource, a.outcome, a.ip_prefix
+from customer_link_accesses a
+join customer_links l on l.link_id = a.link_id
+where l.job_id = 'job_…' order by a.occurred_at desc limit 20;
+```
+
+No rows at all means the request never reached the server: DNS, TLS, or they
+mistyped it.
+
+### Rotating a customer link
+
+Apex OS → project → Customer page → Rotate. The old link stops working
+immediately and the new URL is shown **once**. There is no way to recover it
+afterwards — only the hash is stored — so send it before leaving the screen.
+
+Rotate when a link has been forwarded outside the household, or when a customer
+asks. Revoke without reissuing only when the project is cancelled.
+
+---
+
+## 7. What this deployment deliberately does not have
+
+Stated so nobody assumes otherwise:
+
+- **No horizontal scaling story beyond the migration lock.** Multiple instances
+  will not corrupt anything, but nothing has been load-tested.
+- **No row-level security.** Retired honestly in migration `0019`; the API is the
+  single enforcement point. Revisit before multi-user SQL access. See
+  `docs/plans/deployment.md` §4.
+- **No CI signal on the Designer contract.** `Apex Designer/` is a separate
+  preserved repository, so that test skips in CI.
+- **No automated restore verification.** §5 is a procedure a person runs, and it
+  has not been run yet.

@@ -12,6 +12,8 @@ on:
       - 'pnpm-workspace.yaml'
       - 'tsconfig*.json'
       - 'vitest.config.ts'
+      - 'Dockerfile'
+      - '.dockerignore'
       - '.github/workflows/non-website-ci.yml'
   pull_request:
     paths:
@@ -23,6 +25,8 @@ on:
       - 'pnpm-workspace.yaml'
       - 'tsconfig*.json'
       - 'vitest.config.ts'
+      - 'Dockerfile'
+      - '.dockerignore'
       - '.github/workflows/non-website-ci.yml'
 
 permissions:
@@ -35,7 +39,7 @@ concurrency:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     # A real Postgres for the adapter tests. Everything else runs against
     # embedded PGlite; the driver boundary — type parsing, pooled transactions,
     # advisory locks — is the part PGlite cannot cover by construction.
@@ -62,12 +66,16 @@ jobs:
       S3_REGION: us-east-1
     steps:
       - uses: actions/checkout@v4
+
       # MinIO speaks the S3 API. Run as a step rather than a service container
       # because the image needs a command (`server /data`), which the services
       # block cannot set.
       - name: Start MinIO
         run: |
-          docker run -d --name minio -p 9000:9000             -e MINIO_ROOT_USER=apexkey             -e MINIO_ROOT_PASSWORD=apexsecret123             minio/minio server /data
+          docker run -d --name minio -p 9000:9000 \
+            -e MINIO_ROOT_USER=apexkey \
+            -e MINIO_ROOT_PASSWORD=apexsecret123 \
+            minio/minio server /data
           for attempt in $(seq 1 40); do
             if curl -sf http://localhost:9000/minio/health/live > /dev/null; then
               echo "MinIO ready after ${attempt} attempt(s)"
@@ -76,7 +84,8 @@ jobs:
             sleep 2
           done
           echo "MinIO did not become ready"; docker logs minio; exit 1
-      - name: Create the evidence bucket
+
+      - name: Create the evidence buckets
         env:
           MC_HOST_ci: http://apexkey:apexsecret123@localhost:9000
         run: |
@@ -86,10 +95,11 @@ jobs:
           # creates it inside the throwaway container, prints "Bucket created
           # successfully", and exits 0 — while MinIO never receives a bucket.
           docker run --rm --network host -e MC_HOST_ci minio/mc mb --ignore-existing ci/apex-evidence
-          docker run --rm --network host -e MC_HOST_ci minio/mc ls ci
+          docker run --rm --network host -e MC_HOST_ci minio/mc mb --ignore-existing ci/apex-container
           # Fails the step if the bucket is not really on the server, so this
           # cannot silently succeed again.
           docker run --rm --network host -e MC_HOST_ci minio/mc stat ci/apex-evidence
+
       - uses: pnpm/action-setup@v4
         with:
           version: 11.18.0
@@ -101,3 +111,74 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm verify
       - run: pnpm audit --prod --audit-level high
+
+      # The container is built AND RUN. A Dockerfile that merely builds proves
+      # almost nothing: the failures that matter are a missing runtime file, a
+      # wrong working directory, and a process that exits on boot.
+      - name: Build the container image
+        run: docker build -t apex-os:ci .
+
+      - name: Create the container's database
+        run: |
+          docker run --rm --network host -e PGPASSWORD=apex postgres:16 \
+            psql -h localhost -U apex -d apex_test -c 'create database apex_container'
+
+      - name: Run the container against real dependencies
+        run: |
+          docker run -d --name apex-os --network host \
+            -e PORT=4300 \
+            -e DATABASE_URL='postgres://apex:apex@localhost:5432/apex_container' \
+            -e S3_ENDPOINT=http://localhost:9000 \
+            -e S3_BUCKET=apex-container \
+            -e S3_ACCESS_KEY_ID=apexkey \
+            -e S3_SECRET_ACCESS_KEY=apexsecret123 \
+            -e S3_REGION=us-east-1 \
+            -e GATE_JWT_SECRET=container-smoke-test-secret-at-least-32-bytes \
+            -e APEX_PUBLIC_ORIGIN=https://apex.example.com \
+            apex-os:ci
+
+          for attempt in $(seq 1 45); do
+            if curl -sf http://localhost:4300/health > /dev/null; then break; fi
+            if [ "$attempt" = "45" ]; then
+              echo "Container never became live"; docker logs apex-os; exit 1
+            fi
+            sleep 2
+          done
+
+          # Readiness is the real assertion: it proves the container reached
+          # Postgres, ran its migrations under the advisory lock, and reached the
+          # bucket. A liveness pass alone would only prove Node started.
+          ready=$(curl -sf http://localhost:4300/ready) || {
+            echo "Readiness failed"; docker logs apex-os; exit 1; }
+          echo "ready: $ready"
+          echo "$ready" | grep -q '"database":true' || { docker logs apex-os; exit 1; }
+          echo "$ready" | grep -q '"evidence":true' || { docker logs apex-os; exit 1; }
+
+          # The staff app is served from the same origin as the API it calls.
+          curl -sf http://localhost:4300/app > /dev/null || {
+            echo "Staff app not served"; docker logs apex-os; exit 1; }
+
+          # An unknown customer token must 404 rather than error, and must carry
+          # the header that keeps a forwarded link out of search results.
+          token=$(printf 'z%.0s' $(seq 1 43))
+          headers=$(curl -s -o /dev/null -D - -w '%{http_code}' "http://localhost:4300/c/${token}")
+          echo "$headers" | grep -q '404' || { echo "customer 404 missing"; exit 1; }
+          echo "$headers" | grep -qi 'x-robots-tag: noindex' || { echo "noindex missing"; exit 1; }
+
+          docker logs apex-os
+          docker rm -f apex-os
+
+      - name: Refuse to ship an image that disables authentication
+        run: |
+          # GATE_LOCAL_USER removes authentication for anything that can reach
+          # the server. The image binds 0.0.0.0, so starting with it set must
+          # fail rather than quietly serve.
+          if docker run --rm --network host \
+            -e DATABASE_URL='postgres://apex:apex@localhost:5432/apex_container' \
+            -e GATE_JWT_SECRET=container-smoke-test-secret-at-least-32-bytes \
+            -e GATE_LOCAL_USER=user_01ARZ3NDEKTSV4RRFFQ69G5FB2 \
+            apex-os:ci > /tmp/guard.log 2>&1; then
+            echo "Container started with GATE_LOCAL_USER on a public bind"; cat /tmp/guard.log; exit 1
+          fi
+          grep -qi 'loopback' /tmp/guard.log || { cat /tmp/guard.log; exit 1; }
+          echo "Guard held."

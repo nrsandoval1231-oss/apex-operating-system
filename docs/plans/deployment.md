@@ -1,7 +1,7 @@
 # Apex OS — Deployment Plan
 
 **Written:** 2026-08-03
-**Status:** Slices 1–7 complete. **Both open decisions were made on
+**Status:** All nine slices complete. Every remaining step needs an account, not code — see `docs/runbooks/deployment.md`. **Both open decisions were made on
 2026-08-03** (§6): Render plus a hosted identity provider, and RLS retired
 honestly for the pilot. Slices 3, 4, and 6–9 remain; none is blocked.
 **Why now:** every feature in the v1 build plan is complete and all content is
@@ -53,9 +53,9 @@ change based on which host or provider you pick.
 | 5 | ~~Symmetric HS256 pilot JWT; no JWKS, no rotation~~ | Done | Yes |
 | 6 | ~~`GATE_LOCAL_USER` disables authentication entirely~~ | Done | Yes |
 | 7 | ~~Customer links are path-only; no public origin configured~~ | Done | Yes |
-| 8 | No container, no deploy config, no TLS termination | Medium | **No** |
+| 8 | ~~No container, no deploy config, no TLS termination~~ | Done | **No** |
 | 9 | ~~No structured logging, shallow health checks, no graceful shutdown~~ | Done | Yes |
-| 10 | No backup or restore procedure for a database holding real draws | Medium | **No** |
+| 10 | ~~No backup or restore procedure~~ — documented, **not yet exercised** | Partial | **No** |
 
 Seven of ten are provider-independent, which is why the sequence below starts
 with them: real progress is available before any account exists.
@@ -251,10 +251,39 @@ Two decisions worth challenging:
 link can be texted to a homeowner, and the staff screen needs to stop saying the
 link only works on this machine.
 
-**Slice 8 — Container and deploy (medium). NEEDS A HOST.**
-Dockerfile, health/readiness wiring, TLS termination, environment and secret
-configuration, and a deploy pipeline extending the existing
-`.github/workflows/non-website-ci.yml`.
+**Slice 8 — Container and deploy (medium). DONE 2026-08-03, up to the account.**
+Dockerfile, `.dockerignore`, and `render.yaml`, plus the two couplings that made
+a container impossible: the bind address was a hard-coded constant, and the built
+staff app was reached by a relative path across package boundaries. Both are now
+configuration.
+
+**CI builds the image and runs it** against the real Postgres and MinIO, then
+asserts readiness reports `database: true` and `evidence: true`, the staff app is
+served, and an unknown customer token 404s with `x-robots-tag: noindex`. A
+Dockerfile that merely builds proves almost nothing — the failures that matter
+are a missing runtime file, a wrong working directory, and a process that exits
+on boot. There is a second run that sets `GATE_LOCAL_USER` and asserts the
+container **refuses to start**, because the image binds `0.0.0.0`.
+
+`autoDeploy` is off: deploying is a decision, not a consequence of pushing.
+
+Not done and not doable here: creating the Render account, connecting the repo,
+and entering the secrets.
+
+**Slice 9 — Runbook (small). DONE 2026-08-03.**
+`docs/runbooks/deployment.md` — first deploy, adding and removing staff,
+deploying a change, rolling back, backup and restore, and a symptom-to-cause
+table for a container that will not start.
+
+Two things it records that are easy to get wrong later:
+
+1. **Rolling back the image does not roll back the database, and that is safe
+   only because every migration here is additive.** `0017` adds new *versions*
+   of gate definitions rather than editing them. A migration that drops or
+   renames a column would break rollback.
+2. **Evidence bytes are not in the database.** A bucket restored to an earlier
+   point leaves rows pointing at nothing, and readiness still passes because the
+   bucket is reachable. The runbook says how to audit for it.
 
 **Slice 9 — Runbook (small).**
 Migration and rollback procedure, backup and verified restore, how to issue and

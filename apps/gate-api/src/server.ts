@@ -46,8 +46,17 @@ const extensions: Record<string, string> = {
 };
 const staffRoles: readonly AppRole[] = STAFF_ROLES;
 
-/** The built Apex OS app, served from this origin so it needs no dev proxy. */
-const appDirectory = resolve(dirname(fileURLToPath(import.meta.url)), '../../apex-os/dist');
+/**
+ * The built Apex OS app, served from this origin so it needs no dev proxy.
+ *
+ * The default is the workspace layout — `apps/apex-os/dist` relative to this
+ * file's compiled location. `APEX_APP_DIR` overrides it, because a container
+ * image is free to lay the two out differently and a relative path across
+ * package boundaries is a coupling that should not decide the image layout.
+ */
+const appDirectory = process.env.APEX_APP_DIR?.trim()
+  ? resolve(process.env.APEX_APP_DIR.trim())
+  : resolve(dirname(fileURLToPath(import.meta.url)), '../../apex-os/dist');
 
 /** Same policy as the console, plus self-hosted font files. */
 const APP_CSP = "default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; "

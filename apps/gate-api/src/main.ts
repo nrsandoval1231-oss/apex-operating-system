@@ -94,12 +94,15 @@ const port = Number(process.env.PORT ?? 4100);
 if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('PORT must be an integer from 1 to 65535.');
 
 /**
- * The host is fixed to loopback and is deliberately not configurable:
- * GATE_LOCAL_USER below removes authentication for anything that can reach this
- * server, and that trade is only defensible while "anything that can reach it"
- * means a process on this machine.
+ * Bind address. Loopback by default; a container has to bind 0.0.0.0 to receive
+ * anything from the platform.
+ *
+ * This used to be a hard-coded constant, with a comment explaining that
+ * GATE_LOCAL_USER made it unsafe to configure. That guard is now explicit and
+ * checked below rather than implied by an unreachable constant — the tokenless
+ * local bypass simply cannot start on a non-loopback bind.
  */
-const HOST = '127.0.0.1';
+const HOST = process.env.HOST?.trim() || '127.0.0.1';
 
 /**
  * Single-machine pilot: treat local requests as this user, with no token.

@@ -1,0 +1,27 @@
+# Anything the build produces itself, or must never enter an image.
+**/node_modules
+**/dist
+**/.vite
+**/coverage
+.git
+.github
+var
+_to_delete
+
+# The preserved component repositories. They are gitignored and are not part of
+# this image; the Designer contract test skips without them.
+Apex Designer
+apex-decks
+apex-lead-engine
+apex-prds
+apex-proposal-engine
+apex-website
+
+# Secrets must arrive as environment variables, never baked into a layer.
+**/.env
+**/.env.*
+!**/.env.example
+
+# Foreign lockfiles: an npm install here breaks the pnpm workspace links.
+package-lock.json
+yarn.lock
