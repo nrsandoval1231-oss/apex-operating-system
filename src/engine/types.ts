@@ -24,6 +24,36 @@ export interface DepthProfile {
   readonly deepDepth: number;
 }
 
+/**
+ * Which wall of the pool rectangle an object sits against, named as the plan
+ * draws it: shallow end on the left, deep end on the right, house side at the
+ * top.
+ */
+export type PoolWall = 'shallow' | 'deep' | 'top' | 'bottom';
+
+/**
+ * Where something sits along its wall.
+ *
+ * Objects are placed against a wall rather than at a free (x, y) because that is
+ * what they physically are — a stair is built into a wall, a bench is a ledge
+ * along one. One degree of freedom is also the difference between a drag that
+ * can only produce buildable positions and one that needs a constraint solver.
+ *
+ * POSITION DOES NOT AFFECT QUANTITIES. Step displacement comes from tread size
+ * and count, bench volume from its own dimensions. Moving either changes the
+ * drawing and nothing in the takeoff, which is why placement can be added
+ * without moving the approved-quantity digest.
+ */
+export interface Placement {
+  readonly wall: PoolWall;
+  /**
+   * Distance from the wall's start corner to the near edge of the object. ft.
+   * Along the shallow and deep walls that is measured from the house side;
+   * along the top and bottom walls, from the shallow end.
+   */
+  readonly alongFt: number;
+}
+
 /** Entry steps, validated against amended ISPSC 411.2.1 / 411.2.2. */
 export interface StepSet {
   readonly id: string;
@@ -47,6 +77,12 @@ export interface StepSet {
   readonly floorDepthFt: number;
   /** True if this step set is the required means of entry and exit. */
   readonly isRequiredEntryExit: boolean;
+  /**
+   * Where the stair sits. Absent means the drawing falls back to its old
+   * convention — centred on the shallow wall — and says so, rather than
+   * silently placing an unplaced stair somewhere specific.
+   */
+  readonly placement?: Placement;
 }
 
 export type SeatKind = 'bench' | 'swimout' | 'tanningLedge';
@@ -70,6 +106,8 @@ export interface Seat {
   readonly floorDepthFt: number;
   /** True if this surface is being used as the required means of entry and exit. */
   readonly isRequiredEntryExit: boolean;
+  /** Where the ledge sits. Absent falls back to the old indicative position. */
+  readonly placement?: Placement;
 }
 
 export interface Spa {
@@ -92,6 +130,14 @@ export interface Spa {
    * moves every hydraulic number downstream of volume.
    */
   readonly insetIntoPool?: boolean;
+  /**
+   * Which wall the spa is attached to and where along it. Absent keeps the old
+   * convention: centred on the deep-end wall.
+   *
+   * Only meaningful for an attached, non-inset spa. An inset spa is inside the
+   * pool footprint and its corner is a different question.
+   */
+  readonly placement?: Placement;
 }
 
 export interface PoolBody {

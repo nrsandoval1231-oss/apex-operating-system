@@ -11,6 +11,7 @@
 import { runTakeoff, type CodeFailureArea } from '../engine/index.ts';
 import { feetInches, planPrintScale, renderPlanView } from '../engine/planView.ts';
 import { renderSectionView, sectionPrintScale } from '../engine/sectionView.ts';
+import { MovablePlan } from './MovablePlan.tsx';
 import { GeometryInputError } from '../engine/geometry.ts';
 import { ExcavationInputError } from '../engine/excavation.ts';
 import type { Job } from '../engine/types.ts';
@@ -22,6 +23,42 @@ import { HydraulicsSection } from './HydraulicsSection.tsx';
 import { CoverSection, FinishesSection, YardSection } from './FinishesSection.tsx';
 import { EquipmentSection } from './EquipmentSection.tsx';
 import { num, num1 } from './format.ts';
+
+/**
+ * The plan is draggable when the sheet is given an onChange and static when it
+ * is not, so the same component serves the editable app and any read-only
+ * render without a second drawing path.
+ */
+function PlanSheet({
+  job,
+  onChange,
+  printWidthIn,
+  planSvg,
+  children,
+}: {
+  job: Job;
+  onChange?: (job: Job) => void;
+  printWidthIn: number;
+  planSvg: string;
+  children: React.ReactNode;
+}) {
+  if (onChange) {
+    return (
+      <MovablePlan job={job} onChange={onChange} printWidthIn={printWidthIn}>
+        {children}
+      </MovablePlan>
+    );
+  }
+  return (
+    <div
+      className="plan-frame plan-sheet"
+      style={{ ['--plan-print-width' as string]: `${printWidthIn.toFixed(2)}in` }}
+    >
+      <div dangerouslySetInnerHTML={{ __html: planSvg }} />
+      {children}
+    </div>
+  );
+}
 
 /**
  * Where each family of blocking check is actually rendered on the sheet. The
@@ -45,7 +82,16 @@ function failureAreaSentence(areas: readonly CodeFailureArea[]): string {
   return `${[labels[0], ...rest].join(', ')} and ${last} failed.`;
 }
 
-export function TakeoffSheet({ job, details }: { job: Job; details?: readonly StandardDetail[] }) {
+export function TakeoffSheet({
+  job,
+  details,
+  onChange,
+}: {
+  job: Job;
+  details?: readonly StandardDetail[];
+  /** Supplied when the plan is editable; omitted renders a static drawing. */
+  onChange?: (job: Job) => void;
+}) {
   let result;
   try {
     result = runTakeoff(job, details);
@@ -98,12 +144,7 @@ export function TakeoffSheet({ job, details }: { job: Job; details?: readonly St
       )}
 
       {/* The one bold moment: the plan drawing itself, and its own print sheet. */}
-      <div
-        className="plan-frame plan-sheet"
-        style={{ ['--plan-print-width' as string]: `${printScale.widthIn.toFixed(2)}in` }}
-      >
-        <div dangerouslySetInnerHTML={{ __html: plan.svg }} />
-
+      <PlanSheet job={job} onChange={onChange} printWidthIn={printScale.widthIn} planSvg={plan.svg}>
         <div className="plan-print-title">
           <div>
             <div className="ptb-job">{job.name}</div>
@@ -136,7 +177,7 @@ export function TakeoffSheet({ job, details }: { job: Job; details?: readonly St
             {num1(g.totalWettedArea.value)} sf wetted · {num1(x.totalBankCy.value)} BCY cut
           </span>
         </div>
-      </div>
+      </PlanSheet>
 
       {/*
         The section is a second sheet, not a corner of the first. Depth is the

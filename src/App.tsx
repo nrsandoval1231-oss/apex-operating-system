@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { STANDARD_MODEL } from './engine/standardModel.ts';
 import { APEX_STANDARD_DETAIL, type StandardDetail } from './engine/standardDetail.ts';
 import { WHITAKER } from './engine/jobs/whitaker.ts';
@@ -50,31 +50,56 @@ const SCENARIOS: readonly Scenario[] = [
 
 export function App() {
   const [index, setIndex] = useState(0);
-  const [job, setJob] = useState<Job>(SCENARIOS[0]!.job);
+  /**
+   * Job history, not a job. Dragging something to the wrong place and not being
+   * able to put it back is the fastest way to stop trusting a move tool, so undo
+   * arrived with the drag rather than after it.
+   */
+  const [history, setHistory] = useState<readonly Job[]>([SCENARIOS[0]!.job]);
+  const [cursor, setCursor] = useState(0);
   const [edited, setEdited] = useState(false);
 
+  const job = history[cursor]!;
   const scenario = SCENARIOS[index]!;
+  const canUndo = cursor > 0;
+  const canRedo = cursor < history.length - 1;
 
-  const pickScenario = (i: number) => {
-    setIndex(i);
-    setJob(SCENARIOS[i]!.job);
+  const reset = (next: Job) => {
+    setHistory([next]);
+    setCursor(0);
     setEdited(false);
   };
 
+  const pickScenario = (i: number) => {
+    setIndex(i);
+    reset(SCENARIOS[i]!.job);
+  };
+
   const editJob = (next: Job) => {
-    setJob(next);
+    // Anything after the cursor is a branch that was undone away.
+    const trimmed = history.slice(0, cursor + 1);
+    setHistory([...trimmed, next]);
+    setCursor(trimmed.length);
     setEdited(true);
   };
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'z') return;
+      event.preventDefault();
+      if (event.shiftKey) setCursor((c) => Math.min(c + 1, history.length - 1));
+      else setCursor((c) => Math.max(c - 1, 0));
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [history.length]);
 
   return (
     <div className="app">
       <JobEditor
         job={job}
         onChange={editJob}
-        onReset={() => {
-          setJob(scenario.job);
-          setEdited(false);
-        }}
+        onReset={() => reset(scenario.job)}
       />
 
       <main className="app-main">
@@ -86,8 +111,19 @@ export function App() {
             </button>
           ))}
           {edited && <span className="switcher-edited">edited</span>}
+          <span className="switcher-undo">
+            <button onClick={() => setCursor((c) => Math.max(c - 1, 0))} disabled={!canUndo}>
+              Undo
+            </button>
+            <button
+              onClick={() => setCursor((c) => Math.min(c + 1, history.length - 1))}
+              disabled={!canRedo}
+            >
+              Redo
+            </button>
+          </span>
         </div>
-        <TakeoffSheet job={job} details={scenario.details} />
+        <TakeoffSheet job={job} details={scenario.details} onChange={editJob} />
       </main>
     </div>
   );

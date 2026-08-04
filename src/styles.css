@@ -1046,6 +1046,56 @@ tr.is-fail .check-message {
   width: 100%;
 }
 
+/* --- move tool ------------------------------------------------------------ */
+
+.plan-move-host [data-move-id] {
+  cursor: grab;
+}
+
+.plan-move-host [data-move-id]:hover {
+  stroke-width: 2;
+}
+
+/* Selection is a halo rather than a fill change: the fills on this drawing
+   already carry meaning (water, deck, over-dig) and overriding one would make
+   the selected object read as a different kind of thing. */
+.pv-selected {
+  stroke: var(--accent);
+  stroke-width: 2.5;
+  paint-order: stroke;
+}
+
+/* An object nobody has placed is drawn where the old convention put it. Dashing
+   it says the position is a default rather than a decision. */
+.pv-unplaced {
+  stroke-dasharray: 5 3;
+}
+
+.plan-move-bar {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 6px;
+  padding: 5px 8px;
+  border: 1px solid var(--rule);
+  background: var(--paper);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--ink-faint);
+}
+
+.switcher-undo {
+  display: inline-flex;
+  gap: 4px;
+  margin-left: auto;
+}
+
+/* The drawing is the deliverable; the editing chrome is not. */
+@media print {
+  .plan-move-bar { display: none; }
+}
+
 /* --- longitudinal section ------------------------------------------------- */
 
 .sec-shell {

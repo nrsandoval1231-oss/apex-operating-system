@@ -17,8 +17,9 @@
  * the sheet it sits on.
  */
 
-import type { Job } from './types.ts';
+import type { Job, PoolWall } from './types.ts';
 import { inToFt } from './units.ts';
+import { placementRect } from './placement.ts';
 
 export interface PlanViewResult {
   readonly svg: string;
@@ -29,7 +30,29 @@ export interface PlanViewResult {
   /** Real-world extents of everything drawn, including margins. ft */
   readonly contentWidthFt: number;
   readonly contentHeightFt: number;
+  /**
+   * Where pool (0, 0) sits in the SVG's own coordinates.
+   *
+   * Exported so a pointer position can be turned back into plan feet. Without
+   * it the drag handler would have to re-derive the margins, which is the same
+   * arithmetic in a second place and free to drift from this one.
+   */
+  readonly originXPx: number;
+  readonly originYPx: number;
 }
+
+export interface PlanViewOptions {
+  /** Id of the object drawn as selected, if any. */
+  readonly selectedId?: string;
+}
+
+/**
+ * The spa has no id of its own — a job has at most one, and it is a field on
+ * the job rather than a member of a list. This is the handle the move tool uses
+ * for it, kept as a named constant so the renderer and the editor cannot
+ * disagree about the string.
+ */
+export const SPA_MOVE_ID = 'spa';
 
 /**
  * Architectural scales, largest first. Printing at one of these is the whole
@@ -125,7 +148,12 @@ export function feetInches(ft: number): string {
   return `${whole}'-${inches}"`;
 }
 
-export function renderPlanView(job: Job, targetWidthPx = 1040): PlanViewResult {
+export function renderPlanView(
+  job: Job,
+  targetWidthPx = 1040,
+  options: PlanViewOptions = {},
+): PlanViewResult {
+  const selectedId = options.selectedId;
   const pool = job.pool;
   const L = pool.lengthFt;
   const W = pool.widthFt;
@@ -148,11 +176,24 @@ export function renderPlanView(job: Job, targetWidthPx = 1040): PlanViewResult {
   const houseDepth = 3;
 
   /**
-   * The water envelope, in pool feet. A detached spa hangs off the deep end, so
-   * the right-hand edge is not simply the pool length — and a property-line
-   * dimension has to run from the nearest water, same as the foundation setback.
+   * Where an attached spa sits. It always projects outward by its length and
+   * spans its width along the wall, so the shape rotates with the wall rather
+   * than changing proportions when it is moved around a corner.
    */
-  const envRight = L + (spa && !spa.insetIntoPool ? spaL : 0);
+  const spaPlace = spa?.placement ?? { wall: 'deep' as const, alongFt: (W - spaW) / 2 };
+  const spaOutside = Boolean(spa && !spa.insetIntoPool);
+  const spaRect = spa && spaOutside
+    ? placementRect(spaPlace, spaW, spaL, L, W, true)
+    : null;
+  const spaOn = (wall: PoolWall) => (spaOutside && spaPlace.wall === wall ? spaL : 0);
+
+  /**
+   * The water envelope, in pool feet. An attached spa hangs off whichever wall
+   * it is on, so the right-hand edge is not simply the pool length — and a
+   * property-line dimension has to run from the nearest water, same as the
+   * foundation setback.
+   */
+  const envRight = L + spaOn('deep');
   const lineDistance = (side: 'left' | 'right' | 'top' | 'bottom') =>
     (job.site.propertyLines ?? [])
       .filter((line) => line.side === side)
@@ -168,14 +209,22 @@ export function renderPlanView(job: Job, targetWidthPx = 1040): PlanViewResult {
 
   // The house sits `setback` feet off the top long wall, and the band itself
   // needs room above that or it runs off the top of the drawing.
-  const topExtent = Math.max(setback + houseDepth + 2.5, propTop > 0 ? propTop + 4 : 0);
+  const topExtent = Math.max(
+    setback + houseDepth + 2.5,
+    propTop > 0 ? propTop + 4 : 0,
+    spaOn('top') + Math.max(deckW, over) + 3,
+  );
   const bottomExtent = Math.max(
     (job.equipment?.distanceFromPoolFt ?? Math.max(deckW, over) + 4) + padD + 6,
     propBottom > 0 ? propBottom + 4 : 0,
+    spaOn('bottom') + Math.max(deckW, over) + 3,
   );
-  const leftExtent = Math.max(Math.max(deckW, over) + 9, propLeft > 0 ? propLeft + 4 : 0);
+  const leftExtent = Math.max(
+    Math.max(deckW, over) + 9 + spaOn('shallow'),
+    propLeft > 0 ? propLeft + 4 : 0,
+  );
   const rightExtent = Math.max(
-    Math.max(deckW, over) + (spa?.insetIntoPool ? 0 : spaL) + 12,
+    Math.max(deckW, over) + spaOn('deep') + 12,
     propRight > 0 ? (envRight - L) + propRight + 4 : 0,
   );
 
@@ -206,20 +255,20 @@ export function renderPlanView(job: Job, targetWidthPx = 1040): PlanViewResult {
   parts.push(
     `<rect class="pv-excavation" x="${n(x(-over))}" y="${n(y(-over))}" width="${n(s(L + 2 * over))}" height="${n(s(W + 2 * over))}"/>`,
   );
-  if (spa && !spa.insetIntoPool) {
-    const sy0 = (W - spaW) / 2;
+  if (spaRect) {
+    // Over-dig wraps the spa on every side except the one it shares with the
+    // pool, which is already inside the pool's own over-dig.
     parts.push(
-      `<rect class="pv-excavation pv-spa-excavation" x="${n(x(L))}" y="${n(y(sy0 - over))}" width="${n(s(spaL + over))}" height="${n(s(spaW + 2 * over))}"/>`,
+      `<rect class="pv-excavation pv-spa-excavation" x="${n(x(spaRect.x - over))}" y="${n(y(spaRect.y - over))}" width="${n(s(spaRect.widthFt + 2 * over))}" height="${n(s(spaRect.heightFt + 2 * over))}"/>`,
     );
   }
   if (deckW > 0) {
     parts.push(
       `<rect class="pv-deck" x="${n(x(-deckW))}" y="${n(y(-deckW))}" width="${n(s(L + 2 * deckW))}" height="${n(s(W + 2 * deckW))}"/>`,
     );
-    if (spa && !spa.insetIntoPool) {
-      const sy0 = (W - spaW) / 2;
+    if (spaRect) {
       parts.push(
-        `<rect class="pv-deck pv-spa-deck" x="${n(x(L))}" y="${n(y(sy0 - deckW))}" width="${n(s(spaL + deckW))}" height="${n(s(spaW + 2 * deckW))}"/>`,
+        `<rect class="pv-deck pv-spa-deck" x="${n(x(spaRect.x - deckW))}" y="${n(y(spaRect.y - deckW))}" width="${n(s(spaRect.widthFt + 2 * deckW))}" height="${n(s(spaRect.heightFt + 2 * deckW))}"/>`,
       );
     }
   }
@@ -242,18 +291,25 @@ export function renderPlanView(job: Job, targetWidthPx = 1040): PlanViewResult {
     parts.push(
       text(ctx, spaL / 2, spaW / 2 + 0.9, `${feetInches(spaL)} × ${feetInches(spaW)} inset`, 'pv-note-inset', 'middle'),
     );
-  } else if (spa) {
-    const sy0 = (W - spaW) / 2;
+  } else if (spa && spaRect) {
+    const selected = selectedId === SPA_MOVE_ID;
     parts.push(
-      `<rect class="pv-water pv-spa" x="${n(x(L))}" y="${n(y(sy0))}" width="${n(s(spaL))}" height="${n(s(spaW))}"/>`,
+      `<rect class="pv-water pv-spa${selected ? ' pv-selected' : ''}${spa.placement ? '' : ' pv-unplaced'}"`
+      + ` data-move-kind="spa" data-move-id="${SPA_MOVE_ID}" data-move-wall="${spaPlace.wall}"`
+      + ` x="${n(x(spaRect.x))}" y="${n(y(spaRect.y))}" width="${n(s(spaRect.widthFt))}" height="${n(s(spaRect.heightFt))}"/>`,
     );
-    // Dam wall on the shared edge.
+    // Dam wall on the shared edge — whichever edge that now is.
+    const shared = spaPlace.wall === 'shallow' || spaPlace.wall === 'deep'
+      ? { x1: spaPlace.wall === 'deep' ? spaRect.x : spaRect.x + spaRect.widthFt, y1: spaRect.y, x2: spaPlace.wall === 'deep' ? spaRect.x : spaRect.x + spaRect.widthFt, y2: spaRect.y + spaRect.heightFt }
+      : { x1: spaRect.x, y1: spaPlace.wall === 'bottom' ? spaRect.y : spaRect.y + spaRect.heightFt, x2: spaRect.x + spaRect.widthFt, y2: spaPlace.wall === 'bottom' ? spaRect.y : spaRect.y + spaRect.heightFt };
     parts.push(
-      `<line class="pv-damwall" x1="${n(x(L))}" y1="${n(y(sy0))}" x2="${n(x(L))}" y2="${n(y(sy0 + spaW))}"/>`,
+      `<line class="pv-damwall" x1="${n(x(shared.x1))}" y1="${n(y(shared.y1))}" x2="${n(x(shared.x2))}" y2="${n(y(shared.y2))}"/>`,
     );
-    parts.push(text(ctx, L + spaL / 2, sy0 + spaW / 2, 'SPA', 'pv-label-inset', 'middle'));
+    const cx = spaRect.x + spaRect.widthFt / 2;
+    const cy = spaRect.y + spaRect.heightFt / 2;
+    parts.push(text(ctx, cx, cy, 'SPA', 'pv-label-inset', 'middle'));
     parts.push(
-      text(ctx, L + spaL / 2, sy0 + spaW / 2 + 1.4, `${feetInches(spaL)} × ${feetInches(spaW)}`, 'pv-note-inset', 'middle'),
+      text(ctx, cx, cy + 1.4, `${feetInches(spaL)} × ${feetInches(spaW)}`, 'pv-note-inset', 'middle'),
     );
   }
 
@@ -281,32 +337,51 @@ export function renderPlanView(job: Job, targetWidthPx = 1040): PlanViewResult {
   );
 
   // --- steps and seats ------------------------------------------------------
+  // Drawn from each object's placement so the drawing shows where the thing is
+  // actually going. An object with no placement keeps the old convention and is
+  // marked unplaced, rather than being drawn somewhere specific and looking
+  // like a decision nobody made.
   for (const st of pool.steps) {
     const wFt = inToFt(st.treadWidthIn);
     const runFt = inToFt(st.treadRunIn);
-    const y0 = (W - wFt) / 2;
     const depth = runFt * st.treadCount;
+    const place = st.placement ?? { wall: 'shallow' as const, alongFt: (W - wFt) / 2 };
+    const rect = placementRect(place, wFt, depth, L, W);
+    const selected = selectedId === st.id;
     parts.push(
-      `<rect class="pv-step" x="${n(x(0))}" y="${n(y(y0))}" width="${n(s(depth))}" height="${n(s(wFt))}"/>`,
+      `<rect class="pv-step${selected ? ' pv-selected' : ''}${st.placement ? '' : ' pv-unplaced'}"`
+      + ` data-move-kind="step" data-move-id="${esc(st.id)}" data-move-wall="${place.wall}"`
+      + ` x="${n(x(rect.x))}" y="${n(y(rect.y))}" width="${n(s(rect.widthFt))}" height="${n(s(rect.heightFt))}"/>`,
     );
+    // Tread lines run across the stair, perpendicular to the direction it
+    // descends, which flips with the wall.
+    const acrossX = place.wall === 'shallow' || place.wall === 'deep';
     for (let i = 1; i <= st.treadCount; i++) {
+      const t = (acrossX ? rect.widthFt : rect.heightFt) * (i / st.treadCount);
       parts.push(
-        `<line class="pv-step-tread" x1="${n(x(runFt * i))}" y1="${n(y(y0))}" x2="${n(x(runFt * i))}" y2="${n(y(y0 + wFt))}"/>`,
+        acrossX
+          ? `<line class="pv-step-tread" x1="${n(x(rect.x + (place.wall === 'shallow' ? t : rect.widthFt - t)))}" y1="${n(y(rect.y))}" x2="${n(x(rect.x + (place.wall === 'shallow' ? t : rect.widthFt - t)))}" y2="${n(y(rect.y + rect.heightFt))}"/>`
+          : `<line class="pv-step-tread" x1="${n(x(rect.x))}" y1="${n(y(rect.y + (place.wall === 'top' ? t : rect.heightFt - t)))}" x2="${n(x(rect.x + rect.widthFt))}" y2="${n(y(rect.y + (place.wall === 'top' ? t : rect.heightFt - t)))}"/>`,
       );
     }
-    parts.push(text(ctx, 0.3, y0 + wFt + 0.9, `${st.treadCount} treads @ ${st.treadRunIn}"`, 'pv-note', 'start'));
+    parts.push(text(ctx, rect.x + rect.widthFt / 2, rect.y + rect.heightFt + 0.9,
+      `${st.treadCount} treads @ ${st.treadRunIn}"${st.placement ? '' : ' · unplaced'}`, 'pv-note', 'middle'));
   }
 
   for (const seat of pool.seats) {
     const wFt = inToFt(seat.surfaceWidthIn);
     const dFt = inToFt(seat.surfaceDepthIn);
-    // Drawn against the bottom long wall, positioned indicatively.
-    const x0 = L * 0.62;
+    const place = seat.placement ?? { wall: 'bottom' as const, alongFt: L * 0.62 };
+    const rect = placementRect(place, wFt, dFt, L, W);
+    const selected = selectedId === seat.id;
     parts.push(
-      `<rect class="pv-seat" x="${n(x(x0))}" y="${n(y(W - dFt))}" width="${n(s(wFt))}" height="${n(s(dFt))}"/>`,
+      `<rect class="pv-seat${selected ? ' pv-selected' : ''}${seat.placement ? '' : ' pv-unplaced'}"`
+      + ` data-move-kind="seat" data-move-id="${esc(seat.id)}" data-move-wall="${place.wall}"`
+      + ` x="${n(x(rect.x))}" y="${n(y(rect.y))}" width="${n(s(rect.widthFt))}" height="${n(s(rect.heightFt))}"/>`,
     );
     parts.push(
-      text(ctx, x0 + wFt / 2, W - dFt / 2, `${seat.kind} ${seat.id}`, 'pv-note-inset', 'middle'),
+      text(ctx, rect.x + rect.widthFt / 2, rect.y + rect.heightFt / 2,
+        `${seat.kind} ${seat.id}${seat.placement ? '' : ' · unplaced'}`, 'pv-note-inset', 'middle'),
     );
   }
 
@@ -469,7 +544,16 @@ export function renderPlanView(job: Job, targetWidthPx = 1040): PlanViewResult {
 
   const svg = `<svg class="planview" viewBox="0 0 ${widthPx} ${heightPx}" width="100%" role="img" aria-label="Dimensioned plan view of ${esc(job.name)}" xmlns="http://www.w3.org/2000/svg">${parts.join('')}</svg>`;
 
-  return { svg, pxPerFt, widthPx, heightPx, contentWidthFt: contentW, contentHeightFt: contentH };
+  return {
+    svg,
+    pxPerFt,
+    widthPx,
+    heightPx,
+    contentWidthFt: contentW,
+    contentHeightFt: contentH,
+    originXPx: x(0),
+    originYPx: y(0),
+  };
 }
 
 // --- primitives -------------------------------------------------------------
