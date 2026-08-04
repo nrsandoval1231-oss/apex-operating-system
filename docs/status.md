@@ -8,7 +8,7 @@
 
 **Production status:** Not production-ready
 
-**Current source of truth for status:** This file
+**Current source of truth for status:** This file. `docs/HANDOFF.md` is a one-page orientation that points here rather than restating it.
 
 **Active build scope:** All Apex components except the Website. The Website is being developed separately and must not be modified by this build workstream. See `docs/decisions/ADR-0002-non-website-build-profile.md`.
 
