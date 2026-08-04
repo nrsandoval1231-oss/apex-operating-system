@@ -1046,6 +1046,18 @@ tr.is-fail .check-message {
   width: 100%;
 }
 
+/* Steps and benches read as a schedule: many short numeric columns. */
+.steps-table th, .steps-table td { white-space: nowrap; }
+.steps-table td.mono { font-family: var(--mono); }
+.steps-table + .steps-table { margin-top: 10px; }
+
+/* The reference jobs are deliberately quieter than the three standards. */
+.switcher-reference {
+  font-size: 10px;
+  opacity: 0.75;
+}
+.switcher-more { margin-left: 6px; }
+
 /* --- move tool ------------------------------------------------------------ */
 
 .plan-move-host [data-move-id] {

@@ -12,6 +12,7 @@ import { runTakeoff, type CodeFailureArea } from '../engine/index.ts';
 import { feetInches, planPrintScale, renderPlanView } from '../engine/planView.ts';
 import { renderSectionView, sectionPrintScale } from '../engine/sectionView.ts';
 import { MovablePlan } from './MovablePlan.tsx';
+import { StepsSection } from './StepsSection.tsx';
 import { GeometryInputError } from '../engine/geometry.ts';
 import { ExcavationInputError } from '../engine/excavation.ts';
 import type { Job } from '../engine/types.ts';
@@ -217,6 +218,8 @@ export function TakeoffSheet({
         </div>
         <CodeCheckTable checks={g.checks} />
       </section>
+
+      <StepsSection job={job} />
 
       <section className="section">
         <div className="section-head">
