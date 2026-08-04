@@ -12,6 +12,7 @@
 
 import { useRef, useState } from 'react';
 import { jobFileName, parseJob, serializeJob } from '../engine/jobFile.ts';
+import { StepsEditor } from './StepsEditor.tsx';
 import type { Job, PropertyLine, PropertyLineSide, SoilLayer } from '../engine/types.ts';
 
 // --- tiny path helpers ------------------------------------------------------
@@ -261,6 +262,7 @@ export function JobEditor({
             );
           })}
 
+          <StepsEditor job={job} onChange={onChange} />
           <PropertyLines job={job} onChange={onChange} />
           <SoilLayers job={job} onChange={onChange} />
         </>

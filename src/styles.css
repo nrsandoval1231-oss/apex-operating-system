@@ -1046,6 +1046,34 @@ tr.is-fail .check-message {
   width: 100%;
 }
 
+/* Compact grid: id spans the row, then short numeric fields, then remove. */
+.steps-edit-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr) 24px;
+  gap: 4px;
+  align-items: end;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--rule);
+}
+.steps-edit-row > input[type='text'] { grid-column: 1 / -1; }
+.steps-edit-row label { display: flex; flex-direction: column; gap: 2px; }
+.steps-edit-row label span {
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.steps-edit-wide { grid-column: 1 / -2; }
+.steps-edit-check {
+  grid-column: 1 / -2;
+  flex-direction: row !important;
+  align-items: center;
+  gap: 6px !important;
+}
+.steps-edit-check span { text-transform: none !important; letter-spacing: 0 !important; }
+.steps-edit-row button { min-height: 28px; padding: 0; }
+
 /* Steps and benches read as a schedule: many short numeric columns. */
 .steps-table th, .steps-table td { white-space: nowrap; }
 .steps-table td.mono { font-family: var(--mono); }

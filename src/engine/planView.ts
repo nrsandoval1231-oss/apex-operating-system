@@ -311,6 +311,7 @@ export function renderPlanView(
     parts.push(
       text(ctx, cx, cy + 1.4, `${feetInches(spaL)} × ${feetInches(spaW)}`, 'pv-note-inset', 'middle'),
     );
+    parts.push(...objectDims(ctx, spaRect, spaPlace.wall, L, W));
   }
 
   // --- depth profile: breakover stations across the pool --------------------
@@ -366,6 +367,7 @@ export function renderPlanView(
     }
     parts.push(text(ctx, rect.x + rect.widthFt / 2, rect.y + rect.heightFt + 0.9,
       `${st.treadCount} treads @ ${st.treadRunIn}"${st.placement ? '' : ' · unplaced'}`, 'pv-note', 'middle'));
+    parts.push(...objectDims(ctx, rect, place.wall, L, W));
   }
 
   for (const seat of pool.seats) {
@@ -383,6 +385,7 @@ export function renderPlanView(
       text(ctx, rect.x + rect.widthFt / 2, rect.y + rect.heightFt / 2,
         `${seat.kind} ${seat.id}${seat.placement ? '' : ' · unplaced'}`, 'pv-note-inset', 'middle'),
     );
+    parts.push(...objectDims(ctx, rect, place.wall, L, W));
   }
 
   // --- plumbing: outlets, skimmers, returns ---------------------------------
@@ -554,6 +557,45 @@ export function renderPlanView(
     originXPx: x(0),
     originYPx: y(0),
   };
+}
+
+/**
+ * Position and size for one placed object.
+ *
+ * Every movable thing gets dimensioned where it sits: how far along the wall it
+ * starts, how wide it is, and how far it reaches in. A drawing that lets you
+ * move a bench but never says where you moved it to is a picture, not a plan —
+ * and the person building it works from the numbers, not the shape.
+ *
+ * Drawn soft so the pool's own dimensions still lead. Which axis carries which
+ * measurement flips with the wall, because "along" and "into" swap at a corner.
+ */
+function objectDims(
+  ctx: Ctx,
+  rect: { x: number; y: number; widthFt: number; heightFt: number },
+  wall: PoolWall,
+  poolLengthFt: number,
+  poolWidthFt: number,
+): string[] {
+  const parts: string[] = [];
+  const endsOn = wall === 'shallow' || wall === 'deep';
+
+  if (endsOn) {
+    // Runs across the width: position is measured down from the house side.
+    const at = wall === 'shallow' ? rect.x + rect.widthFt + 1.4 : rect.x - 1.4;
+    if (rect.y > 0.05) parts.push(dimV(ctx, 0, rect.y, at, feetInches(rect.y), 'pv-dim-soft'));
+    parts.push(dimV(ctx, rect.y, rect.y + rect.heightFt, at, feetInches(rect.heightFt), 'pv-dim-soft'));
+    const below = poolWidthFt + 1.2;
+    parts.push(dimH(ctx, rect.x, rect.x + rect.widthFt, below, feetInches(rect.widthFt), 'pv-dim-soft'));
+  } else {
+    // Runs along the length: position is measured from the shallow end.
+    const at = wall === 'top' ? rect.y + rect.heightFt + 1.4 : rect.y - 1.4;
+    if (rect.x > 0.05) parts.push(dimH(ctx, 0, rect.x, at, feetInches(rect.x), 'pv-dim-soft'));
+    parts.push(dimH(ctx, rect.x, rect.x + rect.widthFt, at, feetInches(rect.widthFt), 'pv-dim-soft'));
+    const beside = poolLengthFt + 1.2;
+    parts.push(dimV(ctx, rect.y, rect.y + rect.heightFt, beside, feetInches(rect.heightFt), 'pv-dim-soft'));
+  }
+  return parts;
 }
 
 // --- primitives -------------------------------------------------------------
