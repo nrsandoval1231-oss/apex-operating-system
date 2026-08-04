@@ -68,6 +68,26 @@ const SCENARIOS: readonly Scenario[] = [
   { tab: 'Outside envelope', job: DEEP, details: [APEX_STANDARD_DETAIL], group: 'reference' },
 ];
 
+/**
+ * Charcoal header carrying the real Apex lockup.
+ *
+ * The logo is a badge with its own sage panel — used verbatim, never recoloured
+ * or knocked out, per the note that ships with the asset. It already contains
+ * the word APEX, so nothing here repeats it as text.
+ */
+function AppHeader({ jobName, right }: { jobName: string; right?: React.ReactNode }) {
+  return (
+    <header className="app-header">
+      <img src="/brand/apex-logo.png" alt="Apex" width={126} height={30} />
+      <div className="app-header-title">
+        <strong>Designer</strong>
+        <span>{jobName}</span>
+      </div>
+      <div className="app-header-right">{right}</div>
+    </header>
+  );
+}
+
 export function App() {
   const [index, setIndex] = useState(0);
   /**
@@ -134,10 +154,12 @@ export function App() {
     return (
       <div className="app app-outputs">
         <main className="app-main">
+          <AppHeader jobName={job.name} />
           <div className="switcher print-hide">
             <button onClick={() => setMode('design')}>← Back to design</button>
             <span>Outputs:</span>
             {[
+              ['out-bom', 'Order list'],
               ['out-dig', 'Dig plan'],
               ['out-materials', 'Material quantities'],
               ['out-plumbing', 'Plumbing design'],
@@ -165,6 +187,18 @@ export function App() {
       )}
 
       <main className="app-main">
+        <AppHeader
+          jobName={job.name}
+          right={(
+            <>
+              <button onClick={undo} disabled={!canUndo}>Undo</button>
+              <button onClick={redo} disabled={!canRedo}>Redo</button>
+              <button aria-pressed={showAdvanced} onClick={() => setShowAdvanced((open) => !open)}>
+                Advanced
+              </button>
+            </>
+          )}
+        />
         <div className="switcher print-hide">
           <span>Start from:</span>
           {SCENARIOS.map((sc, i) => (sc.group === 'standard' ? (
@@ -180,16 +214,6 @@ export function App() {
             Reference jobs {showReference ? '−' : '+'}
           </button>
           {edited && <span className="switcher-edited">edited</span>}
-          <span className="switcher-undo">
-            <button onClick={undo} disabled={!canUndo}>Undo</button>
-            <button onClick={redo} disabled={!canRedo}>Redo</button>
-            <button
-              aria-pressed={showAdvanced}
-              onClick={() => setShowAdvanced((open) => !open)}
-            >
-              Advanced
-            </button>
-          </span>
         </div>
         {showReference && (
           <div className="switcher switcher-reference print-hide">

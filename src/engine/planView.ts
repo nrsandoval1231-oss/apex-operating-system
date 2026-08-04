@@ -373,6 +373,18 @@ export function renderPlanView(
     parts.push(text(ctx, rect.x + rect.widthFt / 2, rect.y + rect.heightFt + 0.9,
       `${st.treadCount} treads @ ${st.treadRunIn}"${st.placement ? '' : ' · unplaced'}`, 'pv-note', 'middle'));
     parts.push(...objectDims(ctx, rect, place.wall, L, W));
+    if (options.interactive) {
+      // Same grip as a seat: drag it to widen or narrow the stair along its
+      // wall. Tread COUNT is a typed input — it changes the rise, which is a
+      // code-checked dimension and not something to discover by dragging.
+      const endsOn = place.wall === 'shallow' || place.wall === 'deep';
+      const hx = endsOn ? rect.x + rect.widthFt / 2 - 0.45 : rect.x + rect.widthFt - 0.9;
+      const hy = endsOn ? rect.y + rect.heightFt - 0.9 : rect.y + rect.heightFt / 2 - 0.45;
+      parts.push(
+        `<rect class="pv-grip" data-resize-kind="step" data-resize-id="${esc(st.id)}" data-resize-wall="${place.wall}"`
+        + ` x="${n(x(hx))}" y="${n(y(hy))}" width="${n(s(0.9))}" height="${n(s(0.9))}"/>`,
+      );
+    }
   }
 
   for (const seat of pool.seats) {
@@ -569,6 +581,14 @@ export function renderPlanView(
     parts.push(grab('top', 0, 0, L, 0));
     parts.push(grab('bottom', 0, W, L, W));
   }
+
+  // --- what the grey outlines are -------------------------------------------
+  // Two dashed rectangles sit outside the water and nothing said what they
+  // were. A drawing that leaves someone guessing at a line is worse than one
+  // with a slightly busier margin.
+  const legendY = -topExtent + 1.1;
+  parts.push(text(ctx, L + 1.5, legendY, '— — over-dig (form line)', 'pv-legend', 'start'));
+  if (deckW > 0) parts.push(text(ctx, L + 1.5, legendY + 1.1, '– – – deck edge', 'pv-legend', 'start'));
 
   // --- scale bar and legend -------------------------------------------------
   const barY = contentH - topExtent - 2.2;

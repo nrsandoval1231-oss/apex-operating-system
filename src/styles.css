@@ -7,15 +7,32 @@
  *   one bold moment per sheet, everything else calm
  */
 
+/*
+ * Brand tokens are Apex's real ones, taken from apex-website/src/styles/global.css
+ * rather than the PRD's placeholder blues. Two constraints travel with them and
+ * are honoured here:
+ *   - sage (#a1ccca) is for DARK backgrounds only; it fails contrast on paper.
+ *   - amber (#e0901b) is interaction and alerts ONLY, never decoration.
+ * Designer is the pools tool, so the working accent is the Designer Pools
+ * vertical colour (--pool), which is legible on the paper the sheet is drawn on.
+ */
 :root {
-  --paper: #f7f6f2;
-  --ink: #1a1a18;
-  --ink-soft: #6b6a64;
-  --ink-faint: #97958d;
-  --rule: #dedbd2;
-  --rule-strong: #c5c1b4;
-  --accent: #0081af;
-  --accent-light: #00abe7;
+  --char: #1b1c1e;
+  --brand-char: #383c3d;
+  --sage: #a1ccca;
+  --sage-d: #8ab8b6;
+  --amber: #e0901b;
+  --pool: #0e6e7c;
+  --concrete: #e9e5de;
+
+  --paper: #f6f4ef;
+  --ink: #141517;
+  --ink-soft: #54585e;
+  --ink-faint: #8d8a83;
+  --rule: #e2ded5;
+  --rule-strong: #d4cfc5;
+  --accent: #0e6e7c;
+  --accent-light: #14899a;
   /* Not in the PRD palette. A failing code check has to read as a stop, and
      neither accent can carry that. Kept muted so it does not shout on a sheet
      that is otherwise calm. */
@@ -39,7 +56,7 @@ body {
 }
 
 body {
-  background: #ebe9e3;
+  background: var(--concrete);
   color: var(--ink);
   font-family: var(--sans);
   font-size: 13px;
@@ -1316,3 +1333,128 @@ tr.is-fail .check-message {
     border-bottom: 1px solid var(--rule-strong);
   }
 }
+
+
+/* --- brand header ----------------------------------------------------------- */
+
+/*
+ * The controls used to float over the page with nothing behind them. They now
+ * sit under a charcoal bar carrying the real logo lockup, which is a badge with
+ * its own sage panel — it is used verbatim and never recoloured.
+ */
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 20px;
+  background: var(--char);
+  border-bottom: 1px solid #000;
+}
+
+.app-header img { display: block; height: 30px; width: auto; }
+
+.app-header-title {
+  color: var(--paper);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+
+.app-header-title strong { display: block; font-size: 14px; font-weight: 600; }
+
+.app-header-title span { color: var(--sage); }
+
+.app-header-right { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+
+/* Toolbars dock to the header instead of hovering in the gap under it. */
+.switcher, .design-controls {
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+  margin-left: 0;
+  margin-right: 0;
+  max-width: none;
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
+.switcher { background: var(--paper); border-top: none; }
+
+.design-controls { border-top: none; margin-bottom: 0; }
+
+.app-main > .sheet, .app-main > .run-takeoff { margin-top: 18px; }
+
+/* --- order list ------------------------------------------------------------- */
+
+.bom-group { margin-top: 14px; }
+
+.bom-group-title {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.bom-lines { list-style: none; margin: 0; padding: 0; }
+
+.bom-lines li {
+  display: flex;
+  gap: 14px;
+  align-items: baseline;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+/* The number leads. Someone ordering reads down this column and nothing else. */
+.bom-qty {
+  flex: none;
+  width: 120px;
+  text-align: right;
+  font-family: var(--mono);
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.bom-unit { font-size: 11px; color: var(--ink-soft); }
+
+.bom-item { font-size: 13px; }
+
+.bom-basis {
+  display: block;
+  font-size: 10.5px;
+  color: var(--ink-faint);
+}
+
+.bom-waste {
+  margin-left: 8px;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.bom-missing {
+  margin-top: 18px;
+  padding: 10px 12px;
+  border: 1px solid var(--amber);
+  border-radius: var(--radius);
+  font-size: 12px;
+}
+
+.bom-missing strong { color: var(--amber); }
+.bom-missing ul { margin: 6px 0 0; padding-left: 18px; }
+
+.pv-legend {
+  font-family: var(--sans);
+  font-size: 8px;
+  letter-spacing: 0.06em;
+  fill: var(--ink-faint);
+}
+
+@media print { .app-header { display: none; } }

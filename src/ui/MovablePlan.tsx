@@ -37,7 +37,7 @@ interface Drag {
 
 /** A wall or seat-grip drag, which resizes instead of moving. */
 interface ResizeDrag {
-  readonly kind: 'pool' | 'seat';
+  readonly kind: 'pool' | 'seat' | 'step';
   readonly id: string | null;
   readonly wall: PoolWall;
 }
@@ -241,19 +241,32 @@ export function MovablePlan({
               : base.pool.widthFt - point.yFt;
         setDragPreview(resizePool(base, resize.wall, target));
       } else if (resize.id) {
-        // Seat grip: the width runs from the seat's near edge to the pointer.
-        const seat = base.pool.seats.find((s) => s.id === resize.id);
-        if (!seat) return;
-        const place = placementOfIn(base, 'seat', resize.id);
+        // Object grip: the new width runs from the object's near edge to the
+        // pointer, snapped to 6". The floor is the Lubbock minimum stair width
+        // (20") and a workable bench (24") rather than zero.
+        const kind = resize.kind;
+        const place = placementOfIn(base, kind, resize.id);
         const along = alongFromPoint(place.wall, point.xFt, point.yFt);
-        const widthIn = Math.max(24, Math.round(((along - place.alongFt) * 12) / 6) * 6);
-        setDragPreview({
-          ...base,
-          pool: {
-            ...base.pool,
-            seats: base.pool.seats.map((s) => (s.id === resize.id ? { ...s, surfaceWidthIn: widthIn } : s)),
-          },
-        });
+        const raw = Math.round(((along - place.alongFt) * 12) / 6) * 6;
+        if (kind === 'step') {
+          const widthIn = Math.max(20, raw);
+          setDragPreview({
+            ...base,
+            pool: {
+              ...base.pool,
+              steps: base.pool.steps.map((s) => (s.id === resize.id ? { ...s, treadWidthIn: widthIn } : s)),
+            },
+          });
+        } else {
+          const widthIn = Math.max(24, raw);
+          setDragPreview({
+            ...base,
+            pool: {
+              ...base.pool,
+              seats: base.pool.seats.map((s) => (s.id === resize.id ? { ...s, surfaceWidthIn: widthIn } : s)),
+            },
+          });
+        }
       }
       return;
     }

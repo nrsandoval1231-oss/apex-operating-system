@@ -13,6 +13,7 @@ import { feetInches, planPrintScale, renderPlanView } from '../engine/planView.t
 import { renderSectionView, sectionPrintScale } from '../engine/sectionView.ts';
 import { MovablePlan } from './MovablePlan.tsx';
 import { StepsSection } from './StepsSection.tsx';
+import { BomSection } from './BomSection.tsx';
 import { SectionEditor } from './SectionEditor.tsx';
 import { GeometryInputError } from '../engine/geometry.ts';
 import { ExcavationInputError } from '../engine/excavation.ts';
@@ -243,6 +244,9 @@ export function TakeoffSheet({
 
       {view === 'design' ? null : (
       <div className="takeoff-body">
+
+      <BomSection job={job} takeoff={result} />
+
 
       <section className="section">
         <div className="section-head">
