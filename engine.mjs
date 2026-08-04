@@ -27,7 +27,23 @@
  */
 
 import { readApprovedQuantityAuthority, calculateStringPayloadSha256 } from './approved-takeoff.mjs';
-import { randomUUID } from 'node:crypto';
+/**
+ * Web Crypto rather than node:crypto: the browser cannot resolve `node:` at all,
+ * and this import alone was enough to stop index.html's entire module graph from
+ * evaluating. `globalThis.crypto` is standard in Node 19+ and in browsers.
+ *
+ * getRandomValues is the fallback because randomUUID requires a secure context.
+ * localhost is one; a page served over http from a LAN address is not, and this
+ * value only needs to be unique, not unguessable — it is an event id suffix.
+ */
+const randomUUID = () => (
+  globalThis.crypto?.randomUUID
+    ? globalThis.crypto.randomUUID()
+    : Array.from(globalThis.crypto.getRandomValues(new Uint8Array(16)))
+      .map((byte) => byte.toString(16).padStart(2, '0'))
+      .join('')
+      .replace(/^(.{8})(.{4})(.{4})(.{4})(.{12})$/, '$1-$2-$3-$4-$5')
+);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Cost codes — Foundation §4 (his order and naming; the missing ones are additive)

@@ -1,4 +1,6 @@
-import { createHash } from 'node:crypto';
+// Not node:crypto — a browser cannot resolve it, and importing it here broke
+// every handler on index.html. See sha256.mjs.
+import { sha256Hex } from './sha256.mjs';
 
 const deepFreeze = (value) => {
   if (value && typeof value === 'object' && !Object.isFrozen(value)) {
@@ -43,11 +45,11 @@ export function serializeQuantityPayload(quantities) {
 }
 
 export function calculateQuantityPayloadSha256(quantities) {
-  return createHash('sha256').update(serializeQuantityPayload(quantities), 'utf8').digest('hex');
+  return sha256Hex(serializeQuantityPayload(quantities));
 }
 
 export function calculateStringPayloadSha256(payloadString) {
-  return createHash('sha256').update(payloadString, 'utf8').digest('hex');
+  return sha256Hex(payloadString);
 }
 
 export function readApprovedQuantityAuthority(revision, context = {}) {

@@ -376,7 +376,13 @@
 <div class="proposal-doc" id="proposalDoc"></div>
 
 <script type="module">
-import { takeoff, finalizeProposal, DEFAULT_ALLOWANCES, DIRECT_LINES_SEED, fmtMoney, deckArea } from './engine.mjs';
+// legacyReplayTakeoff, not takeoff — the same import report.mjs and backtest.mjs
+// use. `takeoff` is the production path and throws without an approved Designer
+// revision, which this page has no way to supply, so every field on it read "—"
+// and the issue button was dead. Draft pricing and customer issuance are
+// separate states: this prices a draft, and the issue gate below still refuses
+// to release one without approved Designer quantity authority.
+import { legacyReplayTakeoff as takeoff, finalizeProposal, DEFAULT_ALLOWANCES, DIRECT_LINES_SEED, fmtMoney, deckArea } from './engine.mjs';
 
 const $ = (id) => document.getElementById(id);
 const money = fmtMoney;
