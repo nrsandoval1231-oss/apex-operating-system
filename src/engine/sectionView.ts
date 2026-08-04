@@ -27,6 +27,14 @@ export interface SectionViewResult {
   readonly heightPx: number;
   readonly contentWidthFt: number;
   readonly contentHeightFt: number;
+  /** Where pool x=0 / waterline depth=0 sit in SVG coordinates, for dragging. */
+  readonly originXPx: number;
+  readonly originYPx: number;
+}
+
+export interface SectionViewOptions {
+  /** Draw grab handles on the floors and stations. Screen only. */
+  readonly interactive?: boolean;
 }
 
 /**
@@ -69,7 +77,11 @@ interface Ctx {
   readonly y: (ft: number) => number;
 }
 
-export function renderSectionView(job: Job, targetWidthPx = 1040): SectionViewResult {
+export function renderSectionView(
+  job: Job,
+  targetWidthPx = 1040,
+  options: SectionViewOptions = {},
+): SectionViewResult {
   const p = job.pool.profile;
   const L = job.pool.lengthFt;
   const spa = job.spa;
@@ -258,9 +270,32 @@ export function renderSectionView(job: Job, targetWidthPx = 1040): SectionViewRe
     txt(ctx, L / 2, p.deepDepth + shell + 4.6, 'LONGITUDINAL SECTION ON POOL CENTRELINE · INDICATIVE POSITIONS, DIMENSIONED DEPTHS', 'pv-station-label', 'middle'),
   );
 
+  // --- grab handles ----------------------------------------------------------
+  // Wide invisible strokes over the two floor flats and the two stations. The
+  // drag rules — snapping, clamps, which run absorbs a move — live in
+  // poolResize.ts; these only mark what can be grabbed.
+  if (options.interactive) {
+    const grab = (handle: string, x1f: number, y1f: number, x2f: number, y2f: number) =>
+      `<line class="sec-grab" data-sec-handle="${handle}"`
+      + ` x1="${n(x(x1f))}" y1="${n(y(y1f))}" x2="${n(x(x2f))}" y2="${n(y(y2f))}"/>`;
+    if (p.shallowRun > 0) parts.push(grab('shallow-floor', 0, p.shallowDepth, shallowEndX, p.shallowDepth));
+    if (p.deepRun > 0 || p.transitionRun > 0) parts.push(grab('deep-floor', deepStartX, p.deepDepth, L, p.deepDepth));
+    parts.push(grab('breakover', shallowEndX, -freeboard, shallowEndX, p.shallowDepth));
+    parts.push(grab('deep-start', deepStartX, -freeboard, deepStartX, p.deepDepth));
+  }
+
   const svg = `<svg class="sectionview" viewBox="0 0 ${widthPx} ${heightPx}" width="100%" role="img" aria-label="Dimensioned longitudinal section of ${escText(job.name)}" xmlns="http://www.w3.org/2000/svg">${parts.join('')}</svg>`;
 
-  return { svg, pxPerFt, widthPx, heightPx, contentWidthFt: contentW, contentHeightFt: contentH };
+  return {
+    svg,
+    pxPerFt,
+    widthPx,
+    heightPx,
+    contentWidthFt: contentW,
+    contentHeightFt: contentH,
+    originXPx: x(0),
+    originYPx: y(0),
+  };
 }
 
 // --- primitives -------------------------------------------------------------

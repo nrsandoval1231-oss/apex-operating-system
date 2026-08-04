@@ -6,6 +6,7 @@ import { LUBBOCK_STANDARDS } from './engine/jobs/lubbockStandards.ts';
 import type { Job } from './engine/types.ts';
 import { TakeoffSheet } from './ui/TakeoffSheet.tsx';
 import { JobEditor } from './ui/JobEditor.tsx';
+import { DesignControls } from './ui/DesignControls.tsx';
 
 /**
  * A tight lot: same pool, 5 ft to the house slab. The 6 ft deep end violates
@@ -77,6 +78,14 @@ export function App() {
   const [past, setPast] = useState<History>({ entries: [SCENARIOS[0]!.job], cursor: 0 });
   const [showReference, setShowReference] = useState(false);
   const [edited, setEdited] = useState(false);
+  /**
+   * 'design' is the builder's screen: three sizes, two drawings, six buttons.
+   * 'outputs' is the engine's answer: dig plan, material quantities, plumbing
+   * design and the equipment pad, which is the full sheet it always produced.
+   * The engine runs in both — design mode just declines to show the working.
+   */
+  const [mode, setMode] = useState<'design' | 'outputs'>('design');
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const job = past.entries[past.cursor]!;
   const scenario = SCENARIOS[index]!;
@@ -121,13 +130,39 @@ export function App() {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
+  if (mode === 'outputs') {
+    return (
+      <div className="app app-outputs">
+        <main className="app-main">
+          <div className="switcher print-hide">
+            <button onClick={() => setMode('design')}>← Back to design</button>
+            <span>Outputs:</span>
+            {[
+              ['out-dig', 'Dig plan'],
+              ['out-materials', 'Material quantities'],
+              ['out-plumbing', 'Plumbing design'],
+              ['out-equipment', 'Equipment pad'],
+            ].map(([id, label]) => (
+              <button key={id} onClick={() => document.getElementById(id!)?.scrollIntoView({ behavior: 'smooth' })}>
+                {label}
+              </button>
+            ))}
+          </div>
+          <TakeoffSheet job={job} details={scenario.details} />
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="app">
-      <JobEditor
-        job={job}
-        onChange={editJob}
-        onReset={() => reset(scenario.job)}
-      />
+      {showAdvanced && (
+        <JobEditor
+          job={job}
+          onChange={editJob}
+          onReset={() => reset(scenario.job)}
+        />
+      )}
 
       <main className="app-main">
         <div className="switcher print-hide">
@@ -148,6 +183,12 @@ export function App() {
           <span className="switcher-undo">
             <button onClick={undo} disabled={!canUndo}>Undo</button>
             <button onClick={redo} disabled={!canRedo}>Redo</button>
+            <button
+              aria-pressed={showAdvanced}
+              onClick={() => setShowAdvanced((open) => !open)}
+            >
+              Advanced
+            </button>
           </span>
         </div>
         {showReference && (
@@ -160,7 +201,13 @@ export function App() {
             ) : null))}
           </div>
         )}
-        <TakeoffSheet job={job} details={scenario.details} onChange={editJob} />
+        <DesignControls job={job} onChange={editJob} />
+        <TakeoffSheet job={job} details={scenario.details} onChange={editJob} view="design" />
+        <div className="run-takeoff print-hide">
+          <button className="run-takeoff-button" onClick={() => setMode('outputs')}>
+            Run full takeoff → dig plan · material quantities · plumbing · equipment pad
+          </button>
+        </div>
       </main>
     </div>
   );

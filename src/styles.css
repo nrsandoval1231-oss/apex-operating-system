@@ -1086,6 +1086,95 @@ tr.is-fail .check-message {
 }
 .switcher-more { margin-left: 6px; }
 
+/* --- design mode ------------------------------------------------------------ */
+
+.design-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  max-width: 1180px;
+  margin: 0 auto 4px;
+  padding: 8px 10px;
+  background: var(--paper);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius);
+}
+
+.dc-group { display: inline-flex; align-items: center; gap: 4px; }
+
+.dc-label {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-right: 2px;
+}
+
+.dc-group button[aria-pressed='true'] {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.dc-hint {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-faint);
+}
+
+.run-takeoff {
+  max-width: 1180px;
+  margin: 10px auto 28px;
+}
+
+.run-takeoff-button {
+  width: 100%;
+  padding: 12px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 13px;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+}
+
+.run-takeoff-button:hover { background: var(--accent-light); }
+
+/* --- resize grips ----------------------------------------------------------- */
+
+/* Wall grab zones: invisible, fat, and cursor-hinted. */
+.pv-wall-grab {
+  stroke: transparent;
+  stroke-width: 12;
+}
+.pv-wall-grab[data-resize-wall='shallow'],
+.pv-wall-grab[data-resize-wall='deep'] { cursor: ew-resize; }
+.pv-wall-grab[data-resize-wall='top'],
+.pv-wall-grab[data-resize-wall='bottom'] { cursor: ns-resize; }
+
+.pv-grip {
+  fill: var(--paper);
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  cursor: grab;
+}
+
+.sec-grab {
+  stroke: transparent;
+  stroke-width: 14;
+}
+.sec-grab[data-sec-handle='shallow-floor'],
+.sec-grab[data-sec-handle='deep-floor'] { cursor: ns-resize; }
+.sec-grab[data-sec-handle='breakover'],
+.sec-grab[data-sec-handle='deep-start'] { cursor: ew-resize; }
+
+@media print {
+  .pv-wall-grab, .pv-grip, .sec-grab { display: none; }
+}
+
 /* --- move tool ------------------------------------------------------------ */
 
 .plan-move-host [data-move-id] {

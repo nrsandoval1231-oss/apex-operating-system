@@ -13,6 +13,7 @@ import { feetInches, planPrintScale, renderPlanView } from '../engine/planView.t
 import { renderSectionView, sectionPrintScale } from '../engine/sectionView.ts';
 import { MovablePlan } from './MovablePlan.tsx';
 import { StepsSection } from './StepsSection.tsx';
+import { SectionEditor } from './SectionEditor.tsx';
 import { GeometryInputError } from '../engine/geometry.ts';
 import { ExcavationInputError } from '../engine/excavation.ts';
 import type { Job } from '../engine/types.ts';
@@ -61,6 +62,38 @@ function PlanSheet({
   );
 }
 
+/** Same split as PlanSheet: draggable with an onChange, static without. */
+function SectionSheet({
+  job,
+  onChange,
+  printWidthIn,
+  sectionSvg,
+  children,
+}: {
+  job: Job;
+  onChange?: (job: Job) => void;
+  printWidthIn: number;
+  sectionSvg: string;
+  children: React.ReactNode;
+}) {
+  if (onChange) {
+    return (
+      <SectionEditor job={job} onChange={onChange}>
+        {children}
+      </SectionEditor>
+    );
+  }
+  return (
+    <div
+      className="plan-frame plan-sheet"
+      style={{ ['--plan-print-width' as string]: `${printWidthIn.toFixed(2)}in` }}
+    >
+      <div dangerouslySetInnerHTML={{ __html: sectionSvg }} />
+      {children}
+    </div>
+  );
+}
+
 /**
  * Where each family of blocking check is actually rendered on the sheet. The
  * banner names the section the reader has to scroll to; naming the wrong one is
@@ -87,11 +120,18 @@ export function TakeoffSheet({
   job,
   details,
   onChange,
+  view = 'full',
 }: {
   job: Job;
   details?: readonly StandardDetail[];
   /** Supplied when the plan is editable; omitted renders a static drawing. */
   onChange?: (job: Job) => void;
+  /**
+   * 'design' shows the drawings and nothing else — the takeoff still runs on
+   * every change (the code-stop banner depends on it) but its tables stay out
+   * of a builder's way. 'full' is the complete engineering sheet.
+   */
+  view?: 'design' | 'full';
 }) {
   let result;
   try {
@@ -186,12 +226,7 @@ export function TakeoffSheet({
         margin would make the one view that shows depth the smallest thing on
         the page.
       */}
-      <div
-        className="plan-frame plan-sheet"
-        style={{ ['--plan-print-width' as string]: `${sectionScale.widthIn.toFixed(2)}in` }}
-      >
-        <div dangerouslySetInnerHTML={{ __html: section.svg }} />
-
+      <SectionSheet job={job} onChange={onChange} printWidthIn={sectionScale.widthIn} sectionSvg={section.svg}>
         <div className="plan-caption">
           <span>
             Longitudinal section on the pool centreline · depths and runs dimensioned · step and
@@ -204,8 +239,9 @@ export function TakeoffSheet({
             {feetInches(job.excavation.freeboardFt)} freeboard
           </span>
         </div>
-      </div>
+      </SectionSheet>
 
+      {view === 'design' ? null : (
       <div className="takeoff-body">
 
       <section className="section">
@@ -221,7 +257,7 @@ export function TakeoffSheet({
 
       <StepsSection job={job} />
 
-      <section className="section">
+      <section className="section" id="out-materials">
         <div className="section-head">
           <h2>1 · Geometry &amp; volume</h2>
           <span className="note">rectangular bodies only · depth varies along the length</span>
@@ -260,7 +296,7 @@ export function TakeoffSheet({
         )}
       </section>
 
-      <section className="section">
+      <section className="section" id="out-dig">
         <div className="section-head">
           <h2>2 · Excavation</h2>
           <span className="note">
@@ -314,9 +350,9 @@ export function TakeoffSheet({
 
       <StructureSection structure={result.structure} />
 
-      <HydraulicsSection hydraulics={result.hydraulics} />
+      <div id="out-plumbing"><HydraulicsSection hydraulics={result.hydraulics} /></div>
 
-      <EquipmentSection equipment={result.equipment} />
+      <div id="out-equipment"><EquipmentSection equipment={result.equipment} /></div>
 
       <CoverSection cover={result.cover} />
 
@@ -336,6 +372,7 @@ export function TakeoffSheet({
       </section>
 
       </div>
+      )}
 
       <footer className="footer">
         <span>

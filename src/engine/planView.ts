@@ -44,6 +44,11 @@ export interface PlanViewResult {
 export interface PlanViewOptions {
   /** Id of the object drawn as selected, if any. */
   readonly selectedId?: string;
+  /**
+   * Draw grab handles for resizing. Off by default so a printed or exported
+   * sheet carries only the drawing — editing chrome is for the screen.
+   */
+  readonly interactive?: boolean;
 }
 
 /**
@@ -386,6 +391,17 @@ export function renderPlanView(
         `${seat.kind} ${seat.id}${seat.placement ? '' : ' · unplaced'}`, 'pv-note-inset', 'middle'),
     );
     parts.push(...objectDims(ctx, rect, place.wall, L, W));
+    if (options.interactive) {
+      // Resize grip at the far end of the span axis. Dragging it changes the
+      // seat's width along its wall — a tanning ledge is sized this way.
+      const endsOn = place.wall === 'shallow' || place.wall === 'deep';
+      const hx = endsOn ? rect.x + rect.widthFt / 2 - 0.45 : rect.x + rect.widthFt - 0.9;
+      const hy = endsOn ? rect.y + rect.heightFt - 0.9 : rect.y + rect.heightFt / 2 - 0.45;
+      parts.push(
+        `<rect class="pv-grip" data-resize-kind="seat" data-resize-id="${esc(seat.id)}" data-resize-wall="${place.wall}"`
+        + ` x="${n(x(hx))}" y="${n(y(hy))}" width="${n(s(0.9))}" height="${n(s(0.9))}"/>`,
+      );
+    }
   }
 
   // --- plumbing: outlets, skimmers, returns ---------------------------------
@@ -539,6 +555,19 @@ export function renderPlanView(
       parts.push(dimH(ctx, cursorX, cursorX + len, -1.9, `${feetInches(len)} ${label}`, 'pv-dim-soft'));
       cursorX += len;
     }
+  }
+
+  // --- resize handles --------------------------------------------------------
+  // Invisible thick strokes along each water edge. Dragging one resizes the
+  // pool; the resize policy lives in poolResize.ts, not here.
+  if (options.interactive) {
+    const grab = (wall: string, x1: number, y1: number, x2: number, y2: number) =>
+      `<line class="pv-wall-grab" data-resize-kind="pool" data-resize-wall="${wall}"`
+      + ` x1="${n(x(x1))}" y1="${n(y(y1))}" x2="${n(x(x2))}" y2="${n(y(y2))}"/>`;
+    parts.push(grab('shallow', 0, 0, 0, W));
+    parts.push(grab('deep', L, 0, L, W));
+    parts.push(grab('top', 0, 0, L, 0));
+    parts.push(grab('bottom', 0, W, L, W));
   }
 
   // --- scale bar and legend -------------------------------------------------

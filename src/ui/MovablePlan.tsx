@@ -23,7 +23,8 @@ import {
   wallLengthFt,
 } from '../engine/placement.ts';
 import { inToFt } from '../engine/units.ts';
-import type { Job, Placement } from '../engine/types.ts';
+import { resizePool } from '../engine/poolResize.ts';
+import type { Job, Placement, PoolWall } from '../engine/types.ts';
 
 /** What is being dragged, and what the pointer grabbed it by. */
 interface Drag {
@@ -32,6 +33,13 @@ interface Drag {
   /** Distance from the object's near edge to the grab point, along the wall. ft */
   readonly grabOffsetFt: number;
   readonly spanFt: number;
+}
+
+/** A wall or seat-grip drag, which resizes instead of moving. */
+interface ResizeDrag {
+  readonly kind: 'pool' | 'seat';
+  readonly id: string | null;
+  readonly wall: PoolWall;
 }
 
 export function MovablePlan({
@@ -48,6 +56,7 @@ export function MovablePlan({
   const hostRef = useRef<HTMLDivElement>(null);
   const [selectedId, setSelectedId] = useState<string | undefined>(undefined);
   const dragRef = useRef<Drag | null>(null);
+  const resizeRef = useRef<ResizeDrag | null>(null);
   /**
    * In-flight drag position, held twice on purpose.
    *
@@ -82,7 +91,7 @@ export function MovablePlan({
   // The drawing follows the pointer, but only the committed job reaches the
   // takeoff and the history.
   const shown = preview ?? job;
-  const plan = renderPlanView(shown, 1040, { selectedId });
+  const plan = renderPlanView(shown, 1040, { selectedId, interactive: true });
 
   /**
    * Client pixels to plan feet.
@@ -163,6 +172,22 @@ export function MovablePlan({
 
   const onPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
     const target = event.target as Element | null;
+
+    // Resize grips sit above the move rects and win the press.
+    const grip = target?.closest?.('[data-resize-kind]') as SVGElement | null;
+    if (grip) {
+      resizeRef.current = {
+        kind: grip.getAttribute('data-resize-kind') as ResizeDrag['kind'],
+        id: grip.getAttribute('data-resize-id'),
+        wall: (grip.getAttribute('data-resize-wall') ?? 'deep') as PoolWall,
+      };
+      try {
+        (event.currentTarget as Element).setPointerCapture?.(event.pointerId);
+      } catch { /* capture is optional */ }
+      event.preventDefault();
+      return;
+    }
+
     const handle = target?.closest?.('[data-move-id]') as SVGElement | null;
     if (!handle) {
       setSelectedId(undefined);
@@ -202,6 +227,37 @@ export function MovablePlan({
   };
 
   const onPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    const resize = resizeRef.current;
+    if (resize) {
+      const point = toPlanFeet(event.clientX, event.clientY);
+      if (!point) return;
+      const base = previewRef.current ?? job;
+      if (resize.kind === 'pool') {
+        // The pointer implies a new length or width; the policy — snapping,
+        // limits, how the depth profile absorbs a shorter pool — is resizePool.
+        const target = resize.wall === 'deep' ? point.xFt
+          : resize.wall === 'shallow' ? base.pool.lengthFt - point.xFt
+            : resize.wall === 'bottom' ? point.yFt
+              : base.pool.widthFt - point.yFt;
+        setDragPreview(resizePool(base, resize.wall, target));
+      } else if (resize.id) {
+        // Seat grip: the width runs from the seat's near edge to the pointer.
+        const seat = base.pool.seats.find((s) => s.id === resize.id);
+        if (!seat) return;
+        const place = placementOfIn(base, 'seat', resize.id);
+        const along = alongFromPoint(place.wall, point.xFt, point.yFt);
+        const widthIn = Math.max(24, Math.round(((along - place.alongFt) * 12) / 6) * 6);
+        setDragPreview({
+          ...base,
+          pool: {
+            ...base.pool,
+            seats: base.pool.seats.map((s) => (s.id === resize.id ? { ...s, surfaceWidthIn: widthIn } : s)),
+          },
+        });
+      }
+      return;
+    }
+
     const drag = dragRef.current;
     if (!drag) return;
     const point = toPlanFeet(event.clientX, event.clientY);
@@ -223,8 +279,9 @@ export function MovablePlan({
   };
 
   const endDrag = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (!dragRef.current) return;
+    if (!dragRef.current && !resizeRef.current) return;
     dragRef.current = null;
+    resizeRef.current = null;
     // Commit FIRST. Releasing a capture that was never taken throws
     // InvalidPointerId, and when that ran ahead of the commit it threw away the
     // edit the drag had just made — the object snapped back and undo stayed
