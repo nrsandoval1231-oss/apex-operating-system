@@ -29,6 +29,12 @@ const DEEP: Job = {
   site: { distanceToFoundationFt: 12, foundationDescription: 'house slab foundation' },
 };
 
+/** Undo history: the jobs so far, and which one is showing. */
+interface History {
+  readonly entries: readonly Job[];
+  readonly cursor: number;
+}
+
 interface Scenario {
   readonly tab: string;
   readonly job: Job;
@@ -55,18 +61,16 @@ export function App() {
    * able to put it back is the fastest way to stop trusting a move tool, so undo
    * arrived with the drag rather than after it.
    */
-  const [history, setHistory] = useState<readonly Job[]>([SCENARIOS[0]!.job]);
-  const [cursor, setCursor] = useState(0);
+  const [past, setPast] = useState<History>({ entries: [SCENARIOS[0]!.job], cursor: 0 });
   const [edited, setEdited] = useState(false);
 
-  const job = history[cursor]!;
+  const job = past.entries[past.cursor]!;
   const scenario = SCENARIOS[index]!;
-  const canUndo = cursor > 0;
-  const canRedo = cursor < history.length - 1;
+  const canUndo = past.cursor > 0;
+  const canRedo = past.cursor < past.entries.length - 1;
 
   const reset = (next: Job) => {
-    setHistory([next]);
-    setCursor(0);
+    setPast({ entries: [next], cursor: 0 });
     setEdited(false);
   };
 
@@ -75,24 +79,33 @@ export function App() {
     reset(SCENARIOS[i]!.job);
   };
 
+  /**
+   * Entries and cursor move together, in one pure updater.
+   *
+   * Several edits can land in a single task — hold an arrow key down and the
+   * keydowns batch. Reading the previous state from the closure made every edit
+   * in a batch write the same entry, so three nudges collapsed into one and a
+   * single undo threw all of them away. Two separate states could also disagree
+   * mid-batch, and a cursor pointing past its own entries is a crash.
+   */
   const editJob = (next: Job) => {
-    // Anything after the cursor is a branch that was undone away.
-    const trimmed = history.slice(0, cursor + 1);
-    setHistory([...trimmed, next]);
-    setCursor(trimmed.length);
+    setPast((h) => ({ entries: [...h.entries.slice(0, h.cursor + 1), next], cursor: h.cursor + 1 }));
     setEdited(true);
   };
+
+  const undo = () => setPast((h) => ({ ...h, cursor: Math.max(h.cursor - 1, 0) }));
+  const redo = () => setPast((h) => ({ ...h, cursor: Math.min(h.cursor + 1, h.entries.length - 1) }));
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'z') return;
       event.preventDefault();
-      if (event.shiftKey) setCursor((c) => Math.min(c + 1, history.length - 1));
-      else setCursor((c) => Math.max(c - 1, 0));
+      if (event.shiftKey) redo();
+      else undo();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [history.length]);
+  }, []);
 
   return (
     <div className="app">
@@ -112,15 +125,8 @@ export function App() {
           ))}
           {edited && <span className="switcher-edited">edited</span>}
           <span className="switcher-undo">
-            <button onClick={() => setCursor((c) => Math.max(c - 1, 0))} disabled={!canUndo}>
-              Undo
-            </button>
-            <button
-              onClick={() => setCursor((c) => Math.min(c + 1, history.length - 1))}
-              disabled={!canRedo}
-            >
-              Redo
-            </button>
+            <button onClick={undo} disabled={!canUndo}>Undo</button>
+            <button onClick={redo} disabled={!canRedo}>Redo</button>
           </span>
         </div>
         <TakeoffSheet job={job} details={scenario.details} onChange={editJob} />

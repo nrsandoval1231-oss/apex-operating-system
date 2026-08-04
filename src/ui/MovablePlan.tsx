@@ -64,6 +64,21 @@ export function MovablePlan({
     setPreview(next);
   }, []);
 
+  /**
+   * The most recent job this component produced, for the same batching reason.
+   *
+   * Hold an arrow key down and the keydowns land in one task. Each nudge read
+   * the `job` prop, which React had not re-rendered yet, so every keypress
+   * computed from the position before the first one and only the last survived —
+   * three nudges moved the bench 1 ft instead of 2.
+   */
+  const latestRef = useRef(job);
+  useEffect(() => {
+    // A job arriving from above — undo, the editor, a scenario switch — is the
+    // new truth and supersedes anything this component last emitted.
+    latestRef.current = job;
+  }, [job]);
+
   // The drawing follows the pointer, but only the committed job reaches the
   // takeoff and the history.
   const shown = preview ?? job;
@@ -232,19 +247,25 @@ export function MovablePlan({
       if (delta === 0) return;
       const kind: Drag['kind'] = selectedId === SPA_MOVE_ID ? 'spa'
         : job.pool.steps.some((s) => s.id === selectedId) ? 'step' : 'seat';
-      const placement = placementOf(kind, selectedId);
+      // Chain off the last job this component produced, not the prop, so a held
+      // arrow key accumulates instead of every repeat starting from the same
+      // place.
+      const base = latestRef.current;
+      const placement = placementOfIn(base, kind, selectedId);
       const spanFt = spanOf(kind, selectedId);
       event.preventDefault();
       // A nudge is one discrete decision, so it commits immediately and is its
       // own undo step.
-      onChange(withPlacement(job, kind, selectedId, {
+      const next = withPlacement(base, kind, selectedId, {
         ...placement,
-        alongFt: snapAlong(clampAlong(placement.alongFt + delta, spanFt, placement.wall, job.pool.lengthFt, job.pool.widthFt)),
-      }));
+        alongFt: snapAlong(clampAlong(placement.alongFt + delta, spanFt, placement.wall, base.pool.lengthFt, base.pool.widthFt)),
+      });
+      latestRef.current = next;
+      onChange(next);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [selectedId, job, placementOf, spanOf, withPlacement, onChange]);
+  }, [selectedId, job, spanOf, withPlacement, onChange]);
 
   const readout = selectedId ? describe(shown, selectedId) : null;
 
