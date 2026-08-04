@@ -155,12 +155,13 @@ Phase 0 goals:
 2. Local persistence is embedded PostgreSQL and private filesystem storage, not the managed production deployment profile.
 3. Pilot JWT authentication uses a local symmetric secret; production requires asymmetric/JWKS identity, TLS, provisioning, rotation, and access logging.
 4. Evidence freshness/expiration are not implemented.
-5. **The Designer contract test does not run in CI.** `Apex Designer/` is a
-   separate preserved component (ADR-0002) and is gitignored here, so
-   `integration-tests/designer-contract.test.ts` skips on any clone without both
-   repositories side by side. It is a real test where it runs and no signal
-   where it does not. Making it run in CI needs the Designer repository checked
-   out in the workflow with a deploy key.
+5. **The Designer contract test runs in CI only once a deploy key is set.** The
+   workflow now checks `apex-designer` out beside this repository and runs the
+   contract test against it, but that needs a read-only deploy key in
+   `APEX_DESIGNER_DEPLOY_KEY` — see `docs/runbooks/deployment.md` §8. Until the
+   secret exists CI prints a warning and the test skips, which is the state as of
+   2026-08-03. Where the secret is present, a missing engine **fails** the run
+   rather than skipping it.
 5. QuickBooks synchronization is not connected; release only creates canonical draw eligibility.
 6. Schedule authority remains disconnected.
 7. Chemistry remains explicitly outside field deployment until separately approved.
@@ -782,6 +783,46 @@ The content itself is no longer open — approved 2026-08-03.
 conservative planning figures, not as measurements. If Lubbock actually turns
 these around next-day, tightening each row is one number and makes every warning
 sharper. Nothing breaks in the meantime; the deadlines simply fire a day early.
+
+## Designer contract in CI — 2026-08-03
+
+The one test that reaches outside this repository now has a CI path. The workflow
+checks the private `apex-designer` repository out into `Apex Designer/` with a
+read-only deploy key and runs `integration-tests/designer-contract.test.ts`
+against the real engine, rather than skipping it as it has since the test was
+written.
+
+Source only — the Designer engine imports nothing outside its own tree, so there
+is no second install — and `Apex Designer` was already in `.dockerignore`, so the
+container build is untouched.
+
+| Commands | Result |
+|---|---|
+| `pnpm verify` | **436/436 root tests** passed; integration **3 passed / 14 skipped**, the Designer contract test among the three |
+| Guard exercised both ways | With the engine path broken and `APEX_REQUIRE_DESIGNER_CONTRACT=1`, the run **fails** naming the missing path; with the variable unset the same state **skips** and exits 0 |
+| YAML | Workflow parses |
+
+Decisions worth challenging:
+
+- **A skip has to be able to fail.** `APEX_REQUIRE_DESIGNER_CONTRACT` is set only
+  where the checkout was supposed to happen. Without it, a checkout landing in
+  the wrong directory or a revoked key would show up as a green run with one
+  quiet skip — indistinguishable from coverage. The variable is what makes the
+  new signal trustworthy, and it was tested by breaking it rather than by
+  reasoning about it.
+- **The checkout is conditional on the secret, and says so out loud.** A fork, or
+  this repository before the key is added, cannot read `apex-designer` and must
+  not fail on a secret it was never going to have. That leniency is announced
+  with a workflow warning rather than left silent.
+- **`secrets` is not available in a step-level `if`.** It is routed through a
+  job-level `env` boolean, which carries whether the key is configured and never
+  the key.
+- **The deploy key is read-only.** A writable key in a workflow is a way to
+  rewrite the quantity authority from a pull request.
+
+**Still open, and it is yours:** the secret does not exist yet, so CI warns and
+the test skips exactly as before. Four steps in
+[`docs/runbooks/deployment.md`](runbooks/deployment.md) §8.
 
 ## Next controlled milestone
 

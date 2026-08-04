@@ -47,9 +47,11 @@ Next three actions, in order:
    the single enforcement point. The policies are kept but inactive, and
    `pg_tables.rowsecurity` is false so the schema does not claim otherwise.
    Revisit before multi-user SQL access.
-4. **There is no CI signal on the Designer contract.** `Apex Designer/` is a
-   separate preserved repository, so that test skips everywhere but a machine
-   with both checked out.
+4. **The Designer contract has a CI signal only once you add a deploy key.**
+   `Apex Designer/` is a separate preserved repository. CI now checks it out and
+   runs the contract test, but that needs `APEX_DESIGNER_DEPLOY_KEY` — four
+   steps in `docs/runbooks/deployment.md` §8, none of which anyone but you can
+   do. Until then CI warns and the test skips, as it always has.
 5. **The staff token lives in `sessionStorage` and there are no refresh
    tokens.** Tab-scoped, gone on browser close, readable by any script on the
    origin — which the `script-src 'self'` CSP is what makes acceptable. An
