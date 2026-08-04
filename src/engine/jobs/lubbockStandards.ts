@@ -48,9 +48,11 @@ function lubbockStandard(
       steps: [
         {
           ...STANDARD_MODEL.pool.steps[0]!,
-          // Entry stairs sit in the shallow end, on the wall opposite the spa so
-          // the two are not fighting for the same corner.
-          placement: { wall: 'shallow', alongFt: 0 },
+          // Clear of the spa. The spa is set into the shallow-end corner at
+          // (0,0), so a stair on the same wall starting at 0 sits directly on
+          // top of it — which is exactly what it did, and the tread lines read
+          // as mystery lines through the spa. Start where the spa ends.
+          placement: { wall: 'shallow', alongFt: 6 },
         },
       ],
       seats: [

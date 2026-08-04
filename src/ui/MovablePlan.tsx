@@ -170,6 +170,31 @@ export function MovablePlan({
     [],
   );
 
+  /**
+   * Remove the selected object.
+   *
+   * Deleting the thing you are looking at is the natural gesture; the counters
+   * in the toolbar can only drop the last one, which is the wrong one whenever
+   * a job has two benches and you want the first.
+   */
+  const deleteSelected = useCallback(() => {
+    if (!selectedId) return;
+    const base = latestRef.current;
+    let next = base;
+    if (selectedId === SPA_MOVE_ID) {
+      next = { ...base, spa: undefined };
+    } else if (base.pool.steps.some((s) => s.id === selectedId)) {
+      next = { ...base, pool: { ...base.pool, steps: base.pool.steps.filter((s) => s.id !== selectedId) } };
+    } else if (base.pool.seats.some((s) => s.id === selectedId)) {
+      next = { ...base, pool: { ...base.pool, seats: base.pool.seats.filter((s) => s.id !== selectedId) } };
+    } else {
+      return;
+    }
+    latestRef.current = next;
+    setSelectedId(undefined);
+    onChange(next);
+  }, [selectedId, onChange]);
+
   const onPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
     const target = event.target as Element | null;
 
@@ -311,6 +336,14 @@ export function MovablePlan({
     if (!selectedId) return undefined;
     const onKey = (event: KeyboardEvent) => {
       const step = event.shiftKey ? 1 : 0.5;
+      if (event.key === 'Delete' || event.key === 'Backspace') {
+        // Not while typing in the advanced form.
+        const active = document.activeElement;
+        if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement || active instanceof HTMLSelectElement) return;
+        event.preventDefault();
+        deleteSelected();
+        return;
+      }
       const delta = event.key === 'ArrowLeft' || event.key === 'ArrowUp' ? -step
         : event.key === 'ArrowRight' || event.key === 'ArrowDown' ? step
           : 0;
@@ -335,7 +368,7 @@ export function MovablePlan({
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [selectedId, job, spanOf, withPlacement, onChange]);
+  }, [selectedId, job, spanOf, withPlacement, onChange, deleteSelected]);
 
   const readout = selectedId ? describe(shown, selectedId) : null;
 
@@ -357,6 +390,11 @@ export function MovablePlan({
         {readout
           ? <span><strong>{readout.label}</strong> · {readout.wall} wall · {readout.along} from the corner · arrow keys nudge 6", shift 1'</span>
           : <span>Drag a step, bench or spa to place it. Everything else on the plan is fixed by the job.</span>}
+        {readout && (
+          <button className="btn ghost plan-delete" onClick={deleteSelected}>
+            Delete {readout.label}
+          </button>
+        )}
       </div>
       {children}
     </div>
