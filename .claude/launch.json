@@ -8,6 +8,12 @@
       "port": 4173
     },
     {
+      "name": "apex-os-local",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["var/run-local.mjs"],
+      "port": 4100
+    },
+    {
       "name": "apex-os",
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["--filter", "@apex/os", "dev"],
