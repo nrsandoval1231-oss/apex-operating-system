@@ -9,7 +9,8 @@
  */
 
 import { runTakeoff, type CodeFailureArea } from '../engine/index.ts';
-import { planPrintScale, renderPlanView } from '../engine/planView.ts';
+import { feetInches, planPrintScale, renderPlanView } from '../engine/planView.ts';
+import { renderSectionView, sectionPrintScale } from '../engine/sectionView.ts';
 import { GeometryInputError } from '../engine/geometry.ts';
 import { ExcavationInputError } from '../engine/excavation.ts';
 import type { Job } from '../engine/types.ts';
@@ -63,6 +64,9 @@ export function TakeoffSheet({ job, details }: { job: Job; details?: readonly St
   const { geometry: g, excavation: x, codeBasis } = result;
   const plan = renderPlanView(job);
   const printScale = planPrintScale(plan);
+  const section = renderSectionView(job);
+  const sectionScale = sectionPrintScale(section);
+  const p = job.pool.profile;
 
   return (
     <div className="sheet">
@@ -130,6 +134,32 @@ export function TakeoffSheet({ job, details }: { job: Job; details?: readonly St
             Prints at {printScale.label} on 11×17 landscape ·{' '}
             {Math.round(g.totalVolumeGal.value).toLocaleString('en-US')} gal ·{' '}
             {num1(g.totalWettedArea.value)} sf wetted · {num1(x.totalBankCy.value)} BCY cut
+          </span>
+        </div>
+      </div>
+
+      {/*
+        The section is a second sheet, not a corner of the first. Depth is the
+        dimension a plan cannot draw, and the city asks for it — putting it in a
+        margin would make the one view that shows depth the smallest thing on
+        the page.
+      */}
+      <div
+        className="plan-frame plan-sheet"
+        style={{ ['--plan-print-width' as string]: `${sectionScale.widthIn.toFixed(2)}in` }}
+      >
+        <div dangerouslySetInnerHTML={{ __html: section.svg }} />
+
+        <div className="plan-caption">
+          <span>
+            Longitudinal section on the pool centreline · depths and runs dimensioned · step and
+            seat positions along the length are indicative
+          </span>
+          <span>
+            Prints at {sectionScale.label}
+            {!sectionScale.fits && ' — DOES NOT FIT 11×17'} ·{' '}
+            {feetInches(p.shallowDepth)} shallow · {feetInches(p.deepDepth)} deep ·{' '}
+            {feetInches(job.excavation.freeboardFt)} freeboard
           </span>
         </div>
       </div>

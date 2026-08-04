@@ -1046,6 +1046,78 @@ tr.is-fail .check-message {
   width: 100%;
 }
 
+/* --- longitudinal section ------------------------------------------------- */
+
+.sec-shell {
+  fill: url(#secHatch);
+  stroke: var(--ink);
+  stroke-width: 1.2;
+}
+
+.sec-water {
+  stroke: var(--ink);
+  stroke-width: 1;
+}
+
+/* The waterline is the datum every depth on this drawing is measured from, so
+   it reads heavier than the construction lines around it. */
+.sec-waterline {
+  stroke: var(--accent);
+  stroke-width: 1.4;
+}
+
+.sec-grade {
+  stroke: var(--ink);
+  stroke-width: 1;
+  stroke-dasharray: 6 3;
+  opacity: 0.7;
+}
+
+.sec-spill {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.6;
+}
+
+.sec-step, .sec-seat {
+  fill: var(--paper);
+  stroke: var(--ink);
+  stroke-width: 1;
+}
+
+/* Label on its own row, then side and distance side by side, then remove. */
+.property-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 24px;
+  gap: 4px;
+  align-items: end;
+  margin-bottom: 6px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.property-row > input[type='text'] {
+  grid-column: 1 / -1;
+}
+
+.property-row label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.property-row label span {
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.property-row button {
+  min-height: 28px;
+  padding: 0;
+}
+
 .switcher-edited {
   font-family: var(--mono);
   font-size: 10px;

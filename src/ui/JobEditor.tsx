@@ -12,7 +12,7 @@
 
 import { useRef, useState } from 'react';
 import { jobFileName, parseJob, serializeJob } from '../engine/jobFile.ts';
-import type { Job, SoilLayer } from '../engine/types.ts';
+import type { Job, PropertyLine, PropertyLineSide, SoilLayer } from '../engine/types.ts';
 
 // --- tiny path helpers ------------------------------------------------------
 
@@ -261,10 +261,94 @@ export function JobEditor({
             );
           })}
 
+          <PropertyLines job={job} onChange={onChange} />
           <SoilLayers job={job} onChange={onChange} />
         </>
       )}
     </aside>
+  );
+}
+
+const PROPERTY_SIDES: readonly { value: PropertyLineSide; label: string }[] = [
+  { value: 'top', label: 'top (house side)' },
+  { value: 'bottom', label: 'bottom' },
+  { value: 'left', label: 'left (shallow end)' },
+  { value: 'right', label: 'right (deep end)' },
+];
+
+/**
+ * Lot boundaries for the city submittal.
+ *
+ * A list rather than four fixed fields: a lot is not always four-sided from the
+ * pool's point of view, and most jobs only measure the one or two boundaries the
+ * pool comes near. Fixed fields would have forced a number into every side and
+ * put three invented setbacks on a drawing to get one real one.
+ */
+function PropertyLines({ job, onChange }: { job: Job; onChange: (j: Job) => void }) {
+  const lines = job.site.propertyLines ?? [];
+
+  const setLine = (i: number, patch: Partial<PropertyLine>) =>
+    onChange(setAt(job, 'site.propertyLines', lines.map((l, idx) => (idx === i ? { ...l, ...patch } : l))));
+
+  const addLine = () =>
+    onChange(setAt(job, 'site.propertyLines', [
+      ...lines,
+      { side: 'bottom' as PropertyLineSide, distanceFt: 10, label: 'Property line' },
+    ]));
+
+  const removeLine = (i: number) =>
+    onChange(setAt(job, 'site.propertyLines', lines.filter((_, idx) => idx !== i)));
+
+  return (
+    <fieldset className="editor-group">
+      <legend>Property lines</legend>
+      <p className="editor-note">
+        Measured from the nearest water to the boundary, the same envelope the foundation distance
+        uses. Drawn and dimensioned on the plan but <strong>not code-checked</strong> — no Lubbock
+        property-line setback has been recorded here, and the sheet will not print a verdict against
+        a limit it does not have. Leave the list empty rather than estimating: a reviewer cannot tell
+        a guess from a measurement.
+      </p>
+      {lines.map((line, i) => (
+        <div className="property-row" key={i}>
+          <input
+            type="text"
+            value={line.label}
+            aria-label={`Property line ${i + 1} label`}
+            onChange={(e) => setLine(i, { label: e.target.value })}
+          />
+          <label>
+            <span>side</span>
+            <select
+              value={line.side}
+              aria-label={`Property line ${i + 1} side`}
+              onChange={(e) => setLine(i, { side: e.target.value as PropertyLineSide })}
+            >
+              {PROPERTY_SIDES.map((side) => (
+                <option key={side.value} value={side.value}>{side.label}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span>distance</span>
+            <input
+              type="number"
+              step={0.5}
+              min={0}
+              value={line.distanceFt}
+              aria-label={`Property line ${i + 1} distance`}
+              onChange={(e) => setLine(i, { distanceFt: Number(e.target.value) })}
+            />
+          </label>
+          <button type="button" onClick={() => removeLine(i)} aria-label={`Remove property line ${i + 1}`}>
+            ×
+          </button>
+        </div>
+      ))}
+      <button type="button" className="editor-add" onClick={addLine}>
+        Add property line
+      </button>
+    </fieldset>
   );
 }
 
