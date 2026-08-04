@@ -8,7 +8,7 @@
  * complete when it isn't.
  */
 
-import { runTakeoff } from '../engine/index.ts';
+import { runTakeoff, type CodeFailureArea } from '../engine/index.ts';
 import { planPrintScale, renderPlanView } from '../engine/planView.ts';
 import { GeometryInputError } from '../engine/geometry.ts';
 import { ExcavationInputError } from '../engine/excavation.ts';
@@ -21,6 +21,28 @@ import { HydraulicsSection } from './HydraulicsSection.tsx';
 import { CoverSection, FinishesSection, YardSection } from './FinishesSection.tsx';
 import { EquipmentSection } from './EquipmentSection.tsx';
 import { num, num1 } from './format.ts';
+
+/**
+ * Where each family of blocking check is actually rendered on the sheet. The
+ * banner names the section the reader has to scroll to; naming the wrong one is
+ * worse than naming none, because it sends them to a table that is all green.
+ */
+const FAILURE_AREA_LABEL: Record<CodeFailureArea, string> = {
+  amendments: 'A City of Lubbock amendment check',
+  hydraulics: 'A hydraulic check',
+  gas: 'A gas sizing check',
+  'equipment-pad': 'An equipment pad run',
+};
+
+function failureAreaSentence(areas: readonly CodeFailureArea[]): string {
+  const labels = areas.map((area) => FAILURE_AREA_LABEL[area]);
+  if (labels.length === 0) return 'A blocking check failed.';
+  if (labels.length === 1) return `${labels[0]} failed.`;
+  // "A hydraulic check, a gas sizing check and an equipment pad run failed."
+  const rest = labels.slice(1).map((label) => label.replace(/^A[n]? /, (m) => m.toLowerCase()));
+  const last = rest.pop();
+  return `${[labels[0], ...rest].join(', ')} and ${last} failed.`;
+}
 
 export function TakeoffSheet({ job, details }: { job: Job; details?: readonly StandardDetail[] }) {
   let result;
@@ -64,8 +86,8 @@ export function TakeoffSheet({ job, details }: { job: Job; details?: readonly St
         <div className="stop">
           <h3>Code stop</h3>
           <p>
-            One or more City of Lubbock amendment checks failed. Quantities below are computed and
-            shown, but this configuration cannot be built as entered. See the compliance path on the
+            {failureAreaSentence(result.codeFailureAreas)} Quantities below are computed and shown,
+            but this configuration cannot be built as entered. See the compliance path on the
             failing check.
           </p>
         </div>

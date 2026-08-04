@@ -31,9 +31,20 @@ export interface TakeoffResult {
     readonly ordinance: string;
     readonly amendments: string;
   };
+  /**
+   * Which families of check failed, in sheet order. Empty when nothing failed.
+   *
+   * `hasCodeFailure` alone could not answer "where do I look", and a sheet that
+   * says a Lubbock amendment failed when the real failure is a gas meter sends
+   * the reader to a table where everything is green.
+   */
+  readonly codeFailureAreas: readonly CodeFailureArea[];
   /** True when any code check or safety-critical hydraulic/gas/pad check failed. */
   readonly hasCodeFailure: boolean;
 }
+
+/** A family of blocking checks, named so a sheet can point at the right section. */
+export type CodeFailureArea = 'amendments' | 'hydraulics' | 'gas' | 'equipment-pad';
 
 export function runTakeoff(
   job: Job,
@@ -66,6 +77,15 @@ export function runTakeoff(
     : false;
   const padFailure = (equipment?.pad.impossibleRuns.length ?? 0) > 0;
 
+  // Sheet order, so the list reads in the order the reader would scroll.
+  const codeFailureAreas: CodeFailureArea[] = [];
+  if (hasFailure([...geometry.checks, ...(yard?.checks ?? []), ...(cover?.checks ?? [])])) {
+    codeFailureAreas.push('amendments');
+  }
+  if (hydraulicFailure) codeFailureAreas.push('hydraulics');
+  if (gasFailure) codeFailureAreas.push('gas');
+  if (padFailure) codeFailureAreas.push('equipment-pad');
+
   return {
     job,
     geometry,
@@ -81,12 +101,10 @@ export function runTakeoff(
       ordinance: ORDINANCE,
       amendments: AMENDMENT_ARTICLE,
     },
-    hasCodeFailure:
-      hasFailure([
-        ...geometry.checks,
-        ...(yard?.checks ?? []),
-        ...(cover?.checks ?? []),
-      ]) || hydraulicFailure || gasFailure || padFailure,
+    codeFailureAreas,
+    // Derived from the list, so the banner and the flag can never disagree
+    // about whether this configuration can be built.
+    hasCodeFailure: codeFailureAreas.length > 0,
   };
 }
 
