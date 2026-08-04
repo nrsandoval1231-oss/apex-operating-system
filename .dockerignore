@@ -9,7 +9,8 @@ var
 _to_delete
 
 # The preserved component repositories. They are gitignored and are not part of
-# this image; the Designer contract test skips without them.
+# this image. CI checks `Apex Designer` out for the contract test, which runs
+# before the build — the image itself must still never carry it.
 Apex Designer
 apex-decks
 apex-lead-engine

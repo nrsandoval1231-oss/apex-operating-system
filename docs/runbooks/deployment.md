@@ -325,7 +325,62 @@ Stated so nobody assumes otherwise:
 - **No row-level security.** Retired honestly in migration `0019`; the API is the
   single enforcement point. Revisit before multi-user SQL access. See
   `docs/plans/deployment.md` §4.
-- **No CI signal on the Designer contract.** `Apex Designer/` is a separate
-  preserved repository, so that test skips in CI.
 - **No automated restore verification.** §5 is a procedure a person runs, and it
   has not been run yet.
+
+---
+
+## 8. The Designer contract deploy key
+
+CI checks the private `apex-designer` repository out beside this one so
+`integration-tests/designer-contract.test.ts` actually runs. That needs a
+read-only deploy key, which is the one part nobody but you can do.
+
+**Until the key is configured, CI prints a warning and the contract test skips.**
+That is the state the repository ships in — a skipped test in a green run, which
+is why the warning exists and why §7 no longer claims the signal is impossible.
+
+```bash
+# 1. Generate a key pair used for nothing else. No passphrase: a workflow
+#    cannot answer a prompt.
+ssh-keygen -t ed25519 -C "apex-os-ci -> apex-designer" -f ./apex-designer-ci -N ""
+```
+
+2. **Public** half → `apex-designer` → Settings → Deploy keys → Add.
+   Title `apex-os CI`. **Leave "Allow write access" unchecked.** CI only reads;
+   a writable key in a workflow is a way to rewrite the quantity authority from
+   a pull request.
+3. **Private** half (`apex-designer-ci`, the whole file including the
+   `-----BEGIN…` and `-----END…` lines) → `apex-operating-system` → Settings →
+   Secrets and variables → Actions → New repository secret, named
+   **`APEX_DESIGNER_DEPLOY_KEY`**.
+4. Delete both local files. The key exists in two places that can hold it
+   safely; a copy on a laptop is a third that cannot.
+
+```bash
+rm ./apex-designer-ci ./apex-designer-ci.pub
+```
+
+### Confirming it works
+
+Push anything that touches a CI path and read the run. Two things prove it:
+
+- The step **Check out Apex Designer** ran rather than being skipped.
+- The verify output shows the Designer contract test **passing**, not skipping.
+
+`pnpm verify` runs with `APEX_REQUIRE_DESIGNER_CONTRACT=1` whenever the secret is
+present, so a checkout that landed in the wrong directory, or a key that has been
+revoked, **fails the run** instead of quietly reverting to a skip. That failure
+mode is the point of the variable — the previous behaviour was indistinguishable
+from success.
+
+### When it breaks
+
+| Symptom | Cause |
+|---|---|
+| Checkout step fails with a permission error | Key removed from `apex-designer`, or the public half was never added |
+| `APEX_REQUIRE_DESIGNER_CONTRACT is set … does not exist` | Checkout succeeded but not into `Apex Designer/`; check the `path:` in the workflow |
+| Warning `Designer contract unverified` | Secret is absent or empty on this repository. Expected on forks |
+
+Rotate the key the same way: add the new public half, replace the secret, then
+remove the old deploy key. Adding before removing keeps CI green throughout.

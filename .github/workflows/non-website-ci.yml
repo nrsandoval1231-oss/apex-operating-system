@@ -64,8 +64,36 @@ jobs:
       S3_ACCESS_KEY_ID: apexkey
       S3_SECRET_ACCESS_KEY: apexsecret123
       S3_REGION: us-east-1
+      # The `secrets` context is not available in a step-level `if`, but it is
+      # available in a job-level `env`. This carries "is the key configured" —
+      # never the key itself — into the two steps that need to branch on it.
+      HAS_DESIGNER_KEY: ${{ secrets.APEX_DESIGNER_DEPLOY_KEY != '' }}
     steps:
       - uses: actions/checkout@v4
+
+      # `Apex Designer/` is a separate private repository (ADR-0002) and is
+      # gitignored here, so integration-tests/designer-contract.test.ts skips on
+      # any clone without it. Checking it out is what gives the contract a CI
+      # signal. Source only — the engine imports nothing outside its own tree, so
+      # there is no second install.
+      #
+      # The `if` guard is deliberate: a fork, or this repository before the
+      # deploy key is configured, cannot read apex-designer and must not fail on
+      # a secret it was never going to have. What stops that guard from becoming
+      # a silent hole is APEX_REQUIRE_DESIGNER_CONTRACT below.
+      - name: Check out Apex Designer
+        if: env.HAS_DESIGNER_KEY == 'true'
+        uses: actions/checkout@v4
+        with:
+          repository: nrsandoval1231-oss/apex-designer
+          path: Apex Designer
+          ssh-key: ${{ secrets.APEX_DESIGNER_DEPLOY_KEY }}
+          persist-credentials: false
+
+      - name: Note that the Designer contract will not be verified
+        if: env.HAS_DESIGNER_KEY != 'true'
+        run: |
+          echo "::warning title=Designer contract unverified::APEX_DESIGNER_DEPLOY_KEY is not set, so apex-designer was not checked out and the Designer contract test will skip. See docs/runbooks/deployment.md section 8."
 
       # MinIO speaks the S3 API. Run as a step rather than a service container
       # because the image needs a command (`server /data`), which the services
@@ -110,6 +138,11 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm verify
+        env:
+          # Set only when the checkout above actually ran. The test then fails
+          # instead of skipping if the engine is missing, so a checkout that
+          # lands in the wrong path or a revoked key is red rather than green.
+          APEX_REQUIRE_DESIGNER_CONTRACT: ${{ env.HAS_DESIGNER_KEY == 'true' && '1' || '' }}
       - run: pnpm audit --prod --audit-level high
 
       # The container is built AND RUN. A Dockerfile that merely builds proves

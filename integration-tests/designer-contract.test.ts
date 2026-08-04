@@ -18,15 +18,18 @@ import { calculateQuantityPayloadSha256 } from '../packages/contracts/src/quanti
  * real where the Designer source is present and absent where it is not, rather
  * than red everywhere.
  *
- * WHAT THIS COSTS: there is currently no CI signal on the Designer contract. It
- * only runs on a machine that has both repositories. Making it run in CI means
- * checking out the Designer repository in the workflow, which needs a deploy key
- * — tracked in docs/status.md rather than pretended away here.
+ * `APEX_REQUIRE_DESIGNER_CONTRACT` is what stops that leniency from swallowing
+ * the CI signal. Where the Designer source is supposed to be present — CI checks
+ * it out from the private `apex-designer` repository with a deploy key — the
+ * variable is set, and a missing engine becomes a failure rather than a skip. A
+ * checkout that lands in the wrong directory, or a deploy key that has been
+ * revoked, would otherwise look exactly like a green run.
  */
 
 const here = dirname(fileURLToPath(import.meta.url));
 const enginePath = resolve(here, '../Apex Designer/src/engine/index.ts');
 const engineAvailable = existsSync(enginePath);
+const engineRequired = (process.env.APEX_REQUIRE_DESIGNER_CONTRACT ?? '').trim() !== '';
 
 interface DesignerEngine {
   readonly runTakeoff: (model: Record<string, unknown>) => {
@@ -50,13 +53,28 @@ const engine: DesignerEngine | null = engineAvailable
   ? ((await import(pathToFileURL(enginePath).href)) as unknown as DesignerEngine)
   : null;
 
-if (!engineAvailable) {
+if (!engineAvailable && !engineRequired) {
   console.warn(
     `\n  !  SKIPPING the Designer contract test: ${enginePath} is not present.`
-    + '\n     This is expected in CI and on any clone without the Designer repository'
-    + '\n     alongside. It is NOT a pass — the contract is simply unverified here.\n',
+    + '\n     This is expected on any clone without the Designer repository alongside.'
+    + '\n     It is NOT a pass — the contract is simply unverified here.\n',
   );
 }
+
+/**
+ * Runs only where the engine was supposed to be checked out and is not. Failing
+ * here is the point: the alternative is a silent skip inside an otherwise green
+ * run, which reads as coverage that does not exist.
+ */
+describe.runIf(engineRequired && !engineAvailable)('Designer contract test requirement', () => {
+  it('finds the Designer engine, because APEX_REQUIRE_DESIGNER_CONTRACT is set', () => {
+    expect.unreachable(
+      `APEX_REQUIRE_DESIGNER_CONTRACT is set, so the Designer engine must be present, but ${enginePath} does not exist.`
+      + ' Check that the apex-designer checkout landed in "Apex Designer/" at the repository root'
+      + ' and that the deploy key is still valid. Unset the variable to allow the skip.',
+    );
+  });
+});
 
 const jobId = 'job_01ARZ3NDEKTSV4RRFFQ69G5FAW';
 const revisionId = 'revision_01ARZ3NDEKTSV4RRFFQ69G5FAX';
