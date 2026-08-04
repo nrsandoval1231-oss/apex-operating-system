@@ -147,12 +147,37 @@ export function renderPlanView(job: Job, targetWidthPx = 1040): PlanViewResult {
    */
   const houseDepth = 3;
 
+  /**
+   * The water envelope, in pool feet. A detached spa hangs off the deep end, so
+   * the right-hand edge is not simply the pool length — and a property-line
+   * dimension has to run from the nearest water, same as the foundation setback.
+   */
+  const envRight = L + (spa && !spa.insetIntoPool ? spaL : 0);
+  const lineDistance = (side: 'left' | 'right' | 'top' | 'bottom') =>
+    (job.site.propertyLines ?? [])
+      .filter((line) => line.side === side)
+      .reduce((furthest, line) => Math.max(furthest, line.distanceFt), 0);
+
+  // A property line is measured from the envelope edge on its own side, so the
+  // right and bottom cases start beyond the pool rectangle. Room is left past
+  // each line for its own label.
+  const propTop = lineDistance('top');
+  const propBottom = lineDistance('bottom');
+  const propLeft = lineDistance('left');
+  const propRight = lineDistance('right');
+
   // The house sits `setback` feet off the top long wall, and the band itself
   // needs room above that or it runs off the top of the drawing.
-  const topExtent = setback + houseDepth + 2.5;
-  const bottomExtent = (job.equipment?.distanceFromPoolFt ?? Math.max(deckW, over) + 4) + padD + 6;
-  const leftExtent = Math.max(deckW, over) + 9;
-  const rightExtent = Math.max(deckW, over) + (spa?.insetIntoPool ? 0 : spaL) + 12;
+  const topExtent = Math.max(setback + houseDepth + 2.5, propTop > 0 ? propTop + 4 : 0);
+  const bottomExtent = Math.max(
+    (job.equipment?.distanceFromPoolFt ?? Math.max(deckW, over) + 4) + padD + 6,
+    propBottom > 0 ? propBottom + 4 : 0,
+  );
+  const leftExtent = Math.max(Math.max(deckW, over) + 9, propLeft > 0 ? propLeft + 4 : 0);
+  const rightExtent = Math.max(
+    Math.max(deckW, over) + (spa?.insetIntoPool ? 0 : spaL) + 12,
+    propRight > 0 ? (envRight - L) + propRight + 4 : 0,
+  );
 
   const contentW = leftExtent + L + rightExtent;
   const contentH = topExtent + W + bottomExtent;
@@ -386,6 +411,43 @@ export function renderPlanView(job: Job, targetWidthPx = 1040): PlanViewResult {
 
   if (deckW > 0) {
     parts.push(dimV(ctx, W, W + deckW, L * 0.2, `${feetInches(deckW)} deck`));
+  }
+
+  // --- property lines --------------------------------------------------------
+  // Each is drawn the full width or height of the sheet, labelled, and
+  // dimensioned back to the nearest water on its own side. No pass/fail badge:
+  // unlike the 1:1 foundation rule, no property-line limit has been confirmed
+  // for Lubbock, and a drawing must not imply a verdict nobody supplied.
+  for (const line of job.site.propertyLines ?? []) {
+    const d = line.distanceFt;
+    if (!Number.isFinite(d) || d <= 0) continue;
+    const label = line.label.toUpperCase();
+
+    if (line.side === 'top' || line.side === 'bottom') {
+      const at = line.side === 'top' ? -d : W + d;
+      parts.push(
+        `<line class="pv-property-line" x1="${n(x(-leftExtent + 1))}" y1="${n(y(at))}" x2="${n(x(L + rightExtent - 1))}" y2="${n(y(at))}"/>`,
+      );
+      parts.push(
+        text(ctx, -leftExtent + 1.5, at + (line.side === 'top' ? -0.8 : 1.8), label, 'pv-property-label', 'start'),
+      );
+      // Measured from the envelope edge on this side, which for top/bottom is
+      // the pool wall — a detached spa is centred and never the nearest point.
+      parts.push(
+        dimV(ctx, Math.min(at, line.side === 'top' ? 0 : W), Math.max(at, line.side === 'top' ? 0 : W),
+          L * 0.65, `${feetInches(d)} to ${line.label.toLowerCase()}`, 'pv-dim-setback'),
+      );
+    } else {
+      const at = line.side === 'left' ? -d : envRight + d;
+      parts.push(
+        `<line class="pv-property-line" x1="${n(x(at))}" y1="${n(y(-topExtent + 1))}" x2="${n(x(at))}" y2="${n(y(W + bottomExtent - 1))}"/>`,
+      );
+      parts.push(text(ctx, at, -topExtent + 2.2, label, 'pv-property-label', 'middle'));
+      parts.push(
+        dimH(ctx, Math.min(at, line.side === 'left' ? 0 : envRight), Math.max(at, line.side === 'left' ? 0 : envRight),
+          W * 0.5, `${feetInches(d)} to ${line.label.toLowerCase()}`, 'pv-dim-setback'),
+      );
+    }
   }
 
   // profile runs along the top

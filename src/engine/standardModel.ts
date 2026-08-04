@@ -62,6 +62,13 @@ export const STANDARD_MODEL: Job = {
     // question 7 asks whether a typical Lubbock lot actually clears this.
     distanceToFoundationFt: 8,
     foundationDescription: 'house slab foundation',
+    // The city submittal asks for distance to the property lines alongside the
+    // pool and depth dimensions. These are the standard model's placeholders and
+    // must be replaced with measured values per job — they are not a survey.
+    propertyLines: [
+      { side: 'bottom', distanceFt: 12, label: 'Rear property line' },
+      { side: 'right', distanceFt: 10, label: 'Side property line' },
+    ],
   },
   excavation: {
     shellThicknessFt: 0.5, // 6 in total offset from finished waterline/floor

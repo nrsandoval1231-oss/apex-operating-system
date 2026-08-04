@@ -102,6 +102,33 @@ export interface PoolBody {
   readonly seats: readonly Seat[];
 }
 
+/** Which edge of the plan as drawn a property line runs along. */
+export type PropertyLineSide = 'left' | 'right' | 'top' | 'bottom';
+
+/**
+ * A lot boundary, drawn and dimensioned on the plan.
+ *
+ * Carried for the city submittal, which asks for distance to the property lines
+ * alongside pool dimensions, depth dimensions, and distance to the house.
+ *
+ * Deliberately NOT code-checked. Lubbock's required setback from a property line
+ * has not been confirmed here, and a pass/fail badge against a limit nobody
+ * supplied would be a fabricated compliance claim on a drawing going to a plan
+ * reviewer. The distance is drawn and dimensioned; judging it stays with Apex
+ * until a real limit is recorded.
+ */
+export interface PropertyLine {
+  readonly side: PropertyLineSide;
+  /**
+   * Distance from the nearest point of the pool/spa water envelope to the line.
+   * ft. Same envelope the foundation setback is measured from, so two numbers on
+   * one sheet cannot mean two different things.
+   */
+  readonly distanceFt: number;
+  /** Printed against the line, e.g. "Rear property line". */
+  readonly label: string;
+}
+
 export interface SiteGeometry {
   /**
    * Horizontal distance from the nearest point of the pool/spa water envelope to
@@ -111,6 +138,12 @@ export interface SiteGeometry {
   readonly distanceToFoundationFt: number;
   /** What the measurement is to, printed on the sheet. */
   readonly foundationDescription: string;
+  /**
+   * Lot boundaries. Optional and unset by default: a plan that invents a
+   * property line is worse than one that shows none, because a reviewer cannot
+   * tell the difference between a measured setback and a placeholder.
+   */
+  readonly propertyLines?: readonly PropertyLine[];
 }
 
 /** One layer of the subsurface profile. Lubbock: sandy/clay loam over caliche. */

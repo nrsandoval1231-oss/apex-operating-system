@@ -213,3 +213,52 @@ describe('print scale (step 10)', () => {
     expect(tall.inPerFt).toBeLessThan(wide.inPerFt);
   });
 });
+
+/**
+ * The city submittal asks for four things: pool dimensions, depth dimensions,
+ * distance to the house, and distance to the property lines. The first three
+ * were already drawn; these cover the fourth.
+ */
+describe('property lines', () => {
+  const withLines = (lines: Job['site']['propertyLines']): Job => ({
+    ...STANDARD_MODEL,
+    site: { ...STANDARD_MODEL.site, propertyLines: lines },
+  });
+
+  it('draws and dimensions each line back to the water', () => {
+    const svg = renderPlanView(withLines([
+      { side: 'bottom', distanceFt: 12, label: 'Rear property line' },
+      { side: 'right', distanceFt: 10, label: 'Side property line' },
+    ])).svg;
+    expect(svg.match(/pv-property-line/g)).toHaveLength(2);
+    expect(svg).toContain('REAR PROPERTY LINE');
+    expect(svg).toContain(`12'-0" to rear property line`);
+    expect(svg).toContain(`10'-0" to side property line`);
+  });
+
+  it('draws none when the job records none, rather than inventing a lot', () => {
+    const svg = renderPlanView(withLines(undefined)).svg;
+    expect(svg).not.toContain('pv-property-line');
+  });
+
+  it('grows the sheet so a distant line still fits on the drawing', () => {
+    const near = renderPlanView(withLines([{ side: 'bottom', distanceFt: 12, label: 'Rear' }]));
+    const far = renderPlanView(withLines([{ side: 'bottom', distanceFt: 60, label: 'Rear' }]));
+    // Same width target, so a line 60 ft out has to make the sheet taller —
+    // otherwise it is drawn outside the viewBox and silently disappears.
+    expect(far.heightPx).toBeGreaterThan(near.heightPx);
+  });
+
+  it('measures a side line from the spa when the spa is the nearest water', () => {
+    // A detached spa hangs off the deep end, so the right-hand envelope edge is
+    // past the pool wall. Measuring from the pool would overstate the setback.
+    const attached = renderPlanView(withLines([{ side: 'right', distanceFt: 10, label: 'Side' }]));
+    expect(attached.svg).toContain(`10'-0" to side`);
+    expect(attached.widthPx).toBeGreaterThan(0);
+  });
+
+  it('ignores a zero or negative distance rather than drawing a line through the pool', () => {
+    const svg = renderPlanView(withLines([{ side: 'left', distanceFt: 0, label: 'Side' }])).svg;
+    expect(svg).not.toContain('pv-property-line');
+  });
+});

@@ -561,6 +561,25 @@ tr.is-fail .check-message {
   stroke-width: 1;
 }
 
+/*
+ * Property line. Long dash-dot is the drafting convention for a lot boundary,
+ * which is what makes it readable as a boundary rather than as another
+ * construction line on a sheet already full of dashes.
+ */
+.pv-property-line {
+  stroke: var(--ink);
+  stroke-width: 1.1;
+  stroke-dasharray: 14 4 2 4;
+  opacity: 0.85;
+}
+.pv-property-label {
+  font-family: var(--sans);
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  fill: var(--ink);
+  opacity: 0.85;
+}
+
 .pv-station { stroke: var(--accent); stroke-width: 0.75; stroke-dasharray: 4 3; opacity: 0.7; }
 .pv-station-label {
   font-family: var(--sans);
