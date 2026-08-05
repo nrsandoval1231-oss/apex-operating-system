@@ -9,17 +9,24 @@ the things a newcomer would not guess.
 
 ---
 
-## Open branches, 2026-08-04
+## Branches — all landed, 2026-08-05
 
-Three repositories carry unmerged work. All are pushed; none has a PR.
+Nothing is unmerged. Verified by diffing each branch against `origin/main`, not
+by reading the branch list: the work was rebased onto `main` under new SHAs, so
+the branches survive as content-identical duplicates that `git branch --merged`
+does not recognise.
 
-| Repo | Branch | What it is |
+| Repo | Stale branch | Diff vs `origin/main` |
 |---|---|---|
-| `apex-designer` | `feat/builder-design-tool` | 11 commits. Designer became a drawing tool. |
-| `apex-proposal-engine` | `fix/builder-runs-in-a-browser` | The builder page was completely inert. |
-| `apex-operating-system` | `dev/designer-launch-config` | One dev-tooling commit. |
+| `apex-designer` | `feat/builder-design-tool` | empty — same tree, 11 rebased commits |
+| `apex-proposal-engine` | `fix/builder-runs-in-a-browser` | empty |
+| `apex-operating-system` | `docs/deploy-key-installed` | empty |
+| `apex-operating-system` | `dev/designer-launch-config` | strictly behind `main` |
 
-**Apex Designer is the session's main work** and is a change in kind, not
+All four can be deleted from their remotes. Until they are, the branch list
+implies open work that does not exist.
+
+**Apex Designer was the 2026-08-04 session's main work** and is a change in kind, not
 degree. It was a calculator that printed a plan; it is now something a builder
 draws in. Three preset sizes (12×24, 15×30, 20×40 — roughly 90% of Lubbock
 work), drag to move and resize, a draggable section for depth, add/remove for

@@ -2,7 +2,9 @@
 
 All repositories below were created as **private** GitHub repositories on 2026-07-28. Local and remote `main` heads were verified to match after the initial push.
 
-Local source root: `C:\Users\NickSandoval\Desktop\Nick-Assistant\Projects\Apex`
+Local source root: `C:\Users\NickSandoval\Nick OS\02_Projects\Apex` (moved from
+`Desktop\Nick-Assistant\Projects\Apex`; the older path appears in scripts and
+audit documents written before the move and is no longer valid).
 
 Wrapper directories were flattened on 2026-07-31 (`apex-lead-engine\apex-lead-engine` → `apex-lead-engine`, and the same for `apex-prds` and `apex-website`).
 

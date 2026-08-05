@@ -56,7 +56,7 @@ Website lead
 | `apex-lead-engine` | n8n intake and job-status workflow source | Source exists; intake inactive; speed-to-lead not built |
 | `apex-prds` | Foundation, decisions, and product requirements, including the decision register | Active |
 | `apex-decks` | Strategy and pitch-deck generators | Deck files regenerate on demand from source; slide-level visual QA pending before external use |
-| `gate-v3.jsx` | Original field command-center mockup | Superseded by `apps/apex-os`; preserved for reference only |
+| `docs/archive/` | Superseded artifacts kept for history — the `gate-v3.jsx` mockup, the pre-wiring browser demo, and two earlier handoffs | Reference only; not source of truth |
 
 Each existing Git component remains an independent repository during Phase 0/1. The root repository preserves the system-level plans and non-repository artifacts. A later approved migration will import component histories into the target monorepo rather than copying files blindly.
 
@@ -93,10 +93,13 @@ The controlled-pilot procedure and refusal boundaries are in [`docs/runbooks/gat
 
 The following are preserved for history but must not be treated as current source of truth:
 
+They live in [`docs/archive/`](docs/archive/README.md), which says what each one is and what replaced it:
+
 - `apex-handoff.md` — original client/project context (Travis, margin finding, tooling decisions)
 - `SESSION-HANDOFF.md` — 2026-07-26 build-state handoff
+- `gate-v3.jsx`, `demo.html`, `README-DEMO.md` — the pre-`apps/apex-os` prototypes
 
-Superseded artifacts were moved to `_to_delete/` during the 2026-07-31 cleanup. Current status belongs in `docs/status.md`. Architecture decisions belong in `docs/decisions/`.
+Superseded artifacts were moved to `_to_delete/` during the 2026-07-31 cleanup and the root was flattened again on 2026-08-05. Current status belongs in `docs/status.md`. Architecture decisions belong in `docs/decisions/`.
 
 ## Safety and readiness
 

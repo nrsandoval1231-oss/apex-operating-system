@@ -151,7 +151,7 @@ Phase 0 goals:
 
 **Launch blockers**
 
-1. The preserved `gate-v3.jsx` prototype remains sample-driven; the new operational slice is a separate controlled-pilot implementation.
+1. The preserved `docs/archive/gate-v3.jsx` prototype remains sample-driven; the new operational slice is a separate controlled-pilot implementation.
 2. Local persistence is embedded PostgreSQL and private filesystem storage, not the managed production deployment profile.
 3. Pilot JWT authentication uses a local symmetric secret; production requires asymmetric/JWKS identity, TLS, provisioning, rotation, and access logging.
 4. Evidence freshness/expiration are not implemented.
