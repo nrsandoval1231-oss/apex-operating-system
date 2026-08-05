@@ -8,6 +8,13 @@
       "port": 4173
     },
     {
+      "name": "apex-designer",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["var/run-designer.mjs"],
+      "port": 5173,
+      "autoPort": true
+    },
+    {
       "name": "apex-os-local",
       "runtimeExecutable": "node",
       "runtimeArgs": ["var/run-local.mjs"],
