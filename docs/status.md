@@ -959,6 +959,43 @@ Deliberate constraints:
 **No stored revision is invalidated.** Digests are computed per revision at
 approval time; nothing recomputes an old one.
 
+## Designer floor depth derived — quantity model v4 — 2026-08-05
+
+**The second signed-quantity change of the day, and the one that gives up a
+property.** A step or a seat displaces water down to the floor beneath it, and
+that floor was an entered number nobody kept true — a new seat was given
+`shallowDepth + 1` regardless of where it sat. The takeoff now derives it from
+the object's own footprint against the depth profile, **averaged across the
+footprint** because the floor slopes. `designer-quantity-v3` → **`v4`**.
+
+On the standard model the bench claimed a 4'-6" floor while sitting over water
+averaging 5'-8", and under-displaced by about a third: **32 → 44.53 cf**.
+Everything downstream moves with it — total volume 15,787.6 → **15,693.9 gal**,
+backfill void 388.42 → **400.95 cf**, and every turnover flow.
+
+**What was given up.** *"Placement never affects quantities"* was the property
+that let the whole drag-and-drop layer land without touching the digest. It is
+gone. Moving a bench from the shallow end to the deep end now changes the
+takeoff — because it genuinely does displace more water, and the tool was only
+silent about it while the floor depth was typed once and never revisited. This
+is a real change in how the engine behaves, not a bug fix, and it is why the
+model version moved rather than the number being corrected in place.
+
+| Commands | Result |
+|---|---|
+| Designer `npm test`, `tsc`, `vite build` | **448 tests** passed; both clean |
+| `APEX_REQUIRE_DESIGNER_CONTRACT=1 pnpm verify` | **436 root tests**; integration 3 passed / 14 skipped, the Designer contract among the three |
+| Proposal suites | **119** and **11** passed, authority/digest and browser-graph unchanged |
+
+Unchanged from the v3 note: the database fixtures keep their older version
+strings, no stored revision is invalidated, and the Proposal engine needed no
+code change because `quantityModelVersion` travels as data.
+
+**Two versions in one day is not a pattern to repeat.** Both were real
+corrections found by drawing the thing rather than reading the code, but a third
+should prompt a look at whether the quantity model is being designed or
+discovered.
+
 ## Next controlled milestone
 
 One pilot job must demonstrate:
