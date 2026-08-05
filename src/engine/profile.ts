@@ -128,3 +128,41 @@ export function floorDepthUnder(
   const deepEdge = Math.max(fromFt, toFt);
   return depthAtStation(profile, deepEdge);
 }
+
+/**
+ * Average water depth under a footprint.
+ *
+ * This is what a seat or a stair actually displaces against: the floor under it
+ * slopes, so a single depth taken at one edge is either too deep or too shallow
+ * everywhere else. The average is the figure that makes `w x d x (d_floor -
+ * d_seat)` a true volume rather than an approximation nobody stated.
+ *
+ * Integrated piecewise rather than sampled, so it is exact for the three-segment
+ * profile this engine models and does not depend on a step count.
+ */
+export function averageFloorDepthUnder(
+  profile: { shallowRun: number; transitionRun: number; shallowDepth: number; deepDepth: number },
+  fromFt: number,
+  toFt: number,
+): number {
+  const a = Math.min(fromFt, toFt);
+  const b = Math.max(fromFt, toFt);
+  if (!(b > a)) return depthAtStation(profile, a);
+
+  const { shallowRun, transitionRun } = profile;
+  const transitionEnd = shallowRun + transitionRun;
+  // Break the span on the profile's own vertices, then integrate each piece as a
+  // trapezoid — exact, because depth is linear between vertices.
+  const cuts = [a, b, shallowRun, transitionEnd]
+    .filter((x) => x >= a && x <= b)
+    .sort((x, y) => x - y);
+
+  let area = 0;
+  for (let i = 0; i < cuts.length - 1; i += 1) {
+    const x0 = cuts[i]!;
+    const x1 = cuts[i + 1]!;
+    if (x1 <= x0) continue;
+    area += ((depthAtStation(profile, x0) + depthAtStation(profile, x1)) / 2) * (x1 - x0);
+  }
+  return area / (b - a);
+}

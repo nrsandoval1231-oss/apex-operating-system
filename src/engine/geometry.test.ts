@@ -69,13 +69,21 @@ describe('water volume', () => {
   it('step displacement = 46 cf', () => close(g.stepDisplacement[0]!.value, 46));
 
   // Bench: 8 ft wide x 1.3333 ft deep x (4.5 - 1.5) ft tall = 32 cf.
-  it('bench displacement = 32 cf', () => close(g.seatDisplacement[0]!.value, 32));
+  /*
+   * 8 ft x 1'-4" x (5.6746 - 1'-6") = 44.53 cf.
+   *
+   * It read 32 while floorDepthFt was an entered number that said 4'-6". The
+   * bench sits over water averaging 5.67 ft deep, so it was under-displacing by
+   * roughly a third. The depth is derived from the footprint now.
+   */
+  it('bench displacement = 44.53 cf, from the floor actually under it',
+    () => close(g.seatDisplacement[0]!.value, 44.5286));
 
-  it('net pool = 2062.5 - 46 - 32 = 1984.5 cf', () => close(g.poolNetVolumeCf.value, 1984.5));
+  it('net pool = 2062.5 - 46 - 44.53 = 1971.97 cf', () => close(g.poolNetVolumeCf.value, 1971.9714));
   it('spa = 6 x 6 x 3.5 = 126 cf', () => close(g.spaVolumeCf!.value, 126));
-  it('total = 2110.5 cf', () => close(g.totalVolumeCf.value, 2110.5));
-  it('total = 2110.5 x 7.48052 = 15,787.6 gal', () => close(g.totalVolumeGal.value, 15787.64, 0.05));
-  it('average depth = 1984.5 / 450 = 4.41 ft', () => close(g.averageDepth.value, 4.41));
+  it('total = 2097.97 cf', () => close(g.totalVolumeCf.value, 2097.9714));
+  it('total = 2097.97 x 7.48052 = 15,693.9 gal', () => close(g.totalVolumeGal.value, 15693.9172, 0.05));
+  it('average depth = 1971.97 / 450 = 4.38 ft', () => close(g.averageDepth.value, 4.3822));
 
   it('displacement is a deduction — net is always under gross', () => {
     expect(g.poolNetVolumeCf.value).toBeLessThan(g.poolGrossVolumeCf.value);
@@ -147,11 +155,19 @@ describe('input reconciliation notes', () => {
   });
 
   it('warns when a seat surface sits at or below the floor', () => {
+    // Provoked by the seat, not by the floor: floorDepthFt is derived from where
+    // the seat sits now, so it cannot be edited into disagreeing with the pool.
+    // A ledge hung 8 ft below the waterline in 3'-6" of water is the real shape
+    // of this mistake.
     const j: Job = {
       ...STANDARD_MODEL,
       pool: {
         ...STANDARD_MODEL.pool,
-        seats: [{ ...STANDARD_MODEL.pool.seats[0]!, floorDepthFt: 1.0 }],
+        seats: [{
+          ...STANDARD_MODEL.pool.seats[0]!,
+          depthBelowWaterlineIn: 96,
+          placement: { wall: 'shallow', alongFt: 2 },
+        }],
       },
     };
     const r = computeGeometry(j);

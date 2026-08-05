@@ -130,6 +130,24 @@ src/ui/              step 3 — the takeoff sheet
   flagged inset but drawn on the deck would report quantities for a pool nobody
   is building. Its dam wall is drawn on every edge facing pool water — two in a
   corner, four in the middle — rather than the two that used to be hardcoded.
+- **Floor depth is derived, not entered — and moving something changes the
+  takeoff.** A step or a seat displaces water down to the floor beneath it, and
+  that floor was an entered number: a new seat got `shallowDepth + 1` regardless
+  of where it sat. On the standard model the bench claimed a 4'-6" floor while
+  sitting over water averaging 5'-8", and under-displaced by about a third — 32
+  cf against 44.53. The takeoff now derives it from the object's own footprint
+  against the depth profile, **averaged across the footprint** because the floor
+  slopes and a figure taken at one edge is wrong everywhere else.
+  `floorDepthFt` stays on the record so old job files load, and is no longer read.
+  **This gives up a property the tool used to have:** placement no longer leaves
+  quantities alone. Dragging a bench from the shallow end to the deep end really
+  does displace more water, and the drawing now says so — which is why the
+  quantity model is **`designer-quantity-v4`**.
+- **One definition of an object's footprint.** `stepFootprint` and
+  `seatFootprint` serve the renderer, the drag handler and the takeoff. Three
+  copies of that arithmetic is what produced a bench that flipped its shape the
+  first time it was touched and a resize anchor that sat where the object was not
+  drawn.
 - **The deck is a drawn slab, not a border width.** `deck.ts` takes the
   rectangle someone drew around the concrete and subtracts everything standing
   in it — the water, and an attached spa — clipping each to the slab first, so a

@@ -8,6 +8,8 @@
  */
 
 import { calc, fromCalc, inp, type Calc } from './calc.ts';
+import { averageFloorDepthUnder } from './profile.ts';
+import { seatFootprint, stepFootprint } from './placement.ts';
 import { runGeometryCodeChecks, checkFoundationSetback, type CodeCheck } from './codeChecks.ts';
 import {
   crossSectionArea,
@@ -134,8 +136,25 @@ export function computeGeometry(job: Job): GeometryResult {
     compute: ({ A_sec, W }) => A_sec! * W!,
   });
 
-  const stepDisplacement = pool.steps.map((s) => stepDisplacementCalc(s, notes));
-  const seatDisplacement = pool.seats.map((s) => seatDisplacementCalc(s, notes));
+  /**
+   * Floor depth is DERIVED from where the object sits, not read off the record.
+   *
+   * It used to be an entered number, and a new seat got `shallowDepth + 1`
+   * regardless of where it was — so the bench on the standard model claimed a
+   * 4'-6" floor while sitting over water 5'-8" deep and under-displaced by
+   * roughly a third. Averaged across the footprint because the floor slopes: a
+   * depth taken at one edge is wrong everywhere else.
+   *
+   * The consequence is deliberate and worth naming: MOVING AN OBJECT NOW CHANGES
+   * THE TAKEOFF. A bench dragged from the shallow end to the deep end really
+   * does displace more water, and the tool now says so.
+   */
+  const floorUnder = (rect: { x: number; widthFt: number }) =>
+    averageFloorDepthUnder(pool.profile, rect.x, rect.x + rect.widthFt);
+  const stepDisplacement = pool.steps.map((s) =>
+    stepDisplacementCalc(s, floorUnder(stepFootprint(s, pool.lengthFt, pool.widthFt)), notes));
+  const seatDisplacement = pool.seats.map((s) =>
+    seatDisplacementCalc(s, floorUnder(seatFootprint(s, pool.lengthFt, pool.widthFt)), notes));
 
   const displacementTotal = [...stepDisplacement, ...seatDisplacement].reduce(
     (a, c) => a + c.value,
@@ -322,7 +341,7 @@ export function treadDepthsBelowWaterline(s: StepSet, freeboardFt: number): numb
   return depths;
 }
 
-function stepDisplacementCalc(s: StepSet, notes: GeometryNote[]): Calc {
+function stepDisplacementCalc(s: StepSet, floorDepthFt: number, notes: GeometryNote[]): Calc {
   // Riser stack should reconcile with the floor depth at the steps. The top
   // riser starts at deck level, which sits a freeboard above the waterline, but
   // freeboard belongs to the excavation params — for displacement the stack is
@@ -341,12 +360,12 @@ function stepDisplacementCalc(s: StepSet, notes: GeometryNote[]): Calc {
   // Depths below the top of the stack, top tread first. Freeboard is handled by
   // reconciling the whole stack against the floor depth below.
   const topFirst = [...s.riserHeightsIn].reverse().map(inToFt);
-  const freeboard = Math.max(0, totalRise - s.floorDepthFt);
+  const freeboard = Math.max(0, totalRise - floorDepthFt);
   if (freeboard > 1.0) {
     notes.push({
       id: `geom.steps.riserStack.${s.id}`,
       severity: 'warning',
-      message: `Step set ${s.id}: risers total ${totalRise.toFixed(2)} ft against a ${s.floorDepthFt.toFixed(2)} ft water depth, implying ${freeboard.toFixed(2)} ft of freeboard from deck to waterline. Check the riser entries.`,
+      message: `Step set ${s.id}: risers total ${totalRise.toFixed(2)} ft against a ${floorDepthFt.toFixed(2)} ft water depth, implying ${freeboard.toFixed(2)} ft of freeboard from deck to waterline. Check the riser entries.`,
     });
   }
 
@@ -355,7 +374,7 @@ function stepDisplacementCalc(s: StepSet, notes: GeometryNote[]): Calc {
   for (let i = 0; i < s.treadCount; i++) {
     cum += topFirst[i] ?? 0;
     const depthBelowWl = Math.max(0, cum - freeboard);
-    sectionArea += run * Math.max(0, s.floorDepthFt - depthBelowWl);
+    sectionArea += run * Math.max(0, floorDepthFt - depthBelowWl);
   }
 
   return calc({
@@ -367,7 +386,7 @@ function stepDisplacementCalc(s: StepSet, notes: GeometryNote[]): Calc {
       inp('n', 'Tread count', s.treadCount, 'ea'),
       inp('run', 'Tread run', run, 'ft'),
       inp('w', 'Stair width', width, 'ft'),
-      inp('d_floor', 'Water depth at the steps', s.floorDepthFt, 'ft'),
+      inp('d_floor', 'Water depth at the steps', floorDepthFt, 'ft'),
       inp('A_sec', 'Step section area (computed)', sectionArea, 'sf'),
     ],
     compute: ({ A_sec, w }) => A_sec! * w!,
@@ -378,16 +397,16 @@ function stepDisplacementCalc(s: StepSet, notes: GeometryNote[]): Calc {
   });
 }
 
-function seatDisplacementCalc(s: Seat, notes: GeometryNote[]): Calc {
+function seatDisplacementCalc(s: Seat, floorDepthFt: number, notes: GeometryNote[]): Calc {
   const depth = inToFt(s.surfaceDepthIn);
   const width = inToFt(s.surfaceWidthIn);
   const belowWl = inToFt(s.depthBelowWaterlineIn);
-  const height = s.floorDepthFt - belowWl;
+  const height = floorDepthFt - belowWl;
   if (height <= 0) {
     notes.push({
       id: `geom.seats.height.${s.id}`,
       severity: 'warning',
-      message: `Seat ${s.id}: surface sits ${belowWl.toFixed(2)} ft below the waterline at a ${s.floorDepthFt.toFixed(2)} ft water depth, which leaves no height under the seat. Check the floor depth at this location.`,
+      message: `Seat ${s.id}: surface sits ${belowWl.toFixed(2)} ft below the waterline at a ${floorDepthFt.toFixed(2)} ft water depth, which leaves no height under the seat. Check the floor depth at this location.`,
     });
   }
 
@@ -402,7 +421,7 @@ function seatDisplacementCalc(s: Seat, notes: GeometryNote[]): Calc {
     inputs: [
       inp('w', 'Unobstructed surface width', width, 'ft'),
       inp('d', 'Unobstructed surface depth', depth, 'ft'),
-      inp('d_floor', 'Water depth at this location', s.floorDepthFt, 'ft'),
+      inp('d_floor', 'Water depth at this location', floorDepthFt, 'ft'),
       inp('d_seat', 'Surface depth below waterline', belowWl, 'ft'),
     ],
     compute: ({ w, d, d_floor, d_seat }) => w! * d! * Math.max(0, d_floor! - d_seat!),

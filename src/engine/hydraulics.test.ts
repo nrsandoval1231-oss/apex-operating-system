@@ -183,19 +183,19 @@ describe('SAFETY: SOFA cover rating is reported, not selected', () => {
 describe('design flow is the root input', () => {
   const f = computeDesignFlow(VOLUME, 8);
 
-  // 15,787.64 / 360 = 43.85 gpm
-  it('6 h turnover sets the maximum at 43.85 gpm', () => close(f.maxFlow.value, 43.854, 0.01));
-  // 15,787.64 / 720 = 21.93 gpm
-  it('12 h turnover sets the minimum at 21.93 gpm', () => close(f.minFlow.value, 21.927, 0.01));
-  // 15,787.64 / 480 = 32.89 gpm
-  it('the 8 h design turnover alone would give 32.89 gpm', () => close(f.turnoverFlow.value, 32.891, 0.01));
+  // 15,693.92 / 360 = 43.59 gpm
+  it('6 h turnover sets the maximum at 43.59 gpm', () => close(f.maxFlow.value, 43.594, 0.01));
+  // 15,693.92 / 720 = 21.80 gpm
+  it('12 h turnover sets the minimum at 21.80 gpm', () => close(f.minFlow.value, 21.797, 0.01));
+  // 15,693.92 / 480 = 32.70 gpm
+  it('the 8 h design turnover alone would give 32.70 gpm', () => close(f.turnoverFlow.value, 32.696, 0.01));
 
   it('the 36 gpm floor governs on this pool, not the turnover math', () => {
     close(f.designFlow.value, MIN_FLOW_GPM);
     expect(f.designFlow.value).toBeGreaterThan(f.turnoverFlow.value);
   });
 
-  it('reports the turnover actually achieved: 7.31 h', () => close(f.achievedTurnover.value, 7.309, 0.01));
+  it('reports the turnover actually achieved: 7.27 h', () => close(f.achievedTurnover.value, 7.2657, 0.01));
 
   it('flags the conflict when the 36 gpm floor beats the 6 h maximum', () => {
     const small = computeDesignFlow(6000, 8); // 6 h max = 16.7 gpm, floor 36

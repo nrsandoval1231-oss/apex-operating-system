@@ -76,7 +76,15 @@ export interface StepSet {
    * the deck. Lubbock: maximum uniform 10" for every riser above the bottom.
    */
   readonly riserHeightsIn: readonly number[];
-  /** Water depth at the step location, from the depth profile. ft */
+  /**
+   * Water depth at the step location. ft
+   *
+   * NO LONGER READ FOR DISPLACEMENT. The takeoff derives the floor depth from
+   * the object's own footprint against the depth profile, averaged across it,
+   * because the floor slopes and a single entered figure was wrong everywhere
+   * but one edge. Kept on the record so an existing job file still loads and so
+   * the sheet can show what was entered beside what the profile says.
+   */
   readonly floorDepthFt: number;
   /** True if this step set is the required means of entry and exit. */
   readonly isRequiredEntryExit: boolean;
@@ -116,7 +124,12 @@ export interface Seat {
   readonly surfaceWidthIn: number;
   /** Length of the leading edge, for the 1" contrasting stripe. ft */
   readonly leadingEdgeLengthFt: number;
-  /** Water depth at this location, from the depth profile. ft */
+  /**
+   * Water depth at this location. ft
+   *
+   * NO LONGER READ FOR DISPLACEMENT — see the note on `StepSet.floorDepthFt`.
+   * A new seat used to be given `shallowDepth + 1` regardless of where it sat.
+   */
   readonly floorDepthFt: number;
   /** True if this surface is being used as the required means of entry and exit. */
   readonly isRequiredEntryExit: boolean;

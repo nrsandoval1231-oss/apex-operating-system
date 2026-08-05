@@ -144,17 +144,17 @@ describe('backfill balance and haul', () => {
     expect(x.spoilHaulLooseCy.unit).toBe('LCY');
   });
 
-  it('void = 2820 cut - water - shell = 388.42 cf = 14.39 CCY', () => {
-    close(x.backfillVoidCf.value, 388.422, 0.01);
-    close(x.backfillCompactedCy.value, 14.386, 0.001);
+  it('void = 2820 cut - water - shell = 400.95 cf = 14.85 CCY', () => {
+    close(x.backfillVoidCf.value, 400.951, 0.01);
+    close(x.backfillCompactedCy.value, 14.85, 0.001);
   });
 
-  it('haul = 130.56 total LCY - 20.67 LCY consumed as backfill = 109.89 LCY', () => {
-    close(x.backfillLooseCy.value, 20.6695, 0.01);
-    close(x.spoilHaulLooseCy.value, 109.886, 0.01);
+  it('haul = 130.56 total LCY - 21.34 LCY consumed as backfill = 109.22 LCY', () => {
+    close(x.backfillLooseCy.value, 21.3363, 0.01);
+    close(x.spoilHaulLooseCy.value, 109.219, 0.01);
   });
 
-  it('truck count rounds up: ceil(109.89 / 12) = 10 loads', () => {
+  it('truck count rounds up: ceil(109.22 / 12) = 10 loads', () => {
     expect(x.truckCount.value).toBe(10);
   });
 

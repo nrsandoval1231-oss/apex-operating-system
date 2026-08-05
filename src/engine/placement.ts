@@ -176,3 +176,44 @@ export function overlaps(a: Rect, b: Rect): boolean {
     && b.y < a.y + a.heightFt
   );
 }
+
+/**
+ * The plan footprint of a stair or a seat — one definition, used everywhere.
+ *
+ * The renderer, the drag handler and the takeoff all need this rectangle, and
+ * for a while they each derived it themselves. Two of those copies disagreed
+ * about which argument was the span and which the projection, which showed up as
+ * a bench that flipped its shape the first time it was touched and a resize
+ * anchor that sat where the object was not drawn. One function, three callers.
+ *
+ * Free `position` wins. Its orientation matches the default wall placement —
+ * the dimension measured along the wall runs along x — so an object that has
+ * always been on its default wall keeps its shape the first time it moves.
+ */
+export function stepFootprint(
+  step: { treadRunIn: number; treadCount: number; treadWidthIn: number; position?: { xFt: number; yFt: number }; placement?: Placement },
+  poolLengthFt: number,
+  poolWidthFt: number,
+): Rect {
+  const runFt = (step.treadRunIn / 12) * step.treadCount;
+  const widthFt = step.treadWidthIn / 12;
+  if (step.position) {
+    return { x: step.position.xFt, y: step.position.yFt, widthFt: runFt, heightFt: widthFt };
+  }
+  const place = step.placement ?? { wall: 'shallow' as const, alongFt: (poolWidthFt - widthFt) / 2 };
+  return placementRect(place, widthFt, runFt, poolLengthFt, poolWidthFt);
+}
+
+export function seatFootprint(
+  seat: { surfaceWidthIn: number; surfaceDepthIn: number; position?: { xFt: number; yFt: number }; placement?: Placement },
+  poolLengthFt: number,
+  poolWidthFt: number,
+): Rect {
+  const widthFt = seat.surfaceWidthIn / 12;
+  const depthFt = seat.surfaceDepthIn / 12;
+  if (seat.position) {
+    return { x: seat.position.xFt, y: seat.position.yFt, widthFt, heightFt: depthFt };
+  }
+  const place = seat.placement ?? { wall: 'bottom' as const, alongFt: poolLengthFt * 0.62 };
+  return placementRect(place, widthFt, depthFt, poolLengthFt, poolWidthFt);
+}
