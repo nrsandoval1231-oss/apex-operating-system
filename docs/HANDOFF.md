@@ -1,6 +1,7 @@
 # Apex OS — handoff
 
-**As of:** 2026-08-04, root at `547a080` on `main`, CI green.
+**As of:** 2026-08-05, CI green on `main` — and now genuinely checking the
+Designer contract, which it had never done before.
 
 Deliberately short. `docs/status.md` is the source of truth for status and this
 does not restate it — what follows is the state of play, what is in flight, and
@@ -59,17 +60,30 @@ ever opened a link.
 
 ## In flight right now
 
-Nick is setting up the four accounts: Render, Cloudflare R2, an identity tenant
-(Auth0 or Clerk), and a domain. `docs/runbooks/deployment.md` §1–2 is the
-procedure.
+Nothing is blocked on code, and as of 2026-08-05 only one thing is blocked on a
+person: **a domain has not been chosen or registered.**
 
-Next three actions, in order:
+Auth0 is the confirmed identity provider. Render, Cloudflare R2 and the identity
+tenant are all downstream of the domain, so the order below is not a preference.
+`docs/runbooks/deployment.md` §1–2 is the procedure.
 
-1. Domain first — Auth0's callback and web-origin settings need the final URL.
-2. Fill the nine `sync: false` variables in the Render dashboard.
-3. Deploy, then `curl -s https://apex.<domain>/ready` and read the four startup
+Next four actions, in order:
+
+1. **Register a domain.** Deliberately its own, not the canonical marketing
+   domain — that one is entangled in the Monsoon access transfer and a
+   three-way naming choice, and Apex OS should not wait on either. Cloudflare,
+   on an Apex-owned email, since the same account is needed for R2. Register
+   only; the DNS record needs a Render service that does not exist yet.
+2. Create the Render blueprint, the R2 bucket, and the Auth0 tenant. **Allowed
+   Web Origins** is the one that silently breaks sign-in if missed.
+3. Fill the nine `sync: false` variables in the Render dashboard.
+4. Deploy, then `curl -s https://<domain>/ready` and read the four startup
    lines. Those lines are what the process actually resolved; the dashboard only
    says what it was told.
+
+**Issue no real customer link until the domain is final.** A link's origin is
+fixed when it is issued and only the token hash is stored, so a link sent
+against a host you later move off cannot be recovered — only reissued.
 
 ## Seven things that are not obvious
 
@@ -83,11 +97,15 @@ Next three actions, in order:
    the single enforcement point. The policies are kept but inactive, and
    `pg_tables.rowsecurity` is false so the schema does not claim otherwise.
    Revisit before multi-user SQL access.
-4. **The Designer contract has a CI signal only once you add a deploy key.**
-   `Apex Designer/` is a separate preserved repository. CI now checks it out and
-   runs the contract test, but that needs `APEX_DESIGNER_DEPLOY_KEY` — four
-   steps in `docs/runbooks/deployment.md` §8, none of which anyone but you can
-   do. Until then CI warns and the test skips, as it always has.
+4. **The Designer contract test is the only one that reaches across
+   repositories**, and as of 2026-08-05 it finally runs in CI. `Apex Designer/`
+   is a separate private repository, so CI checks it out with a read-only deploy
+   key; without one the test skips, which for most of this project's life it
+   silently did. What makes the signal trustworthy is
+   `APEX_REQUIRE_DESIGNER_CONTRACT=1`: where the key is present, a missing
+   engine fails the run instead of reverting to a skip. Rotating the key means
+   adding the new public half **before** removing the old one, or CI goes red in
+   between.
 5. **The staff token lives in `sessionStorage` and there are no refresh
    tokens.** Tab-scoped, gone on browser close, readable by any script on the
    origin — which the `script-src 'self'` CSP is what makes acceptable. An
