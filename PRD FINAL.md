@@ -921,8 +921,8 @@ The following should be cut first if schedule or complexity grows:
 
 ## 20. Open Decisions
 
-1. Which current tool is authoritative for active-project scheduling?
-2. Which current tool is authoritative for invoice and payment status?
+1. ~~Which current tool is authoritative for active-project scheduling?~~ **Resolved 2026-08-05 by inheritance** — **Monday Work Management**, on Apex's own account (`apex-prds/decision-register.md` item 24). Apex OS holds a target completion window and crew bookings, not a schedule; it must not present itself as schedule authority.
+2. ~~Which current tool is authoritative for invoice and payment status?~~ **Resolved 2026-08-05 by inheritance** — **QuickBooks**, with Projects on and Classes for the three business lines (item 2, pending Travis's confirmation of the structure — the *authority* does not depend on it). Unchanged from §12: Apex OS never issues an invoice; `job_draws` records readiness and a human's confirmation, never the financial truth.
 3. ~~Who may pass each gate: field lead, project manager, or owner?~~ **Resolved 2026-07-31** — Owner and Superintendent; owner alone on the four draw-bearing gates.
 4. ~~What are Apex’s exact construction phases and required gate templates?~~ **Resolved 2026-07-31** — nine phases (§8.2), seven gate templates (§9.4).
 5. ~~Which draw schedules are standard versus contract-specific?~~ **Resolved 2026-07-31** — standard schedule, sourced from Apex’s contract: 10 / 30 / 30 / 20 / 10.
