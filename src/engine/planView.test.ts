@@ -79,15 +79,21 @@ describe('the drawing traces to the job', () => {
     expect(plan.svg).toContain(`2 outlets @ 3'-0" apart`);
   });
 
-  it('extends excavation and deck outlines around an attached spa', () => {
+  it('extends the excavation outline around an attached spa', () => {
     expect(plan.svg).toContain('pv-spa-excavation');
-    expect(plan.svg).toContain('pv-spa-deck');
     const inset = renderPlanView({
       ...STANDARD_MODEL,
       spa: { ...STANDARD_MODEL.spa!, insetIntoPool: true },
     });
     expect(inset.svg).not.toContain('pv-spa-excavation');
-    expect(inset.svg).not.toContain('pv-spa-deck');
+  });
+
+  it('draws the deck as one slab, not a ring plus a second ring round the spa', () => {
+    // The deck used to be a band derived from a width, with a second band drawn
+    // around an attached spa — two rectangles standing in for a shape nobody
+    // could describe. It is now the rectangle that was actually drawn.
+    expect(plan.svg.match(/class="pv-deck"/g) ?? []).toHaveLength(1);
+    expect(plan.svg).not.toContain('pv-spa-deck');
   });
 
   it('draws a symbol per skimmer and per return branch', () => {

@@ -10,6 +10,8 @@
  * the same as the code text.
  */
 
+import type { DeckRect } from './deck.ts';
+
 /** Longitudinal depth profile. shallowRun + transitionRun + deepRun must equal length. */
 export interface DepthProfile {
   /** Flat run at the shallow depth, measured from the shallow end wall. ft */
@@ -358,8 +360,16 @@ export interface FinishesParams {
 }
 
 export interface DeckParams {
-  /** Width of the deck measured out from the coping, by side. ft */
-  readonly widthFt: number;
+  /**
+   * The slab, as drawn: an axis-aligned rectangle in plan feet relative to the
+   * pool origin, covering everything getting concrete.
+   *
+   * Replaces the old single `widthFt` border, which could only describe a
+   * uniform ring and never subtracted an attached spa standing in it. See
+   * `deck.ts` for why that is a quantity-model change and not a refactor.
+   * `deckOutlineFromBorder` builds the equivalent of an old border width.
+   */
+  readonly outline: DeckRect;
   /** Slope away from the water. inches per foot. */
   readonly slopeInPerFt: number;
   /**

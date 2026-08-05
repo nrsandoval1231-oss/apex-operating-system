@@ -15,6 +15,14 @@ import { calc, inp, type Calc } from './calc.ts';
 import type { CodeCheck } from './codeChecks.ts';
 import type { GeometryResult } from './geometry.ts';
 import type { DeckParams, Job } from './types.ts';
+import { placementRect } from './placement.ts';
+import {
+  assertDeckOutlineContainsPool,
+  deckNetArea,
+  longestDeckRunFt,
+  rectArea,
+  type DeckRect,
+} from './deck.ts';
 
 /** ISPSC 306.5, non-wood surfaces. */
 export const MAX_DECK_SLOPE_IN_PER_FT = 0.5;
@@ -40,45 +48,76 @@ export function computeYard(job: Job, geometry: GeometryResult): YardResult | nu
   const L = job.pool.lengthFt;
   const W = job.pool.widthFt;
 
-  // Deck is a band of constant width around the water. Outer footprint less the
-  // water plan area is the deck itself.
+  // The slab is drawn, not derived from a border width. Refuse one that cuts
+  // through the water before computing anything from it.
+  const outline = d.outline;
+  assertDeckOutlineContainsPool(outline, L, W);
+
+  /**
+   * What stands in the slab and is not concrete.
+   *
+   * The pool always. An attached spa when it sits outside the pool wall — an
+   * inset spa is already inside the pool rectangle and would be subtracted
+   * twice. This is the correction that moves the number: the old formula
+   * counted an attached spa's footprint as deck.
+   */
+  const obstructions: DeckRect[] = [{ xFt: 0, yFt: 0, widthFt: L, heightFt: W }];
+  const spa = job.spa;
+  if (spa && !spa.insetIntoPool) {
+    const place = spa.placement ?? { wall: 'deep' as const, alongFt: (W - spa.widthFt) / 2 };
+    const r = placementRect(place, spa.widthFt, spa.lengthFt, L, W, true);
+    obstructions.push({ xFt: r.x, yFt: r.y, widthFt: r.widthFt, heightFt: r.heightFt });
+  }
+
+  const grossArea = rectArea(outline);
+  const removedArea = grossArea - deckNetArea(outline, obstructions);
+
   const deckArea = calc({
     id: 'yard.deckArea',
     label: 'Deck area',
-    formula: 'A_deck = (L + 2w) x (W + 2w) - (L x W)',
+    formula: 'A_deck = A_slab - A_standing-in-it',
     unit: 'sf',
     inputs: [
-      inp('L', 'Pool length', L, 'ft'),
-      inp('W', 'Pool width', W, 'ft'),
-      inp('w', 'Deck width out from the coping', d.widthFt, 'ft'),
+      inp('A_slab', 'Slab as drawn', grossArea, 'sf'),
+      inp('A_standing-in-it', 'Water and attached spa inside the slab', removedArea, 'sf'),
     ],
-    compute: ({ L, W, w }) => (L! + 2 * w!) * (W! + 2 * w!) - L! * W!,
-    notes: ['A constant-width band around the water. Patios, walks and pad slabs are separate takeoffs.'],
+    compute: ({ A_slab, 'A_standing-in-it': removed }) => A_slab! - removed!,
+    notes: [
+      'The slab as drawn, less everything standing in it. Each obstruction is clipped to the slab first, so a spa that overhangs the concrete only removes the part actually inside it.',
+      'Patios, walks and pad slabs outside this outline are separate takeoffs.',
+    ],
   });
 
-  const deckPerimeter = calc({
+  const deckPerimeterCalc = calc({
     id: 'yard.deckPerimeter',
     label: 'Deck outer perimeter',
-    formula: 'P_out = 2 x ((L + 2w) + (W + 2w))',
+    formula: 'P_out = 2 x (w_slab + h_slab)',
     unit: 'ft',
     inputs: [
-      inp('L', 'Pool length', L, 'ft'),
-      inp('W', 'Pool width', W, 'ft'),
-      inp('w', 'Deck width', d.widthFt, 'ft'),
+      inp('w_slab', 'Slab width as drawn', outline.widthFt, 'ft'),
+      inp('h_slab', 'Slab depth as drawn', outline.heightFt, 'ft'),
     ],
-    compute: ({ L, W, w }) => 2 * (L! + 2 * w! + (W! + 2 * w!)),
+    compute: ({ w_slab, h_slab }) => 2 * (w_slab! + h_slab!),
   });
 
+  /**
+   * Fall is computed over the LONGEST run from water to slab edge.
+   *
+   * The old model used the single deck width. On a slab that is 4 ft on three
+   * sides and 14 ft on the fourth that understated the fall more than
+   * threefold — and fall is what decides whether the deck drains or ponds.
+   */
+  const runFt = longestDeckRunFt(outline, L, W);
   const fallAcrossDeck = calc({
     id: 'yard.fall',
     label: 'Fall across the deck at the entered slope',
-    formula: 'f = s x w',
+    formula: 'f = s x r',
     unit: 'in',
     inputs: [
       inp('s', 'Deck slope', d.slopeInPerFt, 'in/ft'),
-      inp('w', 'Deck width', d.widthFt, 'ft'),
+      inp('r', 'Longest run from the water to the slab edge', runFt, 'ft'),
     ],
-    compute: ({ s, w }) => s! * w!,
+    compute: ({ s, r }) => s! * r!,
   });
 
   const deckDrainLf = calc({
@@ -155,14 +194,14 @@ export function computeYard(job: Job, geometry: GeometryResult): YardResult | nu
     : `Slope band — Table 306.5 minimum to ${MAX_DECK_SLOPE_IN_PER_FT} in per ft maximum`;
 
   notes.push(
-    `Deck drainage carries away from the water on all sides at ${d.slopeInPerFt} in per ft, ${fallAcrossDeck.value.toFixed(2)} in of fall across ${d.widthFt} ft.`,
+    `Deck drainage carries away from the water on all sides at ${d.slopeInPerFt} in per ft, ${fallAcrossDeck.value.toFixed(2)} in of fall across the longest ${runFt} ft run.`,
   );
 
   void geometry;
 
   return {
     deckArea,
-    deckPerimeter,
+    deckPerimeter: deckPerimeterCalc,
     deckDrainLf,
     gradeTransitions,
     fallAcrossDeck,

@@ -18,7 +18,7 @@ JSON save/load)** are complete. Every step in the PRD's build order is done.
 ```bash
 npm install
 npm run dev     # takeoff sheet at localhost:5173
-npm test        # 405 tests
+npm test        # 422 tests
 npm run takeoff # same numbers, headless, for reconciliation
 ```
 
@@ -40,6 +40,7 @@ src/engine/          pure TypeScript, no UI imports
   cover.ts           step 7 — barrier path, vault, shell constraints
   finishes.ts        step 8 — tile, coping, plaster, Lubbock contrast stripe
   yard.ts            step 8 — deck area, 306.5 slope band, drainage
+  deck.ts            the slab as drawn, less whatever stands in it
   planView.ts        step 9 — dimensioned SVG plan + step 10 print scale
   planRotation.ts    quarter-turn sheet rotation; the view transform, not the model
   jobFile.ts         step 11 — JSON save/load, versioned and validated
@@ -102,6 +103,19 @@ src/ui/              step 3 — the takeoff sheet
   305.1 lets a powered safety cover exempt the pool from barrier sections 305.2
   through 305.7, so the listing is load-bearing: without it the job has no
   barrier at all, and the check hard-fails rather than degrading quietly.
+- **The deck is a drawn slab, not a border width.** `deck.ts` takes the
+  rectangle someone drew around the concrete and subtracts everything standing
+  in it — the water, and an attached spa — clipping each to the slab first, so a
+  spa that overhangs the concrete only removes the part actually inside it. The
+  old model was a constant-width ring, `(L + 2w)(W + 2w) - LW`, which could not
+  describe a deck that is wider at the shallow end and **never subtracted an
+  attached spa**: every such job over-ordered concrete by the area the spa stands
+  on. Fixing that changes `yard.deck-area`, one of the seventeen signed
+  quantities, which is why the quantity model is **`designer-quantity-v3`** — a
+  consumer holding a v2 revision must not read it as meaning the same thing. Fall
+  is now computed over the longest run from water to slab edge rather than over
+  the one entered width. A slab drawn through the water is refused, not
+  approximated.
 - **The sheet rotates; the pool does not.** `planRotation.ts` turns the finished
   drawing a quarter turn at a time. The model is untouched — shallow is still
   where the water is 3'-6", the profile still runs shallow to deep, and every

@@ -6,6 +6,7 @@
  * form will load. Numbers not fixed by the PRD are marked below.
  */
 
+import { deckOutlineFromBorder } from './deck.ts';
 import { findPumpModel } from './pumpCatalog.ts';
 import type { Job } from './types.ts';
 
@@ -233,7 +234,7 @@ export const STANDARD_MODEL: Job = {
     plasterWaste: 0.05,
   },
   deck: {
-    widthFt: 4,
+    outline: deckOutlineFromBorder(30, 15, 4),
     slopeInPerFt: 0.25,
     // Table 306.5 is material-dependent. Entered per job, confirm against the
     // table for the deck actually being poured.

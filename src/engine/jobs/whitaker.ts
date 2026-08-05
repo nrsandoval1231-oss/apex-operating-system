@@ -25,6 +25,7 @@
  * geometry would prove nothing.
  */
 
+import { deckOutlineFromBorder } from '../deck.ts';
 import { APEX_STANDARD_DETAIL } from '../standardDetail.ts';
 import { findPumpModel } from '../pumpCatalog.ts';
 import { STANDARD_MODEL } from '../standardModel.ts';
@@ -110,7 +111,7 @@ export function whitakerJob(d: WhitakerDimensions): Job {
       pumpModel: findPumpModel('SP32900VSPX1'),
     },
     finishes: STANDARD_MODEL.finishes!,
-    deck: { ...STANDARD_MODEL.deck!, widthFt: d.deckWidthFt },
+    deck: { ...STANDARD_MODEL.deck!, outline: deckOutlineFromBorder(d.lengthFt, d.widthFt, d.deckWidthFt) },
     equipment: {
       ...STANDARD_MODEL.equipment!,
       distanceFromPoolFt: d.equipmentDistanceFromPoolFt,

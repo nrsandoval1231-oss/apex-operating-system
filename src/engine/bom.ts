@@ -191,7 +191,7 @@ export function buildBom(job: Job, takeoff: TakeoffResult): Bom {
     groups.push({
       title: 'Deck',
       lines: [
-        { item: job.deck?.deckMaterial ?? 'Deck', quantity: round(yard.deckArea.value), unit: 'sf', basis: `${job.deck?.widthFt ?? 0} ft border` },
+        { item: job.deck?.deckMaterial ?? 'Deck', quantity: round(yard.deckArea.value), unit: 'sf', basis: 'slab as drawn, less water and attached spa' },
         { item: 'Deck drain', quantity: round(yard.deckDrainLf.value), unit: 'ft', basis: 'job input' },
       ],
     });

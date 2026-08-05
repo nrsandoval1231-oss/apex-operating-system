@@ -105,8 +105,21 @@ describe('finishes', () => {
 describe('yard & drainage', () => {
   const yard = computeYard(STANDARD_MODEL, geom)!;
 
-  // (30 + 8) x (15 + 8) - 450 = 874 - 450 = 424 sf
-  it('deck area = 38 x 23 - 450 = 424 sf', () => close(yard.deckArea.value, 424));
+  /*
+   * The slab is 38 x 23 = 874 sf. Out of it come the pool's 450 sf and the part
+   * of the attached spa standing inside the concrete — 4 of its 6 ft, since a
+   * 4 ft border stops short of a 6 ft spa, so 4 x 6 = 24 sf.
+   *
+   * 874 - 450 - 24 = 400.
+   *
+   * THIS NUMBER MOVED, DELIBERATELY. It read 424 under the old constant-width
+   * model, which never subtracted an attached spa and so counted the concrete
+   * that the spa is standing on. Every job with an attached spa over-ordered by
+   * that much. `yard.deck-area` is one of the seventeen signed quantities, which
+   * is why the quantity model went to designer-quantity-v3 rather than being
+   * corrected in place.
+   */
+  it('deck area = 874 slab - 450 pool - 24 spa = 400 sf', () => close(yard.deckArea.value, 400));
   it('deck outer perimeter = 2 x (38 + 23) = 122 ft', () => close(yard.deckPerimeter.value, 122));
   it('fall across a 4 ft deck at 1/4 in per ft = 1 in', () => close(yard.fallAcrossDeck.value, 1));
 

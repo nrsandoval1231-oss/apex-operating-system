@@ -20,6 +20,7 @@
 import type { Job, PoolWall } from './types.ts';
 import { inToFt } from './units.ts';
 import { placementRect } from './placement.ts';
+import { deckMargins } from './deck.ts';
 import {
   contentTransform,
   normalizeTurns,
@@ -201,7 +202,16 @@ export function renderPlanView(
   const L = pool.lengthFt;
   const W = pool.widthFt;
   const spa = job.spa;
-  const deckW = job.deck?.widthFt ?? 0;
+  /**
+   * The slab, as drawn. The deck is no longer a border width, so the extents
+   * below take its four margins rather than one number — see `deck.ts`.
+   */
+  const deckRect = job.deck?.outline ?? null;
+  const deckM = deckRect
+    ? deckMargins(deckRect, L, W)
+    : { leftFt: 0, rightFt: 0, topFt: 0, bottomFt: 0 };
+  /** The widest margin, where a single figure is still needed for clearance. */
+  const deckW = Math.max(deckM.leftFt, deckM.rightFt, deckM.topFt, deckM.bottomFt);
   const setback = job.site.distanceToFoundationFt;
   const over = job.excavation.bondBeamFormOffsetFt;
 
@@ -255,19 +265,19 @@ export function renderPlanView(
   const topExtent = Math.max(
     setback + houseDepth + 2.5,
     propTop > 0 ? propTop + 4 : 0,
-    spaOn('top') + Math.max(deckW, over) + 3,
+    spaOn('top') + Math.max(deckM.topFt, over) + 3,
   );
   const bottomExtent = Math.max(
-    (job.equipment?.distanceFromPoolFt ?? Math.max(deckW, over) + 4) + padD + 6,
+    (job.equipment?.distanceFromPoolFt ?? Math.max(deckM.bottomFt, over) + 4) + padD + 6,
     propBottom > 0 ? propBottom + 4 : 0,
-    spaOn('bottom') + Math.max(deckW, over) + 3,
+    spaOn('bottom') + Math.max(deckM.bottomFt, over) + 3,
   );
   const leftExtent = Math.max(
-    Math.max(deckW, over) + 9 + spaOn('shallow'),
+    Math.max(deckM.leftFt, over) + 9 + spaOn('shallow'),
     propLeft > 0 ? propLeft + 4 : 0,
   );
   const rightExtent = Math.max(
-    Math.max(deckW, over) + spaOn('deep') + 12,
+    Math.max(deckM.rightFt, over) + spaOn('deep') + 12,
     propRight > 0 ? (envRight - L) + propRight + 4 : 0,
   );
 
@@ -317,14 +327,14 @@ export function renderPlanView(
       `<rect class="pv-excavation pv-spa-excavation" x="${n(x(spaRect.x - over))}" y="${n(y(spaRect.y - over))}" width="${n(s(spaRect.widthFt + 2 * over))}" height="${n(s(spaRect.heightFt + 2 * over))}"/>`,
     );
   }
-  if (deckW > 0) {
+  if (deckRect) {
+    // One slab, drawn where it was drawn. It used to be a ring derived from a
+    // width, plus a second ring around the spa — two rectangles standing in for
+    // a shape nobody could actually describe.
     parts.push(
-      `<rect class="pv-deck" x="${n(x(-deckW))}" y="${n(y(-deckW))}" width="${n(s(L + 2 * deckW))}" height="${n(s(W + 2 * deckW))}"/>`,
+      `<rect class="pv-deck" x="${n(x(deckRect.xFt))}" y="${n(y(deckRect.yFt))}" width="${n(s(deckRect.widthFt))}" height="${n(s(deckRect.heightFt))}"/>`,
     );
     if (spaRect) {
-      parts.push(
-        `<rect class="pv-deck pv-spa-deck" x="${n(x(spaRect.x - deckW))}" y="${n(y(spaRect.y - deckW))}" width="${n(s(spaRect.widthFt + 2 * deckW))}" height="${n(s(spaRect.heightFt + 2 * deckW))}"/>`,
-      );
     }
   }
 
@@ -498,7 +508,7 @@ export function renderPlanView(
   // --- equipment pad --------------------------------------------------------
   const padX = L - padW;
   // Pad sits at its real distance from the pool edge.
-  const padY = W + (job.equipment?.distanceFromPoolFt ?? Math.max(deckW, over) + 4);
+  const padY = W + (job.equipment?.distanceFromPoolFt ?? Math.max(deckM.bottomFt, over) + 4);
   if (job.equipment) {
     parts.push(
       `<rect class="pv-pad" x="${n(x(padX))}" y="${n(y(padY))}" width="${n(s(padW))}" height="${n(s(padD))}"/>`,
@@ -546,9 +556,9 @@ export function renderPlanView(
   parts.push(text(ctx, L / 2, houseY - 1.2, job.site.foundationDescription.toUpperCase(), 'pv-label', 'middle'));
 
   // --- dimensions -----------------------------------------------------------
-  const dimBelow = W + Math.max(deckW, over) + 2;
+  const dimBelow = W + Math.max(deckM.bottomFt, over) + 2;
   parts.push(dimH(ctx, 0, L, dimBelow, feetInches(L)));
-  parts.push(dimV(ctx, 0, W, -Math.max(deckW, over) - 2.5, feetInches(W)));
+  parts.push(dimV(ctx, 0, W, -Math.max(deckM.leftFt, over) - 2.5, feetInches(W)));
   // 1:1 depth-to-foundation, local 307.2.2.2. The drawing shows the verdict, not
   // just the dimension — a plan that draws a violation as an ordinary dimension
   // is how it gets built that way.
@@ -569,8 +579,8 @@ export function renderPlanView(
     ),
   );
 
-  if (deckW > 0) {
-    parts.push(dimV(ctx, W, W + deckW, L * 0.2, `${feetInches(deckW)} deck`));
+  if (deckRect && deckM.bottomFt > 0) {
+    parts.push(dimV(ctx, W, W + deckM.bottomFt, L * 0.2, `${feetInches(deckM.bottomFt)} deck`));
   }
 
   // --- property lines --------------------------------------------------------
@@ -642,7 +652,7 @@ export function renderPlanView(
   // with a slightly busier margin.
   const legendY = -topExtent + 1.1;
   parts.push(text(ctx, L + 1.5, legendY, '— — over-dig (form line)', 'pv-legend', 'start'));
-  if (deckW > 0) parts.push(text(ctx, L + 1.5, legendY + 1.1, '– – – deck edge', 'pv-legend', 'start'));
+  if (deckRect) parts.push(text(ctx, L + 1.5, legendY + 1.1, '– – – deck edge', 'pv-legend', 'start'));
 
   // --- scale bar and legend -------------------------------------------------
   const barY = contentH - topExtent - 2.2;

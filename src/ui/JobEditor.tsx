@@ -114,7 +114,13 @@ const GROUPS: readonly Group[] = [
   {
     title: 'Deck & drainage',
     fields: [
-      { path: 'deck.widthFt', label: 'Deck width', unit: 'ft', step: 0.5 },
+      // The slab is drawn now, so these are its four edges rather than one
+      // border width. Negative x/y run beyond the shallow-end and house-side
+      // walls, which is where a deck normally starts.
+      { path: 'deck.outline.xFt', label: 'Slab left edge', unit: 'ft', step: 0.5 },
+      { path: 'deck.outline.yFt', label: 'Slab top edge', unit: 'ft', step: 0.5 },
+      { path: 'deck.outline.widthFt', label: 'Slab width', unit: 'ft', step: 0.5 },
+      { path: 'deck.outline.heightFt', label: 'Slab depth', unit: 'ft', step: 0.5 },
       { path: 'deck.slopeInPerFt', label: 'Deck slope', unit: 'in/ft', step: 0.0625 },
       { path: 'deck.tableMinimumSlopeInPerFt', label: 'Table 306.5 minimum', unit: 'in/ft', step: 0.0625 },
       { path: 'deck.deckMaterial', label: 'Deck material', kind: 'text' },
