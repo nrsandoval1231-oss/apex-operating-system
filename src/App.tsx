@@ -5,6 +5,7 @@ import { WHITAKER } from './engine/jobs/whitaker.ts';
 import { LUBBOCK_STANDARDS } from './engine/jobs/lubbockStandards.ts';
 import type { Job } from './engine/types.ts';
 import { TakeoffSheet } from './ui/TakeoffSheet.tsx';
+import type { QuarterTurns } from './engine/planRotation.ts';
 import { JobEditor } from './ui/JobEditor.tsx';
 import { DesignControls } from './ui/DesignControls.tsx';
 import { SavedJobsPanel, useSavedJobs } from './ui/SavedJobs.tsx';
@@ -108,6 +109,15 @@ export function App() {
    */
   const [mode, setMode] = useState<'design' | 'outputs'>('design');
   const [showAdvanced, setShowAdvanced] = useState(false);
+  /**
+   * How far the plan SHEET is turned.
+   *
+   * Deliberately component state and not part of the job. Rotation is how this
+   * drawing is being looked at, not a fact about the pool — so it stays out of
+   * the job file, out of undo (turning the sheet is not an edit to the design),
+   * and out of anything the takeoff or the quantity payload can see.
+   */
+  const [quarterTurns, setQuarterTurns] = useState<QuarterTurns>(0);
 
   const job = past.entries[past.cursor]!;
   const scenario = SCENARIOS[index]!;
@@ -172,7 +182,7 @@ export function App() {
               </button>
             ))}
           </div>
-          <TakeoffSheet job={job} details={scenario.details} />
+          <TakeoffSheet job={job} details={scenario.details} quarterTurns={quarterTurns} />
         </main>
       </div>
     );
@@ -247,7 +257,14 @@ export function App() {
           </SavedJobsPanel>
         )}
         <DesignControls job={job} onChange={editJob} />
-        <TakeoffSheet job={job} details={scenario.details} onChange={editJob} view="design" />
+        <TakeoffSheet
+          job={job}
+          details={scenario.details}
+          onChange={editJob}
+          view="design"
+          quarterTurns={quarterTurns}
+          onRotate={setQuarterTurns}
+        />
         <div className="run-takeoff print-hide">
           <button className="btn run-takeoff-button" onClick={() => setMode('outputs')}>
             Run full takeoff → dig plan · material quantities · plumbing · equipment pad

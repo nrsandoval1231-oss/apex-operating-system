@@ -262,3 +262,101 @@ describe('property lines', () => {
     expect(svg).not.toContain('pv-property-line');
   });
 });
+
+describe('turning the sheet', () => {
+  const upright = renderPlanView(STANDARD_MODEL);
+  const turned = renderPlanView(STANDARD_MODEL, 1040, { quarterTurns: 1 });
+  const half = renderPlanView(STANDARD_MODEL, 1040, { quarterTurns: 2 });
+
+  it('changes nothing at all when the sheet is not turned', () => {
+    // Rotation is a feature nobody has used until they press the button. An
+    // unrotated plan must be the same bytes it was before rotation existed, or
+    // every drawing in the repository silently changed.
+    expect(renderPlanView(STANDARD_MODEL, 1040, { quarterTurns: 0 }).svg).toBe(upright.svg);
+    expect(upright.svg).not.toContain('<g transform="');
+    expect(upright.quarterTurns).toBe(0);
+  });
+
+  it('turns the whole drawing as one group', () => {
+    expect(turned.svg).toContain('<g transform="translate(');
+    expect(turned.svg).toContain('rotate(90)');
+    expect(turned.quarterTurns).toBe(1);
+  });
+
+  it('swaps the extents the print scale is chosen from', () => {
+    expect(turned.contentWidthFt).toBeCloseTo(upright.contentHeightFt, 6);
+    expect(turned.contentHeightFt).toBeCloseTo(upright.contentWidthFt, 6);
+  });
+
+  it('prints a deep site at a bigger scale once it is turned', () => {
+    // The print sheet is always 11x17 LANDSCAPE, so rotation earns its scale on
+    // a drawing that is deeper than it is wide — a site carrying front and rear
+    // property lines, not a long pool.
+    //
+    // The standard model is 65 x 71.5 ft of content, marginally deeper than
+    // wide, and turning it changes nothing: it fits at 1/8" either way and fits
+    // at 3/16" neither way. Rotation is not free scale, and the second
+    // assertion below is here so nobody reads the first as promising that.
+    const deepSite: Job = {
+      ...STANDARD_MODEL,
+      site: {
+        ...STANDARD_MODEL.site,
+        propertyLines: [
+          { side: 'top', distanceFt: 40, label: 'Front property line' },
+          { side: 'bottom', distanceFt: 40, label: 'Rear property line' },
+        ],
+      },
+    };
+    const flat = planPrintScale(renderPlanView(deepSite));
+    const onEnd = planPrintScale(renderPlanView(deepSite, 1040, { quarterTurns: 1 }));
+    expect(onEnd.inPerFt).toBeGreaterThan(flat.inPerFt);
+
+    // And the standard model gains nothing, which is the honest other half.
+    expect(planPrintScale(turned).inPerFt).toBe(planPrintScale(upright).inPerFt);
+  });
+
+  it('keeps the layout size for the drag handler, separately from the sheet size', () => {
+    // Both renders are fitted to the same 1040px column, so the sheet sizes are
+    // NOT a plain swap of each other — each is rescaled. What must hold is that
+    // the layout box is still the UNROTATED one, because that is what the drag
+    // inverse measures against; getting these two pairs confused would put every
+    // drop in the wrong place by the aspect ratio.
+    expect(turned.widthPx).toBeCloseTo(1040, 0);
+    expect(turned.heightPx).toBe(turned.layoutWidthPx);
+    expect(turned.widthPx).toBe(turned.layoutHeightPx);
+    // Same shape as the unrotated layout, at a different scale.
+    expect(turned.layoutWidthPx / turned.layoutHeightPx)
+      .toBeCloseTo(upright.widthPx / upright.heightPx, 2);
+  });
+
+  it('fits the drawing to the column it was asked for, whichever way it is turned', () => {
+    // targetWidthPx is the column width. On an odd turn the caller's width is
+    // the layout's height, so scaling off the layout width would overflow.
+    expect(turned.widthPx).toBeCloseTo(1040, 0);
+    expect(upright.widthPx).toBeCloseTo(1040, 0);
+  });
+
+  it('never leaves a dimension upside down', () => {
+    // At 180° every label would otherwise read bottom-up. The horizontal
+    // dimensions counter-rotate; the vertical ones stay aligned to their own
+    // line, which is what a drafter expects and what the unrotated sheet does.
+    expect(half.svg).toContain('rotate(-180');
+    expect(half.svg).not.toContain('rotate(90 ');
+  });
+
+  it('says which way it is turned, for anyone who cannot see the drawing', () => {
+    expect(turned.svg).toContain('rotated 90°');
+    expect(upright.svg).not.toContain('rotated');
+  });
+
+  it('draws the same pool at every turn', () => {
+    // Rotation is a view transform: the same objects, the same dimensions, the
+    // same code verdicts. Only their position on the sheet changes.
+    for (const turns of [0, 1, 2, 3] as const) {
+      const svg = renderPlanView(STANDARD_MODEL, 1040, { quarterTurns: turns }).svg;
+      expect(svg).toContain(`30'-0"`);
+      expect(svg).toContain(`15'-0"`);
+      expect(svg).toContain('1:1 OK');
+    }
+  });
+});

@@ -10,6 +10,7 @@
 
 import { runTakeoff, type CodeFailureArea } from '../engine/index.ts';
 import { feetInches, planPrintScale, renderPlanView } from '../engine/planView.ts';
+import { rotationLabel, type QuarterTurns } from '../engine/planRotation.ts';
 import { renderSectionView, sectionPrintScale } from '../engine/sectionView.ts';
 import { MovablePlan } from './MovablePlan.tsx';
 import { StepsSection } from './StepsSection.tsx';
@@ -37,17 +38,27 @@ function PlanSheet({
   onChange,
   printWidthIn,
   planSvg,
+  quarterTurns,
+  onRotate,
   children,
 }: {
   job: Job;
   onChange?: (job: Job) => void;
   printWidthIn: number;
   planSvg: string;
+  quarterTurns?: QuarterTurns;
+  onRotate?: (turns: QuarterTurns) => void;
   children: React.ReactNode;
 }) {
   if (onChange) {
     return (
-      <MovablePlan job={job} onChange={onChange} printWidthIn={printWidthIn}>
+      <MovablePlan
+        job={job}
+        onChange={onChange}
+        printWidthIn={printWidthIn}
+        quarterTurns={quarterTurns}
+        onRotate={onRotate}
+      >
         {children}
       </MovablePlan>
     );
@@ -121,12 +132,21 @@ export function TakeoffSheet({
   job,
   details,
   onChange,
+  quarterTurns = 0,
+  onRotate,
   view = 'full',
 }: {
   job: Job;
   details?: readonly StandardDetail[];
   /** Supplied when the plan is editable; omitted renders a static drawing. */
   onChange?: (job: Job) => void;
+  /**
+   * Quarter turns clockwise applied to the plan SHEET. A view preference, not a
+   * property of the job — it is deliberately not part of the saved job file, so
+   * a rotated drawing and an unrotated one are the same design.
+   */
+  quarterTurns?: QuarterTurns;
+  onRotate?: (turns: QuarterTurns) => void;
   /**
    * 'design' shows the drawings and nothing else — the takeoff still runs on
    * every change (the code-stop banner depends on it) but its tables stay out
@@ -150,7 +170,7 @@ export function TakeoffSheet({
   }
 
   const { geometry: g, excavation: x, codeBasis } = result;
-  const plan = renderPlanView(job);
+  const plan = renderPlanView(job, 1040, { quarterTurns });
   const printScale = planPrintScale(plan);
   const section = renderSectionView(job);
   const sectionScale = sectionPrintScale(section);
@@ -186,7 +206,14 @@ export function TakeoffSheet({
       )}
 
       {/* The one bold moment: the plan drawing itself, and its own print sheet. */}
-      <PlanSheet job={job} onChange={onChange} printWidthIn={printScale.widthIn} planSvg={plan.svg}>
+      <PlanSheet
+        job={job}
+        onChange={onChange}
+        printWidthIn={printScale.widthIn}
+        planSvg={plan.svg}
+        quarterTurns={quarterTurns}
+        onRotate={onRotate}
+      >
         <div className="plan-print-title">
           <div>
             <div className="ptb-job">{job.name}</div>
@@ -198,6 +225,12 @@ export function TakeoffSheet({
           <div className="ptb-scale">
             SCALE {printScale.label}
             {!printScale.fits && ' — DOES NOT FIT 11×17'}
+            {/*
+              A turned sheet has to say so. Someone reading a printed plan cannot
+              see the button that turned it, and the house band and equipment pad
+              are the only orientation cues on the drawing — both of which move.
+            */}
+            {quarterTurns !== 0 && ` · ${rotationLabel(quarterTurns).toUpperCase()}`}
           </div>
           <div className="ptb-meta">
             <div>

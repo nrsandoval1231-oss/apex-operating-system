@@ -22,6 +22,7 @@ import {
   snapAlong,
   wallLengthFt,
 } from '../engine/placement.ts';
+import { inverseContentPoint, inverseDirection, normalizeTurns, rotationLabel, type QuarterTurns } from '../engine/planRotation.ts';
 import { inToFt } from '../engine/units.ts';
 import { resizePool } from '../engine/poolResize.ts';
 import type { Job, Placement, PoolWall } from '../engine/types.ts';
@@ -46,11 +47,16 @@ export function MovablePlan({
   job,
   onChange,
   printWidthIn,
+  quarterTurns = 0,
+  onRotate,
   children,
 }: {
   job: Job;
   onChange: (job: Job) => void;
   printWidthIn: number;
+  /** Quarter turns clockwise applied to the sheet. The job is unaffected. */
+  quarterTurns?: QuarterTurns;
+  onRotate?: (turns: QuarterTurns) => void;
   children?: React.ReactNode;
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
@@ -91,7 +97,7 @@ export function MovablePlan({
   // The drawing follows the pointer, but only the committed job reaches the
   // takeoff and the history.
   const shown = preview ?? job;
-  const plan = renderPlanView(shown, 1040, { selectedId, interactive: true });
+  const plan = renderPlanView(shown, 1040, { selectedId, interactive: true, quarterTurns });
 
   /**
    * Client pixels to plan feet.
@@ -113,12 +119,33 @@ export function MovablePlan({
       if (!ctm) return null;
       const point = new DOMPoint(clientX, clientY).matrixTransform(ctm.inverse());
       if (!Number.isFinite(point.x) || !Number.isFinite(point.y)) return null;
+      /**
+       * The one place rotation touches the move tool.
+       *
+       * getScreenCTM stops at the <svg>, so a rotated sheet hands back a point
+       * in the turned frame while every rule in placement.ts is written against
+       * the unrotated layout. Undoing the turn here — and only here — is what
+       * keeps "which wall is this being dropped on" a question about the pool
+       * rather than a question about the page.
+       */
+      const laid = inverseContentPoint(
+        plan.quarterTurns,
+        { x: point.x, y: point.y },
+        { widthPx: plan.layoutWidthPx, heightPx: plan.layoutHeightPx },
+      );
       return {
-        xFt: (point.x - plan.originXPx) / plan.pxPerFt,
-        yFt: (point.y - plan.originYPx) / plan.pxPerFt,
+        xFt: (laid.x - plan.originXPx) / plan.pxPerFt,
+        yFt: (laid.y - plan.originYPx) / plan.pxPerFt,
       };
     },
-    [plan.originXPx, plan.originYPx, plan.pxPerFt],
+    [
+      plan.originXPx,
+      plan.originYPx,
+      plan.pxPerFt,
+      plan.quarterTurns,
+      plan.layoutWidthPx,
+      plan.layoutHeightPx,
+    ],
   );
 
   const spanOf = useCallback(
@@ -391,9 +418,20 @@ export function MovablePlan({
         deleteSelected();
         return;
       }
-      const delta = event.key === 'ArrowLeft' || event.key === 'ArrowUp' ? -step
-        : event.key === 'ArrowRight' || event.key === 'ArrowDown' ? step
-          : 0;
+      // The key is a direction on the SHEET; `alongFt` is measured in the
+      // layout. On a turned sheet those disagree, and at 180° they are exactly
+      // opposed — so the arrow is mapped back through the same inverse a drag
+      // uses rather than trusted as-is.
+      const screen = event.key === 'ArrowLeft' ? { dx: -1, dy: 0 }
+        : event.key === 'ArrowRight' ? { dx: 1, dy: 0 }
+          : event.key === 'ArrowUp' ? { dx: 0, dy: -1 }
+            : event.key === 'ArrowDown' ? { dx: 0, dy: 1 }
+              : null;
+      if (!screen) return;
+      const inLayout = inverseDirection(plan.quarterTurns, screen.dx, screen.dy);
+      // Exactly one axis is non-zero, so the sum is that axis's sign. Positive
+      // x or y is further along a wall, matching `alongFt`.
+      const delta = Math.sign(inLayout.x + inLayout.y) * step;
       if (delta === 0) return;
       const kind: Drag['kind'] = selectedId === SPA_MOVE_ID ? 'spa'
         : job.pool.steps.some((s) => s.id === selectedId) ? 'step' : 'seat';
@@ -415,7 +453,7 @@ export function MovablePlan({
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [selectedId, job, spanOf, withPlacement, onChange, deleteSelected]);
+  }, [selectedId, job, spanOf, withPlacement, onChange, deleteSelected, plan.quarterTurns]);
 
   const readout = selectedId ? describe(shown, selectedId) : null;
 
@@ -437,6 +475,18 @@ export function MovablePlan({
         {readout
           ? <span><strong>{readout.label}</strong> · {readout.wall} wall · {readout.along} from the corner · arrow keys nudge 6", shift 1'</span>
           : <span>Drag a step, bench or spa to place it. Everything else on the plan is fixed by the job.</span>}
+        {onRotate && (
+          <button
+            className="btn ghost plan-rotate"
+            onClick={() => onRotate(normalizeTurns(quarterTurns + 1))}
+            // The wall a readout names is the pool's wall, not the sheet's edge,
+            // and stays true however the sheet is turned. Saying so here is
+            // cheaper than someone discovering it by mistrusting the drawing.
+            title="Turn the sheet a quarter turn clockwise. The pool, its walls and its quantities are unchanged."
+          >
+            Rotate · {rotationLabel(quarterTurns)}
+          </button>
+        )}
         {readout && (
           <button className="btn ghost plan-delete" onClick={deleteSelected}>
             Delete {readout.label}

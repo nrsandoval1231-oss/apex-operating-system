@@ -20,6 +20,16 @@
 import type { Job, PoolWall } from './types.ts';
 import { inToFt } from './units.ts';
 import { placementRect } from './placement.ts';
+import {
+  contentTransform,
+  normalizeTurns,
+  rotatedExtentFt,
+  rotatedSize,
+  rotationLabel,
+  alignedTextRotation,
+  textTransform,
+  type QuarterTurns,
+} from './planRotation.ts';
 
 export interface PlanViewResult {
   readonly svg: string;
@@ -36,9 +46,23 @@ export interface PlanViewResult {
    * Exported so a pointer position can be turned back into plan feet. Without
    * it the drag handler would have to re-derive the margins, which is the same
    * arithmetic in a second place and free to drift from this one.
+   *
+   * These are coordinates in the UNROTATED layout. When the sheet is turned, a
+   * pointer must go through `inverseContentPoint` first — see `quarterTurns`.
    */
   readonly originXPx: number;
   readonly originYPx: number;
+  /** Quarter turns clockwise the finished sheet was rotated by. */
+  readonly quarterTurns: QuarterTurns;
+  /**
+   * The layout's own size before rotation, which is what the inverse map needs.
+   *
+   * Equal to `widthPx`/`heightPx` at 0 and 180 turns and swapped at 90 and 270,
+   * so a drag handler that reached for the wrong pair would work by accident on
+   * half the turns. Carried explicitly rather than re-derived for that reason.
+   */
+  readonly layoutWidthPx: number;
+  readonly layoutHeightPx: number;
 }
 
 export interface PlanViewOptions {
@@ -49,6 +73,15 @@ export interface PlanViewOptions {
    * sheet carries only the drawing — editing chrome is for the screen.
    */
   readonly interactive?: boolean;
+  /**
+   * Quarter turns clockwise applied to the SHEET, not to the pool.
+   *
+   * The layout below is unchanged by this: everything is still laid out with the
+   * shallow end at x = 0 and the house across the top, and the finished group is
+   * turned. See `planRotation.ts` for why this is a view transform rather than a
+   * change to the model.
+   */
+  readonly quarterTurns?: QuarterTurns;
 }
 
 /**
@@ -131,6 +164,12 @@ interface Ctx {
   readonly s: (ft: number) => number;
   readonly x: (ft: number) => number;
   readonly y: (ft: number) => number;
+  /**
+   * How far the finished group is turned. Carried here only so every label can
+   * counter-rotate about its own anchor and stay readable; nothing else in the
+   * drawing knows or needs to know that the sheet is rotated.
+   */
+  readonly turns: QuarterTurns;
 }
 
 /** For attribute values, where quotes must be escaped. */
@@ -236,14 +275,26 @@ export function renderPlanView(
   const contentW = leftExtent + L + rightExtent;
   const contentH = topExtent + W + bottomExtent;
 
-  const pxPerFt = targetWidthPx / contentW;
+  /**
+   * The sheet is turned; the layout is not.
+   *
+   * `targetWidthPx` sizes the drawing to the column it will sit in, so on an odd
+   * quarter turn the width the caller asked for is the layout's HEIGHT. Scaling
+   * off `contentW` regardless would make a rotated plan overflow its column by
+   * exactly the aspect ratio.
+   */
+  const turns = normalizeTurns(options.quarterTurns ?? 0);
+  const acrossFt = rotatedExtentFt(turns, contentW, contentH).contentWidthFt;
+
+  const pxPerFt = targetWidthPx / acrossFt;
   const widthPx = Math.round(contentW * pxPerFt);
   const heightPx = Math.round(contentH * pxPerFt);
+  const sheet = rotatedSize(turns, { widthPx, heightPx });
 
   const s = (ft: number) => ft * pxPerFt;
   const x = (ft: number) => s(leftExtent + ft);
   const y = (ft: number) => s(topExtent + ft);
-  const ctx: Ctx = { job, s, x, y };
+  const ctx: Ctx = { job, s, x, y, turns };
 
   const parts: string[] = [];
 
@@ -638,17 +689,35 @@ export function renderPlanView(
   const barY = contentH - topExtent - 2.2;
   parts.push(scaleBar(ctx, -leftExtent + 1.5, barY, pxPerFt));
 
-  const svg = `<svg class="planview" viewBox="0 0 ${widthPx} ${heightPx}" width="100%" role="img" aria-label="Dimensioned plan view of ${esc(job.name)}" xmlns="http://www.w3.org/2000/svg">${parts.join('')}</svg>`;
+  // The whole drawing turns as one group. Nothing above this line knows about
+  // rotation except the labels, which counter-rotate so they stay readable.
+  const transform = contentTransform(turns, { widthPx, heightPx });
+  const body = transform === ''
+    ? parts.join('')
+    : `<g transform="${transform}">${parts.join('')}</g>`;
+  const rotationNote = turns === 0 ? '' : `, ${rotationLabel(turns).toLowerCase()}`;
 
+  const svg = `<svg class="planview" viewBox="0 0 ${sheet.widthPx} ${sheet.heightPx}" width="100%" role="img" aria-label="Dimensioned plan view of ${esc(job.name)}${esc(rotationNote)}" xmlns="http://www.w3.org/2000/svg">${body}</svg>`;
+
+  const extents = rotatedExtentFt(turns, contentW, contentH);
   return {
     svg,
     pxPerFt,
-    widthPx,
-    heightPx,
-    contentWidthFt: contentW,
-    contentHeightFt: contentH,
+    widthPx: sheet.widthPx,
+    heightPx: sheet.heightPx,
+    // Swapped on an odd turn, because `planPrintScale` reads these to choose the
+    // architectural scale — and fitting a long pool on the sheet is most of the
+    // reason to rotate in the first place.
+    contentWidthFt: extents.contentWidthFt,
+    contentHeightFt: extents.contentHeightFt,
+    quarterTurns: turns,
+    // Still the origin in the UNROTATED layout the drag rules are written in.
+    // A pointer is mapped back through `inverseContentPoint` before it is
+    // measured against these.
     originXPx: x(0),
     originYPx: y(0),
+    layoutWidthPx: widthPx,
+    layoutHeightPx: heightPx,
   };
 }
 
@@ -694,7 +763,31 @@ function objectDims(
 // --- primitives -------------------------------------------------------------
 
 function text(ctx: Ctx, xf: number, yf: number, label: string, cls: string, anchor: string): string {
-  return `<text class="${cls}" x="${n(ctx.x(xf))}" y="${n(ctx.y(yf))}" text-anchor="${anchor}" dominant-baseline="middle">${escText(label)}</text>`;
+  const px = ctx.x(xf);
+  const py = ctx.y(yf);
+  return `<text class="${cls}" x="${n(px)}" y="${n(py)}" text-anchor="${anchor}" dominant-baseline="middle"${upright(ctx, px, py)}>${escText(label)}</text>`;
+}
+
+/**
+ * Keep a label the right way up on a rotated sheet.
+ *
+ * The label counter-rotates about its own anchor, so it stays exactly where the
+ * drawing put it and reads horizontally at every turn. A dimension a builder has
+ * to tilt the page to read is a dimension that gets misread.
+ */
+function upright(ctx: Ctx, px: number, py: number): string {
+  return textTransform(ctx.turns, { x: px, y: py });
+}
+
+/**
+ * Rotation for a dimension's own text, which reads along its dimension line
+ * rather than always horizontally. `base` is 0 for a horizontal dimension and
+ * -90 for a vertical one — the angle it already had before rotation existed.
+ */
+function dimText(ctx: Ctx, base: number, px: number, py: number): string {
+  const angle = alignedTextRotation(ctx.turns, base);
+  if (angle === 0) return '';
+  return ` transform="rotate(${angle} ${n(px)} ${n(py)})"`;
 }
 
 function symbol(ctx: Ctx, xf: number, yf: number, cls: string): string {
@@ -708,7 +801,7 @@ function dimH(ctx: Ctx, x1: number, x2: number, atY: number, label: string, cls 
     <line class="pv-witness" x1="${n(ctx.x(x1))}" y1="${n(ctx.y(atY > 0 ? atY - 0.6 : atY + 0.6))}" x2="${n(ctx.x(x1))}" y2="${n(yy)}"/>
     <line class="pv-witness" x1="${n(ctx.x(x2))}" y1="${n(ctx.y(atY > 0 ? atY - 0.6 : atY + 0.6))}" x2="${n(ctx.x(x2))}" y2="${n(yy)}"/>
     <line class="pv-dim-line" x1="${n(ctx.x(x1))}" y1="${n(yy)}" x2="${n(ctx.x(x2))}" y2="${n(yy)}" marker-start="url(#dimArrow)" marker-end="url(#dimArrow)"/>
-    <text class="pv-dim-text" x="${n((ctx.x(x1) + ctx.x(x2)) / 2)}" y="${n(yy - 4)}" text-anchor="middle">${escText(label)}</text>
+    <text class="pv-dim-text" x="${n((ctx.x(x1) + ctx.x(x2)) / 2)}" y="${n(yy - 4)}" text-anchor="middle"${dimText(ctx, 0, (ctx.x(x1) + ctx.x(x2)) / 2, yy - 4)}>${escText(label)}</text>
   </g>`;
 }
 
@@ -720,7 +813,7 @@ function dimV(ctx: Ctx, y1: number, y2: number, atX: number, label: string, cls 
     <line class="pv-witness" x1="${n(ctx.x(atX > 0 ? atX - 0.6 : atX + 0.6))}" y1="${n(ctx.y(y1))}" x2="${n(xx)}" y2="${n(ctx.y(y1))}"/>
     <line class="pv-witness" x1="${n(ctx.x(atX > 0 ? atX - 0.6 : atX + 0.6))}" y1="${n(ctx.y(y2))}" x2="${n(xx)}" y2="${n(ctx.y(y2))}"/>
     <line class="pv-dim-line" x1="${n(xx)}" y1="${n(ctx.y(y1))}" x2="${n(xx)}" y2="${n(ctx.y(y2))}" marker-start="url(#dimArrow)" marker-end="url(#dimArrow)"/>
-    <text class="pv-dim-text" x="${n(xx - 5)}" y="${n(mid)}" text-anchor="middle" transform="rotate(-90 ${n(xx - 5)} ${n(mid)})">${escText(label)}</text>
+    <text class="pv-dim-text" x="${n(xx - 5)}" y="${n(mid)}" text-anchor="middle"${dimText(ctx, -90, xx - 5, mid)}>${escText(label)}</text>
   </g>`;
 }
 
@@ -739,12 +832,12 @@ function scaleBar(ctx: Ctx, atX: number, atY: number, pxPerFt: number): string {
     parts.push(
       `<rect class="${i % 2 === 0 ? 'pv-scale-fill' : 'pv-scale-empty'}" x="${n(a)}" y="${n(y0)}" width="${n(b - a)}" height="${h}"/>`,
     );
-    parts.push(`<text class="pv-scale-text" x="${n(a)}" y="${n(y0 + 15)}" text-anchor="middle">${segs[i]}</text>`);
+    parts.push(`<text class="pv-scale-text" x="${n(a)}" y="${n(y0 + 15)}" text-anchor="middle"${upright(ctx, a, y0 + 15)}>${segs[i]}</text>`);
   }
   const last = ctx.x(atX + segs[segs.length - 1]!);
-  parts.push(`<text class="pv-scale-text" x="${n(last)}" y="${n(y0 + 15)}" text-anchor="middle">${segs[segs.length - 1]} ft</text>`);
+  parts.push(`<text class="pv-scale-text" x="${n(last)}" y="${n(y0 + 15)}" text-anchor="middle"${upright(ctx, last, y0 + 15)}>${segs[segs.length - 1]} ft</text>`);
   parts.push(
-    `<text class="pv-scale-note" x="${n(ctx.x(atX))}" y="${n(y0 - 6)}" text-anchor="start">GRAPHIC SCALE · ${pxPerFt.toFixed(1)} px per ft as laid out</text>`,
+    `<text class="pv-scale-note" x="${n(ctx.x(atX))}" y="${n(y0 - 6)}" text-anchor="start"${upright(ctx, ctx.x(atX), y0 - 6)}>GRAPHIC SCALE · ${pxPerFt.toFixed(1)} px per ft as laid out</text>`,
   );
   return `<g>${parts.join('')}</g>`;
 }

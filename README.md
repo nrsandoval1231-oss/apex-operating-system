@@ -18,7 +18,7 @@ JSON save/load)** are complete. Every step in the PRD's build order is done.
 ```bash
 npm install
 npm run dev     # takeoff sheet at localhost:5173
-npm test        # 312 tests
+npm test        # 405 tests
 npm run takeoff # same numbers, headless, for reconciliation
 ```
 
@@ -41,6 +41,7 @@ src/engine/          pure TypeScript, no UI imports
   finishes.ts        step 8 — tile, coping, plaster, Lubbock contrast stripe
   yard.ts            step 8 — deck area, 306.5 slope band, drainage
   planView.ts        step 9 — dimensioned SVG plan + step 10 print scale
+  planRotation.ts    quarter-turn sheet rotation; the view transform, not the model
   jobFile.ts         step 11 — JSON save/load, versioned and validated
   standardModel.ts   15x30 pool, 6x6x3.5 spa, 3.5-6 ft — the test fixture
   types.ts           job input model
@@ -101,6 +102,19 @@ src/ui/              step 3 — the takeoff sheet
   305.1 lets a powered safety cover exempt the pool from barrier sections 305.2
   through 305.7, so the listing is load-bearing: without it the job has no
   barrier at all, and the check hard-fails rather than degrading quietly.
+- **The sheet rotates; the pool does not.** `planRotation.ts` turns the finished
+  drawing a quarter turn at a time. The model is untouched — shallow is still
+  where the water is 3'-6", the profile still runs shallow to deep, and every
+  `Placement` still names a physical wall. That is deliberate: rotating the model
+  instead would redefine "shallow" to achieve a presentation change, and
+  `placement.ts` is imported by the renderer alone, so a view transform provably
+  cannot reach the seventeen signed quantities. Labels counter-rotate about their
+  own anchor so nothing ever prints upside down, dimensions stay aligned to their
+  own dimension line, drags map back through one inverse, and the title block
+  states the rotation because a printed sheet cannot show the button that turned
+  it. **It cannot put the deep end toward the house** — the house is drawn off
+  the top wall and turns with the pool. That is a different feature and a
+  different data change, and rotation must not be made to fake it.
 - **The plan prints at a real architectural scale.** `choosePrintScale` picks
   the largest standard scale (1" down to 1/16") that fits the drawing's actual
   extents on 11x17, and the title block states it. A job too big for any standard
