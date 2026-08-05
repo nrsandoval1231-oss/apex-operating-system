@@ -1,6 +1,19 @@
 name: Apex non-Website verification
 
 on:
+  # Run it on demand.
+  #
+  # This workflow is the only place the Designer contract test executes: it
+  # checks the private apex-designer repository out beside this one with a
+  # read-only deploy key. So the signal is needed exactly when THAT repository
+  # changes and this one does not — a new quantity model, a new engine export —
+  # and the path filters below correctly decline to fire for that, because
+  # nothing in this workspace moved.
+  #
+  # Without a manual trigger the only way to get the check was to commit
+  # something here that nobody wanted, purely to make a build happen.
+  workflow_dispatch:
+
   push:
     branches: [main]
     paths:
