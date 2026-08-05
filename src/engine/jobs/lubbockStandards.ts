@@ -18,6 +18,7 @@
  * one of them is marked in the source it came from as a placeholder to replace.
  */
 
+import { deckOutlineFromBorder } from '../deck.ts';
 import { STANDARD_MODEL } from '../standardModel.ts';
 import type { DepthProfile, Job } from '../types.ts';
 
@@ -32,19 +33,85 @@ function profileFor(lengthFt: number, runs: readonly [number, number, number]): 
   return { shallowRun, transitionRun, deepRun, shallowDepth: 3.5, deepDepth: 6 };
 }
 
+/**
+ * The shallow-end tanning ledge, and the stair that comes off it.
+ *
+ * Apex's other standard shallow-end arrangement: a Baja shelf across the
+ * shallow end with the entry stair stepping down off its deep edge, rather than
+ * a stair straight off the wall.
+ *
+ * Three constraints shape the geometry, and all three come from the pool rather
+ * than from taste:
+ *
+ *   - The spa is set into the shallow/house corner at (0, 0) and is 6 x 6, so
+ *     the ledge starts 6 ft along the wall. Starting at 0 would draw it through
+ *     the spa.
+ *   - The ledge takes its width from what is left of the wall, so it always
+ *     reaches the far side however wide the pool is.
+ *   - The ledge is at most 5 ft deep AND never deep enough to push the stair
+ *     past the breakover. On the 12 x 24 the shallow flat is only 8 ft, so a
+ *     5 ft ledge would put the bottom tread on the slope. Sized against the run
+ *     rather than fixed, the stair always lands on flat floor.
+ *
+ * The stair is positioned freely, because a stair off a ledge is against no
+ * wall at all — it starts exactly where the ledge ends, which is the position
+ * `abutMagnets` produces when you drag one onto the other by hand.
+ */
+function shallowLedgeAndStair(
+  widthFt: number,
+  shallowRunFt: number,
+): Pick<Job['pool'], 'steps' | 'seats'> {
+  const SPA_FT = 6;
+  const STAIR_RUN_FT = 4; // 4 treads at the 12 in Lubbock minimum
+  const acrossFt = widthFt - SPA_FT;
+  const ledgeDepthFt = Math.min(5, shallowRunFt - STAIR_RUN_FT);
+  return {
+    seats: [
+      {
+        ...STANDARD_MODEL.pool.seats[0]!,
+        id: 'TL1',
+        kind: 'tanningLedge',
+        // The Apex standard: always 10 in of water over the surface.
+        depthBelowWaterlineIn: 10,
+        surfaceWidthIn: Math.round(acrossFt * 12),
+        surfaceDepthIn: Math.round(ledgeDepthFt * 12),
+        leadingEdgeLengthFt: acrossFt,
+        floorDepthFt: 3.5,
+        isRequiredEntryExit: false,
+        // Wall placement, not a free position: on the shallow wall the ledge's
+        // width runs ACROSS the pool and its depth reaches into it, which is
+        // the orientation a wall placement gives and a free one does not.
+        placement: { wall: 'shallow', alongFt: SPA_FT },
+      },
+    ],
+    steps: [
+      {
+        ...STANDARD_MODEL.pool.steps[0]!,
+        treadWidthIn: Math.round(acrossFt * 12),
+        floorDepthFt: 3.5,
+        // Flush on the ledge's deep edge, matching its width.
+        position: { xFt: ledgeDepthFt, yFt: SPA_FT },
+      },
+    ],
+  };
+}
+
 function lubbockStandard(
   lengthFt: number,
   widthFt: number,
   runs: readonly [number, number, number],
+  options: { readonly shallowLedge?: boolean } = {},
 ): Job {
   return {
     ...STANDARD_MODEL,
-    name: `${widthFt} x ${lengthFt} — corner spa, spillover`,
+    name: `${widthFt} x ${lengthFt} — corner spa, spillover${options.shallowLedge ? ', tanning ledge' : ''}`,
     pool: {
       ...STANDARD_MODEL.pool,
       lengthFt,
       widthFt,
       profile: profileFor(lengthFt, runs),
+      ...(options.shallowLedge ? shallowLedgeAndStair(widthFt, runs[0]) : {}),
+      ...(options.shallowLedge ? {} : {
       steps: [
         {
           ...STANDARD_MODEL.pool.steps[0]!,
@@ -61,6 +128,7 @@ function lubbockStandard(
           placement: { wall: 'bottom', alongFt: lengthFt * 0.55 },
         },
       ],
+      }),
     },
     hydraulics: STANDARD_MODEL.hydraulics && {
       ...STANDARD_MODEL.hydraulics,
@@ -104,6 +172,19 @@ function lubbockStandard(
       // Six jets in the wall is the Apex standard on every spa.
       jetCount: 6,
     },
+    /*
+     * The deck is sized to THIS pool, not inherited.
+     *
+     * Spreading STANDARD_MODEL gave every preset the 15 x 30 model's slab — a
+     * 38 x 23 rectangle. On the 12 x 24 that was merely too big; on the 20 x 40
+     * it does not contain the pool at all, and once the deck became a drawn
+     * outline with a containment check, that preset threw instead of opening.
+     * Nothing caught it because no test opened the large preset.
+     */
+    deck: STANDARD_MODEL.deck && {
+      ...STANDARD_MODEL.deck,
+      outline: deckOutlineFromBorder(lengthFt, widthFt, 4),
+    },
     site: {
       ...STANDARD_MODEL.site,
       // No property lines. A preset cannot know where the lot boundaries are,
@@ -124,8 +205,16 @@ export const LUBBOCK_15X30 = lubbockStandard(30, 15, [10, 14, 6]);
 /** 20 x 40. The large standard. */
 export const LUBBOCK_20X40 = lubbockStandard(40, 20, [12, 20, 8]);
 
+/** The same three, with a shallow-end tanning ledge and the stair off it. */
+export const LUBBOCK_12X24_LEDGE = lubbockStandard(24, 12, [8, 11, 5], { shallowLedge: true });
+export const LUBBOCK_15X30_LEDGE = lubbockStandard(30, 15, [10, 14, 6], { shallowLedge: true });
+export const LUBBOCK_20X40_LEDGE = lubbockStandard(40, 20, [12, 20, 8], { shallowLedge: true });
+
 export const LUBBOCK_STANDARDS: readonly { readonly label: string; readonly job: Job }[] = [
   { label: `12' × 24'`, job: LUBBOCK_12X24 },
   { label: `15' × 30'`, job: LUBBOCK_15X30 },
   { label: `20' × 40'`, job: LUBBOCK_20X40 },
+  { label: `12' × 24' + ledge`, job: LUBBOCK_12X24_LEDGE },
+  { label: `15' × 30' + ledge`, job: LUBBOCK_15X30_LEDGE },
+  { label: `20' × 40' + ledge`, job: LUBBOCK_20X40_LEDGE },
 ];
