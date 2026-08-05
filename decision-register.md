@@ -4,17 +4,21 @@
 Every open decision across the four repos and seven PRDs, in one place, ranked by what it unlocks
 rather than by when it was discovered.
 
-**Where it stands.** All 28 items now carry an answer. Eight of them are **decided** — they were
-Nick's to make and he made them. Nineteen are **recommended positions pending Travis**, because they
-are his decisions and recording them as settled is exactly the drift `docs/status.md` warns against:
-*"commission decisions presented as settled before recorded approval."* One is unchanged and needs
-counsel.
+**Where it stands. All 28 items are decided.** Eight were Nick's and he made them. **Travis signed
+off on the remaining nineteen as written on 2026-08-05**, relayed by Nick — no document is on file,
+which is what the provenance line under each section records. One item still needs counsel rather
+than a decision.
+
+That approval is what `docs/status.md` was holding out for. Its drift rule —
+*"commission decisions presented as settled before recorded approval"* — is satisfied now, and only
+now: these were carried as recommendations for exactly as long as they were unconfirmed.
 
 **Three of the recommendations reversed positions already on file.** All three are resolved in §4 as
 of 2026-08-05 and written through to Foundation §3.3, Foundation §7.1, and PRD 04. A reversal is a
 legitimate act; a reversal nobody noticed is how two documents start disagreeing.
 
-**PRD 04 is no longer blocked on its own inputs** — only on PRD 03, which waits on Travis. See §6.
+**PRD 03 and PRD 04 are both unblocked.** Their gates — the contract's cost definition, the
+QuickBooks structure and the allowance mechanic — are answered and approved. See §6.
 
 > **⚠ For Nick before circulating.** Items marked **[MARGIN]** cannot be discussed without the
 > 23.08% finding (Foundation §1), which was deliberately held back from the strategy deck. Decide
@@ -46,14 +50,19 @@ but PRD 05 stays deferred on its own gate (~60 days of real lead data).
 
 ---
 
-## 2. Recommended — Travis's to confirm
+## 2. Decided — Travis's, approved as written
 
-Nick's position on each, recorded 2026-08-05. **None of these is settled until Travis says so**, and
-three of them reverse something already on file (§4).
+**Approved by Travis Sandoval on 2026-08-05, as written, with no corrections.** Relayed by Nick;
+there is no signed document, and that is stated rather than implied. Three of these reverse
+something already on file, and those reversals are worked through in §4.
+
+**Item 1 carries its own precondition and Travis's approval does not discharge it:** the agreement
+must be amended before the broad cost definition is relied on. Approving an interpretation is not
+the same as the contract saying it.
 
 ### The three that unblock PRDs 03 and 04
 
-| # | Question | Nick's recommendation |
+| # | Question | Decided |
 |---|---|---|
 | 1 | **Reimbursable cost — what does the agreement define as cost?** **[MARGIN]** | **Broad direct-cost definition:** all direct, project-attributable costs required to deliver the pool — materials, subcontractors, permits, inspections, equipment rental, freight, disposal, project-specific labour burden, credit-card fees on reimbursable purchases, approved travel. **Excluded:** office overhead, general management salaries, marketing, financing costs, owner distributions, and costs caused by Apex's own negligence or rework. **Amend the agreement before relying on this** — and attach a written cost schedule so there is no ambiguity. |
 | 2 | **QuickBooks structure** | **Projects on. One company file** unless the three operations are genuinely separate legal entities or tax books. **Classes for the three business lines** — Pool Construction, Concrete Coatings, Pool Service. Customers and Projects track individual jobs; Classes track business lines. Do not create three company files for reporting convenience. |
@@ -61,16 +70,16 @@ three of them reverse something already on file (§4).
 
 ### Pricing and commission
 
-| # | Question | Nick's recommendation |
+| # | Question | Decided |
 |---|---|---|
 | 4 | **Fee rate** **[MARGIN]** | **Hold at 30% initially.** Do not move universally to 35% until job-level data proves 30% inadequate *after* all reimbursable costs are captured. Use 35% selectively — high complexity, compressed schedule, uncertain scope, unusually small jobs. |
-| 5 | **Commission base** **[MARGIN]** | Pay on **collected gross profit** — not contract value, quoted fee, or recognised revenue. GP **includes** the fee earned on all legitimately reimbursable cost categories. Excluded: sales tax, pass-through amounts carrying no fee, financing charges, warranty rework, unapproved overruns, uncollected revenue. **Both conflicts this created are resolved — §4.1 and §4.2**: Stage 1 is an advance trueing up on collected GP, and the expanded base counts (Tier 1 only). Travis has still not confirmed the item itself. |
+| 5 | **Commission base** **[MARGIN]** | Pay on **collected gross profit** — not contract value, quoted fee, or recognised revenue. GP **includes** the fee earned on all legitimately reimbursable cost categories. Excluded: sales tax, pass-through amounts carrying no fee, financing charges, warranty rework, unapproved overruns, uncollected revenue. **Both conflicts this created are resolved — §4.1 and §4.2**: Stage 1 is an advance trueing up on collected GP, and the expanded base counts (Tier 1 only). Approved by Travis 2026-08-05. |
 | 6 | **Permits showing $0.00 against a live line item** | **Treat as a control failure until proven otherwise.** Permits are an explicit allowance or reimbursable cost with the contractual fee applied. A live required cost may never sit at $0 without a note and an approval. |
 | 8 | **Sales fee-rate discretion** | **None unilateral.** Sales may recommend a deviation; anything below the standard rate, or any unusual exclusion, needs written approval. |
 
 ### Operating model
 
-| # | Question | Nick's recommendation |
+| # | Question | Decided |
 |---|---|---|
 | 7 | **Who builds estimates** | **Estimator owns the estimate. Owner approves exceptions. Salesperson owns discovery and presentation.** A salesperson does not independently build technical cost estimates. |
 | 9 | **Pools per year** | Plan on **19 completed pools/year**. Build systems that reach **24–30 without redesign.** |
@@ -125,9 +134,9 @@ Gate blocker; item 24 names the authority but does not connect it.
 
 ## 4. Reversals and conflicts — resolved 2026-08-05
 
-**Both were resolved by Nick on 2026-08-05.** Recorded here with the reasoning and the cost, because
-each went against a recommendation already on file and neither should be re-derived later from the
-answer alone. Travis has not confirmed either; item 5 remains **[MARGIN]**.
+**Resolved by Nick on 2026-08-05 and approved by Travis the same day**, along with item 5 that
+created them. Recorded here with the reasoning and the cost, because each went against a
+recommendation already on file and neither should be re-derived later from the answer alone.
 
 | | Resolution | Where it now lives |
 |---|---|---|

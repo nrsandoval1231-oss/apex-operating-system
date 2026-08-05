@@ -1,14 +1,21 @@
 # PRD 03 — Cost Capture & Allocation
 
-> **STATUS: NOT WRITTEN — BLOCKED.** This is a placeholder, not a specification. Do not build from it.
+> **STATUS: NOT WRITTEN — UNBLOCKED 2026-08-05.** Still a placeholder; do not build from it yet.
+> But both gates are now answered and approved, so it is ready to be written.
 > **Depends on:** `00-foundation.md`, `02-proposal-takeoff-engine.md`
 >
-> **2026-08-05 — both gates have recommended answers awaiting Travis.** QuickBooks structure
-> (`decision-register.md` item 2): **Projects on, one company file, Classes for the three business
-> lines** — Customers/Projects track jobs, Classes track business lines. Contract review (item 1):
-> a **broad direct-cost definition**, with a written cost schedule attached to the agreement.
-> Item 1 states its own precondition — *amend the agreement before relying on this interpretation.*
-> This document unblocks on Travis's confirmation, not on the recommendation being written down.
+> **QuickBooks structure** (`decision-register.md` item 2): Projects on, one company file, Classes
+> for the three business lines — Customers/Projects track jobs, Classes track business lines.
+> **Contract review** (item 1): a broad direct-cost definition, with a written cost schedule
+> attached to the agreement. Both approved by Travis on 2026-08-05.
+>
+> **One precondition survives the approval.** Item 1 says *amend the agreement before relying on
+> this interpretation* — approving an interpretation is not the same as the contract saying it, and
+> cost-plus agreements commonly carry audit rights. The amendment is a prerequisite to using this
+> document, not a follow-up to it.
+>
+> **One input this document must now carry that it did not before:** payment application per job.
+> Commission is settled on collected GP (PRD 04), which cost data alone cannot supply.
 
 ## What this will cover
 

@@ -1,12 +1,13 @@
 # PRD 04 — Commission Engine
 
-> **STATUS: NOT WRITTEN — BLOCKED.** Placeholder only. The *formula* is settled; the *inputs* are not.
+> **STATUS: NOT WRITTEN — UNBLOCKED 2026-08-05.** Placeholder only; do not build from it yet. But
+> the formula is settled and every input is answered, so it is ready to be written.
 > **Depends on:** `00-foundation.md`, `03-cost-capture-allocation.md`
 >
-> **2026-08-05 — all three inputs are now answered.** The allowance mechanic recalculates against
-> final approved cost (`decision-register.md` item 3, pending Travis). Both contested points in the
-> formula are resolved below. **The only remaining blocker is PRD 03**, which itself waits on
-> Travis confirming the QuickBooks structure and the contract's definition of cost.
+> All three inputs are answered and **approved by Travis on 2026-08-05**: the allowance mechanic
+> recalculates against final approved cost (`decision-register.md` item 3), and both contested points
+> in the formula are resolved below. **The remaining dependency is PRD 03 being written** — its own
+> gates are open too, so nothing here is waiting on a decision.
 
 ## The formula — settled (Foundation §1, §3, §7)
 
@@ -48,9 +49,8 @@ Three inputs were missing. **Two are now answered; one is not.**
 2. ~~**Which §7 option**~~ **Answered 2026-08-05, and none of the three** — Foundation §7.1. Stage 1
    is an advance, Stage 2 trues up on collected GP, and the perverse incentive is accepted rather
    than blunted. Two mitigations stay on the shelf.
-3. **Actual GP has to be computable**, which requires PRD 03. **Still open** — and PRD 03 waits on
-   Travis confirming the QuickBooks structure and the contract's definition of reimbursable cost.
-   **This is now the only thing between this document and being written.**
+3. **Actual GP has to be computable**, which requires PRD 03. **Still the dependency** — but PRD 03
+   is itself unblocked as of 2026-08-05, so this is a sequencing matter rather than a decision.
 
 **A collected-GP formula raises one input PRD 03 did not previously have to carry:** payment
 application per job. Stage 2 cannot be computed from cost data alone — it needs to know what was

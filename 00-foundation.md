@@ -164,7 +164,7 @@ Tier 2 items are shared across jobs in exactly the way the rebar truckload is. B
 2. **How does the allowance mechanic (§6) interact** now that the base is larger? — **Answered:**
    the fee recalculates against the final approved allowance cost, in both directions, and
    customer-selected upgrades and approved changes carry the same fee unless expressly excluded
-   (`decision-register.md` item 3, pending Travis).
+   (`decision-register.md` item 3, approved by Travis 2026-08-05).
 
 **All of 3.1 is gated on the contract review.** Until his agreement's definition of reimbursable "cost" is known, none of it can be implemented.
 
