@@ -824,6 +824,88 @@ Decisions worth challenging:
 the test skips exactly as before. Four steps in
 [`docs/runbooks/deployment.md`](runbooks/deployment.md) §8.
 
+## Apex Designer becomes a drawing tool — 2026-08-04
+
+Unmerged, on `apex-designer` branch `feat/builder-design-tool` (11 commits).
+Designer was a calculator that printed a plan. It is now something a builder
+draws in, with the takeoff running underneath rather than in front.
+
+| Commands | Result |
+|---|---|
+| `npm test` (Designer) | **380/380 passed**, up from 318 |
+| `tsc --noEmit`, `vite build` | Both clean |
+| Designer contract with `APEX_REQUIRE_DESIGNER_CONTRACT=1` | **Passes** — the approved-quantity digest did not move |
+
+What it gained: three preset sizes (12×24, 15×30, 20×40, each with a corner spa
+and spillover — roughly 90% of Lubbock work); drag to move and to resize, on the
+plan and on a now-draggable section; add and remove for steps, benches, tanning
+ledges, bubblers, deck jets and spa jets; property lines drawn and dimensioned
+for the city submittal; a longitudinal section carrying the depth dimensions a
+plan cannot show; an order list; saved designs in localStorage; and the real
+Apex brand tokens from the website.
+
+Decisions worth challenging:
+
+- **Placement does not affect quantities.** Step displacement comes from tread
+  size and count, bench volume from its own dimensions. That is what allowed a
+  whole move-and-resize layer to land without touching the seventeen signed
+  quantities or the digest over them.
+- **The spa's own suction and return went on the presets, not on
+  `STANDARD_MODEL`.** Developed run length is one of those seventeen quantities
+  and `STANDARD_MODEL` is the fixture the digest is pinned against. Adding
+  plumbing there would have moved it. The contract test was run explicitly to
+  confirm it did not.
+- **Step and bench measurements are printed, not signed.** Total rise, tread
+  depth, riser list, tread area: derived from inputs the payload already covers
+  and deliberately kept out of it. Promoting any of them is a version bump.
+- **Property lines are drawn and dimensioned but never code-checked.** No
+  Lubbock property-line setback has been recorded, and a PASS badge against a
+  limit nobody supplied would be a fabricated compliance claim on a drawing
+  going to a plan reviewer.
+- **Spa jets are a count, not six placed objects.** Six in the wall is the Apex
+  standard and a count is the level anyone specifies or orders at.
+- **A drag can only produce buildable geometry.** Objects hold one degree of
+  freedom along a wall; a shorter pool gives up its deep flat first, then the
+  transition, then the shallow flat; floors cannot cross; the pool cannot be
+  dragged narrower than a spa set into it. The rules are pure functions with
+  their own tests, so the drag handler contains no policy.
+
+Three bugs of one shape were found by driving the tool rather than reasoning
+about it, and are worth knowing because the pattern will recur: **React batches,
+so anything that reads a prop to compute its next value loses every edit but the
+last when several land in one task.** It cost a dropped drag, three keyboard
+nudges collapsing into one, and an added bubbler vanishing. Each is fixed by
+chaining off what the component actually emitted.
+
+**Not built:** a rotate tool, and a deck that is anything other than a uniform
+border width.
+
+## Proposal builder was inert — 2026-08-04
+
+Unmerged, on `apex-proposal-engine` branch `fix/builder-runs-in-a-browser`.
+
+Clicking "Generate customer proposal" did nothing. So did everything else on the
+page — every output read "—". Two stacked faults: `node:crypto` imports meant a
+browser could never evaluate the module graph, so no handler was ever attached;
+and underneath that, `index.html` called the production takeoff path, which
+throws without an approved Designer revision it has no way to supply.
+
+| Commands | Result |
+|---|---|
+| `engine.test.mjs` | **119/119** |
+| `whitaker-evidence.test.mjs` | **11/11** — the hash-pinned checks that prove the digest did not move |
+| `browser-graph.test.mjs` | New. Fails if a `node:` import returns or the page calls the production path |
+
+The SHA-256 was reimplemented with no runtime-specific import rather than split
+across a conditional — two implementations of a tamper-evidence function are
+free to disagree. Verified against the published NIST vectors and byte-identical
+to `node:crypto` across 201 lengths spanning every padding boundary.
+
+**Draft pricing works; issuance is still fail-closed.** A 24×14 with spa prices
+at $69,653 cost / $90,548.90 customer price, and the issue gate refuses with
+both real reasons — no approved Designer revision, and seven direct-entry lines
+unquoted.
+
 ## Next controlled milestone
 
 One pilot job must demonstrate:
