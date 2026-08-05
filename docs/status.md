@@ -155,13 +155,15 @@ Phase 0 goals:
 2. Local persistence is embedded PostgreSQL and private filesystem storage, not the managed production deployment profile.
 3. Pilot JWT authentication uses a local symmetric secret; production requires asymmetric/JWKS identity, TLS, provisioning, rotation, and access logging.
 4. Evidence freshness/expiration are not implemented.
-5. **The Designer contract test runs in CI only once a deploy key is set.** The
-   workflow now checks `apex-designer` out beside this repository and runs the
-   contract test against it, but that needs a read-only deploy key in
-   `APEX_DESIGNER_DEPLOY_KEY` — see `docs/runbooks/deployment.md` §8. Until the
-   secret exists CI prints a warning and the test skips, which is the state as of
-   2026-08-03. Where the secret is present, a missing engine **fails** the run
-   rather than skipping it.
+5. ~~**The Designer contract test does not run in CI.**~~ Closed 2026-08-05. The
+   read-only deploy key is installed and the workflow checks `apex-designer` out
+   beside this repository. Confirmed on run `30874311311`:
+   `✓ integration-tests/designer-contract.test.ts (2 tests | 1 skipped)` — the
+   contract check passed, and the one that skipped is the guard that only runs
+   when the engine is absent, so its skipping is the proof the engine was found.
+   `APEX_REQUIRE_DESIGNER_CONTRACT=1` is set whenever the secret is present, so
+   a checkout in the wrong directory or a revoked key **fails** the run rather
+   than reverting to a silent skip.
 5. QuickBooks synchronization is not connected; release only creates canonical draw eligibility.
 6. Schedule authority remains disconnected.
 7. Chemistry remains explicitly outside field deployment until separately approved.
@@ -820,9 +822,20 @@ Decisions worth challenging:
 - **The deploy key is read-only.** A writable key in a workflow is a way to
   rewrite the quantity authority from a pull request.
 
-**Still open, and it is yours:** the secret does not exist yet, so CI warns and
-the test skips exactly as before. Four steps in
-[`docs/runbooks/deployment.md`](runbooks/deployment.md) §8.
+**Closed 2026-08-05.** The key was generated, added to `apex-designer` as a
+read-only deploy key, and stored as `APEX_DESIGNER_DEPLOY_KEY`; both local copies
+were deleted, so it now exists only in GitHub's two encrypted stores and cannot
+be read back by anyone.
+
+Verified by re-running the last build on `main` rather than by inspection. The
+first steps inverted exactly as designed — **Check out Apex Designer** went from
+skipped to success and the "will not be verified" warning went from success to
+skipped — and the run then reported
+`✓ integration-tests/designer-contract.test.ts (2 tests | 1 skipped)`.
+
+Reading that line matters: the file holds the contract check and the guard that
+fires only when the engine is missing. One passing and one skipping is the shape
+that means the engine was found. Before this, it was the other way round.
 
 ## Apex Designer becomes a drawing tool — 2026-08-04
 

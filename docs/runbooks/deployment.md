@@ -334,11 +334,16 @@ Stated so nobody assumes otherwise:
 
 CI checks the private `apex-designer` repository out beside this one so
 `integration-tests/designer-contract.test.ts` actually runs. That needs a
-read-only deploy key, which is the one part nobody but you can do.
+read-only deploy key.
 
-**Until the key is configured, CI prints a warning and the contract test skips.**
-That is the state the repository ships in — a skipped test in a green run, which
-is why the warning exists and why §7 no longer claims the signal is impossible.
+**Installed 2026-08-05** and verified on run `30874311311`. The steps below are
+kept for rotation and for rebuilding this from nothing — not because anything is
+outstanding.
+
+Where no key is configured — a fork, or a fresh clone of this setup — CI prints a
+warning and the contract test skips. That is a deliberate fallback, not a
+failure: a fork cannot read the private repository and must not fail on a secret
+it was never going to have.
 
 ```bash
 # 1. Generate a key pair used for nothing else. No passphrase: a workflow
@@ -363,10 +368,21 @@ rm ./apex-designer-ci ./apex-designer-ci.pub
 
 ### Confirming it works
 
-Push anything that touches a CI path and read the run. Two things prove it:
+Re-running an existing build on `main` is enough — a re-run picks up current
+secrets, so no dummy commit is needed. Two things prove it:
 
-- The step **Check out Apex Designer** ran rather than being skipped.
-- The verify output shows the Designer contract test **passing**, not skipping.
+- The step **Check out Apex Designer** ran rather than being skipped, and the
+  "will not be verified" step skipped rather than running. They invert together.
+- The verify output shows the Designer contract test **passing**, not skipping:
+
+```text
+✓ integration-tests/designer-contract.test.ts (2 tests | 1 skipped)
+```
+
+Read that line carefully, because the skip is the reassuring half. The file holds
+the contract check and a guard that runs *only* when the engine is missing. One
+passing and one skipping is the shape that means the engine was found. Two
+skipped means the checkout did not land.
 
 `pnpm verify` runs with `APEX_REQUIRE_DESIGNER_CONTRACT=1` whenever the secret is
 present, so a checkout that landed in the wrong directory, or a key that has been
