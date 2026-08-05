@@ -235,10 +235,22 @@ export function renderPlanView(
    */
   const spaPlace = spa?.placement ?? { wall: 'deep' as const, alongFt: (W - spaW) / 2 };
   const spaOutside = Boolean(spa && !spa.insetIntoPool);
+  /**
+   * A freely positioned spa is drawn length-along-x, width-along-y: with no wall
+   * there is nothing to take an orientation from. A wall-placed one keeps the
+   * old behaviour, so a job saved before free placement opens unchanged.
+   */
   const spaRect = spa && spaOutside
-    ? placementRect(spaPlace, spaW, spaL, L, W, true)
+    ? (spa.position
+      ? { x: spa.position.xFt, y: spa.position.yFt, widthFt: spaL, heightFt: spaW }
+      : placementRect(spaPlace, spaW, spaL, L, W, true))
     : null;
-  const spaOn = (wall: PoolWall) => (spaOutside && spaPlace.wall === wall ? spaL : 0);
+  const spaOn = (wall: PoolWall) =>
+    (spaOutside && !spa?.position && spaPlace.wall === wall ? spaL : 0);
+  /** A free spa can sit anywhere, so the sheet has to grow to wherever it went. */
+  const freeSpaBounds = spa?.position && spaRect
+    ? { left: -spaRect.x, right: spaRect.x + spaRect.widthFt - L, top: -spaRect.y, bottom: spaRect.y + spaRect.heightFt - W }
+    : { left: 0, right: 0, top: 0, bottom: 0 };
 
   /**
    * The water envelope, in pool feet. An attached spa hangs off whichever wall
@@ -266,18 +278,22 @@ export function renderPlanView(
     setback + houseDepth + 2.5,
     propTop > 0 ? propTop + 4 : 0,
     spaOn('top') + Math.max(deckM.topFt, over) + 3,
+    freeSpaBounds.top + 3,
   );
   const bottomExtent = Math.max(
     (job.equipment?.distanceFromPoolFt ?? Math.max(deckM.bottomFt, over) + 4) + padD + 6,
     propBottom > 0 ? propBottom + 4 : 0,
     spaOn('bottom') + Math.max(deckM.bottomFt, over) + 3,
+    freeSpaBounds.bottom + 3,
   );
   const leftExtent = Math.max(
     Math.max(deckM.leftFt, over) + 9 + spaOn('shallow'),
+    freeSpaBounds.left + 3,
     propLeft > 0 ? propLeft + 4 : 0,
   );
   const rightExtent = Math.max(
     Math.max(deckM.rightFt, over) + spaOn('deep') + 12,
+    freeSpaBounds.right + 3,
     propRight > 0 ? (envRight - L) + propRight + 4 : 0,
   );
 
@@ -342,19 +358,44 @@ export function renderPlanView(
   parts.push(`<rect class="pv-water" x="${n(x(0))}" y="${n(y(0))}" width="${n(s(L))}" height="${n(s(W))}"/>`);
 
   if (spa && spa.insetIntoPool) {
-    // Set into the shallow-end corner: it sits inside the pool rectangle, so it
-    // is drawn there. Drawing it hanging off the end would misrepresent both the
-    // footprint and the water.
+    /**
+     * An inset spa sits inside the pool rectangle, so it is drawn there rather
+     * than hanging off an end. It used to be welded to (0, 0) — the shallow-end
+     * corner — with no handle, so "corner spa" meant one specific corner and
+     * nothing else. It now carries a free position like any other spa, so it can
+     * go in whichever corner the yard wants or out in the middle of the water.
+     */
+    const inset = { x: spa.position?.xFt ?? 0, y: spa.position?.yFt ?? 0, widthFt: spaL, heightFt: spaW };
+    const selected = selectedId === SPA_MOVE_ID;
     parts.push(
-      `<rect class="pv-water pv-spa" x="${n(x(0))}" y="${n(y(0))}" width="${n(s(spaL))}" height="${n(s(spaW))}"/>`,
+      `<rect class="pv-water pv-spa${selected ? ' pv-selected' : ''}"`
+      + ` data-move-kind="spa" data-move-id="${SPA_MOVE_ID}"`
+      + ` x="${n(x(inset.x))}" y="${n(y(inset.y))}" width="${n(s(inset.widthFt))}" height="${n(s(inset.heightFt))}"/>`,
     );
-    // Dam wall on the two inner edges, where it meets pool water.
+    /**
+     * Dam wall on every edge that faces pool water — which is every edge not
+     * lying on the pool's own boundary. A spa in a corner has two such edges, a
+     * spa in the middle has four, and hardcoding two was only correct while it
+     * could not be moved.
+     */
+    const near = (a: number, b: number) => Math.abs(a - b) < 1e-6;
+    const edges: readonly (readonly [number, number, number, number, boolean])[] = [
+      [inset.x, inset.y, inset.x + inset.widthFt, inset.y, near(inset.y, 0)],
+      [inset.x, inset.y + inset.heightFt, inset.x + inset.widthFt, inset.y + inset.heightFt, near(inset.y + inset.heightFt, W)],
+      [inset.x, inset.y, inset.x, inset.y + inset.heightFt, near(inset.x, 0)],
+      [inset.x + inset.widthFt, inset.y, inset.x + inset.widthFt, inset.y + inset.heightFt, near(inset.x + inset.widthFt, L)],
+    ];
+    for (const [x1, y1, x2, y2, onPoolBoundary] of edges) {
+      if (onPoolBoundary) continue;
+      parts.push(
+        `<line class="pv-damwall" x1="${n(x(x1))}" y1="${n(y(y1))}" x2="${n(x(x2))}" y2="${n(y(y2))}"/>`,
+      );
+    }
+    const icx = inset.x + inset.widthFt / 2;
+    const icy = inset.y + inset.heightFt / 2;
+    parts.push(text(ctx, icx, icy - 0.5, 'SPA', 'pv-label-inset', 'middle'));
     parts.push(
-      `<polyline class="pv-damwall" fill="none" points="${n(x(0))},${n(y(spaW))} ${n(x(spaL))},${n(y(spaW))} ${n(x(spaL))},${n(y(0))}"/>`,
-    );
-    parts.push(text(ctx, spaL / 2, spaW / 2 - 0.5, 'SPA', 'pv-label-inset', 'middle'));
-    parts.push(
-      text(ctx, spaL / 2, spaW / 2 + 0.9, `${feetInches(spaL)} × ${feetInches(spaW)} inset`, 'pv-note-inset', 'middle'),
+      text(ctx, icx, icy + 0.9, `${feetInches(spaL)} × ${feetInches(spaW)} inset`, 'pv-note-inset', 'middle'),
     );
   } else if (spa && spaRect) {
     const selected = selectedId === SPA_MOVE_ID;
@@ -462,17 +503,26 @@ export function renderPlanView(
   for (const acc of pool.accessories ?? []) {
     const isDeckJet = acc.kind === 'deck-jet';
     const place = acc.placement ?? { wall: 'bottom' as const, alongFt: L / 2 };
-    const rect = placementRect(place, 1, isDeckJet ? Math.max(deckW, 1.5) : 1.2, L, W, isDeckJet);
+    // Free position wins; the wall placement is only how an older job opens.
+    const rect = acc.position
+      ? { x: acc.position.xFt, y: acc.position.yFt, widthFt: 1, heightFt: 1 }
+      : placementRect(place, 1, isDeckJet ? Math.max(deckW, 1.5) : 1.2, L, W, isDeckJet);
     const cx = rect.x + rect.widthFt / 2;
     const cy = rect.y + rect.heightFt / 2;
     const selected = selectedId === acc.id;
+    /**
+     * Which way a deck jet throws. A wall-placed one aims across its own wall; a
+     * freely placed one has no wall, so it aims at the water — which is what a
+     * deck jet is pointed at in the first place.
+     */
+    const aim: PoolWall = acc.position ? aimFromOutside(cx, cy, L, W) : place.wall;
     parts.push(isDeckJet
-      ? deckJetSymbol(ctx, cx, cy, place.wall, selected, acc.id)
+      ? deckJetSymbol(ctx, cx, cy, aim, selected, acc.id)
       : bubblerSymbol(ctx, cx, cy, selected, acc.id));
     if (isDeckJet) {
       // The throw, toward the water. Indicative: nobody dimensions an arc.
-      const toward = place.wall === 'top' ? [cx, 0] : place.wall === 'bottom' ? [cx, W]
-        : place.wall === 'shallow' ? [0, cy] : [L, cy];
+      const toward = aim === 'top' ? [cx, 0] : aim === 'bottom' ? [cx, W]
+        : aim === 'shallow' ? [0, cy] : [L, cy];
       parts.push(
         `<path class="pv-jet-arc" d="M ${n(x(cx))} ${n(y(cy))} Q ${n(x((cx + toward[0]!) / 2))} ${n(y((cy + toward[1]!) / 2))} ${n(x(toward[0]!))} ${n(y(toward[1]!))}"/>`,
       );
@@ -746,6 +796,29 @@ function text(ctx: Ctx, xf: number, yf: number, label: string, cls: string, anch
  */
 function upright(ctx: Ctx, px: number, py: number): string {
   return textTransform(ctx.turns, { x: px, y: py });
+}
+
+/**
+ * Which pool edge a freely placed fitting faces.
+ *
+ * A deck jet stands outside the water and throws in, so the edge it faces is the
+ * one it is beyond. Choosing by distance-from-centre instead would aim a jet
+ * sitting inside the pool footprint back out through the nearest wall, which is
+ * the opposite of where it throws. Only a fitting that is inside on both axes
+ * falls back to nearest-edge, and there it genuinely is a judgement call.
+ */
+function aimFromOutside(cx: number, cy: number, L: number, W: number): PoolWall {
+  if (cx < 0) return 'shallow';
+  if (cx > L) return 'deep';
+  if (cy < 0) return 'top';
+  if (cy > W) return 'bottom';
+  const toEdge: readonly (readonly [PoolWall, number])[] = [
+    ['shallow', cx],
+    ['deep', L - cx],
+    ['top', cy],
+    ['bottom', W - cy],
+  ];
+  return toEdge.reduce((best, item) => (item[1] < best[1] ? item : best))[0];
 }
 
 /**

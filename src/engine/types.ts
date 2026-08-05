@@ -11,6 +11,7 @@
  */
 
 import type { DeckRect } from './deck.ts';
+import type { PlanPoint } from './grid.ts';
 
 /** Longitudinal depth profile. shallowRun + transitionRun + deepRun must equal length. */
 export interface DepthProfile {
@@ -130,9 +131,20 @@ export interface Accessory {
   readonly id: string;
   readonly kind: AccessoryKind;
   /**
-   * Where it sits along a wall. A bubbler is measured inside the water; a deck
-   * jet outside it, standing on the deck.
+   * Free position in plan feet — the top-left of the fitting's own small
+   * rectangle, relative to the pool origin.
+   *
+   * Bubblers and deck jets have two degrees of freedom, not one. A bubbler
+   * belongs wherever the tanning ledge is and a deck jet out on the deck, and
+   * pinning either to a wall was the model being wrong rather than careful.
+   * Positions land on the 6 inch grid in `grid.ts`, with the pool's corners and
+   * centre pulling harder, so freedom does not cost symmetry.
+   *
+   * When absent, `placement` is used, which is how a job written before free
+   * placement existed still opens.
    */
+  readonly position?: PlanPoint;
+  /** Legacy wall placement. Used only when `position` is absent. */
   readonly placement?: Placement;
 }
 
@@ -144,6 +156,15 @@ export interface Spa {
   readonly damWallHeightFt: number;
   /** Thickness of the dam wall. inches. */
   readonly damWallThicknessIn: number;
+  /**
+   * Free position in plan feet — the top-left of the spa's own rectangle.
+   *
+   * A spa goes where the yard says it goes: tucked into a corner, off the deep
+   * end, or set out in the middle. Takes precedence over `placement`, and when
+   * it is set the spa is drawn `lengthFt` along the plan's x axis and `widthFt`
+   * along y, since there is no wall to take its orientation from.
+   */
+  readonly position?: PlanPoint;
   /** True when the spa shares a wall with the pool (spillover). */
   readonly attachedToPool: boolean;
   /**

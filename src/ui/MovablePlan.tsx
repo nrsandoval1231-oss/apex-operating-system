@@ -23,9 +23,20 @@ import {
   wallLengthFt,
 } from '../engine/placement.ts';
 import { inverseContentPoint, inverseDirection, normalizeTurns, rotationLabel, type QuarterTurns } from '../engine/planRotation.ts';
+import { clampWithin, GRID_FT, snapToGrid, snapWithMagnets, type Magnet, type PlanPoint } from '../engine/grid.ts';
 import { inToFt } from '../engine/units.ts';
 import { resizePool } from '../engine/poolResize.ts';
 import type { Job, Placement, PoolWall } from '../engine/types.ts';
+
+/**
+ * Two degrees of freedom, or one.
+ *
+ * A step is built into a wall and a bench is a ledge along one, so both keep the
+ * single degree of freedom `placement.ts` gives them — that constraint is the
+ * truth, not a limitation. A spa and a bubbler genuinely go anywhere, so they
+ * move on the grid instead.
+ */
+const MOVES_FREELY: ReadonlySet<Drag['kind']> = new Set(['spa', 'accessory']);
 
 /** What is being dragged, and what the pointer grabbed it by. */
 interface Drag {
@@ -34,6 +45,14 @@ interface Drag {
   /** Distance from the object's near edge to the grab point, along the wall. ft */
   readonly grabOffsetFt: number;
   readonly spanFt: number;
+  /**
+   * For a free drag: pointer offset from the object's top-left, in plan feet.
+   * Without it the object jumps its own half-size to the cursor on the first
+   * pixel of movement, same reason `grabOffsetFt` exists for a wall drag.
+   */
+  readonly grabFree?: PlanPoint;
+  /** The object's own size, so magnets can align its edges and not its origin. */
+  readonly sizeFt?: { readonly widthFt: number; readonly heightFt: number };
 }
 
 /** A wall or seat-grip drag, which resizes instead of moving. */
@@ -62,6 +81,9 @@ export function MovablePlan({
   const hostRef = useRef<HTMLDivElement>(null);
   const [selectedId, setSelectedId] = useState<string | undefined>(undefined);
   const dragRef = useRef<Drag | null>(null);
+  /** The magnet the last free drag landed on, for the readout. */
+  const magnetRef = useRef<Magnet | null>(null);
+  const [magnetLabel, setMagnetLabel] = useState<string | null>(null);
   const resizeRef = useRef<ResizeDrag | null>(null);
   /**
    * In-flight drag position, held twice on purpose.
@@ -160,6 +182,55 @@ export function MovablePlan({
       return seat ? inToFt(seat.surfaceWidthIn) : 0;
     },
     [job],
+  );
+
+  /**
+   * Where a freely-moving object currently sits, and how big it is.
+   *
+   * Falls back to the rectangle the renderer would draw from its legacy wall
+   * placement, so the first drag of an older object starts from where it is on
+   * screen rather than jumping to the origin.
+   */
+  const freeRectOf = useCallback(
+    (source: Job, kind: Drag['kind'], id: string) => {
+      if (kind === 'spa') {
+        const spa = source.spa;
+        if (!spa) return null;
+        const widthFt = spa.lengthFt;
+        const heightFt = spa.widthFt;
+        if (spa.position) return { ...spa.position, widthFt, heightFt };
+        // An inset spa's legacy home is the shallow-end corner, where it used to
+        // be welded. An attached one comes off its wall placement.
+        if (spa.insetIntoPool) return { xFt: 0, yFt: 0, widthFt, heightFt };
+        const place = spa.placement ?? { wall: 'deep' as const, alongFt: (source.pool.widthFt - spa.widthFt) / 2 };
+        const r = placementRect(place, spa.widthFt, spa.lengthFt, source.pool.lengthFt, source.pool.widthFt, true);
+        return { xFt: r.x, yFt: r.y, widthFt: r.widthFt, heightFt: r.heightFt };
+      }
+      const acc = (source.pool.accessories ?? []).find((a) => a.id === id);
+      if (!acc) return null;
+      if (acc.position) return { ...acc.position, widthFt: 1, heightFt: 1 };
+      const place = acc.placement ?? { wall: 'bottom' as const, alongFt: source.pool.lengthFt / 2 };
+      const r = placementRect(place, 1, 1.2, source.pool.lengthFt, source.pool.widthFt, acc.kind === 'deck-jet');
+      return { xFt: r.x, yFt: r.y, widthFt: 1, heightFt: 1 };
+    },
+    [],
+  );
+
+  /** Writes a free position, leaving the legacy wall placement untouched. */
+  const withPosition = useCallback(
+    (source: Job, kind: Drag['kind'], id: string, position: PlanPoint): Job => {
+      if (kind === 'spa') {
+        return source.spa ? { ...source, spa: { ...source.spa, position } } : source;
+      }
+      return {
+        ...source,
+        pool: {
+          ...source.pool,
+          accessories: (source.pool.accessories ?? []).map((a) => (a.id === id ? { ...a, position } : a)),
+        },
+      };
+    },
+    [],
   );
 
   const placementOf = useCallback(
@@ -272,16 +343,32 @@ export function MovablePlan({
 
     const point = toPlanFeet(event.clientX, event.clientY);
     if (point) {
-      const placement = placementOf(kind, id);
-      const along = alongFromPoint(placement.wall, point.xFt, point.yFt);
-      dragRef.current = {
-        kind,
-        id,
-        // Grab offset, so the object does not jump its own half-width to the
-        // cursor the instant the pointer moves.
-        grabOffsetFt: along - placement.alongFt,
-        spanFt: spanOf(kind, id),
-      };
+      if (MOVES_FREELY.has(kind)) {
+        const rect = freeRectOf(job, kind, id);
+        dragRef.current = {
+          kind,
+          id,
+          grabOffsetFt: 0,
+          spanFt: spanOf(kind, id),
+          // Same purpose as grabOffsetFt on a wall drag: hold the object where
+          // it was grabbed instead of snapping its corner to the cursor.
+          grabFree: rect
+            ? { xFt: point.xFt - rect.xFt, yFt: point.yFt - rect.yFt }
+            : { xFt: 0, yFt: 0 },
+          sizeFt: rect ? { widthFt: rect.widthFt, heightFt: rect.heightFt } : { widthFt: 1, heightFt: 1 },
+        };
+      } else {
+        const placement = placementOf(kind, id);
+        const along = alongFromPoint(placement.wall, point.xFt, point.yFt);
+        dragRef.current = {
+          kind,
+          id,
+          // Grab offset, so the object does not jump its own half-width to the
+          // cursor the instant the pointer moves.
+          grabOffsetFt: along - placement.alongFt,
+          spanFt: spanOf(kind, id),
+        };
+      }
     }
     // Capture keeps the drag alive when the pointer leaves the object, but it is
     // an optimisation, not the mechanism. Losing it must not lose the drag.
@@ -379,6 +466,41 @@ export function MovablePlan({
     const W = job.pool.widthFt;
     const base = previewRef.current ?? job;
 
+    if (MOVES_FREELY.has(drag.kind)) {
+      const grab = drag.grabFree ?? { xFt: 0, yFt: 0 };
+      const size = drag.sizeFt ?? { widthFt: 1, heightFt: 1 };
+      // The rules — grid, magnets, which position wins — all live in grid.ts.
+      // This handler only turns a pointer into a candidate top-left corner.
+      /**
+       * An inset spa stays in the water: `insetIntoPool` is what tells the
+       * excavation engine it needs no cut outside the pool envelope.
+       *
+       * The bound is applied BEFORE the magnets, not after. Clamping the snapped
+       * result instead meant a spa dragged at a corner was always displaced from
+       * whatever magnet it found, so the corner magnets could never report — and
+       * "inside the deep/house corner" is exactly the feedback that makes a
+       * corner spa land where someone meant it to.
+       */
+      const bounded = drag.kind === 'spa' && base.spa?.insetIntoPool;
+      const candidate = { xFt: point.xFt - grab.xFt, yFt: point.yFt - grab.yFt };
+      const snapped = snapWithMagnets(
+        bounded ? clampWithin(candidate, size.widthFt, size.heightFt, L, W) : candidate,
+        size.widthFt,
+        size.heightFt,
+        L,
+        W,
+      );
+      const held = bounded
+        ? clampWithin(snapped.at, size.widthFt, size.heightFt, L, W)
+        : snapped.at;
+      // Value comparison, not identity: clampWithin always returns a new object,
+      // so an identity check reported "displaced" on every clamped drag.
+      const landedOnMagnet = held.xFt === snapped.at.xFt && held.yFt === snapped.at.yFt;
+      magnetRef.current = landedOnMagnet ? snapped.magnet : null;
+      setDragPreview(withPosition(base, drag.kind, drag.id, held));
+      return;
+    }
+
     setDragPreview(withPlacement(base, drag.kind, drag.id, resolveDrag({
       current: placementOfIn(base, drag.kind, drag.id),
       pointXFt: point.xFt,
@@ -400,6 +522,8 @@ export function MovablePlan({
     // empty.
     const committed = previewRef.current;
     setDragPreview(null);
+    setMagnetLabel(magnetRef.current?.label ?? null);
+    magnetRef.current = null;
     if (committed) onChange(committed);
     releaseCapture(event.currentTarget as Element, event.pointerId);
   };
@@ -429,12 +553,37 @@ export function MovablePlan({
               : null;
       if (!screen) return;
       const inLayout = inverseDirection(plan.quarterTurns, screen.dx, screen.dy);
+      const kind: Drag['kind'] = selectedId === SPA_MOVE_ID ? 'spa'
+        : job.pool.steps.some((s) => s.id === selectedId) ? 'step'
+          : (job.pool.accessories ?? []).some((a) => a.id === selectedId) ? 'accessory'
+            : 'seat';
+
+      // A free object nudges in two axes on the grid; a wall-bound one still
+      // slides along its wall. Same key, different degrees of freedom, because
+      // that is the actual difference between the two kinds of object.
+      if (MOVES_FREELY.has(kind)) {
+        const base = latestRef.current;
+        const rect = freeRectOf(base, kind, selectedId);
+        if (!rect) return;
+        event.preventDefault();
+        const moved = {
+          xFt: snapToGrid(rect.xFt + inLayout.x * Math.max(step, GRID_FT)),
+          yFt: snapToGrid(rect.yFt + inLayout.y * Math.max(step, GRID_FT)),
+        };
+        const next = withPosition(base, kind, selectedId,
+          kind === 'spa' && base.spa?.insetIntoPool
+            ? clampWithin(moved, rect.widthFt, rect.heightFt, base.pool.lengthFt, base.pool.widthFt)
+            : moved);
+        latestRef.current = next;
+        setMagnetLabel(null);
+        onChange(next);
+        return;
+      }
+
       // Exactly one axis is non-zero, so the sum is that axis's sign. Positive
       // x or y is further along a wall, matching `alongFt`.
       const delta = Math.sign(inLayout.x + inLayout.y) * step;
       if (delta === 0) return;
-      const kind: Drag['kind'] = selectedId === SPA_MOVE_ID ? 'spa'
-        : job.pool.steps.some((s) => s.id === selectedId) ? 'step' : 'seat';
       // Chain off the last job this component produced, not the prop, so a held
       // arrow key accumulates instead of every repeat starting from the same
       // place.
@@ -453,7 +602,7 @@ export function MovablePlan({
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [selectedId, job, spanOf, withPlacement, onChange, deleteSelected, plan.quarterTurns]);
+  }, [selectedId, job, spanOf, withPlacement, withPosition, freeRectOf, onChange, deleteSelected, plan.quarterTurns]);
 
   const readout = selectedId ? describe(shown, selectedId) : null;
 
@@ -473,8 +622,14 @@ export function MovablePlan({
       />
       <div className="plan-move-bar">
         {readout
-          ? <span><strong>{readout.label}</strong> · {readout.wall} wall · {readout.along} from the corner · arrow keys nudge 6", shift 1'</span>
-          : <span>Drag a step, bench or spa to place it. Everything else on the plan is fixed by the job.</span>}
+          ? (
+            <span>
+              <strong>{readout.label}</strong> · {readout.where}
+              {magnetLabel && <> · <strong>snapped {magnetLabel}</strong></>}
+              {' '}· arrow keys nudge 6"{readout.free ? '' : ", shift 1'"}
+            </span>
+          )
+          : <span>Drag anything on the plan to place it. The spa and the fittings move freely on a 6" grid; steps and benches slide along their wall.</span>}
         {onRotate && (
           <button
             className="btn ghost plan-rotate"
@@ -531,32 +686,46 @@ function placementOfIn(source: Job, kind: Drag['kind'], id: string): Placement {
   return seat?.placement ?? { wall: 'bottom', alongFt: L * 0.62 };
 }
 
-function describe(job: Job, id: string): { label: string; wall: string; along: string } | null {
+function describe(job: Job, id: string): { label: string; where: string; free: boolean } | null {
   const L = job.pool.lengthFt;
   const W = job.pool.widthFt;
   const fmt = (ft: number) => {
-    const f = Math.floor(ft + 1e-9);
-    const i = Math.round((ft - f) * 12);
-    return i === 12 ? `${f + 1}'-0"` : `${f}'-${i}"`;
+    const negative = ft < 0;
+    const abs = Math.abs(ft);
+    const f = Math.floor(abs + 1e-9);
+    const i = Math.round((abs - f) * 12);
+    const text = i === 12 ? `${f + 1}'-0"` : `${f}'-${i}"`;
+    return negative ? `-${text}` : text;
   };
+  /**
+   * A freely placed object reads as a coordinate, not as a wall and a distance.
+   * Saying "deep wall" about a spa sitting in the middle of the pool would be a
+   * readout that contradicts the drawing.
+   */
+  const at = (p: { xFt: number; yFt: number }) =>
+    `${fmt(p.xFt)} from the shallow end, ${fmt(p.yFt)} from the house side`;
+
   if (id === SPA_MOVE_ID && job.spa) {
+    if (job.spa.position) return { label: 'Spa', where: at(job.spa.position), free: true };
     const place = job.spa.placement ?? { wall: 'deep' as const, alongFt: (W - job.spa.widthFt) / 2 };
-    return { label: 'Spa', wall: place.wall, along: fmt(place.alongFt) };
+    return { label: 'Spa', where: `${place.wall} wall · ${fmt(place.alongFt)} from the corner`, free: false };
   }
   const step = job.pool.steps.find((s) => s.id === id);
   if (step) {
     const place = step.placement ?? { wall: 'shallow' as const, alongFt: (W - inToFt(step.treadWidthIn)) / 2 };
-    return { label: `Steps ${step.id}`, wall: place.wall, along: fmt(place.alongFt) };
+    return { label: `Steps ${step.id}`, where: `${place.wall} wall · ${fmt(place.alongFt)} from the corner`, free: false };
   }
   const seat = job.pool.seats.find((s) => s.id === id);
   if (seat) {
     const place = seat.placement ?? { wall: 'bottom' as const, alongFt: L * 0.62 };
-    return { label: `${seat.kind} ${seat.id}`, wall: place.wall, along: fmt(place.alongFt) };
+    return { label: `${seat.kind} ${seat.id}`, where: `${place.wall} wall · ${fmt(place.alongFt)} from the corner`, free: false };
   }
   const acc = (job.pool.accessories ?? []).find((a) => a.id === id);
   if (acc) {
+    const label = `${acc.kind === 'deck-jet' ? 'deck jet' : 'bubbler'} ${acc.id}`;
+    if (acc.position) return { label, where: at(acc.position), free: true };
     const place = acc.placement ?? { wall: 'bottom' as const, alongFt: L / 2 };
-    return { label: `${acc.kind === 'deck-jet' ? 'deck jet' : 'bubbler'} ${acc.id}`, wall: place.wall, along: fmt(place.alongFt) };
+    return { label, where: `${place.wall} wall · ${fmt(place.alongFt)} from the corner`, free: false };
   }
   return null;
 }

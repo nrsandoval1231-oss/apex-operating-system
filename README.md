@@ -18,7 +18,7 @@ JSON save/load)** are complete. Every step in the PRD's build order is done.
 ```bash
 npm install
 npm run dev     # takeoff sheet at localhost:5173
-npm test        # 422 tests
+npm test        # 439 tests
 npm run takeoff # same numbers, headless, for reconciliation
 ```
 
@@ -41,6 +41,7 @@ src/engine/          pure TypeScript, no UI imports
   finishes.ts        step 8 — tile, coping, plaster, Lubbock contrast stripe
   yard.ts            step 8 — deck area, 306.5 slope band, drainage
   deck.ts            the slab as drawn, less whatever stands in it
+  grid.ts            free 2-D placement: 6" lattice, corner and centre magnets
   planView.ts        step 9 — dimensioned SVG plan + step 10 print scale
   planRotation.ts    quarter-turn sheet rotation; the view transform, not the model
   jobFile.ts         step 11 — JSON save/load, versioned and validated
@@ -103,6 +104,20 @@ src/ui/              step 3 — the takeoff sheet
   305.1 lets a powered safety cover exempt the pool from barrier sections 305.2
   through 305.7, so the listing is load-bearing: without it the job has no
   barrier at all, and the check hard-fails rather than degrading quietly.
+- **Two degrees of freedom for the things that have two.** A step is built into
+  a wall and a bench is a ledge along one, so both keep the single degree of
+  freedom `placement.ts` gives them — that constraint is the truth, and a model
+  that cannot express a bench floating in open water is a model that cannot
+  express a mistake. A spa and a bubbler are not like that: a spa goes where the
+  yard says, a bubbler where the ledge is. Both now carry a free `position` and
+  move on a 6" lattice, with the pool's four inside corners, four outside
+  corners, four wall centres and its centre pulling harder than the rest — so
+  freedom does not cost symmetry, and the tool says which one it landed on. An
+  **inset spa is clamped inside the water**, because `insetIntoPool` is what
+  tells the excavation engine it needs no cut outside the pool envelope; a spa
+  flagged inset but drawn on the deck would report quantities for a pool nobody
+  is building. Its dam wall is drawn on every edge facing pool water — two in a
+  corner, four in the middle — rather than the two that used to be hardcoded.
 - **The deck is a drawn slab, not a border width.** `deck.ts` takes the
   rectangle someone drew around the concrete and subtracts everything standing
   in it — the water, and an attached spa — clipping each to the slab first, so a
