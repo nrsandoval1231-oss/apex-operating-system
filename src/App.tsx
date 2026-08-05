@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react';
-import { STANDARD_MODEL } from './engine/standardModel.ts';
-import { APEX_STANDARD_DETAIL, type StandardDetail } from './engine/standardDetail.ts';
-import { WHITAKER } from './engine/jobs/whitaker.ts';
-import { LUBBOCK_STANDARDS } from './engine/jobs/lubbockStandards.ts';
+import { SCENARIOS } from './engine/jobs/scenarios.ts';
+
+/** Undo history: the jobs so far, and which one is showing. */
+interface History {
+  readonly entries: readonly Job[];
+  readonly cursor: number;
+}
 import type { Job } from './engine/types.ts';
 import { TakeoffSheet } from './ui/TakeoffSheet.tsx';
 import type { QuarterTurns } from './engine/planRotation.ts';
@@ -16,59 +19,6 @@ import { SavedJobsPanel, useSavedJobs } from './ui/SavedJobs.tsx';
  * without editing code — PRD open question 7 asks whether this is the common
  * case on a Lubbock lot rather than the exception.
  */
-const TIGHT_LOT: Job = {
-  ...STANDARD_MODEL,
-  name: 'Standard model on a tight lot — 5 ft to foundation',
-  site: { distanceToFoundationFt: 5, foundationDescription: 'house slab foundation' },
-};
-
-/** Deeper than the detail's 8 ft envelope, so structure refuses. */
-const DEEP: Job = {
-  ...STANDARD_MODEL,
-  name: 'Deep job — 9 ft, outside the detail envelope',
-  pool: {
-    ...STANDARD_MODEL.pool,
-    profile: { ...STANDARD_MODEL.pool.profile, deepDepth: 9 },
-  },
-  site: { distanceToFoundationFt: 12, foundationDescription: 'house slab foundation' },
-};
-
-/** Undo history: the jobs so far, and which one is showing. */
-interface History {
-  readonly entries: readonly Job[];
-  readonly cursor: number;
-}
-
-interface Scenario {
-  readonly tab: string;
-  readonly job: Job;
-  readonly details: readonly StandardDetail[];
-  /** Standards start a job; references exist to prove the engine still refuses. */
-  readonly group: 'standard' | 'reference';
-}
-
-/**
- * What the buttons offer, in two groups.
- *
- * The three Lubbock standards come first because they are what someone starting
- * a job actually wants — Travis puts them at roughly 90% of the work. The rest
- * are engine fixtures and deliberate failure cases; they are kept because they
- * are the only visible proof that the refusal paths still refuse, but they are
- * not a starting point for a real pool and no longer read as one.
- */
-const SCENARIOS: readonly Scenario[] = [
-  ...LUBBOCK_STANDARDS.map((standard) => ({
-    tab: standard.label,
-    job: standard.job,
-    details: [APEX_STANDARD_DETAIL],
-    group: 'standard' as const,
-  })),
-  { tab: 'Whitaker (built)', job: WHITAKER, details: [APEX_STANDARD_DETAIL], group: 'reference' },
-  { tab: 'PRD standard model', job: STANDARD_MODEL, details: [APEX_STANDARD_DETAIL], group: 'reference' },
-  { tab: 'Tight lot · 5 ft', job: TIGHT_LOT, details: [APEX_STANDARD_DETAIL], group: 'reference' },
-  { tab: 'No detail stored', job: STANDARD_MODEL, details: [], group: 'reference' },
-  { tab: 'Outside envelope', job: DEEP, details: [APEX_STANDARD_DETAIL], group: 'reference' },
-];
 
 /**
  * Charcoal header carrying the real Apex lockup.

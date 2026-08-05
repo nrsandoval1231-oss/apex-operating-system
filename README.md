@@ -18,7 +18,7 @@ JSON save/load)** are complete. Every step in the PRD's build order is done.
 ```bash
 npm install
 npm run dev     # takeoff sheet at localhost:5173
-npm test        # 483 tests
+npm test        # 535 tests
 npm run takeoff # same numbers, headless, for reconciliation
 ```
 
