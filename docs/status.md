@@ -919,6 +919,46 @@ at $69,653 cost / $90,548.90 customer price, and the issue gate refuses with
 both real reasons — no approved Designer revision, and seven direct-entry lines
 unquoted.
 
+## Designer deck model — quantity model v3 — 2026-08-05
+
+**The first change in this project that deliberately moves a signed quantity.**
+Apex Designer's deck was a constant-width band, `(L + 2w)(W + 2w) - LW`. It is
+now the slab as drawn, less everything standing in it. `yard.deck-area` is one of
+the seventeen signed quantities, so the quantity model goes
+**`designer-quantity-v2` → `designer-quantity-v3`**.
+
+Why it had to move rather than be corrected in place: the old formula **never
+subtracted an attached spa**, so its footprint was counted as concrete and every
+job with an attached spa over-ordered. On the standard model the deck area goes
+**424 → 400 sf**. A consumer holding a v2 revision must not read its deck area as
+meaning the same thing, which is precisely what the version string is for.
+
+| Commands | Result |
+|---|---|
+| Designer `npm test`, `tsc --noEmit`, `vite build` | **422 tests** passed; both clean |
+| `APEX_REQUIRE_DESIGNER_CONTRACT=1 pnpm verify` | **436 root tests**; integration 3 passed / 14 skipped, the Designer contract among the three |
+| Proposal `engine.test.mjs` / `whitaker-evidence.test.mjs` | **119** and **11** passed, unchanged |
+
+Deliberate constraints:
+
+- **The database fixtures keep `designer-quantity-v2`.** A real database will
+  hold revisions of both models. Rewriting historical rows to claim a meaning
+  they were never computed under is the thing the version string exists to
+  prevent.
+- **The Proposal engine needed no code change.** `quantityModelVersion` is
+  carried as data, which its own v1 fixture already demonstrated.
+- **Obstructions are clipped to the slab before subtraction**, so a spa
+  overhanging the concrete removes only the part inside it. Taking the whole
+  footprint would under-order, which is the expensive direction of wrong.
+- **Fall is computed over the longest run** from water to slab edge, not the one
+  entered width. The old model understated it more than threefold on an
+  asymmetric deck, and fall decides whether a deck drains or ponds.
+- **A slab drawn through the water is refused**, with the coordinates that make
+  it wrong.
+
+**No stored revision is invalidated.** Digests are computed per revision at
+approval time; nothing recomputes an old one.
+
 ## Next controlled milestone
 
 One pilot job must demonstrate:
