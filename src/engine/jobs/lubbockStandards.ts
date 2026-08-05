@@ -130,8 +130,33 @@ function lubbockStandard(
       ],
       }),
     },
+    /*
+     * NO PUMP AND NO GAS ON A PRESET.
+     *
+     * Every preset used to open onto a red code stop reading "this
+     * configuration cannot be built as entered". It could — the numbers behind
+     * the stop were invented, and the two placeholders were arguing with each
+     * other rather than with reality.
+     *
+     * The gas stop was 455 cfh of connected load against a 250 cfh meter, and
+     * the furnace, water heater and range making up that load are marked
+     * PLACEHOLDER in the source they came from. The hydraulic stop was a pump
+     * turning the water over in 5.66 h against a 6 h maximum — a pump chosen
+     * for the standard model, judged against pipe runs it was never sized for.
+     *
+     * A stop that fires on every job teaches its reader to scroll past it, and
+     * that costs the one that matters. So a preset states neither: the pump is
+     * selected against real developed lengths, and the connected load is what
+     * is actually on the meter. Both are per-job measurements.
+     *
+     * The RUNS stay. Their lengths are indicative and the sheet says so, but
+     * they carry the spa's own suction and return — the Apex standard that a
+     * spa is plumbed as its own body of water — and the plan draws the skimmers,
+     * returns and outlets from them.
+     */
     hydraulics: STANDARD_MODEL.hydraulics && {
       ...STANDARD_MODEL.hydraulics,
+      pumpModel: undefined,
       runs: [
         ...STANDARD_MODEL.hydraulics.runs,
         // A spa is its own body of water: it needs a suction of its own and a
@@ -184,6 +209,10 @@ function lubbockStandard(
     deck: STANDARD_MODEL.deck && {
       ...STANDARD_MODEL.deck,
       outline: deckOutlineFromBorder(lengthFt, widthFt, 4),
+    },
+    equipment: STANDARD_MODEL.equipment && {
+      ...STANDARD_MODEL.equipment,
+      gas: undefined,
     },
     site: {
       ...STANDARD_MODEL.site,

@@ -69,7 +69,38 @@ describe.each(CASES)('%s', (_tab, scenario) => {
       const r = runTakeoff(job, details);
       expect(r.structure.outcome).toBe('quantities');
     });
+
+    it('opens with no code stop', () => {
+      /*
+       * Every preset used to open onto "this configuration cannot be built as
+       * entered". It could — the stop came from placeholder gas appliances and
+       * a pump judged against pipe runs it was never sized for.
+       *
+       * A stop that fires on every job teaches its reader to scroll past it,
+       * and that costs the one that matters. A preset states only what a size
+       * determines, so the banner now means something when it appears.
+       */
+      const r = runTakeoff(job, details);
+      expect(r.codeFailureAreas).toEqual([]);
+      expect(r.hasCodeFailure).toBe(false);
+    });
   }
+});
+
+describe('the refusal cases still refuse', () => {
+  it('keeps at least one scenario that stops, or the banner is untested', () => {
+    // The reference group exists to prove the refusal paths still refuse. If
+    // every scenario went quiet, nothing would exercise the code-stop banner.
+    const stopping = SCENARIOS.filter((s) => s.group === 'reference')
+      .filter((s) => runTakeoff(s.job, s.details).hasCodeFailure);
+    expect(stopping.length).toBeGreaterThan(0);
+  });
+
+  it('still demonstrates the 1:1 foundation violation', () => {
+    // Tight lot is the scenario that exists for this check specifically.
+    const tight = SCENARIOS.find((s) => s.tab.includes('Tight lot'))!;
+    expect(runTakeoff(tight.job, tight.details).codeFailureAreas).toContain('amendments');
+  });
 });
 
 describe('the scenario list itself', () => {
