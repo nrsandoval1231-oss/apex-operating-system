@@ -52,6 +52,53 @@ Commission is paid *on* gross profit. If commission is also counted as a job cos
 
 **Rule: GP is calculated before sales commission.** Commission is below the line and never books to a job cost code. Not negotiable — build it into the code structure so it can't happen by accident.
 
+### 1.5 Worked example — round numbers, for checking a commission statement
+
+Whitaker (§1.2) is the real job, but its figures are awkward to verify in your head. This is the
+same arithmetic on a clean $120,000, and it is the one to check a commission statement against.
+
+**Today, on a $120,000 job cost:**
+
+| | Amount | % of revenue |
+|---|---|---|
+| Job cost | $120,000 | 76.9% |
+| Fee at 30% | $36,000 | 23.1% |
+| **Contract total** | **$156,000** | 100% |
+| **Gross profit** | **$36,000** | **23.08%** |
+| Commission at 30% of GP | $10,800 | 6.9% |
+| — Stage 1, at sale (15% of estimated GP) | $5,400 | |
+| — Stage 2, true-up on collected GP (§7.1) | $5,400 | |
+| **Left after commission** | **$25,200** | **16.2%** |
+
+The fee is 30% and the margin is 23.08%, at every job size — `margin = fee ÷ (1 + fee)`. The
+$25,200 is what covers PM, supervision, warranty, office overhead, and owner compensation.
+
+**The same job after Lever B**, assuming the $120,000 excludes the ~$10,600 of Tier 1 items Apex
+currently absorbs — permits, geotechnical, structural, gas line, labour burden:
+
+| | Before | After | Change |
+|---|---|---|---|
+| Job cost | $120,000 | $130,600 | +$10,600 |
+| Fee at 30% | $36,000 | $39,180 | +$3,180 |
+| Contract total | $156,000 | $169,780 | +$13,780 |
+| Gross profit | $36,000 | $39,180 | +$3,180 |
+| Commission at 30% of GP | $10,800 | **$11,754** | **+$954** |
+| Left after commission | $25,200 | $27,426 | +$2,226 |
+| **…less Tier 1 still absorbed** | **$14,600** | **$27,426** | **+$12,826** |
+
+Three things this makes concrete:
+
+1. **Margin does not move.** $39,180 ÷ $169,780 is still 23.08%. Lever B stops GP absorbing costs
+   the customer should reimburse; it does not make Apex a 30%-margin business (§3.1).
+2. **The commission increase is $954**, not 30% of the added revenue. Commission is 30% of the added
+   *GP* — the $3,180 fee — not of the $13,780. This is the arithmetic behind the ~$950/pool figure
+   in §3.3, and getting it wrong overstates the cost of that decision roughly fivefold.
+3. **The last row is the point of Lever B.** Apex is better off by about $12,826 on this job, almost
+   all of it the $10,600 it stops absorbing rather than the fee it gains.
+
+**Both tables assume the job is collected in full.** Under §7.1 Stage 2 is computed on *collected*
+GP, so a job with an uncollected balance pays a smaller Stage 2 — and Stage 1 is never clawed back.
+
 ---
 
 ## 2. Entity model
