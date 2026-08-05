@@ -1,12 +1,48 @@
 # Apex OS — handoff
 
-**As of:** 2026-08-03, commit `8616860`, CI green, working tree clean.
+**As of:** 2026-08-04, root at `547a080` on `main`, CI green.
 
 Deliberately short. `docs/status.md` is the source of truth for status and this
 does not restate it — what follows is the state of play, what is in flight, and
 the things a newcomer would not guess.
 
 ---
+
+## Open branches, 2026-08-04
+
+Three repositories carry unmerged work. All are pushed; none has a PR.
+
+| Repo | Branch | What it is |
+|---|---|---|
+| `apex-designer` | `feat/builder-design-tool` | 11 commits. Designer became a drawing tool. |
+| `apex-proposal-engine` | `fix/builder-runs-in-a-browser` | The builder page was completely inert. |
+| `apex-operating-system` | `dev/designer-launch-config` | One dev-tooling commit. |
+
+**Apex Designer is the session's main work** and is a change in kind, not
+degree. It was a calculator that printed a plan; it is now something a builder
+draws in. Three preset sizes (12×24, 15×30, 20×40 — roughly 90% of Lubbock
+work), drag to move and resize, a draggable section for depth, add/remove for
+every object, saved designs, and an order list. 380 tests, up from 318.
+
+Two properties worth preserving. **Placement never affects quantities** — moving
+a bench changes the drawing and nothing in the takeoff, which is what let all of
+this land without touching the approved-quantity digest. And **the spa's own
+suction and return went on the presets, not `STANDARD_MODEL`**, deliberately:
+developed run length is one of the seventeen signed quantities and
+`STANDARD_MODEL` is the fixture the digest is pinned against. The Designer
+contract test was run with `APEX_REQUIRE_DESIGNER_CONTRACT=1` to confirm the
+digest did not move.
+
+**The proposal builder fix matters more than its size.** Every field on the page
+read "—" and no button did anything, for two stacked reasons: `node:crypto` in
+the module graph killed evaluation before any handler attached, and the page
+called the production takeoff path, which refuses without an approved Designer
+revision. Nothing tested that page; `browser-graph.test.mjs` now does.
+
+**Not built, and asked for:** a rotate tool. Two approaches, both real — a view
+transform (drags map through the inverse; dimension text inverts at 180°) or a
+model change (redefines what "shallow wall" means for every placed object).
+Worth choosing deliberately.
 
 ## Where it stands
 
