@@ -82,17 +82,19 @@ function SectionSheet({
   onChange,
   printWidthIn,
   sectionSvg,
+  quarterTurns,
   children,
 }: {
   job: Job;
   onChange?: (job: Job) => void;
   printWidthIn: number;
   sectionSvg: string;
+  quarterTurns?: QuarterTurns;
   children: React.ReactNode;
 }) {
   if (onChange) {
     return (
-      <SectionEditor job={job} onChange={onChange}>
+      <SectionEditor job={job} onChange={onChange} quarterTurns={quarterTurns}>
         {children}
       </SectionEditor>
     );
@@ -174,7 +176,7 @@ export function TakeoffSheet({
   const { geometry: g, excavation: x, codeBasis } = result;
   const plan = renderPlanView(job, 1040, { quarterTurns });
   const printScale = planPrintScale(plan);
-  const section = renderSectionView(job);
+  const section = renderSectionView(job, 1040, { quarterTurns });
   const sectionScale = sectionPrintScale(section);
   const p = job.pool.profile;
 
@@ -262,7 +264,13 @@ export function TakeoffSheet({
         margin would make the one view that shows depth the smallest thing on
         the page.
       */}
-      <SectionSheet job={job} onChange={onChange} printWidthIn={sectionScale.widthIn} sectionSvg={section.svg}>
+      <SectionSheet
+        job={job}
+        onChange={onChange}
+        printWidthIn={sectionScale.widthIn}
+        sectionSvg={section.svg}
+        quarterTurns={quarterTurns}
+      >
         <div className="plan-caption">
           <span>
             Longitudinal section on the pool centreline · depths and runs dimensioned · step and

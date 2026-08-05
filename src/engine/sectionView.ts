@@ -17,6 +17,15 @@
  */
 
 import { averageFloorDepthUnder } from './profile.ts';
+import {
+  contentTransform,
+  normalizeTurns,
+  rotatedExtentFt,
+  rotatedSize,
+  rotationLabel,
+  textTransform,
+  type QuarterTurns,
+} from './planRotation.ts';
 import { seatFootprint, stepFootprint } from './placement.ts';
 import type { Job } from './types.ts';
 import { inToFt } from './units.ts';
@@ -32,11 +41,25 @@ export interface SectionViewResult {
   /** Where pool x=0 / waterline depth=0 sit in SVG coordinates, for dragging. */
   readonly originXPx: number;
   readonly originYPx: number;
+  /** Quarter turns clockwise the finished sheet was rotated by. */
+  readonly quarterTurns: QuarterTurns;
+  /** The layout's own size before rotation — what the drag inverse needs. */
+  readonly layoutWidthPx: number;
+  readonly layoutHeightPx: number;
 }
 
 export interface SectionViewOptions {
   /** Draw grab handles on the floors and stations. Screen only. */
   readonly interactive?: boolean;
+  /**
+   * Quarter turns clockwise applied to the SHEET, driven by the same control as
+   * the plan so the two drawings cannot disagree about which end is which.
+   *
+   * That agreement is the point. Turn the plan 180° and the deep end moves to
+   * the left; a section still drawn shallow-left would then contradict the plan
+   * it sits under, on the one drawing where left and right mean something.
+   */
+  readonly quarterTurns?: QuarterTurns;
 }
 
 /**
@@ -77,6 +100,8 @@ interface Ctx {
   readonly x: (ft: number) => number;
   /** Elevation in feet BELOW the pool water surface. Negative is above water. */
   readonly y: (ft: number) => number;
+  /** How far the finished group is turned, so labels can stay readable. */
+  readonly turns: QuarterTurns;
 }
 
 export function renderSectionView(
@@ -110,14 +135,20 @@ export function renderSectionView(
   const contentW = leftExtent + L + rightExtent;
   const contentH = topExtent + p.deepDepth + bottomExtent;
 
-  const pxPerFt = targetWidthPx / contentW;
+  // Same as the plan: on an odd quarter turn the caller's width is the layout's
+  // height, so scaling off contentW regardless would overflow the column.
+  const turns = normalizeTurns(options.quarterTurns ?? 0);
+  const acrossFt = rotatedExtentFt(turns, contentW, contentH).contentWidthFt;
+
+  const pxPerFt = targetWidthPx / acrossFt;
   const widthPx = Math.round(contentW * pxPerFt);
   const heightPx = Math.round(contentH * pxPerFt);
+  const sheet = rotatedSize(turns, { widthPx, heightPx });
 
   const s = (ft: number) => ft * pxPerFt;
   const x = (ft: number) => s(leftExtent + ft);
   const y = (ft: number) => s(topExtent + ft);
-  const ctx: Ctx = { s, x, y };
+  const ctx: Ctx = { s, x, y, turns };
 
   const parts: string[] = [];
 
@@ -317,24 +348,34 @@ export function renderSectionView(
     parts.push(grab('deep-start', deepStartX, -freeboard, deepStartX, p.deepDepth));
   }
 
-  const svg = `<svg class="sectionview" viewBox="0 0 ${widthPx} ${heightPx}" width="100%" role="img" aria-label="Dimensioned longitudinal section of ${escText(job.name)}" xmlns="http://www.w3.org/2000/svg">${parts.join('')}</svg>`;
+  const transform = contentTransform(turns, { widthPx, heightPx });
+  const body = transform === '' ? parts.join('') : `<g transform="${transform}">${parts.join('')}</g>`;
+  const rotationNote = turns === 0 ? '' : `, ${rotationLabel(turns).toLowerCase()}`;
+  const svg = `<svg class="sectionview" viewBox="0 0 ${sheet.widthPx} ${sheet.heightPx}" width="100%" role="img" aria-label="Dimensioned longitudinal section of ${escText(job.name)}${escText(rotationNote)}" xmlns="http://www.w3.org/2000/svg">${body}</svg>`;
 
+  const extents = rotatedExtentFt(turns, contentW, contentH);
   return {
     svg,
     pxPerFt,
-    widthPx,
-    heightPx,
-    contentWidthFt: contentW,
-    contentHeightFt: contentH,
+    widthPx: sheet.widthPx,
+    heightPx: sheet.heightPx,
+    contentWidthFt: extents.contentWidthFt,
+    contentHeightFt: extents.contentHeightFt,
+    quarterTurns: turns,
+    // The UNROTATED layout, which is what the drag inverse measures against.
     originXPx: x(0),
     originYPx: y(0),
+    layoutWidthPx: widthPx,
+    layoutHeightPx: heightPx,
   };
 }
 
 // --- primitives -------------------------------------------------------------
 
 function txt(ctx: Ctx, xf: number, yf: number, label: string, cls: string, anchor: string): string {
-  return `<text class="${cls}" x="${n(ctx.x(xf))}" y="${n(ctx.y(yf))}" text-anchor="${anchor}" dominant-baseline="middle">${escText(label)}</text>`;
+  const px = ctx.x(xf);
+  const py = ctx.y(yf);
+  return `<text class="${cls}" x="${n(px)}" y="${n(py)}" text-anchor="${anchor}" dominant-baseline="middle"${textTransform(ctx.turns, { x: px, y: py })}>${escText(label)}</text>`;
 }
 
 function dimH(ctx: Ctx, x1: number, x2: number, atY: number, label: string, cls = 'pv-dim'): string {
@@ -343,7 +384,7 @@ function dimH(ctx: Ctx, x1: number, x2: number, atY: number, label: string, cls 
     <line class="pv-witness" x1="${n(ctx.x(x1))}" y1="${n(ctx.y(atY - 0.6))}" x2="${n(ctx.x(x1))}" y2="${n(yy)}"/>
     <line class="pv-witness" x1="${n(ctx.x(x2))}" y1="${n(ctx.y(atY - 0.6))}" x2="${n(ctx.x(x2))}" y2="${n(yy)}"/>
     <line class="pv-dim-line" x1="${n(ctx.x(x1))}" y1="${n(yy)}" x2="${n(ctx.x(x2))}" y2="${n(yy)}" marker-start="url(#secArrow)" marker-end="url(#secArrow)"/>
-    <text class="pv-dim-text" x="${n((ctx.x(x1) + ctx.x(x2)) / 2)}" y="${n(yy - 4)}" text-anchor="middle">${escText(label)}</text>
+    <text class="pv-dim-text" x="${n((ctx.x(x1) + ctx.x(x2)) / 2)}" y="${n(yy)}" text-anchor="middle" dominant-baseline="middle"${textTransform(ctx.turns, { x: (ctx.x(x1) + ctx.x(x2)) / 2, y: yy })}>${escText(label)}</text>
   </g>`;
 }
 
@@ -354,6 +395,6 @@ function dimV(ctx: Ctx, y1: number, y2: number, atX: number, label: string, cls 
     <line class="pv-witness" x1="${n(ctx.x(atX + 0.6))}" y1="${n(ctx.y(y1))}" x2="${n(xx)}" y2="${n(ctx.y(y1))}"/>
     <line class="pv-witness" x1="${n(ctx.x(atX + 0.6))}" y1="${n(ctx.y(y2))}" x2="${n(xx)}" y2="${n(ctx.y(y2))}"/>
     <line class="pv-dim-line" x1="${n(xx)}" y1="${n(ctx.y(y1))}" x2="${n(xx)}" y2="${n(ctx.y(y2))}" marker-start="url(#secArrow)" marker-end="url(#secArrow)"/>
-    <text class="pv-dim-text" x="${n(xx - 5)}" y="${n(mid)}" text-anchor="middle" transform="rotate(-90 ${n(xx - 5)} ${n(mid)})">${escText(label)}</text>
+    <text class="pv-dim-text" x="${n(xx)}" y="${n(mid)}" text-anchor="middle" dominant-baseline="middle"${textTransform(ctx.turns, { x: xx, y: mid })}>${escText(label)}</text>
   </g>`;
 }

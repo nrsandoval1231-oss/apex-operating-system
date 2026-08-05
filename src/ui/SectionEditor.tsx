@@ -16,15 +16,22 @@
 import { useCallback, useRef, useState } from 'react';
 import { renderSectionView, sectionPrintScale } from '../engine/sectionView.ts';
 import { resolveSectionDrag, type SectionHandle } from '../engine/poolResize.ts';
+import { inverseContentPoint, type QuarterTurns } from '../engine/planRotation.ts';
 import type { Job } from '../engine/types.ts';
 
 export function SectionEditor({
   job,
   onChange,
+  quarterTurns = 0,
   children,
 }: {
   job: Job;
   onChange: (job: Job) => void;
+  /**
+   * Driven by the same control as the plan, so the two drawings cannot disagree
+   * about which end is the deep end.
+   */
+  quarterTurns?: QuarterTurns;
   children?: React.ReactNode;
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
@@ -37,7 +44,7 @@ export function SectionEditor({
   }, []);
 
   const shown = preview ?? job;
-  const section = renderSectionView(shown, 1040, { interactive: true });
+  const section = renderSectionView(shown, 1040, { interactive: true, quarterTurns });
   const scale = sectionPrintScale(section);
 
   const toSectionFeet = useCallback(
@@ -48,12 +55,26 @@ export function SectionEditor({
       if (!ctm) return null;
       const point = new DOMPoint(clientX, clientY).matrixTransform(ctm.inverse());
       if (!Number.isFinite(point.x) || !Number.isFinite(point.y)) return null;
+      // The one place rotation touches the section's handles, same as the plan:
+      // every rule below is written against the unrotated layout.
+      const laid = inverseContentPoint(
+        section.quarterTurns,
+        { x: point.x, y: point.y },
+        { widthPx: section.layoutWidthPx, heightPx: section.layoutHeightPx },
+      );
       return {
-        xFt: (point.x - section.originXPx) / section.pxPerFt,
-        depthFt: (point.y - section.originYPx) / section.pxPerFt,
+        xFt: (laid.x - section.originXPx) / section.pxPerFt,
+        depthFt: (laid.y - section.originYPx) / section.pxPerFt,
       };
     },
-    [section.originXPx, section.originYPx, section.pxPerFt],
+    [
+      section.originXPx,
+      section.originYPx,
+      section.pxPerFt,
+      section.quarterTurns,
+      section.layoutWidthPx,
+      section.layoutHeightPx,
+    ],
   );
 
   const onPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {

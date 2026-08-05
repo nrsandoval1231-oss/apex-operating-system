@@ -202,3 +202,66 @@ describe('the section draws what a builder would recognise', () => {
   });
 
 });
+
+describe('turning the section with the plan', () => {
+  const upright = renderSectionView(STANDARD_MODEL);
+  const half = renderSectionView(STANDARD_MODEL, 1040, { quarterTurns: 2 });
+  const quarter = renderSectionView(STANDARD_MODEL, 1040, { quarterTurns: 1 });
+
+  it('changes nothing when the sheet is not turned', () => {
+    expect(renderSectionView(STANDARD_MODEL, 1040, { quarterTurns: 0 }).svg).toBe(upright.svg);
+    expect(upright.svg).not.toContain('<g transform="');
+    expect(upright.quarterTurns).toBe(0);
+  });
+
+  it('turns the whole section as one group', () => {
+    expect(half.svg).toContain('<g transform="translate(');
+    expect(half.svg).toContain('rotate(180)');
+    expect(half.quarterTurns).toBe(2);
+  });
+
+  it('puts the deep end on the other side at 180, which is the point', () => {
+    /*
+     * The reason a section needs this at all. Turn the plan 180° and the deep
+     * end moves to the left; a section still drawn shallow-left would then
+     * contradict the plan above it, on the one drawing where left and right
+     * carry meaning.
+     */
+    const deepestOf = (svg: string) => {
+      const d = /<path class="pv-water sec-water" d="([^"]+)"/.exec(svg)?.[1] ?? '';
+      const pts = [...d.matchAll(/([-\d.]+) ([-\d.]+)/g)].map(([, px, py]) => ({ x: +px!, y: +py! }));
+      return pts.reduce((best, p) => (p.y > best.y ? p : best));
+    };
+    /*
+     * The path coordinates sit INSIDE the rotated group, so they are identical
+     * in both renders — the turn is carried by the group transform. Where the
+     * deep end lands on the SHEET is the raw point mapped through it, which at
+     * 180° is (u, v) -> (width - u, height - v).
+     */
+    const rawUpright = deepestOf(upright.svg);
+    const rawHalf = deepestOf(half.svg);
+    const onSheetHalf = half.layoutWidthPx - rawHalf.x;
+    expect(rawUpright.x).toBeGreaterThan(upright.widthPx / 2);
+    expect(onSheetHalf).toBeLessThan(half.widthPx / 2);
+  });
+
+  it('swaps the sheet on a quarter turn and keeps the layout for the drag', () => {
+    expect(quarter.contentWidthFt).toBeCloseTo(upright.contentHeightFt, 6);
+    expect(quarter.heightPx).toBe(quarter.layoutWidthPx);
+    expect(quarter.widthPx).toBe(quarter.layoutHeightPx);
+  });
+
+  it('says which way it is turned for anyone who cannot see it', () => {
+    expect(half.svg).toContain('rotated 180°');
+    expect(upright.svg).not.toContain('rotated');
+  });
+
+  it('still dimensions the same pool at every turn', () => {
+    for (const turns of [0, 1, 2, 3] as const) {
+      const svg = renderSectionView(STANDARD_MODEL, 1040, { quarterTurns: turns }).svg;
+      expect(svg).toContain(`30'-0"`);
+      expect(svg).toContain(`3'-6"`);
+      expect(svg).toContain(`6'-0"`);
+    }
+  });
+});

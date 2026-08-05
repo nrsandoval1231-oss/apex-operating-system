@@ -18,7 +18,7 @@ JSON save/load)** are complete. Every step in the PRD's build order is done.
 ```bash
 npm install
 npm run dev     # takeoff sheet at localhost:5173
-npm test        # 543 tests
+npm test        # 549 tests
 npm run takeoff # same numbers, headless, for reconciliation
 ```
 
@@ -161,6 +161,14 @@ src/ui/              step 3 — the takeoff sheet
   is now computed over the longest run from water to slab edge rather than over
   the one entered width. A slab drawn through the water is refused, not
   approximated.
+- **The section turns with the plan, from one control.** Not a second rotate
+  button: the same one, so the two drawings cannot disagree about which end is
+  the deep end. That agreement is the reason a section needs turning at all —
+  turn the plan 180° and the deep end moves to the left, and a section still
+  drawn shallow-left would contradict the plan above it on the one drawing where
+  left and right carry meaning. Its depth handles map back through the same
+  single inverse, so dragging the floor deeper still deepens it however the
+  sheet is turned.
 - **The sheet rotates; the pool does not.** `planRotation.ts` turns the finished
   drawing a quarter turn at a time. The model is untouched — shallow is still
   where the water is 3'-6", the profile still runs shallow to deep, and every
