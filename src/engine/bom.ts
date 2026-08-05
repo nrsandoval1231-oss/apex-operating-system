@@ -127,6 +127,18 @@ export function buildBom(job: Job, takeoff: TakeoffResult): Bom {
     } else {
       missing.push('Pump: no pump model is specified on the job.');
     }
+    // Water features. Spa jets are a count in the wall; bubblers and deck jets
+    // are placed objects. All three are plumbed and all three get ordered.
+    const spaWallJets = job.spa ? job.spa.jetCount ?? 6 : 0;
+    if (spaWallJets > 0) {
+      lines.push({ item: 'Spa jets', quantity: spaWallJets, unit: 'ea', basis: 'in the spa wall' });
+    }
+    const accessories = job.pool.accessories ?? [];
+    const bubblers = accessories.filter((a) => a.kind === 'bubbler').length;
+    const deckJets = accessories.filter((a) => a.kind === 'deck-jet').length;
+    if (bubblers > 0) lines.push({ item: 'Bubblers', quantity: bubblers, unit: 'ea', basis: 'in a shallow surface' });
+    if (deckJets > 0) lines.push({ item: 'Deck jets', quantity: deckJets, unit: 'ea', basis: 'on the deck, arcing in' });
+
     if (job.hydraulics?.hydrostaticReliefValves) {
       lines.push({ item: 'Hydrostatic relief valve', quantity: job.hydraulics.hydrostaticReliefValves, unit: 'ea', basis: 'job input' });
     }

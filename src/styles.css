@@ -1594,3 +1594,27 @@ tr.is-fail .check-message {
   gap: 6px;
 }
 .saved-reference > span { font-size: 10.5px; color: var(--ink-faint); margin-right: 4px; }
+
+
+/* --- accessories ------------------------------------------------------------ */
+
+.pv-accessory {
+  fill: var(--paper);
+  stroke: var(--accent);
+  stroke-width: 1.6;
+}
+
+/* A bubbler sits in the water; a deck jet stands outside it. Filled versus
+   hollow is enough to tell them apart without a key. */
+.pv-bubbler { fill: var(--accent); }
+
+.pv-jet-arc {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+  opacity: 0.65;
+}
+
+/* The depth grip reaches into the pool, so it reads as a different action. */
+.pv-grip-depth { stroke-dasharray: 3 2; }

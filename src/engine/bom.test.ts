@@ -11,6 +11,7 @@ import { buildBom } from './bom.ts';
 import { runTakeoff } from './index.ts';
 import { STANDARD_MODEL } from './standardModel.ts';
 import { APEX_STANDARD_DETAIL } from './standardDetail.ts';
+import { LUBBOCK_12X24 } from './jobs/lubbockStandards.ts';
 import type { Job } from './types.ts';
 
 const bom = buildBom(STANDARD_MODEL, runTakeoff(STANDARD_MODEL, [APEX_STANDARD_DETAIL]));
@@ -82,5 +83,49 @@ describe('what it refuses to invent', () => {
 
   it('says nothing is missing on a complete job', () => {
     expect(bom.missing).toEqual([]);
+  });
+});
+
+
+describe('water features', () => {
+  const preset = buildBom(LUBBOCK_12X24, runTakeoff(LUBBOCK_12X24, [APEX_STANDARD_DETAIL]));
+  const find = (item: RegExp) => preset.groups.flatMap((g) => g.lines).find((l) => item.test(l.item));
+
+  it('gives every spa its six wall jets', () => {
+    expect(find(/^Spa jets/)?.quantity).toBe(6);
+  });
+
+  it('plumbs the spa as its own body of water', () => {
+    // A spa needs a suction and a return of its own, not just a jet supply.
+    const runs = LUBBOCK_12X24.hydraulics!.runs.map((r) => r.id);
+    expect(runs).toContain('SPA-SUCTION');
+    expect(runs).toContain('SPA-RETURN');
+    // The preset therefore carries one more return than the base fixture.
+    expect(find(/^Return inlets/)!.quantity).toBe(5);
+  });
+
+  it('counts bubblers and deck jets only when the job has them', () => {
+    expect(find(/^Bubblers/)).toBeUndefined();
+    const withFeatures: Job = {
+      ...LUBBOCK_12X24,
+      pool: {
+        ...LUBBOCK_12X24.pool,
+        accessories: [
+          { id: 'BB1', kind: 'bubbler' },
+          { id: 'BB2', kind: 'bubbler' },
+          { id: 'DJ1', kind: 'deck-jet' },
+        ],
+      },
+    };
+    const bom2 = buildBom(withFeatures, runTakeoff(withFeatures, [APEX_STANDARD_DETAIL]));
+    const line2 = (item: RegExp) => bom2.groups.flatMap((g) => g.lines).find((l) => item.test(l.item));
+    expect(line2(/^Bubblers/)?.quantity).toBe(2);
+    expect(line2(/^Deck jets/)?.quantity).toBe(1);
+  });
+
+  it('drops the spa jet line with the spa', () => {
+    const noSpa: Job = { ...LUBBOCK_12X24, spa: undefined };
+    const bom3 = buildBom(noSpa, runTakeoff(noSpa, [APEX_STANDARD_DETAIL]));
+    expect(bom3.groups.flatMap((g) => g.lines).some((l) => /^Spa jets/.test(l.item))).toBe(false);
   });
 });

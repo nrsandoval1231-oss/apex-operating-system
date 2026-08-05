@@ -384,6 +384,15 @@ export function renderPlanView(
         `<rect class="pv-grip" data-resize-kind="step" data-resize-id="${esc(st.id)}" data-resize-wall="${place.wall}"`
         + ` x="${n(x(hx))}" y="${n(y(hy))}" width="${n(s(0.9))}" height="${n(s(0.9))}"/>`,
       );
+      // Reach into the pool. This changes the TREAD RUN, not the tread count —
+      // the count sets the rise, which is code-checked, so a drag must not move
+      // it. Every tread gets deeper together, which is how a stair is built.
+      const dx = acrossX ? rect.x + rect.widthFt - 0.9 : rect.x + rect.widthFt / 2 - 0.45;
+      const dy = acrossX ? rect.y + rect.heightFt / 2 - 0.45 : (place.wall === 'top' ? rect.y + rect.heightFt - 0.9 : rect.y);
+      parts.push(
+        `<rect class="pv-grip pv-grip-depth" data-resize-kind="step-depth" data-resize-id="${esc(st.id)}" data-resize-wall="${place.wall}"`
+        + ` x="${n(x(dx))}" y="${n(y(dy))}" width="${n(s(0.9))}" height="${n(s(0.9))}"/>`,
+      );
     }
   }
 
@@ -413,7 +422,42 @@ export function renderPlanView(
         `<rect class="pv-grip" data-resize-kind="seat" data-resize-id="${esc(seat.id)}" data-resize-wall="${place.wall}"`
         + ` x="${n(x(hx))}" y="${n(y(hy))}" width="${n(s(0.9))}" height="${n(s(0.9))}"/>`,
       );
+      // Second grip on the inner edge: drag it to reach further into the water.
+      // A tanning ledge is sized this way more often than it is widened.
+      const dx = endsOn ? rect.x + rect.widthFt - 0.9 : rect.x + rect.widthFt / 2 - 0.45;
+      const dy = endsOn ? rect.y + rect.heightFt / 2 - 0.45 : (place.wall === 'top' ? rect.y + rect.heightFt - 0.9 : rect.y);
+      parts.push(
+        `<rect class="pv-grip pv-grip-depth" data-resize-kind="seat-depth" data-resize-id="${esc(seat.id)}" data-resize-wall="${place.wall}"`
+        + ` x="${n(x(dx))}" y="${n(y(dy))}" width="${n(s(0.9))}" height="${n(s(0.9))}"/>`,
+      );
     }
+  }
+
+  // --- accessories -----------------------------------------------------------
+  // A bubbler sits in the water; a deck jet stands outside it on the deck and
+  // arcs a stream in, which is why it is drawn beyond the water edge with its
+  // throw shown as an arc rather than as a dot on the coping.
+  for (const acc of pool.accessories ?? []) {
+    const isDeckJet = acc.kind === 'deck-jet';
+    const place = acc.placement ?? { wall: 'bottom' as const, alongFt: L / 2 };
+    const rect = placementRect(place, 1, isDeckJet ? Math.max(deckW, 1.5) : 1.2, L, W, isDeckJet);
+    const cx = rect.x + rect.widthFt / 2;
+    const cy = rect.y + rect.heightFt / 2;
+    const selected = selectedId === acc.id;
+    parts.push(
+      `<circle class="pv-accessory${isDeckJet ? ' pv-deck-jet' : ' pv-bubbler'}${selected ? ' pv-selected' : ''}"`
+      + ` data-move-kind="accessory" data-move-id="${esc(acc.id)}" data-move-wall="${place.wall}"`
+      + ` cx="${n(x(cx))}" cy="${n(y(cy))}" r="${n(s(0.55))}"/>`,
+    );
+    if (isDeckJet) {
+      // The throw, toward the water. Indicative: nobody dimensions an arc.
+      const toward = place.wall === 'top' ? [cx, 0] : place.wall === 'bottom' ? [cx, W]
+        : place.wall === 'shallow' ? [0, cy] : [L, cy];
+      parts.push(
+        `<path class="pv-jet-arc" d="M ${n(x(cx))} ${n(y(cy))} Q ${n(x((cx + toward[0]!) / 2))} ${n(y((cy + toward[1]!) / 2))} ${n(x(toward[0]!))} ${n(y(toward[1]!))}"/>`,
+      );
+    }
+    parts.push(text(ctx, cx, cy + (isDeckJet ? -1.1 : 1.2), acc.id, 'pv-station-label', 'middle'));
   }
 
   // --- plumbing: outlets, skimmers, returns ---------------------------------

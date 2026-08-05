@@ -28,7 +28,7 @@ import type { Job, Placement, PoolWall } from '../engine/types.ts';
 
 /** What is being dragged, and what the pointer grabbed it by. */
 interface Drag {
-  readonly kind: 'step' | 'seat' | 'spa';
+  readonly kind: 'step' | 'seat' | 'spa' | 'accessory';
   readonly id: string;
   /** Distance from the object's near edge to the grab point, along the wall. ft */
   readonly grabOffsetFt: number;
@@ -37,7 +37,7 @@ interface Drag {
 
 /** A wall or seat-grip drag, which resizes instead of moving. */
 interface ResizeDrag {
-  readonly kind: 'pool' | 'seat' | 'step';
+  readonly kind: 'pool' | 'seat' | 'step' | 'seat-depth' | 'step-depth';
   readonly id: string | null;
   readonly wall: PoolWall;
 }
@@ -123,6 +123,7 @@ export function MovablePlan({
 
   const spanOf = useCallback(
     (kind: Drag['kind'], id: string): number => {
+      if (kind === 'accessory') return 1;
       if (kind === 'spa') return job.spa?.widthFt ?? 0;
       if (kind === 'step') {
         const step = job.pool.steps.find((s) => s.id === id);
@@ -147,6 +148,15 @@ export function MovablePlan({
    */
   const withPlacement = useCallback(
     (source: Job, kind: Drag['kind'], id: string, placement: Placement): Job => {
+      if (kind === 'accessory') {
+        return {
+          ...source,
+          pool: {
+            ...source.pool,
+            accessories: (source.pool.accessories ?? []).map((a) => (a.id === id ? { ...a, placement } : a)),
+          },
+        };
+      }
       if (kind === 'spa') {
         return source.spa ? { ...source, spa: { ...source.spa, placement } } : source;
       }
@@ -187,6 +197,11 @@ export function MovablePlan({
       next = { ...base, pool: { ...base.pool, steps: base.pool.steps.filter((s) => s.id !== selectedId) } };
     } else if (base.pool.seats.some((s) => s.id === selectedId)) {
       next = { ...base, pool: { ...base.pool, seats: base.pool.seats.filter((s) => s.id !== selectedId) } };
+    } else if ((base.pool.accessories ?? []).some((a) => a.id === selectedId)) {
+      next = {
+        ...base,
+        pool: { ...base.pool, accessories: (base.pool.accessories ?? []).filter((a) => a.id !== selectedId) },
+      };
     } else {
       return;
     }
@@ -269,6 +284,38 @@ export function MovablePlan({
         // Object grip: the new width runs from the object's near edge to the
         // pointer, snapped to 6". The floor is the Lubbock minimum stair width
         // (20") and a workable bench (24") rather than zero.
+        // Depth grips reach into the water: how far the object projects from its
+        // wall, measured perpendicular to the along axis.
+        if (resize.kind === 'seat-depth' || resize.kind === 'step-depth') {
+          const place = placementOfIn(base, resize.kind === 'step-depth' ? 'step' : 'seat', resize.id);
+          const endsOn = place.wall === 'shallow' || place.wall === 'deep';
+          const into = endsOn
+            ? (place.wall === 'shallow' ? point.xFt : base.pool.lengthFt - point.xFt)
+            : (place.wall === 'top' ? point.yFt : base.pool.widthFt - point.yFt);
+          const inches = Math.max(6, Math.round((into * 12) / 6) * 6);
+          if (resize.kind === 'step-depth') {
+            // Tread RUN, never tread count: the count sets the rise, and the
+            // rise is code-checked. Floored at the Lubbock 12" minimum.
+            setDragPreview({
+              ...base,
+              pool: {
+                ...base.pool,
+                steps: base.pool.steps.map((st) => (st.id === resize.id
+                  ? { ...st, treadRunIn: Math.max(12, Math.round(inches / st.treadCount / 6) * 6) }
+                  : st)),
+              },
+            });
+          } else {
+            setDragPreview({
+              ...base,
+              pool: {
+                ...base.pool,
+                seats: base.pool.seats.map((st) => (st.id === resize.id ? { ...st, surfaceDepthIn: inches } : st)),
+              },
+            });
+          }
+          return;
+        }
         const kind = resize.kind;
         const place = placementOfIn(base, kind, resize.id);
         const along = alongFromPoint(place.wall, point.xFt, point.yFt);
@@ -419,6 +466,10 @@ function releaseCapture(element: Element, pointerId: number): void {
 function placementOfIn(source: Job, kind: Drag['kind'], id: string): Placement {
   const L = source.pool.lengthFt;
   const W = source.pool.widthFt;
+  if (kind === 'accessory') {
+    const acc = (source.pool.accessories ?? []).find((a) => a.id === id);
+    return acc?.placement ?? { wall: 'bottom', alongFt: L / 2 };
+  }
   if (kind === 'spa') {
     return source.spa?.placement ?? { wall: 'deep', alongFt: (W - (source.spa?.widthFt ?? 0)) / 2 };
   }
@@ -451,6 +502,11 @@ function describe(job: Job, id: string): { label: string; wall: string; along: s
   if (seat) {
     const place = seat.placement ?? { wall: 'bottom' as const, alongFt: L * 0.62 };
     return { label: `${seat.kind} ${seat.id}`, wall: place.wall, along: fmt(place.alongFt) };
+  }
+  const acc = (job.pool.accessories ?? []).find((a) => a.id === id);
+  if (acc) {
+    const place = acc.placement ?? { wall: 'bottom' as const, alongFt: L / 2 };
+    return { label: `${acc.kind === 'deck-jet' ? 'deck jet' : 'bubbler'} ${acc.id}`, wall: place.wall, along: fmt(place.alongFt) };
   }
   return null;
 }

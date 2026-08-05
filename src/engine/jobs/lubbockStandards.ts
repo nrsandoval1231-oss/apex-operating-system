@@ -62,6 +62,33 @@ function lubbockStandard(
         },
       ],
     },
+    hydraulics: STANDARD_MODEL.hydraulics && {
+      ...STANDARD_MODEL.hydraulics,
+      runs: [
+        ...STANDARD_MODEL.hydraulics.runs,
+        // A spa is its own body of water: it needs a suction of its own and a
+        // return of its own, not just the jet supply. Added on the presets and
+        // NOT on STANDARD_MODEL, deliberately — STANDARD_MODEL is the fixture
+        // the approved-quantity digest is pinned against, and developed run
+        // length is one of the seventeen signed quantities.
+        {
+          id: 'SPA-SUCTION',
+          label: 'Spa suction',
+          role: 'suction-branch',
+          lengthFt: 22,
+          fittings: [{ kind: '90-ell', count: 3 }],
+          flowBasis: { dividedBy: 2 },
+        },
+        {
+          id: 'SPA-RETURN',
+          label: 'Spa return',
+          role: 'return-branch',
+          lengthFt: 20,
+          fittings: [{ kind: '90-ell', count: 2 }],
+          flowBasis: { dividedBy: 4 },
+        },
+      ],
+    },
     spa: {
       lengthFt: 6,
       widthFt: 6,
@@ -74,6 +101,8 @@ function lubbockStandard(
       // footprint out of the pool's water, which moves every hydraulic number
       // downstream of volume.
       insetIntoPool: true,
+      // Six jets in the wall is the Apex standard on every spa.
+      jetCount: 6,
     },
     site: {
       ...STANDARD_MODEL.site,

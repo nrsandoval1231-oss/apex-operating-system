@@ -11,9 +11,10 @@
  * presets use, so a spa added here is identical to one that came with a preset.
  */
 
+import { useEffect, useRef } from 'react';
 import { placementRect, wallLengthFt } from '../engine/placement.ts';
 import { inToFt } from '../engine/units.ts';
-import type { Job, Placement, PoolWall, Seat, Spa, StepSet } from '../engine/types.ts';
+import type { Accessory, Job, Placement, PoolWall, Seat, Spa, StepSet } from '../engine/types.ts';
 
 type SpaMode = 'corner' | 'side' | 'none';
 
@@ -85,6 +86,20 @@ const nextId = (existing: readonly { id: string }[], prefix: string) => {
 };
 
 export function DesignControls({ job, onChange }: { job: Job; onChange: (job: Job) => void }) {
+  /**
+   * The last job this toolbar emitted.
+   *
+   * Two clicks can land in one React task — the buttons sit next to each other
+   * and a fast hand beats a re-render. Reading the `job` prop for the second one
+   * computed it from the state before the first, so adding a bubbler and then a
+   * deck jet produced only the deck jet. Same fix as the keyboard nudges: chain
+   * off what was actually emitted, and resync when a job arrives from anywhere
+   * else — undo, a preset, a saved design.
+   */
+  const latest = useRef(job);
+  useEffect(() => { latest.current = job; }, [job]);
+  const commit = (next: Job) => { latest.current = next; onChange(next); };
+
   const spaMode: SpaMode = !job.spa ? 'none' : job.spa.insetIntoPool ? 'corner' : 'side';
   const steps = job.pool.steps;
   const benches = job.pool.seats.filter((s) => s.kind !== 'tanningLedge');
@@ -93,44 +108,47 @@ export function DesignControls({ job, onChange }: { job: Job; onChange: (job: Jo
   const setSpa = (mode: SpaMode) => {
     if (mode === spaMode) return;
     if (mode === 'none') {
-      onChange({ ...job, spa: undefined });
+      commit({ ...latest.current, spa: undefined });
       return;
     }
-    const base = job.spa ?? STANDARD_SPA;
-    onChange({
-      ...job,
+    const source = latest.current;
+    const base = source.spa ?? STANDARD_SPA;
+    commit({
+      ...source,
       spa: mode === 'corner'
         ? { ...base, attachedToPool: true, insetIntoPool: true, placement: undefined }
         : {
           ...base,
           attachedToPool: true,
           insetIntoPool: false,
-          placement: { wall: 'deep', alongFt: (job.pool.widthFt - base.widthFt) / 2 },
+          placement: { wall: 'deep', alongFt: (source.pool.widthFt - base.widthFt) / 2 },
         },
     });
   };
 
   const addStep = () => {
+    const source = latest.current;
     const treadWidthIn = 72;
     const step: StepSet = {
-      id: nextId(steps, 'S'),
+      id: nextId(source.pool.steps, 'S'),
       treadCount: 4,
       treadRunIn: 12,
       treadWidthIn,
       riserHeightsIn: [8, 10, 10, 10, 10],
-      floorDepthFt: job.pool.profile.shallowDepth,
+      floorDepthFt: source.pool.profile.shallowDepth,
       // Only the first stair is the required means of entry and exit.
-      isRequiredEntryExit: steps.length === 0,
-      placement: placeSomewhere(job, inToFt(treadWidthIn), 4, ['shallow', 'top', 'bottom', 'deep']),
+      isRequiredEntryExit: source.pool.steps.length === 0,
+      placement: placeSomewhere(source, inToFt(treadWidthIn), 4, ['shallow', 'top', 'bottom', 'deep']),
     };
-    onChange({ ...job, pool: { ...job.pool, steps: [...steps, step] } });
+    commit({ ...source, pool: { ...source.pool, steps: [...source.pool.steps, step] } });
   };
 
   const addSeat = (kind: 'bench' | 'tanningLedge') => {
+    const source = latest.current;
     const surfaceWidthIn = kind === 'tanningLedge' ? 96 : 72;
     const surfaceDepthIn = kind === 'tanningLedge' ? 60 : 16;
     const seat: Seat = {
-      id: nextId(job.pool.seats, kind === 'tanningLedge' ? 'TL' : 'B'),
+      id: nextId(source.pool.seats, kind === 'tanningLedge' ? 'TL' : 'B'),
       kind,
       // A tanning ledge is always 10" of water over the surface — the Apex
       // standard, not a preference.
@@ -138,21 +156,58 @@ export function DesignControls({ job, onChange }: { job: Job; onChange: (job: Jo
       surfaceDepthIn,
       surfaceWidthIn,
       leadingEdgeLengthFt: inToFt(surfaceWidthIn),
-      floorDepthFt: job.pool.profile.shallowDepth + (kind === 'tanningLedge' ? 0 : 1),
+      floorDepthFt: source.pool.profile.shallowDepth + (kind === 'tanningLedge' ? 0 : 1),
       isRequiredEntryExit: false,
-      placement: placeSomewhere(job, inToFt(surfaceWidthIn), inToFt(surfaceDepthIn), ['bottom', 'top', 'deep', 'shallow']),
+      placement: placeSomewhere(source, inToFt(surfaceWidthIn), inToFt(surfaceDepthIn), ['bottom', 'top', 'deep', 'shallow']),
     };
-    onChange({ ...job, pool: { ...job.pool, seats: [...job.pool.seats, seat] } });
+    commit({ ...source, pool: { ...source.pool, seats: [...source.pool.seats, seat] } });
+  };
+
+  const accessories = job.pool.accessories ?? [];
+  const bubblers = accessories.filter((a) => a.kind === 'bubbler');
+  const deckJets = accessories.filter((a) => a.kind === 'deck-jet');
+  const spaJets = job.spa ? job.spa.jetCount ?? 6 : 0;
+
+  const addAccessory = (kind: Accessory['kind']) => {
+    const source = latest.current;
+    const existing = source.pool.accessories ?? [];
+    const acc: Accessory = {
+      id: nextId(existing, kind === 'bubbler' ? 'BB' : 'DJ'),
+      kind,
+      // A bubbler belongs in a shallow surface, so it starts on the wall a ledge
+      // would be on; a deck jet stands outside on the deck.
+      placement: placeSomewhere(source, 1, 1.2, kind === 'bubbler' ? ['bottom', 'shallow', 'top'] : ['top', 'bottom', 'deep']),
+    };
+    commit({ ...source, pool: { ...source.pool, accessories: [...existing, acc] } });
+  };
+
+  const removeAccessory = (kind: Accessory['kind']) => {
+    const source = latest.current;
+    const existing = source.pool.accessories ?? [];
+    const list = existing.filter((a) => a.kind === kind);
+    const drop = list[list.length - 1];
+    if (!drop) return;
+    commit({ ...source, pool: { ...source.pool, accessories: existing.filter((a) => a !== drop) } });
+  };
+
+  const setSpaJets = (delta: number) => {
+    const source = latest.current;
+    if (!source.spa) return;
+    commit({ ...source, spa: { ...source.spa, jetCount: Math.max(0, (source.spa.jetCount ?? 6) + delta) } });
   };
 
   const removeLast = (which: 'step' | 'bench' | 'ledge') => {
+    const source = latest.current;
     if (which === 'step') {
-      onChange({ ...job, pool: { ...job.pool, steps: steps.slice(0, -1) } });
+      commit({ ...source, pool: { ...source.pool, steps: source.pool.steps.slice(0, -1) } });
       return;
     }
-    const drop = which === 'ledge' ? ledges[ledges.length - 1] : benches[benches.length - 1];
+    const kindMatches = source.pool.seats.filter((s) => (
+      which === 'ledge' ? s.kind === 'tanningLedge' : s.kind !== 'tanningLedge'
+    ));
+    const drop = kindMatches[kindMatches.length - 1];
     if (!drop) return;
-    onChange({ ...job, pool: { ...job.pool, seats: job.pool.seats.filter((s) => s !== drop) } });
+    commit({ ...source, pool: { ...source.pool, seats: source.pool.seats.filter((s) => s !== drop) } });
   };
 
   const counter = (
@@ -180,6 +235,9 @@ export function DesignControls({ job, onChange }: { job: Job; onChange: (job: Jo
       {counter('Steps', steps.length, addStep, () => removeLast('step'))}
       {counter('Benches', benches.length, () => addSeat('bench'), () => removeLast('bench'))}
       {counter('Ledges 10"', ledges.length, () => addSeat('tanningLedge'), () => removeLast('ledge'))}
+      {counter('Bubblers', bubblers.length, () => addAccessory('bubbler'), () => removeAccessory('bubbler'))}
+      {counter('Deck jets', deckJets.length, () => addAccessory('deck-jet'), () => removeAccessory('deck-jet'))}
+      {job.spa && counter('Spa jets', spaJets, () => setSpaJets(1), () => setSpaJets(-1))}
       <span className="dc-hint">click anything on the plan to select · Delete removes it</span>
     </div>
   );

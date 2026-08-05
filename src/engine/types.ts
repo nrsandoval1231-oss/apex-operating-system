@@ -110,6 +110,30 @@ export interface Seat {
   readonly placement?: Placement;
 }
 
+/**
+ * Water features that are placed but carry no structural quantity.
+ *
+ * A bubbler sits in a shallow surface — a tanning ledge or a step — and sends a
+ * low column of water up. A deck jet stands on the deck outside the pool and
+ * arcs a stream in. Both are plumbed, both get ordered, and neither changes the
+ * shell, so they live here rather than in the geometry.
+ *
+ * Spa jets are NOT here: they are a count in the spa wall, not individually
+ * placed objects, and modelling six draggable dots around a 6 ft spa would be
+ * precision nobody works to.
+ */
+export type AccessoryKind = 'bubbler' | 'deck-jet';
+
+export interface Accessory {
+  readonly id: string;
+  readonly kind: AccessoryKind;
+  /**
+   * Where it sits along a wall. A bubbler is measured inside the water; a deck
+   * jet outside it, standing on the deck.
+   */
+  readonly placement?: Placement;
+}
+
 export interface Spa {
   readonly lengthFt: number;
   readonly widthFt: number;
@@ -138,6 +162,12 @@ export interface Spa {
    * pool footprint and its corner is a different question.
    */
   readonly placement?: Placement;
+  /**
+   * Jets in the spa wall. Six is the Apex standard on every spa; it is a number
+   * rather than six placed objects because that is the level anyone specifies
+   * or orders at. Absent means the standard six.
+   */
+  readonly jetCount?: number;
 }
 
 export interface PoolBody {
@@ -146,6 +176,8 @@ export interface PoolBody {
   readonly profile: DepthProfile;
   readonly steps: readonly StepSet[];
   readonly seats: readonly Seat[];
+  /** Bubblers and deck jets. Absent is the same as none. */
+  readonly accessories?: readonly Accessory[];
 }
 
 /** Which edge of the plan as drawn a property line runs along. */
