@@ -102,11 +102,21 @@ us.**
 **Real photography (D-20), item 28.** Unanswered. Placeholders ship, but they look like
 placeholders.
 
-**PRD FINAL §20 — eight items**, none of which this register covers: authoritative tool for
-scheduling; authoritative tool for invoice and payment status; which customer messages may be sent
-automatically; where existing project photos and documents live; which team members need pilot
-access; whether customer pages use one stable link or short-lived ones; the approved chemistry
-formula, threshold, and dosing policy; and which three to five active projects are the pilot.
+**PRD FINAL §20 — six items left.** §20.1 and §20.2 were closed 2026-08-05 by inheritance from this
+register: item 24 makes **Monday Work Management** the active-project scheduling authority, and item
+2 makes **QuickBooks** the invoice and payment authority. Neither needed its own decision.
+
+Still open: which customer messages may be sent automatically; where existing project photos and
+documents live; which team members need pilot access; whether customer pages use one stable link or
+short-lived ones; the approved chemistry formula, threshold, and dosing policy; and which three to
+five active projects are the pilot.
+
+**One consequence of §20.1 worth watching.** Apex OS already holds dated subcontractor visits and
+detects crew double-bookings (`docs/status.md`, 2026-08-02). Naming Monday the schedule authority
+means those bookings are Apex OS's *view* of the schedule, not the schedule itself — so either
+Monday feeds them, or the two will disagree the first time someone moves a gunite date in one and
+not the other. `docs/status.md` still lists "schedule authority remains disconnected" as an open
+Gate blocker; item 24 names the authority but does not connect it.
 
 ---
 
