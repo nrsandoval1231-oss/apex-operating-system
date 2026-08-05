@@ -41,7 +41,7 @@ export function approvedTakeoffFixture(overrides = {}) {
     jobInputSha256: 'a'.repeat(64),
     calcLedgerSha256: 'b'.repeat(64),
     quantityPayloadSha256: calculateQuantityPayloadSha256(quantities),
-    quantityModelVersion: 'designer-quantity-v3',
+    quantityModelVersion: 'designer-quantity-v4',
     createdAt: '2026-07-29T12:00:00.000Z',
     createdBy: IDS.userId,
     approvedAt: '2026-07-29T12:05:00.000Z',
