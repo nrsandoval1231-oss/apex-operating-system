@@ -2,6 +2,13 @@
 
 > **STATUS: NOT WRITTEN — BLOCKED.** This is a placeholder, not a specification. Do not build from it.
 > **Depends on:** `00-foundation.md`, `02-proposal-takeoff-engine.md`
+>
+> **2026-08-05 — both gates have recommended answers awaiting Travis.** QuickBooks structure
+> (`decision-register.md` item 2): **Projects on, one company file, Classes for the three business
+> lines** — Customers/Projects track jobs, Classes track business lines. Contract review (item 1):
+> a **broad direct-cost definition**, with a written cost schedule attached to the agreement.
+> Item 1 states its own precondition — *amend the agreement before relying on this interpretation.*
+> This document unblocks on Travis's confirmation, not on the recommendation being written down.
 
 ## What this will cover
 

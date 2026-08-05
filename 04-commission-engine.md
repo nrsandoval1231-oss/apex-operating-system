@@ -2,6 +2,26 @@
 
 > **STATUS: NOT WRITTEN — BLOCKED.** Placeholder only. The *formula* is settled; the *inputs* are not.
 > **Depends on:** `00-foundation.md`, `03-cost-capture-allocation.md`
+>
+> **2026-08-05 — the allowance mechanic is answered, and two parts of the formula are contested.**
+> Nick's recommended answer to the hard blocker below is that **the 30% fee recalculates against
+> the final approved allowance cost, in both directions** (`decision-register.md` item 3), pending
+> Travis. That would retire blocker 1. But the same round of answers puts item 5 against two things
+> this document calls decided — see the box below. Do not build either as settled.
+
+## ⚠ Two contested points in the "already decided" formula
+
+Raised 2026-08-05, unresolved. Full reasoning in `decision-register.md` §4.
+
+1. **Commission base — "collected GP" vs. "Stage 1 at sale."** Item 5 pays on *collected* gross
+   profit; Stage 1 below pays at sale, when nothing has been collected. Recommended resolution:
+   treat Stage 1 as an **advance against a commission earned on collection**, preserving the
+   two-stage shape.
+2. **Whether the Lever B expanded base counts toward commission GP.** Item 5 says it does;
+   Foundation §3.3 and the bullet below say it does not. This is a straight reversal, and it is not
+   free — routing Lever B's ~$13,800/pool through commission GP returns roughly **$4,100 per pool**,
+   about **$78,000 on a 19-pool year**. It must be chosen deliberately, not inherited from how the
+   reimbursable-cost definition was worded.
 
 ## The formula — already decided (Foundation §1, §3, §7)
 

@@ -1,12 +1,17 @@
 # Apex — Decision Register
 
-**Written 2026-07-26.** Every open decision across the four repos and seven PRDs, in one place,
-ranked by what it unlocks rather than by when it was discovered.
+**Written 2026-07-26. Answered 2026-08-05.**
+Every open decision across the four repos and seven PRDs, in one place, ranked by what it unlocks
+rather than by when it was discovered.
 
-**The situation:** the build is roughly two sessions ahead of the decisions. Four repos are in good
-shape and almost nothing is live — the website is finished through Phase 3 but can't launch, the
-lead engine has four of six phases gated, and the commission engine that started this project is
-blocked behind two unanswered questions. There are **28 open items**. Six of them unblock the rest.
+**Where it stands.** All 28 items now carry an answer. Eight of them are **decided** — they were
+Nick's to make and he made them. Nineteen are **recommended positions pending Travis**, because they
+are his decisions and recording them as settled is exactly the drift `docs/status.md` warns against:
+*"commission decisions presented as settled before recorded approval."* One is unchanged and needs
+counsel.
+
+**Three of the recommendations reverse decisions already on file.** They are flagged §4 below. A
+reversal is a legitimate act; a reversal nobody noticed is how two documents start disagreeing.
 
 > **⚠ For Nick before circulating.** Items marked **[MARGIN]** cannot be discussed without the
 > 23.08% finding (Foundation §1), which was deliberately held back from the strategy deck. Decide
@@ -15,167 +20,179 @@ blocked behind two unanswered questions. There are **28 open items**. Six of the
 
 ---
 
-## The six that matter
+## 1. Decided — Nick's own, effective now
 
-Ranked by value unlocked. Everything else can wait behind these.
+These need nobody else. They are decisions, not proposals, and downstream work may build on them.
 
-### 1. Cost-plus contract review — what does the agreement define as reimbursable "cost"? **[MARGIN]**
-
-**Owner:** Travis (+ whoever drafted the contract)
-**Unlocks:** All of Lever B — Foundation §3.1, the entire missing-cost program
-**Worth:** **~$10,600 of absorbed cost and ~$13,800 of revenue per pool**, modelled on Whitaker
-
-The single highest-value open question in the project, and the oldest. Right now gross profit is
-absorbing costs the customer should be reimbursing: permits, geotech, structural engineering, a gas
-line for the heater, fill and curing water, startup chemicals, rebound haul-off, labour burden, and
-PM time. Every one is standard scope. None appears on the estimate.
-
-Nothing can move until the contract's definition of cost is known. Expanding the base beyond what
-the agreement covers looks like padding, and cost-plus contracts commonly carry audit rights.
-
-*Caveat: the ~$13,800 uses placeholder rates for items with no invoice yet (geotech, structural,
-gas line). The structure is solid; the total will move.*
-
-### 2. QuickBooks setup — Projects on? Classes in use? One company file or three?
-
-**Owner:** Travis / bookkeeper
-**Unlocks:** PRD 03 (cost capture) → PRD 04 (commission engine)
-**Worth:** the original ask. Commission standardization was the reason this project started
-
-Three factual questions, probably ten minutes with whoever keeps the books. They block the entire
-costing and commission chain. This is the cheapest high-value answer on the list.
-
-### 3. Allowance mechanic — does the 30% fee recalculate when an allowance comes in different?
-
-**Owner:** Travis (must match the contract)
-**Unlocks:** PRD 04, and the definition of "actual GP"
-**Worth:** determines what Stage 2 commission is actually paid on
-
-Whitaker carries **$17,000 in allowances** — Concrete Diamonds $5,000, Turf $5,000, Fence $7,000 —
-at 14.5% of job cost. When the turf comes in at $6,200, does the fee recalculate on the real number
-or stay fixed at estimate?
-
-This single mechanic defines "actual GP," which *is* the Stage 2 commission trigger. PRD 04 cannot
-be written without it.
-
-### 4. Access transfer from Monsoon
-
-**Owner:** Nick to request, Monsoon to action
-**Unlocks:** Website launch (Phase 5) **and** the Meta offline-conversion loop (lead engine Phase 5)
-**Worth:** everything built for PRD 01 stays dark until this lands
-
-Needed: domain registrar, hosting, GTM (`GTM-WSHKQ3X`), GA4, Meta Business Manager, Google Business
-Profile. This is a relationship task with a lead time, not a technical one — start it now.
-
-### 5. Airtable base — ten minutes, and the lead loop goes live
-
-**Owner:** Nick
-**Unlocks:** The entire lead flow, end to end
-**Worth:** turns a finished, inert system into a working one
-
-Pending across two sessions now. Create a base, import the two CSVs as `Leads` and `Quarantine`,
-add a third table `JobEvents`, grant the stored token `data.records:read` + `write`, send the base
-ID. Then the workflows activate, fixtures A–J run live, and the website's webhook points at
-something real.
-
-The single cheapest unblock on this list.
-
-### 6. SMS provider + A2P 10DLC registration — start it now, it's slow
-
-**Owner:** Nick
-**Unlocks:** Speed-to-lead (Phase 2) · review requests (Phase 4) · **sub scheduling** (PRD 06)
-**Worth:** speed-to-lead is the biggest conversion lever in home services
-
-Recommend Twilio. The registration is the slow part — weeks, not days — and it now gates **three**
-systems rather than two: PRD 06 established that subs never log into Monday, so scheduling the
-gunite crew means outbound texts on the same rail.
-
----
-
-## Free wins — no decision required, act this week
-
-**Cap work-in-progress at three concurrent pool builds, not five.**
-One crew saturates at three. Beyond that, annual output is flat at ~19 pools and only the queue
-grows — at five, every customer waits **5.5 weeks longer for the same number of pools per year**.
-Under cost-plus that is pure loss: no extra revenue, more PM time absorbed by GP, a longer
-referral-risk window. Costs nothing to act on. *(PRD 06 §2; the exact cap firms up once two pools'
-crew-days are logged.)*
-
-**Book gunite slots ahead of the freeze rush.**
-One gunite crew in Lubbock, and the season closes. Slots should be booked first and schedules built
-backward from them. Missing a date doesn't cost a day, it costs a place in the queue.
-
-**Log crew-days on the next two pools.**
-One number per phase. It retires the largest assumption in the capacity model and feeds Tier 2
-allocation for Lever B. Start before the tooling exists — a note on a phone is enough.
-
----
-
-## By owner
-
-### Travis
-
-| # | Question | Blocks |
+| # | Decision | Recorded |
 |---|---|---|
-| 1 | **Contract review** — definition of reimbursable cost **[MARGIN]** | All of Lever B |
-| 2 | **QuickBooks** — Projects? Classes? One file or three? | PRD 03 → 04 |
-| 3 | **Allowance mechanic** — fee recalculates on actual? | PRD 04 |
-| 4 | **Fee rate** — stay at 30% disclosed, or pair Lever B with ~35%? **[MARGIN]** | Foundation §3.1 |
-| 5 | **Commission base** — which of the three §7 options, and does the expanded base count toward GP? **[MARGIN]** | PRD 04 |
-| 6 | **Permits show $0.00** with a live line item — absorbed, billed separately, or forgotten? | Cost-plus exposure |
-| 7 | Who builds estimates — owner, estimator, or salesperson? | PRD 02 rollout |
-| 8 | Do salespeople have fee-rate discretion, or is 30% fixed? | PRD 04 |
-| 9 | How many pools per year? | Sizes Phase 2 automation |
-| 10 | Quality of historical cost data in QuickBooks | Unit-cost library |
-| 11 | Gunite crew — how far ahead do they book, how firm are slots? | PRD 06 scheduling |
-| 12 | When does gunite actually close for freeze in Lubbock? | PRD 06 season model |
-| 13 | Does the crew lead get Monday access? | PRD 06 — field entry beats Travis from memory |
-| 14 | Concrete Coating volume per month? | Whether the Job shape needs a real board |
-| 15 | Is Pool Service in scope this year? | Route shape, workspace layout |
-| 16 | Who else touches the system — office admin for receipts? | Substantiation path |
-| 17 | WIP gate advisory or blocking? *(recommend advisory)* | PRD 06 |
-| 18 | Current Facebook spend, structure, and which verticals it targets | Attribution baseline |
-| 19 | Current lead volume/mix, and who answers the phone today | Speed-to-lead is partly staffing |
+| 20 | **Airtable base — build now** as the interim intake and orchestration layer. Fields: source, campaign, service line, location, contact, consent status, owner, stage, urgency, estimated value, next action, appointment, CRM record ID. Tables kept narrow: Leads, Activities, Campaigns/Sources, Appointments, Jobs/Opportunities. **Explicitly not a second CRM.** | 2026-08-05 |
+| 21 | **Monsoon — request full ownership transfer**, not shared access. Domain registrar, DNS, hosting, CMS, analytics, Search Console, Google Business Profile, Meta Business Manager, ad account, pixel/dataset, forms, call tracking, creative and source files, licenses. Plus credential inventory, vendor list, recurring charges, and a 30-day transition-support window. Screenshots and exported reports are not a substitute for account control. | 2026-08-05 |
+| 22 | **Twilio for SMS; begin A2P 10DLC now.** Register the legal business, brand, and one defensible customer-care / lead-response campaign. Explicit consent, retained opt-in evidence, and STOP/HELP behaviour from day one. Review requests and subcontractor scheduling are added as separately governed workflows **after** the primary registration is stable. | 2026-08-05 |
+| 23 | **Canonical domain — the shortest, clearest `.com` that exactly matches the operating brand and is already controlled by Apex.** No hyphens. The other two redirect permanently to it. **An unowned or Monsoon-controlled domain may not be canonical.** | 2026-08-05 |
+| 24 | **Apex's own Monday account. Monday Work Management**, for estimating handoffs, jobs, scheduling, procurement, field updates, and delivery. Monday CRM only if it is formally selected as the long-term CRM — do not buy both by default. | 2026-08-05 |
+| 25 | **HubSpot as the long-term CRM**, unless Apex already has a well-configured CRM with meaningful adoption. Cleaner path for contact history, pipelines, forms, email, and attribution than stretching Monday or Airtable into a CRM. | 2026-08-05 |
+| 26 | **Four role inboxes: `sales@`, `estimates@`, `projects@`, `service@`.** `billing@` later if accounting volume warrants. Shared inboxes or groups with named owners — **no shared passwords**. | 2026-08-05 |
+| 27 | **CMS for ordinary website content; Git for code and configuration only.** Marketing must not need a deployment workflow to change photos, team members, service pages, testimonials, or copy. | 2026-08-05 |
 
-### Nick
+**Item 23 does not name the domain.** It sets the rule. The domain itself is still unregistered and
+is the single item blocking Apex OS deployment — see §3.
 
-| # | Decision | Blocks |
-|---|---|---|
-| 20 | **Airtable base** *(10 min)* | Live lead loop |
-| 21 | **Access transfer from Monsoon** | Website launch + Meta loop |
-| 22 | **SMS provider + A2P registration** *(slow — start now)* | Phases 2, 4, PRD 06 subs |
-| 23 | **Canonical domain** among the three in play | Website launch |
-| 24 | **Monday account** — Apex's own, and CRM vs Work Management | PRD 06 Phase 2 |
-| 25 | CRM platform confirmation (D-10) | Lead engine Phase 3 |
-| 26 | Confirm the four inboxes exist (D-13) | Phase 2 team notifications |
-| 27 | Content-editing model — CMS or git (D-07) *(doesn't block)* | — |
-| 28 | Real photography (D-20) | Placeholders ship, but they look like placeholders |
-
-### Needs counsel
-
-**SMS consent UX + quiet hours (D-14).** The form currently uses an explicit unchecked-by-default
-checkbox — TCPA-forward, but it deviates from the approved mockup and unchecked-default means fewer
-opt-ins, which directly reduces the biggest conversion lever. Separately, a lead at 11pm creates
-tension between responding instantly and respecting quiet hours. Recommended reading: the immediate
-auto-reply is a *transactional response to the customer's own inquiry*; marketing follow-ups wait
-for allowed hours. **Worth ten minutes with a lawyer, not a judgement call from us.**
+**Item 25 supersedes nothing yet.** D-10 (CRM platform confirmation) was open; it is now answered,
+but PRD 05 stays deferred on its own gate (~60 days of real lead data).
 
 ---
 
-## What's genuinely done
+## 2. Recommended — Travis's to confirm
+
+Nick's position on each, recorded 2026-08-05. **None of these is settled until Travis says so**, and
+three of them reverse something already on file (§4).
+
+### The three that unblock PRDs 03 and 04
+
+| # | Question | Nick's recommendation |
+|---|---|---|
+| 1 | **Reimbursable cost — what does the agreement define as cost?** **[MARGIN]** | **Broad direct-cost definition:** all direct, project-attributable costs required to deliver the pool — materials, subcontractors, permits, inspections, equipment rental, freight, disposal, project-specific labour burden, credit-card fees on reimbursable purchases, approved travel. **Excluded:** office overhead, general management salaries, marketing, financing costs, owner distributions, and costs caused by Apex's own negligence or rework. **Amend the agreement before relying on this** — and attach a written cost schedule so there is no ambiguity. |
+| 2 | **QuickBooks structure** | **Projects on. One company file** unless the three operations are genuinely separate legal entities or tax books. **Classes for the three business lines** — Pool Construction, Concrete Coatings, Pool Service. Customers and Projects track individual jobs; Classes track business lines. Do not create three company files for reporting convenience. |
+| 3 | **Allowance mechanic** | **The 30% fee recalculates against the final approved allowance cost**, in both directions. Customer-selected upgrades and approved changes carry the same fee unless expressly excluded. |
+
+### Pricing and commission
+
+| # | Question | Nick's recommendation |
+|---|---|---|
+| 4 | **Fee rate** **[MARGIN]** | **Hold at 30% initially.** Do not move universally to 35% until job-level data proves 30% inadequate *after* all reimbursable costs are captured. Use 35% selectively — high complexity, compressed schedule, uncertain scope, unusually small jobs. |
+| 5 | **Commission base** **[MARGIN]** | Pay on **collected gross profit** — not contract value, quoted fee, or recognised revenue. GP **includes** the fee earned on all legitimately reimbursable cost categories. Excluded: sales tax, pass-through amounts carrying no fee, financing charges, warranty rework, unapproved overruns, uncollected revenue. **⚠ Reverses two decisions on file — see §4.1 and §4.2.** |
+| 6 | **Permits showing $0.00 against a live line item** | **Treat as a control failure until proven otherwise.** Permits are an explicit allowance or reimbursable cost with the contractual fee applied. A live required cost may never sit at $0 without a note and an approval. |
+| 8 | **Sales fee-rate discretion** | **None unilateral.** Sales may recommend a deviation; anything below the standard rate, or any unusual exclusion, needs written approval. |
+
+### Operating model
+
+| # | Question | Nick's recommendation |
+|---|---|---|
+| 7 | **Who builds estimates** | **Estimator owns the estimate. Owner approves exceptions. Salesperson owns discovery and presentation.** A salesperson does not independently build technical cost estimates. |
+| 9 | **Pools per year** | Plan on **19 completed pools/year**. Build systems that reach **24–30 without redesign.** |
+| 10 | **Historical cost-data quality** | Assume **medium-to-low reliability until tested.** Validate the last **10–15 completed pools** against invoices, sub bills, payroll/crew logs, and contracts before any average is used for estimating. |
+| 11 | **Gunite booking horizon** | **3–4 weeks ahead normally; 6+ near freeze season**, until the crew gives real lead-time data. |
+| 12 | **Freeze closure** | Plan a **mid-November risk cutoff.** Weather-dependent work extends only on the gunite contractor's confirmation. **Do not promise winter dates from a fixed calendar.** |
+| 13 | **Crew lead Monday access** | **Yes — limited mobile access.** Phase completion, blockers, photos, crew-days, next-step readiness. **No** margin, commissions, or customer financials. |
+| 14 | **Concrete Coating board** | Own board once it regularly exceeds **five concurrent jobs or ~eight per month.** Below that, same Job structure with a Business Line field and filtered views. |
+| 15 | **Pool Service scope** | **Not in the first implementation** unless it is already producing meaningful recurring volume. Preserve the Class and workspace structure; defer route optimisation, recurring billing, and technician dispatch. |
+| 16 | **Who else touches the system** | At minimum an **office administrator / bookkeeper** — receipts, bills, permit documents, change orders, deposits, cost substantiation. Travis must not remain the information bottleneck. |
+| 17 | **WIP gate** | **Advisory at three; hard approval required above three.** Any override documents staffing, subcontractor capacity, and customer impact. |
+| 18 | **Facebook baseline** | Until real data lands: **one consolidated Meta account**, campaign-level separation by service line, location/service segmentation only where volume supports it. **Do not fragment a small budget across many campaigns.** Capture spend, leads, qualified leads, appointments, sold jobs, revenue, collected GP. |
+| 19 | **Lead response** | One accountable **lead-response owner in business hours, a named backup after hours.** Target first human contact within five minutes for inbound calls and forms during coverage. **Automation assists; it must not hide an unanswered staffing problem.** |
+
+---
+
+## 3. Still genuinely open
+
+**The domain is not registered.** Item 23 sets the rule for choosing it; nothing has been bought. It
+is the only item blocking Apex OS deployment — Render, Cloudflare R2, and the Auth0 tenant are all
+downstream of it (`docs/runbooks/deployment.md` §1–2). Apex OS should get **its own** domain rather
+than wait on the canonical marketing one, which is entangled in item 21.
+
+**SMS consent UX + quiet hours (D-14) — needs counsel, unchanged.** The form uses an explicit
+unchecked-by-default checkbox: TCPA-forward, but it deviates from the approved mockup, and
+unchecked-default means fewer opt-ins, which directly reduces the biggest conversion lever.
+Separately, a lead at 11pm sets responding instantly against respecting quiet hours. Reading on
+file: the immediate auto-reply is a *transactional response to the customer's own inquiry*, while
+marketing follow-ups wait for allowed hours. **Ten minutes with a lawyer, not a judgement call from
+us.**
+
+**Real photography (D-20), item 28.** Unanswered. Placeholders ship, but they look like
+placeholders.
+
+**PRD FINAL §20 — eight items**, none of which this register covers: authoritative tool for
+scheduling; authoritative tool for invoice and payment status; which customer messages may be sent
+automatically; where existing project photos and documents live; which team members need pilot
+access; whether customer pages use one stable link or short-lived ones; the approved chemistry
+formula, threshold, and dosing policy; and which three to five active projects are the pilot.
+
+---
+
+## 4. Reversals and conflicts to resolve before building
+
+### 4.1 Commission base: collected GP vs. Stage 1 at sale
+
+**On file** (PRD 04, *"The formula — already decided"*):
+
+> **Stage 1 — at sale:** 15% of **estimated** GP from the accepted proposal.
+
+**Item 5 says** commission is paid on **collected** gross profit.
+
+Nothing is collected at sale. These cannot both hold. Three ways out, and the choice is Travis's:
+
+1. **Keep Stage 1 as an advance.** Pay 15% of estimated GP at sale, then true up against collected
+   GP at reconciliation. Stage 1 becomes a draw against a commission that is *earned* on collection.
+2. **Move Stage 1 to first collection.** The rep is paid when the deposit lands, not at signature.
+   Honest to "collected," and slower for the rep.
+3. **Drop "collected."** Pay on reconciled GP regardless of collection, and handle non-payment
+   separately. Simplest; leaves Apex paying commission on money it never received.
+
+**Recommendation: option 1.** It preserves the existing two-stage shape, keeps the rep paid at sale,
+and still makes collection the thing that settles the number.
+
+### 4.2 Does the Lever B expanded base count toward commission GP?
+
+**On file** (Foundation §3.3, and restated in PRD 04):
+
+> **The Lever B expanded cost base does not count toward commission GP.** The rep didn't earn a fee
+> on reclassified PM salary.
+
+**Item 5 says** GP *includes* "the fee earned on all legitimately reimbursable cost categories" —
+which is the expanded base. This is a straight reversal.
+
+It is defensible: under item 1, permits, geotech, structural, gas line and labour burden become
+ordinary reimbursable scope rather than a reclassification, and a fee genuinely is earned on them.
+But it is not free. The register modelled Lever B at **~$13,800 of additional revenue per pool**;
+routing that through commission GP hands roughly 30% of it — **~$4,100 per pool** — back out as
+commission. On a 19-pool year that is about **$78,000**.
+
+**This needs to be an explicit choice, not a side effect of how item 1 was worded.**
+
+### 4.3 Item 1 vs. item 5 on rework — consistent, worth stating
+
+Item 1 excludes "costs caused by Apex's own negligence or rework" from reimbursable cost. Item 5
+excludes "warranty rework" from commission GP. These agree. Worth writing into the cost schedule
+explicitly so the two exclusions are enforced in one place rather than remembered in two.
+
+---
+
+## 5. Free wins — no decision required, act this week
+
+**Cap work-in-progress at three concurrent pool builds, not five.** One crew saturates at three.
+Beyond that, annual output is flat at ~19 pools and only the queue grows — at five, every customer
+waits **5.5 weeks longer for the same number of pools per year**. Under cost-plus that is pure loss:
+no extra revenue, more PM time absorbed by GP, a longer referral-risk window. Costs nothing to act
+on. *(PRD 06 §2. Item 17 now makes the cap advisory at three and approval-gated above it.)*
+
+**Book gunite slots ahead of the freeze rush.** One gunite crew in Lubbock, and the season closes.
+Slots should be booked first and schedules built backward from them. Missing a date doesn't cost a
+day, it costs a place in the queue. *(Item 11 sets the horizon; item 12 sets the cutoff.)*
+
+**Log crew-days on the next two pools.** One number per phase. It retires the largest assumption in
+the capacity model and feeds Tier 2 allocation for Lever B. Start before the tooling exists — a note
+on a phone is enough.
+
+---
+
+## 6. What's genuinely done
 
 So the register isn't mistaken for the whole picture:
 
 - **Website** — Phases 1–3, Lighthouse 96 / 100 / 100 / 100, 39 tests. Waiting on access + domain
 - **Lead engine** — intake built and deployed inactive; job-status signal built and validated,
   which resolved D-12 and freed Phases 4 and 5 from their signal dependency
-- **Proposal engine** — reproduces Whitaker's real estimate line for line, back-test exact, 82 tests.
-  Usable today
-- **PRDs** — 00, 01, 02, 06 written. 03, 04, 05 blocked on items above
+- **Proposal engine** — reproduces Whitaker's real estimate line for line, back-test exact.
+  Current verified baseline is 119 engine checks plus 11 hash-pinned evidence checks
+- **Apex OS** — build plan Steps 1–8 complete, every MVP item in PRD FINAL §19 built,
+  436 root tests passing. Not deployed; see §3
+- **PRDs** — 00, 01, 02, 06 written. **03 and 04 unblock the moment Travis confirms items 1, 2 and
+  3** and resolves §4.1 and §4.2. 05 stays deferred on real lead data
 
 ---
 
-## Two things that need a second data point, not a decision
+## 7. Two things that need a second data point, not a decision
 
 **A second completed pool.** The takeoff engine reproduces Whitaker exactly — but Whitaker is what
 calibrated it, so that result is partly circular. One completed job the model has never seen,

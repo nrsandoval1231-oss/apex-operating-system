@@ -13,15 +13,17 @@ Operational modernization for Apex (Lubbock, TX). One brand, four verticals: **D
 | **00** | [Foundation — Definitions & Data Model](00-foundation.md) | ✅ **Written** (v0.2) | — |
 | **01** | [Lead Capture, Funnels & Marketing](01-lead-capture-funnels.md) | ✅ **Written** · handed off | Access transfer for launch only |
 | **02** | [Pool Proposal & Takeoff Engine](02-proposal-takeoff-engine.md) | ✅ **Written** (v0.2) · engine built | Back-test passes on 1 job; needs a 2nd |
-| **03** | [Cost Capture & Allocation](03-cost-capture-allocation.md) | ⚠ **Stub — blocked** | QuickBooks setup + contract review |
-| **04** | [Commission Engine](04-commission-engine.md) | ⚠ **Stub — blocked** | Allowance mechanic + PRD 03 |
+| **03** | [Cost Capture & Allocation](03-cost-capture-allocation.md) | ⚠ **Stub — blocked** | QuickBooks setup + contract review — **both answered 2026-08-05, awaiting Travis** |
+| **04** | [Commission Engine](04-commission-engine.md) | ⚠ **Stub — blocked** | Allowance mechanic (**answered, awaiting Travis**) + PRD 03 + **two contested formula points** |
 | **05** | [CRM & Pipeline Analytics](05-crm-pipeline-analytics.md) | ⏸ **Stub — deferred** | Needs ~60 days of real lead data |
 | **06** | [Job Execution & Crew Scheduling](06-project-management.md) | ✅ **Written** (v0.1) | Phase 1 has **no** blockers |
 
 > **Start here if you want to move the project, not read it:** [`decision-register.md`](decision-register.md) —
-> all 28 open decisions across the four repos and seven PRDs, ranked by what they unlock and grouped
-> by owner. Six of them unblock everything else. The build is roughly two sessions ahead of the
-> decisions, and that register is how it gets unstuck.
+> all 28 decisions across the four repos and seven PRDs, ranked by what they unlock and grouped by
+> owner. **All 28 now carry an answer as of 2026-08-05:** eight decided (Nick's own), nineteen
+> recorded as recommendations pending Travis, one still needing counsel. Three of the
+> recommendations reverse decisions already on file and are flagged in the register's §4 — read
+> that section before building anything commission-related.
 
 **00 is the source of truth.** Every other document references it. Definitions live there once — cost codes, GP definition, allocation policy, the enum of verticals — so the PRDs can't drift apart and contradict each other at integration time.
 
