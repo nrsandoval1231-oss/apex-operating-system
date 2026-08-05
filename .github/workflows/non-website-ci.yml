@@ -82,7 +82,7 @@ jobs:
       # never the key itself — into the two steps that need to branch on it.
       HAS_DESIGNER_KEY: ${{ secrets.APEX_DESIGNER_DEPLOY_KEY != '' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # `Apex Designer/` is a separate private repository (ADR-0002) and is
       # gitignored here, so integration-tests/designer-contract.test.ts skips on
@@ -96,7 +96,7 @@ jobs:
       # a silent hole is APEX_REQUIRE_DESIGNER_CONTRACT below.
       - name: Check out Apex Designer
         if: env.HAS_DESIGNER_KEY == 'true'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: nrsandoval1231-oss/apex-designer
           path: Apex Designer
@@ -141,11 +141,14 @@ jobs:
           # cannot silently succeed again.
           docker run --rm --network host -e MC_HOST_ci minio/mc stat ci/apex-evidence
 
-      - uses: pnpm/action-setup@v4
+      # The pnpm version is NOT pinned here. package.json's `packageManager`
+      # field already pins it to pnpm@11.18.0, and this action reads it. Naming
+      # it in both places is two pins that can disagree — and the one nobody
+      # updates is the one in the workflow.
+      - uses: pnpm/action-setup@v6
         with:
-          version: 11.18.0
           run_install: false
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: pnpm
