@@ -107,3 +107,24 @@ export function depthAtStation(
   const through = (stationFt - shallowRun) / transitionRun;
   return shallowDepth + through * (deepDepth - shallowDepth);
 }
+
+/**
+ * The deepest water under an object's footprint.
+ *
+ * This is what `floorDepthFt` on a step or a seat should be, and it was being
+ * invented instead — a new bench got `shallowDepth + 1` regardless of where it
+ * sat, which is how the section came to draw a bench hanging clear of the floor.
+ *
+ * Depth never decreases with distance from the shallow end, so the deepest point
+ * under a footprint is always its deep-side edge. Taking the deepest rather than
+ * the average is deliberate: a seat has to reach the floor everywhere it spans,
+ * and a figure that is too shallow is one that leaves it floating.
+ */
+export function floorDepthUnder(
+  profile: { shallowRun: number; transitionRun: number; shallowDepth: number; deepDepth: number },
+  fromFt: number,
+  toFt: number,
+): number {
+  const deepEdge = Math.max(fromFt, toFt);
+  return depthAtStation(profile, deepEdge);
+}

@@ -1400,21 +1400,105 @@ tr.is-fail .check-message {
 
 .app-header-right { margin-left: auto; display: flex; align-items: center; gap: 6px; }
 
-/* Toolbars dock to the header instead of hovering in the gap under it. */
+/* --- the app chrome ---------------------------------------------------------
+ *
+ * The header and the two toolbars under it are ONE dark band, not a dark strip
+ * with two paper strips beneath it. Before this, the same button was sage on
+ * charcoal in the header and outlined-on-paper eight pixels lower, so the tool
+ * had two button styles for no reason a user could see.
+ *
+ * Charcoal is what makes it work. Brand sage is 9.75:1 on charcoal and 1.59:1 on
+ * paper, so the sage button — the one worth having — is only legible on the dark
+ * surface. Extending the surface is what lets every toolbar button be that
+ * button, rather than recolouring the button to survive a background it was
+ * never meant for.
+ */
 .switcher, .design-controls {
   border-radius: 0;
-  border-left: none;
-  border-right: none;
+  border: none;
   margin-left: 0;
   margin-right: 0;
   max-width: none;
   padding-left: 20px;
   padding-right: 20px;
+  background: var(--char);
 }
 
-.switcher { background: var(--paper); border-top: none; }
+.switcher {
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  color: var(--sage);
+}
 
-.design-controls { border-top: none; margin-bottom: 0; }
+.design-controls {
+  margin-bottom: 0;
+  padding-top: 8px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #000;
+}
+
+/*
+ * Every control inside the band gets the header's own button, verbatim. The
+ * selector list is what makes "uniform" true rather than aspirational — a new
+ * button anywhere in the chrome inherits it without being restyled.
+ */
+.app-header .btn,
+.switcher .btn,
+.design-controls .btn,
+.switcher button,
+.design-controls button {
+  background: var(--sage);
+  color: var(--char);
+  border: 0;
+  font-family: var(--sans);
+  font-weight: 550;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 12.5px;
+  line-height: 1.2;
+  padding: 8px 14px;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.app-header .btn:hover:not(:disabled),
+.switcher .btn:hover:not(:disabled),
+.design-controls .btn:hover:not(:disabled),
+.switcher button:hover:not(:disabled),
+.design-controls button:hover:not(:disabled) { background: var(--sage-d); }
+
+/* The quiet secondary, still legible on charcoal. */
+.app-header .btn.ghost,
+.switcher .btn.ghost,
+.design-controls .btn.ghost {
+  background: transparent;
+  color: var(--paper);
+  border: 1.5px solid #4a4e52;
+}
+
+.app-header .btn.ghost:hover:not(:disabled),
+.switcher .btn.ghost:hover:not(:disabled),
+.design-controls .btn.ghost:hover:not(:disabled) { border-color: var(--sage); color: var(--sage); }
+
+/* Selected reads as the accent, which carries on charcoal. */
+.switcher button[aria-pressed='true'],
+.design-controls button[aria-pressed='true'],
+.dc-group button[aria-pressed='true'] {
+  background: var(--accent-light);
+  color: #fff;
+  border-color: var(--accent-light);
+}
+
+/* Labels and hints belong to the dark surface now. */
+.switcher, .dc-label { color: var(--sage); }
+.dc-label { color: #9aa0a6; }
+.dc-hint { color: #9aa0a6; }
+.dc-count { color: var(--paper); }
+
+/* The counter's +/- stay compact rather than inheriting the full button box. */
+.dc-step { min-width: 30px; padding: 5px 9px; font-size: 15px; }
 
 .app-main > .sheet, .app-main > .run-takeoff { margin-top: 18px; }
 
@@ -1656,3 +1740,25 @@ tr.is-fail .check-message {
 
 /* The depth grip reaches into the pool, so it reads as a different action. */
 .pv-grip-depth { stroke-dasharray: 3 2; }
+
+/* --- resize grips -----------------------------------------------------------
+ *
+ * A ring outside the object's corner, drawn only when that object is selected.
+ * The grips this replaces were filled squares sitting on every step and bench
+ * at all times, and they read as an extra tread — chrome that looked like
+ * geometry on a drawing somebody builds from.
+ */
+.pv-size-grip { cursor: nwse-resize; }
+.pv-size-grip-hit { fill: transparent; stroke: none; }
+.pv-size-grip-ring {
+  fill: var(--paper);
+  stroke: var(--accent);
+  stroke-width: 1.75;
+  vector-effect: non-scaling-stroke;
+}
+.pv-size-grip-tick { stroke: var(--accent); stroke-width: 1.25; vector-effect: non-scaling-stroke; }
+
+/* Editing chrome never prints. */
+@media print {
+  .pv-size-grip { display: none; }
+}

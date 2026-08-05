@@ -104,6 +104,18 @@ src/ui/              step 3 — the takeoff sheet
   305.1 lets a powered safety cover exempt the pool from barrier sections 305.2
   through 305.7, so the listing is load-bearing: without it the job has no
   barrier at all, and the check hard-fails rather than degrading quietly.
+- **Size is a drag, not a form field.** One corner grip resizes any object in
+  both axes at once, snapped to the same 6" lattice positions use, so a bench and
+  the ledge beside it can be made to match exactly. It replaces four separate
+  grips — width and depth, for steps and for seats — each of which moved one
+  dimension along an axis that depended on which wall the object was against.
+  Grips are drawn **only on the selected object**: the old ones sat on every step
+  and bench at all times and read as an extra tread, which is chrome masquerading
+  as geometry on a drawing somebody builds from. Sizes floor at the code
+  minimums — 20" stair width, 12" tread run, 24" bench width, 10" bench depth —
+  because a drag that can draw a non-compliant stair is a drag that produces a
+  drawing someone has to be told about later. Resizing adopts a free position
+  first, so the corner you are not dragging stays put.
 - **Everything on the plan moves in two dimensions, on a 6" lattice.** The pool's
   four inside corners, four outside corners, four wall centres and its centre
   pull harder than the rest, so freedom does not cost symmetry and the tool says

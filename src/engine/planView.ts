@@ -397,6 +397,7 @@ export function renderPlanView(
     parts.push(
       text(ctx, icx, icy + 0.9, `${feetInches(spaL)} × ${feetInches(spaW)} inset`, 'pv-note-inset', 'middle'),
     );
+    if (options.interactive && selected) parts.push(resizeGrip(ctx, inset, 'spa', SPA_MOVE_ID));
   } else if (spa && spaRect) {
     const selected = selectedId === SPA_MOVE_ID;
     parts.push(
@@ -418,6 +419,7 @@ export function renderPlanView(
       text(ctx, cx, cy + 1.4, `${feetInches(spaL)} × ${feetInches(spaW)}`, 'pv-note-inset', 'middle'),
     );
     parts.push(...objectDims(ctx, spaRect, spaPlace.wall, L, W));
+    if (options.interactive && selected) parts.push(resizeGrip(ctx, spaRect, 'spa', SPA_MOVE_ID));
   }
 
   // --- depth profile: breakover stations across the pool --------------------
@@ -478,6 +480,7 @@ export function renderPlanView(
     parts.push(text(ctx, rect.x + rect.widthFt / 2, rect.y + rect.heightFt + 0.9,
       `${st.treadCount} treads @ ${st.treadRunIn}"${st.placement ? '' : ' · unplaced'}`, 'pv-note', 'middle'));
     parts.push(...objectDims(ctx, rect, place.wall, L, W));
+    if (options.interactive && selected) parts.push(resizeGrip(ctx, rect, 'step', st.id));
     void acrossX;
   }
 
@@ -485,8 +488,14 @@ export function renderPlanView(
     const wFt = inToFt(seat.surfaceWidthIn);
     const dFt = inToFt(seat.surfaceDepthIn);
     const place = seat.placement ?? { wall: 'bottom' as const, alongFt: L * 0.62 };
+    /*
+     * Free orientation matches the default wall placement — surface WIDTH runs
+     * along x, surface DEPTH into the pool — so a seat that has always been on
+     * the bottom wall keeps its shape the first time it is dragged or resized.
+     * Defining it the other way round flipped every bench the moment it moved.
+     */
     const rect = seat.position
-      ? { x: seat.position.xFt, y: seat.position.yFt, widthFt: dFt, heightFt: wFt }
+      ? { x: seat.position.xFt, y: seat.position.yFt, widthFt: wFt, heightFt: dFt }
       : placementRect(place, wFt, dFt, L, W);
     const selected = selectedId === seat.id;
     parts.push(
@@ -499,6 +508,7 @@ export function renderPlanView(
         `${seat.kind} ${seat.id}${seat.placement ? '' : ' · unplaced'}`, 'pv-note-inset', 'middle'),
     );
     parts.push(...objectDims(ctx, rect, place.wall, L, W));
+    if (options.interactive && selected) parts.push(resizeGrip(ctx, rect, 'seat', seat.id));
 
   }
 
@@ -802,6 +812,26 @@ function text(ctx: Ctx, xf: number, yf: number, label: string, cls: string, anch
  */
 function upright(ctx: Ctx, px: number, py: number): string {
   return textTransform(ctx.turns, { x: px, y: py });
+}
+
+/**
+ * The corner grip that resizes an object.
+ *
+ * Drawn ONLY on the selected object, and as a ring outside its corner rather
+ * than a filled square inside it. The old grips were 0.9 ft squares sitting on
+ * every step and bench whether or not anyone was editing them, and they read as
+ * an extra tread — geometry rather than chrome. A handle that appears when you
+ * select something, and nowhere else, cannot be mistaken for the thing it edits.
+ */
+function resizeGrip(ctx: Ctx, rect: { x: number; y: number; widthFt: number; heightFt: number }, target: string, id: string): string {
+  const cx = ctx.x(rect.x + rect.widthFt);
+  const cy = ctx.y(rect.y + rect.heightFt);
+  return `<g class="pv-size-grip" data-resize-kind="object" data-resize-target="${esc(target)}" data-resize-id="${esc(id)}">`
+    + `<circle class="pv-size-grip-hit" cx="${n(cx)}" cy="${n(cy)}" r="${n(ctx.s(1.1))}"/>`
+    + `<circle class="pv-size-grip-ring" cx="${n(cx)}" cy="${n(cy)}" r="${n(ctx.s(0.5))}"/>`
+    + `<line class="pv-size-grip-tick" x1="${n(cx - ctx.s(0.28))}" y1="${n(cy)}" x2="${n(cx + ctx.s(0.28))}" y2="${n(cy)}"/>`
+    + `<line class="pv-size-grip-tick" x1="${n(cx)}" y1="${n(cy - ctx.s(0.28))}" x2="${n(cx)}" y2="${n(cy + ctx.s(0.28))}"/>`
+    + `</g>`;
 }
 
 /**

@@ -59,12 +59,29 @@ interface Drag {
   readonly sizeFt?: { readonly widthFt: number; readonly heightFt: number };
 }
 
-/** A wall or seat-grip drag, which resizes instead of moving. */
+/** A wall or object grip drag, which resizes instead of moving. */
 interface ResizeDrag {
-  readonly kind: 'pool' | 'seat' | 'step' | 'seat-depth' | 'step-depth';
+  readonly kind: 'pool' | 'object';
   readonly id: string | null;
   readonly wall: PoolWall;
+  /** For an object grip: which kind of object is being resized. */
+  readonly target?: 'spa' | 'seat' | 'step';
 }
+
+/**
+ * Smallest buildable size for each thing you can drag a corner on, in feet.
+ *
+ * These are not tidiness. 20" is the Lubbock minimum stair width and 12" the
+ * minimum tread run; 24" and 10" are the bench minimums the code checks read.
+ * A drag that can produce a stair narrower than the code allows is a drag that
+ * produces a drawing somebody has to be told is wrong later.
+ */
+const MIN_SIZE_FT: Record<'spa' | 'seat' | 'step', { readonly x: number; readonly y: number }> = {
+  // x is the run into the pool, y the width along the wall.
+  spa: { x: 4, y: 4 },
+  seat: { x: 24 / 12, y: 10 / 12 },
+  step: { x: 12 / 12, y: 20 / 12 },
+};
 
 export function MovablePlan({
   job,
@@ -223,11 +240,14 @@ export function MovablePlan({
       if (kind === 'seat') {
         const st = source.pool.seats.find((x) => x.id === id);
         if (!st) return null;
-        const widthFt = inToFt(st.surfaceDepthIn);
-        const heightFt = inToFt(st.surfaceWidthIn);
+        // Same orientation the renderer uses: width along x, depth into y — and
+        // the same span/project argument order. Passing them the other way round
+        // put the anchor somewhere the object was not drawn.
+        const widthFt = inToFt(st.surfaceWidthIn);
+        const heightFt = inToFt(st.surfaceDepthIn);
         if (st.position) return { ...st.position, widthFt, heightFt };
         const place = st.placement ?? { wall: 'bottom' as const, alongFt: source.pool.lengthFt * 0.62 };
-        const r = placementRect(place, heightFt, widthFt, source.pool.lengthFt, source.pool.widthFt);
+        const r = placementRect(place, widthFt, heightFt, source.pool.lengthFt, source.pool.widthFt);
         return { xFt: r.x, yFt: r.y, widthFt: r.widthFt, heightFt: r.heightFt };
       }
       const acc = (source.pool.accessories ?? []).find((a) => a.id === id);
@@ -377,6 +397,9 @@ export function MovablePlan({
         kind: grip.getAttribute('data-resize-kind') as ResizeDrag['kind'],
         id: grip.getAttribute('data-resize-id'),
         wall: (grip.getAttribute('data-resize-wall') ?? 'deep') as PoolWall,
+        ...(grip.getAttribute('data-resize-target')
+          ? { target: grip.getAttribute('data-resize-target') as 'spa' | 'seat' | 'step' }
+          : {}),
       };
       try {
         (event.currentTarget as Element).setPointerCapture?.(event.pointerId);
@@ -453,65 +476,61 @@ export function MovablePlan({
             : resize.wall === 'bottom' ? point.yFt
               : base.pool.widthFt - point.yFt;
         setDragPreview(resizePool(base, resize.wall, target));
-      } else if (resize.id) {
-        // Object grip: the new width runs from the object's near edge to the
-        // pointer, snapped to 6". The floor is the Lubbock minimum stair width
-        // (20") and a workable bench (24") rather than zero.
-        // Depth grips reach into the water: how far the object projects from its
-        // wall, measured perpendicular to the along axis.
-        if (resize.kind === 'seat-depth' || resize.kind === 'step-depth') {
-          const place = placementOfIn(base, resize.kind === 'step-depth' ? 'step' : 'seat', resize.id);
-          const endsOn = place.wall === 'shallow' || place.wall === 'deep';
-          const into = endsOn
-            ? (place.wall === 'shallow' ? point.xFt : base.pool.lengthFt - point.xFt)
-            : (place.wall === 'top' ? point.yFt : base.pool.widthFt - point.yFt);
-          const inches = Math.max(6, Math.round((into * 12) / 6) * 6);
-          if (resize.kind === 'step-depth') {
-            // Tread RUN, never tread count: the count sets the rise, and the
-            // rise is code-checked. Floored at the Lubbock 12" minimum.
-            setDragPreview({
-              ...base,
-              pool: {
-                ...base.pool,
-                steps: base.pool.steps.map((st) => (st.id === resize.id
-                  ? { ...st, treadRunIn: Math.max(12, Math.round(inches / st.treadCount / 6) * 6) }
-                  : st)),
-              },
-            });
-          } else {
-            setDragPreview({
-              ...base,
-              pool: {
-                ...base.pool,
-                seats: base.pool.seats.map((st) => (st.id === resize.id ? { ...st, surfaceDepthIn: inches } : st)),
-              },
-            });
-          }
+      } else if (resize.kind === 'object' && resize.id && resize.target) {
+        /**
+         * One corner grip resizes any object, in both axes at once.
+         *
+         * It replaces four separate grips — width and depth, for steps and for
+         * seats — each of which changed one dimension along an axis that
+         * depended on which wall the object was against. With everything free,
+         * the rect IS the object: drag its far corner and both dimensions
+         * follow. Sizes snap to the same 6" lattice positions do, so a bench
+         * and the ledge beside it can be made to match exactly.
+         */
+        const rect = freeRectOf(base, resize.target, resize.id);
+        if (!rect) return;
+        /*
+         * Resizing adopts a free position first, so the corner you are NOT
+         * dragging stays put. A wall-placed object recomputes its origin from
+         * its own size — a bottom-wall seat sits at y = poolWidth - depth — so
+         * growing it would have walked the whole object up the drawing.
+         */
+        const anchored = withPosition(base, resize.target, resize.id, { xFt: rect.xFt, yFt: rect.yFt });
+        const min = MIN_SIZE_FT[resize.target];
+        const sizeX = Math.max(min.x, snapToGrid(point.xFt - rect.xFt));
+        const sizeY = Math.max(min.y, snapToGrid(point.yFt - rect.yFt));
+        const inches = (ft: number) => Math.round(ft * 12);
+
+        if (resize.target === 'spa') {
+          setDragPreview(anchored.spa
+            ? { ...anchored, spa: { ...anchored.spa, lengthFt: sizeX, widthFt: sizeY } }
+            : anchored);
           return;
         }
-        const kind = resize.kind;
-        const place = placementOfIn(base, kind, resize.id);
-        const along = alongFromPoint(place.wall, point.xFt, point.yFt);
-        const raw = Math.round(((along - place.alongFt) * 12) / 6) * 6;
-        if (kind === 'step') {
-          const widthIn = Math.max(20, raw);
+        if (resize.target === 'seat') {
           setDragPreview({
-            ...base,
+            ...anchored,
             pool: {
-              ...base.pool,
-              steps: base.pool.steps.map((s) => (s.id === resize.id ? { ...s, treadWidthIn: widthIn } : s)),
+              ...anchored.pool,
+              seats: anchored.pool.seats.map((st) => (st.id === resize.id
+                ? { ...st, surfaceWidthIn: inches(sizeX), surfaceDepthIn: inches(sizeY), leadingEdgeLengthFt: sizeX }
+                : st)),
             },
           });
-        } else {
-          const widthIn = Math.max(24, raw);
-          setDragPreview({
-            ...base,
-            pool: {
-              ...base.pool,
-              seats: base.pool.seats.map((s) => (s.id === resize.id ? { ...s, surfaceWidthIn: widthIn } : s)),
-            },
-          });
+          return;
         }
+        setDragPreview({
+          ...anchored,
+          pool: {
+            ...anchored.pool,
+            steps: anchored.pool.steps.map((st) => (st.id === resize.id
+              // Tread RUN, never tread COUNT: the count sets the rise, and the
+              // rise is code-checked. Dragging must not change a dimension the
+              // code has an opinion about without anyone typing a number.
+              ? { ...st, treadRunIn: Math.max(12, inches(sizeX) / st.treadCount), treadWidthIn: inches(sizeY) }
+              : st)),
+          },
+        });
       }
       return;
     }
