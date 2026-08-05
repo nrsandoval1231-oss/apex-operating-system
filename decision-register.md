@@ -10,8 +10,11 @@ are his decisions and recording them as settled is exactly the drift `docs/statu
 *"commission decisions presented as settled before recorded approval."* One is unchanged and needs
 counsel.
 
-**Three of the recommendations reverse decisions already on file.** They are flagged §4 below. A
-reversal is a legitimate act; a reversal nobody noticed is how two documents start disagreeing.
+**Three of the recommendations reversed positions already on file.** All three are resolved in §4 as
+of 2026-08-05 and written through to Foundation §3.3, Foundation §7.1, and PRD 04. A reversal is a
+legitimate act; a reversal nobody noticed is how two documents start disagreeing.
+
+**PRD 04 is no longer blocked on its own inputs** — only on PRD 03, which waits on Travis. See §6.
 
 > **⚠ For Nick before circulating.** Items marked **[MARGIN]** cannot be discussed without the
 > 23.08% finding (Foundation §1), which was deliberately held back from the strategy deck. Decide
@@ -61,7 +64,7 @@ three of them reverse something already on file (§4).
 | # | Question | Nick's recommendation |
 |---|---|---|
 | 4 | **Fee rate** **[MARGIN]** | **Hold at 30% initially.** Do not move universally to 35% until job-level data proves 30% inadequate *after* all reimbursable costs are captured. Use 35% selectively — high complexity, compressed schedule, uncertain scope, unusually small jobs. |
-| 5 | **Commission base** **[MARGIN]** | Pay on **collected gross profit** — not contract value, quoted fee, or recognised revenue. GP **includes** the fee earned on all legitimately reimbursable cost categories. Excluded: sales tax, pass-through amounts carrying no fee, financing charges, warranty rework, unapproved overruns, uncollected revenue. **⚠ Reverses two decisions on file — see §4.1 and §4.2.** |
+| 5 | **Commission base** **[MARGIN]** | Pay on **collected gross profit** — not contract value, quoted fee, or recognised revenue. GP **includes** the fee earned on all legitimately reimbursable cost categories. Excluded: sales tax, pass-through amounts carrying no fee, financing charges, warranty rework, unapproved overruns, uncollected revenue. **Both conflicts this created are resolved — §4.1 and §4.2**: Stage 1 is an advance trueing up on collected GP, and the expanded base counts (Tier 1 only). Travis has still not confirmed the item itself. |
 | 6 | **Permits showing $0.00 against a live line item** | **Treat as a control failure until proven otherwise.** Permits are an explicit allowance or reimbursable cost with the contractual fee applied. A live required cost may never sit at $0 without a note and an approval. |
 | 8 | **Sales fee-rate discretion** | **None unilateral.** Sales may recommend a deviation; anything below the standard rate, or any unusual exclusion, needs written approval. |
 
@@ -120,9 +123,32 @@ Gate blocker; item 24 names the authority but does not connect it.
 
 ---
 
-## 4. Reversals and conflicts to resolve before building
+## 4. Reversals and conflicts — resolved 2026-08-05
 
-### 4.1 Commission base: collected GP vs. Stage 1 at sale
+**Both were resolved by Nick on 2026-08-05.** Recorded here with the reasoning and the cost, because
+each went against a recommendation already on file and neither should be re-derived later from the
+answer alone. Travis has not confirmed either; item 5 remains **[MARGIN]**.
+
+| | Resolution | Where it now lives |
+|---|---|---|
+| §4.1 | **Stage 1 is an advance that trues up against collected GP.** Option 1 of the three below. | Foundation §7.1, PRD 04 |
+| §4.2 | **The expanded Lever B base counts toward commission GP** — Tier 1 only. | Foundation §3.3, PRD 04 |
+
+**A correction to the figure that was quoted while these were open.** §4.2 was described as costing
+~$4,100 per pool and ~$78,000 a year. That took 30% of the added *revenue*; commission is 30% of the
+added *GP*. Lever B adds ~$10,600 of reimbursed cost and ~$13,800 of revenue, so GP rises by the fee
+on it — about **$3,200** — and commission rises by about **$950 per pool, ~$18,000 on a 19-pool
+year.** Roughly a fifth of the figure the decision was weighed against.
+
+**What §4.1 and §4.2 do together, stated once.** Both were designed to be answered separately and
+they compound. Trueing up on collected GP makes reconciliation a *recalculation* rather than a
+release gate, so cost overruns reach the cheque; counting the expanded base widens what overruns
+apply to. Foundation §7 identified this incentive and offered three ways to blunt it — none was
+taken. Foundation §7.1 records why that is defensible (commission is earned on *collected* GP, and
+unapproved overruns are excluded outright) and which two mitigations remain available as engine
+rules rather than redesigns.
+
+### 4.1 Commission base: collected GP vs. Stage 1 at sale — RESOLVED
 
 **On file** (PRD 04, *"The formula — already decided"*):
 
@@ -139,26 +165,34 @@ Nothing is collected at sale. These cannot both hold. Three ways out, and the ch
 3. **Drop "collected."** Pay on reconciled GP regardless of collection, and handle non-payment
    separately. Simplest; leaves Apex paying commission on money it never received.
 
-**Recommendation: option 1.** It preserves the existing two-stage shape, keeps the rep paid at sale,
-and still makes collection the thing that settles the number.
+~~**Recommendation: option 1.**~~ **Decided 2026-08-05: option 1.** It preserves the existing
+two-stage shape, keeps the rep paid at sale, and makes collection the thing that settles the number.
+The advance is never clawed back — a disaster job means the rep keeps Stage 1 and Stage 2 floors at
+zero, unchanged from the original formula.
 
-### 4.2 Does the Lever B expanded base count toward commission GP?
+### 4.2 Does the Lever B expanded base count toward commission GP? — RESOLVED
 
-**On file** (Foundation §3.3, and restated in PRD 04):
-
-> **The Lever B expanded cost base does not count toward commission GP.** The rep didn't earn a fee
-> on reclassified PM salary.
+**What was on file, before 2026-08-05.** Foundation §3.3 *recommended* no — "the rep didn't earn a
+fee on reclassified PM salary" — and PRD 04 had hardened that recommendation into a decided bullet
+it never was. Both now record the opposite; PRD 04 also notes the overstatement it was making.
 
 **Item 5 says** GP *includes* "the fee earned on all legitimately reimbursable cost categories" —
-which is the expanded base. This is a straight reversal.
+which is the expanded base.
 
-It is defensible: under item 1, permits, geotech, structural, gas line and labour burden become
-ordinary reimbursable scope rather than a reclassification, and a fee genuinely is earned on them.
-But it is not free. The register modelled Lever B at **~$13,800 of additional revenue per pool**;
-routing that through commission GP hands roughly 30% of it — **~$4,100 per pool** — back out as
-commission. On a 19-pool year that is about **$78,000**.
+**Decided 2026-08-05: yes, it counts — Tier 1 only.** It is defensible: under item 1, permits,
+geotech, structural, gas line and labour burden become ordinary reimbursable scope rather than a
+reclassification, and a fee genuinely is earned on them. Splitting commission GP from contract GP
+would also mean two gross-profit figures per job, which is how a system starts disagreeing with
+itself.
 
-**This needs to be an explicit choice, not a side effect of how item 1 was worded.**
+**Cost: about $950 per pool, ~$18,000 on a 19-pool year** — GP rises by the ~$3,200 fee on the moved
+base, and commission is 30% of that. See the correction at the top of §4; the figure quoted while
+this was open was roughly five times too high.
+
+**The original objection survives for Tier 2 and is not overridden.** "The rep didn't earn a fee on
+reclassified PM salary" is correct about PM time, supervision, trucks, and small tools. Tier 1 is
+reimbursable scope; Tier 2 is allocated overhead wearing a cost code. If Foundation §3.2 ever moves
+Tier 2 into the base, this decision is revisited rather than inherited.
 
 ### 4.3 Item 1 vs. item 5 on rework — consistent, worth stating
 

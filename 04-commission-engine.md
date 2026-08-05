@@ -3,44 +3,61 @@
 > **STATUS: NOT WRITTEN — BLOCKED.** Placeholder only. The *formula* is settled; the *inputs* are not.
 > **Depends on:** `00-foundation.md`, `03-cost-capture-allocation.md`
 >
-> **2026-08-05 — the allowance mechanic is answered, and two parts of the formula are contested.**
-> Nick's recommended answer to the hard blocker below is that **the 30% fee recalculates against
-> the final approved allowance cost, in both directions** (`decision-register.md` item 3), pending
-> Travis. That would retire blocker 1. But the same round of answers puts item 5 against two things
-> this document calls decided — see the box below. Do not build either as settled.
+> **2026-08-05 — all three inputs are now answered.** The allowance mechanic recalculates against
+> final approved cost (`decision-register.md` item 3, pending Travis). Both contested points in the
+> formula are resolved below. **The only remaining blocker is PRD 03**, which itself waits on
+> Travis confirming the QuickBooks structure and the contract's definition of cost.
 
-## ⚠ Two contested points in the "already decided" formula
-
-Raised 2026-08-05, unresolved. Full reasoning in `decision-register.md` §4.
-
-1. **Commission base — "collected GP" vs. "Stage 1 at sale."** Item 5 pays on *collected* gross
-   profit; Stage 1 below pays at sale, when nothing has been collected. Recommended resolution:
-   treat Stage 1 as an **advance against a commission earned on collection**, preserving the
-   two-stage shape.
-2. **Whether the Lever B expanded base counts toward commission GP.** Item 5 says it does;
-   Foundation §3.3 and the bullet below say it does not. This is a straight reversal, and it is not
-   free — routing Lever B's ~$13,800/pool through commission GP returns roughly **$4,100 per pool**,
-   about **$78,000 on a 19-pool year**. It must be chosen deliberately, not inherited from how the
-   reimbursable-cost definition was worded.
-
-## The formula — already decided (Foundation §1, §3, §7)
+## The formula — settled (Foundation §1, §3, §7)
 
 Pools, 30% of gross profit, paid in two stages:
 
-- **Stage 1 — at sale:** 15% of **estimated** GP from the accepted proposal.
-- **Stage 2 — at reconciliation:** tops up to 30% of GP, floored at zero. A disaster job means the rep keeps Stage 1; it never goes negative.
-- **GP is calculated before commission** (Foundation §1.4). Non-negotiable — otherwise the definition is circular.
-- **The Lever B expanded cost base does not count toward commission GP** (Foundation §3.3). The rep didn't earn a fee on reclassified PM salary.
+- **Stage 1 — at sale:** 15% of **estimated** GP from the accepted proposal, paid as an **advance**.
+- **Stage 2 — at reconciliation:** trues up to 30% of **collected** GP, floored at zero. A disaster
+  job means the rep keeps Stage 1; it never goes negative and the advance is never clawed back.
+- **GP is calculated before commission** (Foundation §1.4). Non-negotiable — otherwise the
+  definition is circular.
+- **The Lever B expanded cost base counts toward commission GP** (Foundation §3.3, decided
+  2026-08-05 against the recommendation on file). Worth about **$950 per pool**, ~$18,000 a year at
+  19 pools. **Tier 1 only** — if Tier 2 (PM time, supervision, trucks) is ever moved into the base
+  under Foundation §3.2, this is revisited, not inherited.
+- **Excluded from the base:** sales tax, pass-through amounts carrying no fee, financing charges,
+  warranty rework, unapproved overruns, and uncollected revenue.
+
+**Two corrections this makes to earlier versions of this document.** It previously stated the Lever B
+exclusion as decided; Foundation §3.3 only ever *recommended* it, and the decision has now gone the
+other way. It also described Stage 2 as a top-up at reconciliation without saying against what —
+which is now collected GP, making reconciliation a recalculation rather than a release gate.
+
+**What that costs, stated once:** Foundation §7.1. The rep is now paid more when a job costs more,
+on a wider base, because reconciliation recalculates rather than caps. Two mitigations are designed
+and deliberately not adopted — capping Stage 2 at the lesser of estimated and collected GP, and
+excluding Apex-initiated change orders. Both are engine rules, not redesigns, if the exposure proves
+real.
 
 Remodel, coatings, and pool service commission structures are **undefined**. Recurring-revenue commission for Pool Service is a genuinely open design problem (Foundation §2 amendment needed — "one Job = one contract" doesn't describe a service account).
 
 ## Why it isn't written
 
-Three inputs are missing, and each one changes the math.
+Three inputs were missing. **Two are now answered; one is not.**
 
-1. **The allowance mechanic** (Foundation §6). Whitaker carried $17,000 in allowances — turf, decking, fence — with the 30% fee charged on top. When actuals land different, does the fee recalculate? That answer *is* the Stage 2 trigger definition. **Hard blocker.**
-2. **Which §7 option** resolves the cost-plus perverse incentive (costs rise → fee rises → GP rises → commission rises). Recommendation on file: pay both stages on **estimated** GP and treat reconciliation as a release gate, not a recalculation. Needs Travis's sign-off.
-3. **Actual GP has to be computable**, which requires PRD 03.
+1. ~~**The allowance mechanic** (Foundation §6).~~ **Answered 2026-08-05** — the fee recalculates
+   against final approved allowance cost, in both directions, and approved changes and
+   customer-selected upgrades carry the same fee unless expressly excluded. Whitaker's $17,000 of
+   allowances therefore resolve at actuals, not at estimate.
+2. ~~**Which §7 option**~~ **Answered 2026-08-05, and none of the three** — Foundation §7.1. Stage 1
+   is an advance, Stage 2 trues up on collected GP, and the perverse incentive is accepted rather
+   than blunted. Two mitigations stay on the shelf.
+3. **Actual GP has to be computable**, which requires PRD 03. **Still open** — and PRD 03 waits on
+   Travis confirming the QuickBooks structure and the contract's definition of reimbursable cost.
+   **This is now the only thing between this document and being written.**
+
+**A collected-GP formula raises one input PRD 03 did not previously have to carry:** payment
+application per job. Stage 2 cannot be computed from cost data alone — it needs to know what was
+actually collected against the contract, by job, net of the exclusions above. `docs/status.md`
+records that Apex OS holds draw status and a named human's invoice confirmation but is explicitly
+**not** the financial authority, so this comes from QuickBooks. Worth naming in PRD 03's scope
+before it is written rather than discovered while building the engine.
 
 ## Build note for when it unblocks
 

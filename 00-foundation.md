@@ -95,10 +95,29 @@ office overhead, admin, rent · marketing · owner compensation · sales commiss
 
 Tier 2 items are shared across jobs in exactly the way the rebar truckload is. Billing a customer for PM time requires a defensible basis for *how many hours this job got* — which means the takeoff must now produce **labor and supervision hours, not just material quantities.** That's a scope expansion to PRD 02, flagged there.
 
-### 3.3 Two decisions this forces
+### 3.3 Two decisions this forces — both answered 2026-08-05
 
-1. **Does the expanded base count toward commission GP?** Recommend **no** — the salesperson didn't earn the fee on reclassified PM salary. Otherwise Lever B hands out a raise nobody negotiated.
-2. **How does the allowance mechanic (§6) interact** now that the base is larger?
+1. ~~**Does the expanded base count toward commission GP?** Recommend **no**~~ — **Decided: yes, it
+   counts.** Nick, 2026-08-05, **against the recommendation on file.** The reasoning that carries it:
+   under the broad direct-cost definition (`decision-register.md` item 1), Tier 1 items are ordinary
+   reimbursable scope rather than reclassified overhead, and a fee genuinely is earned on them.
+   Splitting commission GP from contract GP would also mean maintaining two gross-profit figures per
+   job, which is how a system starts disagreeing with itself.
+
+   **What it costs.** GP rises by the fee on the moved base — about **$3,200 per pool** on the
+   ~$10,600 / ~$13,800 figures in the register — so commission at 30% of GP rises by roughly
+   **$950 per pool**, about **$18,000 on a 19-pool year**. Note this is 30% of the added *GP*, not
+   of the added revenue; an earlier working figure of ~$4,100/pool made exactly that mistake.
+
+   **The original objection still stands for Tier 2 and is not overridden.** "The rep didn't earn a
+   fee on reclassified PM salary" is right about PM time and supervision. Tier 1 is reimbursable
+   scope; Tier 2 is allocated overhead wearing a cost code. If Tier 2 is ever moved into the base
+   under §3.2, this decision should be revisited rather than inherited.
+
+2. **How does the allowance mechanic (§6) interact** now that the base is larger? — **Answered:**
+   the fee recalculates against the final approved allowance cost, in both directions, and
+   customer-selected upgrades and approved changes carry the same fee unless expressly excluded
+   (`decision-register.md` item 3, pending Travis).
 
 **All of 3.1 is gated on the contract review.** Until his agreement's definition of reimbursable "cost" is known, none of it can be implemented.
 
@@ -181,7 +200,31 @@ The salesperson is financially rewarded when a job costs more. Under cost-plus t
 - Pay both stages on **estimated** GP only, and use reconciliation purely as the release gate
 - Exclude **change-order and allowance-driven** GP growth from the commission base, but include it if the customer initiated the change
 
-The middle option is closest to what Nick described — Stage 2 as a cashflow gate rather than a performance adjustment — and is the simplest to build.
+~~The middle option is closest to what Nick described~~ — **superseded 2026-08-05.**
+
+### 7.1 Decided: a fourth path, and it accepts the incentive
+
+**Nick, 2026-08-05.** Stage 1 is an **advance**; Stage 2 **trues up against collected gross
+profit**, with the expanded Lever B base included (§3.3).
+
+None of the three options above describes this. All three were built to *blunt* the incentive; this
+one does not. Stating the consequence plainly, because it is now a chosen position rather than an
+oversight:
+
+**The salesperson is paid more when a job costs more, and on a wider base than before.** A 10% cost
+overrun on a Whitaker-sized job adds roughly **$1,050** to the commission. Moving Tier 1 into the
+base adds about **$950 per pool** on top. Reconciliation is now a recalculation, not a release gate,
+so overruns flow through to the cheque rather than being capped at the estimate.
+
+What makes it defensible: commission is earned on **collected** GP, so a job that overruns and
+cannot be collected pays nothing extra, and unapproved overruns are excluded from the base outright
+(`decision-register.md` item 5). The exposure is therefore *approved* overruns on *collected* jobs —
+which under cost-plus is largely scope the customer asked for and paid for.
+
+**Two mitigations remain available and are not adopted:** capping Stage 2 at the lesser of estimated
+and collected GP, and excluding Apex-initiated change orders while including customer-initiated ones
+(option 3 above). Either can be added later as a rule in the engine rather than a redesign. Revisit
+the first time a job's commission is materially larger than its estimate implied.
 
 ---
 

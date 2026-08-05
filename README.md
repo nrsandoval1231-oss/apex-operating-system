@@ -14,7 +14,7 @@ Operational modernization for Apex (Lubbock, TX). One brand, four verticals: **D
 | **01** | [Lead Capture, Funnels & Marketing](01-lead-capture-funnels.md) | ✅ **Written** · handed off | Access transfer for launch only |
 | **02** | [Pool Proposal & Takeoff Engine](02-proposal-takeoff-engine.md) | ✅ **Written** (v0.2) · engine built | Back-test passes on 1 job; needs a 2nd |
 | **03** | [Cost Capture & Allocation](03-cost-capture-allocation.md) | ⚠ **Stub — blocked** | QuickBooks setup + contract review — **both answered 2026-08-05, awaiting Travis** |
-| **04** | [Commission Engine](04-commission-engine.md) | ⚠ **Stub — blocked** | Allowance mechanic (**answered, awaiting Travis**) + PRD 03 + **two contested formula points** |
+| **04** | [Commission Engine](04-commission-engine.md) | ⚠ **Stub — blocked** | **Formula fully settled 2026-08-05.** Blocked only by PRD 03 |
 | **05** | [CRM & Pipeline Analytics](05-crm-pipeline-analytics.md) | ⏸ **Stub — deferred** | Needs ~60 days of real lead data |
 | **06** | [Job Execution & Crew Scheduling](06-project-management.md) | ✅ **Written** (v0.1) | Phase 1 has **no** blockers |
 
@@ -22,8 +22,10 @@ Operational modernization for Apex (Lubbock, TX). One brand, four verticals: **D
 > all 28 decisions across the four repos and seven PRDs, ranked by what they unlock and grouped by
 > owner. **All 28 now carry an answer as of 2026-08-05:** eight decided (Nick's own), nineteen
 > recorded as recommendations pending Travis, one still needing counsel. Three of the
-> recommendations reverse decisions already on file and are flagged in the register's §4 — read
-> that section before building anything commission-related.
+> recommendations reversed positions already on file; all three are **resolved in §4** and written
+> through to Foundation §3.3, Foundation §7.1, and PRD 04. Read §4 before building anything
+> commission-related — it also carries a correction to a cost figure that was quoted while those
+> decisions were still open.
 
 **00 is the source of truth.** Every other document references it. Definitions live there once — cost codes, GP definition, allocation policy, the enum of verticals — so the PRDs can't drift apart and contradict each other at integration time.
 
