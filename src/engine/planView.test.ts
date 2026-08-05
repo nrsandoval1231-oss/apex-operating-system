@@ -74,7 +74,7 @@ describe('the drawing traces to the job', () => {
   });
 
   it('draws one symbol per suction outlet and states the separation', () => {
-    const drains = plan.svg.match(/pv-drain/g) ?? [];
+    const drains = plan.svg.match(/pv-drain-grate/g) ?? [];
     expect(drains).toHaveLength(STANDARD_MODEL.hydraulics!.mainDrains.count);
     expect(plan.svg).toContain(`2 outlets @ 3'-0" apart`);
   });
@@ -93,8 +93,32 @@ describe('the drawing traces to the job', () => {
   it('draws a symbol per skimmer and per return branch', () => {
     const skimmers = STANDARD_MODEL.hydraulics!.runs.filter((r) => r.role === 'skimmer');
     const returns = STANDARD_MODEL.hydraulics!.runs.filter((r) => r.role === 'return-branch');
-    expect(plan.svg.match(/pv-skimmer/g) ?? []).toHaveLength(skimmers.length);
-    expect(plan.svg.match(/pv-return"/g) ?? []).toHaveLength(returns.length);
+    expect(plan.svg.match(/pv-skimmer-throat/g) ?? []).toHaveLength(skimmers.length);
+    expect(plan.svg.match(/pv-return-fitting/g) ?? []).toHaveLength(returns.length);
+  });
+
+  it('gives each fitting its own shape, not one circle in four colours', () => {
+    // A plan is read by shape before it is read by legend. Every station used to
+    // be the same 0.55 ft circle, which is four things nobody can tell apart.
+    expect(plan.svg).toContain('pv-skimmer-throat');      // rectangle in the wall
+    expect(plan.svg).toContain('pv-return-fitting');      // small eyeball + throw
+    expect(plan.svg).toContain('pv-drain-grate');         // circle + grate bars
+    expect(plan.svg).toMatch(/<rect class="pv-fitting pv-skimmer-throat/);
+    expect(plan.svg).toMatch(/<circle class="pv-return-body/);
+    expect(plan.svg).toMatch(/<line class="pv-drain-bar/);
+  });
+
+  it('sets returns inside the wall, not straddling it', () => {
+    // The old symbol was centred on the wall line, so half of every return sat
+    // out on the deck. A return is fitted in the wall, below the water.
+    const W = STANDARD_MODEL.pool.widthFt;
+    const bodies = [...plan.svg.matchAll(/<circle class="pv-return-body" cx="([\d.]+)" cy="([\d.]+)"/g)];
+    expect(bodies.length).toBeGreaterThan(0);
+    const wallY = plan.originYPx + W * plan.pxPerFt;
+    for (const [, , cy] of bodies) {
+      // Returns are on the bottom wall, so "inside" means a smaller y.
+      expect(Number(cy)).toBeLessThan(wallY);
+    }
   });
 
   it('numbers the pad items and names them in a legend', () => {

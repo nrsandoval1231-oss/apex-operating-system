@@ -618,14 +618,31 @@ tr.is-fail .check-message {
 }
 .pv-step-tread { stroke: var(--accent); stroke-width: 0.75; opacity: 0.75; }
 
-.pv-drain, .pv-skimmer, .pv-return {
-  stroke: var(--accent);
-  stroke-width: 1.25;
-  fill: var(--paper);
-}
-.pv-drain { fill: var(--accent); fill-opacity: 0.55; }
-.pv-skimmer { fill: var(--paper); }
-.pv-return { fill: var(--accent-light); fill-opacity: 0.4; }
+/* --- fittings ---------------------------------------------------------------
+ *
+ * Each station is drawn as the thing it is, at roughly the size it is. They used
+ * to be one 0.55 ft circle in four different fills, which on a printed sheet is
+ * four things nobody can tell apart — a plan is read by shape first.
+ */
+.pv-fitting { stroke: var(--accent); stroke-width: 1.1; vector-effect: non-scaling-stroke; }
+
+/* Skimmer: a throat cut into the wall. The only rectangle in a wall. */
+.pv-skimmer-throat { fill: var(--paper); }
+
+/* Return: a small eyeball set inside the wall, with the direction it throws. */
+.pv-return-body { fill: var(--accent-light); fill-opacity: 0.55; stroke: var(--accent); stroke-width: 1.1; }
+.pv-return-jet { stroke: var(--accent); stroke-width: 1; stroke-dasharray: 2 1.5; }
+
+/* Main drain: a grated floor outlet. */
+.pv-drain-body { fill: var(--accent); fill-opacity: 0.2; stroke: var(--accent); stroke-width: 1.1; }
+.pv-drain-bar { stroke: var(--accent); stroke-width: 0.9; }
+
+/* Bubbler: concentric rings — water rising in place, not travelling. */
+.pv-bubbler-ring { fill: none; stroke: var(--accent); stroke-width: 1.1; }
+.pv-bubbler-core { fill: var(--accent); stroke: none; }
+
+/* Deck jet: an aimed nozzle. A wedge, so direction is legible at any size. */
+.pv-deck-jet-icon { fill: var(--paper); stroke: var(--accent); stroke-width: 1.2; }
 
 .pv-run { fill: none; stroke-width: 1.25; }
 .pv-run-suction { stroke: var(--accent); stroke-dasharray: 7 3; }
@@ -642,6 +659,17 @@ tr.is-fail .check-message {
   font-size: 9.5px;
   fill: var(--ink);
   font-variant-numeric: tabular-nums;
+  /*
+   * Every dimension label is horizontal now, including the ones on vertical
+   * dimension lines, and it sits centred ON its line rather than rotated beside
+   * it. The halo is what makes that legible: the line reads as broken by the
+   * number, which is the drafting convention, instead of striking through it.
+   * paint-order puts the stroke behind the glyphs so it thickens nothing.
+   */
+  paint-order: stroke;
+  stroke: var(--paper);
+  stroke-width: 3px;
+  stroke-linejoin: round;
 }
 .pv-dim-soft .pv-dim-text { fill: var(--ink-faint); font-size: 8.5px; }
 .pv-dim-setback .pv-dim-line { stroke: var(--accent); }
@@ -1464,16 +1492,25 @@ tr.is-fail .check-message {
 @media print { .app-header { display: none; } }
 
 
-/* --- buttons: the website's system, verbatim --------------------------------
+/* --- buttons -----------------------------------------------------------------
  *
- * .btn is the light-surface button — deep sage fill, paper text, Oswald caps.
- * On the charcoal header the relationship inverts and full brand sage is used,
- * exactly as the site does it: sage is 9.75:1 on charcoal and 1.59:1 on paper,
- * so one token cannot serve both. .btn.ghost is the quiet secondary.
+ * .btn is the light-surface button — deep sage fill, paper text. On the
+ * charcoal header the relationship inverts and full brand sage is used, exactly
+ * as the site does it: sage is 9.75:1 on charcoal and 1.59:1 on paper, so one
+ * token cannot serve both. .btn.ghost is the quiet secondary.
  *
- * Oswald is named first with the site's own fallback stack behind it. No web
- * font is loaded — this is a local tool that has to work with no network, and a
- * blocked font request that leaves buttons unstyled is worse than a fallback.
+ * THE FONT STACK USED TO READ `Oswald, Impact, var(--sans)` AND IT WAS A BUG.
+ * Oswald is never loaded — no @import, no package, and deliberately no network
+ * request, which was the right call for an offline tool but left the stack
+ * falling straight through to Impact. Impact is an ultra-condensed display face
+ * that ships on every Windows machine, so it always won, and every button in the
+ * tool rendered condensed, heavy, uppercase and letter-spaced at 12px. It was
+ * genuinely hard to read.
+ *
+ * Naming a font that is never loaded is how you get a design nobody chose. The
+ * stack is now the UI font that IS loaded, at a size and weight meant for
+ * reading rather than for shouting. Small caps styling is kept — it is the
+ * brand's voice — but at a weight and tracking that survives it.
  */
 .btn {
   display: inline-flex;
@@ -1481,12 +1518,13 @@ tr.is-fail .check-message {
   gap: 6px;
   background: var(--sage-ink);
   color: var(--paper);
-  font-family: Oswald, Impact, var(--sans);
-  font-weight: 600;
+  font-family: var(--sans);
+  font-weight: 550;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  font-size: 12px;
-  padding: 7px 13px;
+  letter-spacing: 0.04em;
+  font-size: 12.5px;
+  line-height: 1.2;
+  padding: 8px 14px;
   border-radius: 7px;
   border: 0;
   cursor: pointer;

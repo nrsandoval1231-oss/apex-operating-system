@@ -26,7 +26,6 @@ import {
   rotatedExtentFt,
   rotatedSize,
   rotationLabel,
-  alignedTextRotation,
   textTransform,
   type QuarterTurns,
 } from './planRotation.ts';
@@ -424,27 +423,7 @@ export function renderPlanView(
     parts.push(text(ctx, rect.x + rect.widthFt / 2, rect.y + rect.heightFt + 0.9,
       `${st.treadCount} treads @ ${st.treadRunIn}"${st.placement ? '' : ' · unplaced'}`, 'pv-note', 'middle'));
     parts.push(...objectDims(ctx, rect, place.wall, L, W));
-    if (options.interactive) {
-      // Same grip as a seat: drag it to widen or narrow the stair along its
-      // wall. Tread COUNT is a typed input — it changes the rise, which is a
-      // code-checked dimension and not something to discover by dragging.
-      const endsOn = place.wall === 'shallow' || place.wall === 'deep';
-      const hx = endsOn ? rect.x + rect.widthFt / 2 - 0.45 : rect.x + rect.widthFt - 0.9;
-      const hy = endsOn ? rect.y + rect.heightFt - 0.9 : rect.y + rect.heightFt / 2 - 0.45;
-      parts.push(
-        `<rect class="pv-grip" data-resize-kind="step" data-resize-id="${esc(st.id)}" data-resize-wall="${place.wall}"`
-        + ` x="${n(x(hx))}" y="${n(y(hy))}" width="${n(s(0.9))}" height="${n(s(0.9))}"/>`,
-      );
-      // Reach into the pool. This changes the TREAD RUN, not the tread count —
-      // the count sets the rise, which is code-checked, so a drag must not move
-      // it. Every tread gets deeper together, which is how a stair is built.
-      const dx = acrossX ? rect.x + rect.widthFt - 0.9 : rect.x + rect.widthFt / 2 - 0.45;
-      const dy = acrossX ? rect.y + rect.heightFt / 2 - 0.45 : (place.wall === 'top' ? rect.y + rect.heightFt - 0.9 : rect.y);
-      parts.push(
-        `<rect class="pv-grip pv-grip-depth" data-resize-kind="step-depth" data-resize-id="${esc(st.id)}" data-resize-wall="${place.wall}"`
-        + ` x="${n(x(dx))}" y="${n(y(dy))}" width="${n(s(0.9))}" height="${n(s(0.9))}"/>`,
-      );
-    }
+    void acrossX;
   }
 
   for (const seat of pool.seats) {
@@ -463,25 +442,7 @@ export function renderPlanView(
         `${seat.kind} ${seat.id}${seat.placement ? '' : ' · unplaced'}`, 'pv-note-inset', 'middle'),
     );
     parts.push(...objectDims(ctx, rect, place.wall, L, W));
-    if (options.interactive) {
-      // Resize grip at the far end of the span axis. Dragging it changes the
-      // seat's width along its wall — a tanning ledge is sized this way.
-      const endsOn = place.wall === 'shallow' || place.wall === 'deep';
-      const hx = endsOn ? rect.x + rect.widthFt / 2 - 0.45 : rect.x + rect.widthFt - 0.9;
-      const hy = endsOn ? rect.y + rect.heightFt - 0.9 : rect.y + rect.heightFt / 2 - 0.45;
-      parts.push(
-        `<rect class="pv-grip" data-resize-kind="seat" data-resize-id="${esc(seat.id)}" data-resize-wall="${place.wall}"`
-        + ` x="${n(x(hx))}" y="${n(y(hy))}" width="${n(s(0.9))}" height="${n(s(0.9))}"/>`,
-      );
-      // Second grip on the inner edge: drag it to reach further into the water.
-      // A tanning ledge is sized this way more often than it is widened.
-      const dx = endsOn ? rect.x + rect.widthFt - 0.9 : rect.x + rect.widthFt / 2 - 0.45;
-      const dy = endsOn ? rect.y + rect.heightFt / 2 - 0.45 : (place.wall === 'top' ? rect.y + rect.heightFt - 0.9 : rect.y);
-      parts.push(
-        `<rect class="pv-grip pv-grip-depth" data-resize-kind="seat-depth" data-resize-id="${esc(seat.id)}" data-resize-wall="${place.wall}"`
-        + ` x="${n(x(dx))}" y="${n(y(dy))}" width="${n(s(0.9))}" height="${n(s(0.9))}"/>`,
-      );
-    }
+
   }
 
   // --- accessories -----------------------------------------------------------
@@ -495,11 +456,9 @@ export function renderPlanView(
     const cx = rect.x + rect.widthFt / 2;
     const cy = rect.y + rect.heightFt / 2;
     const selected = selectedId === acc.id;
-    parts.push(
-      `<circle class="pv-accessory${isDeckJet ? ' pv-deck-jet' : ' pv-bubbler'}${selected ? ' pv-selected' : ''}"`
-      + ` data-move-kind="accessory" data-move-id="${esc(acc.id)}" data-move-wall="${place.wall}"`
-      + ` cx="${n(x(cx))}" cy="${n(y(cy))}" r="${n(s(0.55))}"/>`,
-    );
+    parts.push(isDeckJet
+      ? deckJetSymbol(ctx, cx, cy, place.wall, selected, acc.id)
+      : bubblerSymbol(ctx, cx, cy, selected, acc.id));
     if (isDeckJet) {
       // The throw, toward the water. Indicative: nobody dimensions an arc.
       const toward = place.wall === 'top' ? [cx, 0] : place.wall === 'bottom' ? [cx, W]
@@ -518,21 +477,21 @@ export function renderPlanView(
     const mdX = p.shallowRun + p.transitionRun + p.deepRun / 2;
     for (let i = 0; i < hyd.mainDrains.count; i++) {
       const offset = (i - (hyd.mainDrains.count - 1) / 2) * sep;
-      parts.push(symbol(ctx, mdX, W / 2 + offset, 'pv-drain'));
+      parts.push(drainSymbol(ctx, mdX, W / 2 + offset));
     }
     parts.push(text(ctx, mdX, W / 2 + sep / 2 + 1.6, `${hyd.mainDrains.count} outlets @ ${feetInches(sep)} apart`, 'pv-note', 'middle'));
 
     const skimmers = hyd.runs.filter((r) => r.role === 'skimmer');
     skimmers.forEach((r, i) => {
       const sx = L * ((i + 1) / (skimmers.length + 1));
-      parts.push(symbol(ctx, sx, 0, 'pv-skimmer'));
+      parts.push(skimmerSymbol(ctx, sx, 0, 'top', r.id));
       parts.push(text(ctx, sx, -1.1, r.id, 'pv-note', 'middle'));
     });
 
     const returns = hyd.runs.filter((r) => r.role === 'return-branch');
     returns.forEach((_run, i) => {
       const rx = L * ((i + 1) / (returns.length + 1));
-      parts.push(symbol(ctx, rx, W, 'pv-return'));
+      parts.push(returnSymbol(ctx, rx, W, 'bottom', `R${i + 1}`));
     });
   }
 
@@ -780,18 +739,108 @@ function upright(ctx: Ctx, px: number, py: number): string {
 }
 
 /**
- * Rotation for a dimension's own text, which reads along its dimension line
- * rather than always horizontally. `base` is 0 for a horizontal dimension and
- * -90 for a vertical one — the angle it already had before rotation existed.
+ * Fittings, drawn as what they are.
+ *
+ * Every station used to be the same 0.55 ft circle in a different colour, which
+ * on a printed sheet is five things nobody can tell apart. A plan is read by
+ * shape before it is read by legend, so each fitting now has its own outline —
+ * and each is drawn at the size it actually is rather than at a size that reads
+ * from across the room.
+ *
+ * `inward` is the unit vector pointing from the wall into the water, so one
+ * function serves all four walls without a per-wall branch at every call site.
  */
-function dimText(ctx: Ctx, base: number, px: number, py: number): string {
-  const angle = alignedTextRotation(ctx.turns, base);
-  if (angle === 0) return '';
-  return ` transform="rotate(${angle} ${n(px)} ${n(py)})"`;
+function inwardFrom(wall: PoolWall): readonly [number, number] {
+  switch (wall) {
+    case 'shallow': return [1, 0];
+    case 'deep': return [-1, 0];
+    case 'top': return [0, 1];
+    default: return [0, -1];
+  }
 }
 
-function symbol(ctx: Ctx, xf: number, yf: number, cls: string): string {
-  return `<circle class="${cls}" cx="${n(ctx.x(xf))}" cy="${n(ctx.y(yf))}" r="${n(ctx.s(0.55))}"/>`;
+/**
+ * A return eyeball. Small, and set INSIDE the wall where it is actually
+ * installed — it used to be a large circle centred on the wall line, so half of
+ * it sat out on the deck where no return has ever been fitted.
+ */
+function returnSymbol(ctx: Ctx, xf: number, yf: number, wall: PoolWall, id: string): string {
+  const [ix, iy] = inwardFrom(wall);
+  // Set in by its own radius plus the wall, so the fitting reads as being in
+  // the wall rather than floating in the water.
+  const cx = xf + ix * 0.55;
+  const cy = yf + iy * 0.55;
+  const r = 0.3;
+  return `<g class="pv-fitting pv-return-fitting" data-station="${esc(id)}">`
+    + `<circle class="pv-return-body" cx="${n(ctx.x(cx))}" cy="${n(ctx.y(cy))}" r="${n(ctx.s(r))}"/>`
+    // The eyeball's throw direction. A return is directional and the drawing
+    // should say which way it is aimed.
+    + `<line class="pv-return-jet" x1="${n(ctx.x(cx))}" y1="${n(ctx.y(cy))}"`
+    + ` x2="${n(ctx.x(cx + ix * 0.85))}" y2="${n(ctx.y(cy + iy * 0.85))}"/>`
+    + `</g>`;
+}
+
+/**
+ * A skimmer throat: a rectangle set into the wall, which is its actual shape.
+ * Nothing else on the plan is a rectangle in the wall, so it reads at a glance.
+ */
+function skimmerSymbol(ctx: Ctx, xf: number, yf: number, wall: PoolWall, id: string): string {
+  const [ix, iy] = inwardFrom(wall);
+  const alongW = 1.25;
+  const intoW = 0.75;
+  // Straddles the wall line, because a skimmer genuinely is cut into the wall.
+  const halfAlong = alongW / 2;
+  const x0 = ix !== 0 ? xf - (ix < 0 ? intoW : 0) : xf - halfAlong;
+  const y0 = iy !== 0 ? yf - (iy < 0 ? intoW : 0) : yf - halfAlong;
+  const w = ix !== 0 ? intoW : alongW;
+  const h = ix !== 0 ? alongW : intoW;
+  return `<rect class="pv-fitting pv-skimmer-throat" data-station="${esc(id)}"`
+    + ` x="${n(ctx.x(x0))}" y="${n(ctx.y(y0))}" width="${n(ctx.s(w))}" height="${n(ctx.s(h))}" rx="${n(ctx.s(0.12))}"/>`;
+}
+
+/** A main drain: a grated outlet on the floor. Circle plus its grate bars. */
+function drainSymbol(ctx: Ctx, xf: number, yf: number): string {
+  const r = 0.5;
+  const cx = ctx.x(xf);
+  const cy = ctx.y(yf);
+  const rp = ctx.s(r);
+  const bars = [-0.45, 0, 0.45].map((f) =>
+    `<line class="pv-drain-bar" x1="${n(cx - rp * 0.8)}" y1="${n(cy + rp * f)}" x2="${n(cx + rp * 0.8)}" y2="${n(cy + rp * f)}"/>`).join('');
+  return `<g class="pv-fitting pv-drain-grate"><circle class="pv-drain-body" cx="${n(cx)}" cy="${n(cy)}" r="${n(rp)}"/>${bars}</g>`;
+}
+
+/** A bubbler: a floor nozzle, drawn as concentric rings — water rising in place. */
+function bubblerSymbol(ctx: Ctx, cxf: number, cyf: number, selected: boolean, id: string): string {
+  const cx = ctx.x(cxf);
+  const cy = ctx.y(cyf);
+  return `<g class="pv-fitting pv-bubbler-icon${selected ? ' pv-selected' : ''}"`
+    + ` data-move-kind="accessory" data-move-id="${esc(id)}">`
+    + `<circle class="pv-bubbler-ring" cx="${n(cx)}" cy="${n(cy)}" r="${n(ctx.s(0.45))}"/>`
+    + `<circle class="pv-bubbler-ring" cx="${n(cx)}" cy="${n(cy)}" r="${n(ctx.s(0.26))}"/>`
+    + `<circle class="pv-bubbler-core" cx="${n(cx)}" cy="${n(cy)}" r="${n(ctx.s(0.1))}"/>`
+    + `</g>`;
+}
+
+/** A deck jet: a nozzle on the deck, drawn as a small aimed wedge. */
+function deckJetSymbol(
+  ctx: Ctx, cxf: number, cyf: number, wall: PoolWall, selected: boolean, id: string,
+): string {
+  const [ix, iy] = inwardFrom(wall);
+  // A triangle pointing the way the jet throws.
+  const tipX = cxf + ix * 0.5;
+  const tipY = cyf + iy * 0.5;
+  // Perpendicular, for the two back corners.
+  const px = -iy;
+  const py = ix;
+  const backX = cxf - ix * 0.25;
+  const backY = cyf - iy * 0.25;
+  const pts = [
+    [tipX, tipY],
+    [backX + px * 0.38, backY + py * 0.38],
+    [backX - px * 0.38, backY - py * 0.38],
+  ].map(([ax, ay]) => `${n(ctx.x(ax!))},${n(ctx.y(ay!))}`).join(' ');
+  return `<polygon class="pv-fitting pv-deck-jet-icon${selected ? ' pv-selected' : ''}"`
+    + ` data-move-kind="accessory" data-move-id="${esc(id)}" points="${pts}"/>`;
 }
 
 /** Horizontal dimension line with witness lines and arrowheads. */
@@ -801,7 +850,7 @@ function dimH(ctx: Ctx, x1: number, x2: number, atY: number, label: string, cls 
     <line class="pv-witness" x1="${n(ctx.x(x1))}" y1="${n(ctx.y(atY > 0 ? atY - 0.6 : atY + 0.6))}" x2="${n(ctx.x(x1))}" y2="${n(yy)}"/>
     <line class="pv-witness" x1="${n(ctx.x(x2))}" y1="${n(ctx.y(atY > 0 ? atY - 0.6 : atY + 0.6))}" x2="${n(ctx.x(x2))}" y2="${n(yy)}"/>
     <line class="pv-dim-line" x1="${n(ctx.x(x1))}" y1="${n(yy)}" x2="${n(ctx.x(x2))}" y2="${n(yy)}" marker-start="url(#dimArrow)" marker-end="url(#dimArrow)"/>
-    <text class="pv-dim-text" x="${n((ctx.x(x1) + ctx.x(x2)) / 2)}" y="${n(yy - 4)}" text-anchor="middle"${dimText(ctx, 0, (ctx.x(x1) + ctx.x(x2)) / 2, yy - 4)}>${escText(label)}</text>
+    <text class="pv-dim-text" x="${n((ctx.x(x1) + ctx.x(x2)) / 2)}" y="${n(yy)}" text-anchor="middle" dominant-baseline="middle"${upright(ctx, (ctx.x(x1) + ctx.x(x2)) / 2, yy)}>${escText(label)}</text>
   </g>`;
 }
 
@@ -813,7 +862,7 @@ function dimV(ctx: Ctx, y1: number, y2: number, atX: number, label: string, cls 
     <line class="pv-witness" x1="${n(ctx.x(atX > 0 ? atX - 0.6 : atX + 0.6))}" y1="${n(ctx.y(y1))}" x2="${n(xx)}" y2="${n(ctx.y(y1))}"/>
     <line class="pv-witness" x1="${n(ctx.x(atX > 0 ? atX - 0.6 : atX + 0.6))}" y1="${n(ctx.y(y2))}" x2="${n(xx)}" y2="${n(ctx.y(y2))}"/>
     <line class="pv-dim-line" x1="${n(xx)}" y1="${n(ctx.y(y1))}" x2="${n(xx)}" y2="${n(ctx.y(y2))}" marker-start="url(#dimArrow)" marker-end="url(#dimArrow)"/>
-    <text class="pv-dim-text" x="${n(xx - 5)}" y="${n(mid)}" text-anchor="middle"${dimText(ctx, -90, xx - 5, mid)}>${escText(label)}</text>
+    <text class="pv-dim-text" x="${n(xx)}" y="${n(mid)}" text-anchor="middle" dominant-baseline="middle"${upright(ctx, xx, mid)}>${escText(label)}</text>
   </g>`;
 }
 
