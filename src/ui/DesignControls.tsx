@@ -158,7 +158,20 @@ export function DesignControls({ job, onChange }: { job: Job; onChange: (job: Jo
       leadingEdgeLengthFt: inToFt(surfaceWidthIn),
       floorDepthFt: source.pool.profile.shallowDepth + (kind === 'tanningLedge' ? 0 : 1),
       isRequiredEntryExit: false,
-      placement: placeSomewhere(source, inToFt(surfaceWidthIn), inToFt(surfaceDepthIn), ['bottom', 'top', 'deep', 'shallow']),
+      /*
+       * A tanning ledge goes at the SHALLOW end. It carries 10" of water over
+       * its surface, so it can only exist where the pool is shallow — putting it
+       * on the deep wall by default asked for a shelf sitting 5 ft above the
+       * floor. A bench is the opposite: it is a seat you sit on in deeper water.
+       */
+      placement: placeSomewhere(
+        source,
+        inToFt(surfaceWidthIn),
+        inToFt(surfaceDepthIn),
+        kind === 'tanningLedge'
+          ? ['shallow', 'top', 'bottom', 'deep']
+          : ['bottom', 'top', 'deep', 'shallow'],
+      ),
     };
     commit({ ...source, pool: { ...source.pool, seats: [...source.pool.seats, seat] } });
   };

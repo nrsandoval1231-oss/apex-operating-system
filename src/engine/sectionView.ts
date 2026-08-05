@@ -16,7 +16,8 @@
  * drawn faintly and labelled indicative.
  */
 
-import { depthAtStation } from './profile.ts';
+import { averageFloorDepthUnder } from './profile.ts';
+import { seatFootprint, stepFootprint } from './placement.ts';
 import type { Job } from './types.ts';
 import { inToFt } from './units.ts';
 import { ELEVEN_BY_SEVENTEEN, choosePrintScale, type PrintScale } from './planView.ts';
@@ -85,6 +86,9 @@ export function renderSectionView(
 ): SectionViewResult {
   const p = job.pool.profile;
   const L = job.pool.lengthFt;
+  // Only needed to resolve a footprint from a wall placement; the section itself
+  // is a cut along the length and has no width axis.
+  const W = job.pool.widthFt;
   const spa = job.spa;
   const freeboard = job.excavation.freeboardFt;
   const shell = job.excavation.shellThicknessFt;
@@ -247,8 +251,13 @@ export function renderSectionView(
     const treadRun = inToFt(step.treadRunIn);
     const risers = step.riserHeightsIn;
     const spanFt = treadRun * step.treadCount;
-    let atX = spanFt;
-    let atY = step.floorDepthFt;
+    // Where the stair actually is along the length, not always at x = 0. A stair
+    // coming off a tanning ledge starts at the ledge's edge, and drawing it at
+    // the wall put it through the ledge.
+    const foot = stepFootprint(step, L, W);
+    const fromX = Math.max(0, Math.min(foot.x, L - spanFt));
+    let atX = fromX + spanFt;
+    let atY = averageFloorDepthUnder(p, fromX, fromX + spanFt);
     const poly: string[] = [`M ${n(x(atX))} ${n(y(atY))}`];
     for (let i = 0; i < step.treadCount; i += 1) {
       const rise = inToFt(risers[i] ?? 0);
@@ -257,48 +266,37 @@ export function renderSectionView(
       atX -= treadRun;
       poly.push(`L ${n(x(atX))} ${n(y(atY))}`);
     }
-    // Down the wall face and back along the floor closes the stair mass.
-    poly.push(`L ${n(x(atX))} ${n(y(step.floorDepthFt))}`, 'Z');
+    // Down the riser face and back along the floor closes the stair mass.
+    const stepFloor = averageFloorDepthUnder(p, fromX, fromX + spanFt);
+    poly.push(`L ${n(x(atX))} ${n(y(stepFloor))}`, 'Z');
     parts.push(`<path class="sec-step" d="${poly.join(' ')}"/>`);
     parts.push(
-      txt(ctx, spanFt + 0.4, step.floorDepthFt - 0.5, `${step.treadCount} treads @ ${step.treadRunIn}"`, 'pv-station-label', 'start'),
+      txt(ctx, fromX + spanFt + 0.4, stepFloor - 0.5, `${step.treadCount} treads @ ${step.treadRunIn}"`, 'pv-station-label', 'start'),
     );
   }
 
-  // --- seats -----------------------------------------------------------------
+  // --- tanning ledges --------------------------------------------------------
   /*
-   * A bench sits ON something. It used to be drawn from its top surface down to
-   * the seat's own `floorDepthFt`, while being positioned at the deep-end wall —
-   * two facts that disagree the moment they differ. On the standard model the
-   * seat states 4'-6" and the floor at the deep end is 6'-0", so the bench was
-   * drawn hanging in the water a foot and a half clear of the floor.
+   * Ledges only. A bench and a swimout sit against a SIDE wall, which a
+   * longitudinal centreline section does not cut — drawing them anyway put a
+   * rectangle in the middle of the water that belongs to a wall the reader
+   * cannot see, and its label collided with everything around it. A tanning
+   * ledge spans the shallow end and genuinely is on this cut.
    *
-   * It is now drawn down to the floor the PROFILE puts under it, so it always
-   * rests on something. Where the seat's own stated depth disagrees with the
-   * profile at that station, the label says so rather than one of the two
-   * quietly winning.
+   * Each is drawn at its own station, so a stair coming off the ledge reads in
+   * the right order: ledge first, then the treads going down past it.
    */
   for (const seat of job.pool.seats) {
+    if (seat.kind !== 'tanningLedge') continue;
     const top = inToFt(seat.depthBelowWaterlineIn);
-    const run = inToFt(seat.surfaceDepthIn);
-    // Drawn against the deep-end wall, which is where a bench in a rectangular
-    // pool goes. Position is indicative; the dimensions are not.
-    const seatX = L - run;
-    const floorUnderSeat = depthAtStation(p, seatX);
+    const foot = seatFootprint(seat, L, W);
+    const fromX = Math.max(0, Math.min(foot.x, L - foot.widthFt));
+    const toX = Math.min(L, fromX + foot.widthFt);
+    const floorUnder = averageFloorDepthUnder(p, fromX, toX);
     parts.push(
-      `<path class="sec-seat" d="M ${n(x(seatX))} ${n(y(floorUnderSeat))} L ${n(x(seatX))} ${n(y(top))} L ${n(x(L))} ${n(y(top))} L ${n(x(L))} ${n(y(floorUnderSeat))} Z"/>`,
+      `<path class="sec-seat" d="M ${n(x(fromX))} ${n(y(floorUnder))} L ${n(x(fromX))} ${n(y(top))} L ${n(x(toX))} ${n(y(top))} L ${n(x(toX))} ${n(y(floorUnder))} Z"/>`,
     );
-    const disagrees = Math.abs(seat.floorDepthFt - floorUnderSeat) > 0.05;
-    parts.push(txt(
-      ctx,
-      seatX - 0.4,
-      top - 0.6,
-      disagrees
-        ? `${seat.kind} ${feetInches(top)} below WL · job states ${feetInches(seat.floorDepthFt)} floor, section has ${feetInches(floorUnderSeat)}`
-        : `${seat.kind} ${feetInches(top)} below WL`,
-      'pv-station-label',
-      'end',
-    ));
+    parts.push(txt(ctx, (fromX + toX) / 2, top - 0.55, `${feetInches(toX - fromX)} ledge · ${feetInches(top)} below WL`, 'pv-station-label', 'middle'));
   }
 
   parts.push(

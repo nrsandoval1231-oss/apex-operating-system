@@ -1,11 +1,13 @@
 /**
  * Takeoff sheet — build order step 3.
  *
- * Renders engine steps 1 and 2 with formulas and inputs visible, to prove the
- * show-your-work pattern before it has to survive a print stylesheet (step 10).
- * Structure, hydraulics, equipment, cover, finishes and yard are not built yet
- * and are named as such rather than left off, so the sheet never reads as
- * complete when it isn't.
+ * Renders every engine step with formulas and inputs visible — the
+ * show-your-work pattern, all the way through the print stylesheet.
+ *
+ * This used to carry a "Not yet built" section listing steps 9, 10 and 11.
+ * All three shipped and the list did not, so the sheet spent a long time
+ * telling its reader that the plan view they were looking at did not exist.
+ * A panel naming what is missing has to be deleted the day nothing is.
  */
 
 import { runTakeoff, type CodeFailureArea } from '../engine/index.ts';
@@ -396,17 +398,6 @@ export function TakeoffSheet({
       <FinishesSection finishes={result.finishes} />
 
       <YardSection yard={result.yard} />
-
-      <section className="section">
-        <div className="section-head">
-          <h2>Not yet built</h2>
-        </div>
-        <div className="notes">
-          <ul>
-            <li>9 · SVG plan view · 10 · Print stylesheet to PDF · 11 · Input form and JSON save/load</li>
-          </ul>
-        </div>
-      </section>
 
       </div>
       )}

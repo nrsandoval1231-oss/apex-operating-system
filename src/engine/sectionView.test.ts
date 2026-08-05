@@ -138,20 +138,67 @@ describe('the section draws what a builder would recognise', () => {
     expect((Math.max(...xs) - Math.min(...xs)) / section.pxPerFt).toBeCloseTo(spanFt, 1);
   });
 
-  it('rests the bench on the floor beneath it rather than hanging it in the water', () => {
-    // The seat states a 4'-6" floor while sitting at the deep end, where the
-    // profile floor is 6'-0". It used to be drawn to its own stated depth and
-    // floated a foot and a half clear of the floor.
-    const path = /<path class="sec-seat" d="([^"]+)"/.exec(svg)?.[1] ?? '';
-    const ys = [...path.matchAll(/([-\d.]+) ([-\d.]+)/g)].map(([, , py]) => +py!);
-    const section = renderSectionView(STANDARD_MODEL);
-    const bottomFt = (Math.max(...ys) - section.originYPx) / section.pxPerFt;
-    expect(bottomFt).toBeCloseTo(STANDARD_MODEL.pool.profile.deepDepth, 1);
+  it('leaves benches and swimouts off the section entirely', () => {
+    // A bench sits against a SIDE wall, which a longitudinal centreline section
+    // does not cut. Drawing it anyway put a rectangle in the middle of the water
+    // belonging to a wall the reader cannot see, with a label that collided with
+    // everything near it.
+    expect(STANDARD_MODEL.pool.seats.some((seat) => seat.kind === 'bench')).toBe(true);
+    expect(svg).not.toContain('sec-seat');
   });
 
-  it('says so when the seat and the profile disagree about the floor', () => {
-    // One of them silently winning is how a drawing and a takeoff drift apart.
-    expect(svg).toContain('job states');
-    expect(svg).toContain('section has');
+  it('draws a tanning ledge, which is genuinely on this cut', () => {
+    const withLedge = renderSectionView({
+      ...STANDARD_MODEL,
+      pool: {
+        ...STANDARD_MODEL.pool,
+        seats: [{
+          ...STANDARD_MODEL.pool.seats[0]!,
+          id: 'TL1',
+          kind: 'tanningLedge',
+          depthBelowWaterlineIn: 10,
+          surfaceWidthIn: 96,
+          surfaceDepthIn: 60,
+          position: { xFt: 0, yFt: 0 },
+        }],
+      },
+    }).svg;
+    expect(withLedge).toContain('sec-seat');
+    expect(withLedge).toContain('below WL');
   });
+
+  it('puts the stair after the ledge, in the order you would walk them', () => {
+    // The reason steps needed a station at all: a stair coming off a ledge
+    // starts at the ledge's edge, and drawing it at the wall put it through the
+    // ledge.
+    const job: Job = {
+      ...STANDARD_MODEL,
+      pool: {
+        ...STANDARD_MODEL.pool,
+        seats: [{
+          ...STANDARD_MODEL.pool.seats[0]!,
+          id: 'TL1',
+          kind: 'tanningLedge',
+          depthBelowWaterlineIn: 10,
+          surfaceWidthIn: 96,
+          surfaceDepthIn: 60,
+          position: { xFt: 0, yFt: 0 },
+        }],
+        // Flush on the ledge's deep edge — the position `abutMagnets` produces
+        // when you drag a stair onto a ledge. The ledge is 8 ft of surface
+        // depth, so its edge is x = 8.
+        steps: [{ ...STANDARD_MODEL.pool.steps[0]!, position: { xFt: 8, yFt: 0 } }],
+      },
+    };
+    const out = renderSectionView(job);
+    const ledgeXs = [...(/<path class="sec-seat" d="([^"]+)"/.exec(out.svg)?.[1] ?? '')
+      .matchAll(/([-\d.]+) ([-\d.]+)/g)].map(([, px]) => +px!);
+    const stairXs = [...(/<path class="sec-step" d="([^"]+)"/.exec(out.svg)?.[1] ?? '')
+      .matchAll(/([-\d.]+) ([-\d.]+)/g)].map(([, px]) => +px!);
+    expect(ledgeXs.length).toBeGreaterThan(0);
+    expect(stairXs.length).toBeGreaterThan(0);
+    // The stair begins at or past the ledge's deep edge — they do not overlap.
+    expect(Math.min(...stairXs)).toBeGreaterThanOrEqual(Math.max(...ledgeXs) - 0.5);
+  });
+
 });

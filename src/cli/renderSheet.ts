@@ -502,11 +502,6 @@ function sheet(r: TakeoffResult): string {
 
     ${yardHtml(r.yard)}
 
-    <h2 class="sec">Not yet built</h2>
-    <div class="notes"><ul>
-      <li>9 · SVG plan view &nbsp;·&nbsp; 10 · Print stylesheet to PDF &nbsp;·&nbsp; 11 · Input form and JSON save/load</li>
-    </ul></div>
-
     </div>
 
     <footer class="foot">
