@@ -103,6 +103,54 @@ export function magnets(
   ];
 }
 
+/** Another object already on the plan, that a drag can land against. */
+export interface Neighbour {
+  readonly id: string;
+  readonly label: string;
+  readonly xFt: number;
+  readonly yFt: number;
+  readonly widthFt: number;
+  readonly heightFt: number;
+}
+
+/**
+ * Positions where the dragged object lands flush against something already
+ * there — a stair onto the edge of a tanning ledge, a bubbler against a bench.
+ *
+ * This is the difference between "free" and "useful". Two objects that are
+ * meant to touch have to touch exactly: a half-inch gap between a stair and the
+ * ledge it comes off is a gap somebody has to build, and it will not be in the
+ * takeoff. Each side offers a flush position aligned to the neighbour's near
+ * edge and one centred on it, which between them cover how anyone actually sets
+ * a stair against a ledge.
+ */
+export function abutMagnets(
+  objectWidthFt: number,
+  objectHeightFt: number,
+  neighbours: readonly Neighbour[],
+): readonly Magnet[] {
+  const w = objectWidthFt;
+  const h = objectHeightFt;
+  const out: Magnet[] = [];
+  for (const other of neighbours) {
+    const right = other.xFt + other.widthFt;
+    const bottom = other.yFt + other.heightFt;
+    const midX = other.xFt + (other.widthFt - w) / 2;
+    const midY = other.yFt + (other.heightFt - h) / 2;
+    out.push(
+      { id: `abut:${other.id}:right`, label: `against the deep side of ${other.label}`, at: { xFt: right, yFt: other.yFt } },
+      { id: `abut:${other.id}:right-centred`, label: `centred on the deep side of ${other.label}`, at: { xFt: right, yFt: midY } },
+      { id: `abut:${other.id}:left`, label: `against the shallow side of ${other.label}`, at: { xFt: other.xFt - w, yFt: other.yFt } },
+      { id: `abut:${other.id}:left-centred`, label: `centred on the shallow side of ${other.label}`, at: { xFt: other.xFt - w, yFt: midY } },
+      { id: `abut:${other.id}:below`, label: `against the yard side of ${other.label}`, at: { xFt: other.xFt, yFt: bottom } },
+      { id: `abut:${other.id}:below-centred`, label: `centred on the yard side of ${other.label}`, at: { xFt: midX, yFt: bottom } },
+      { id: `abut:${other.id}:above`, label: `against the house side of ${other.label}`, at: { xFt: other.xFt, yFt: other.yFt - h } },
+      { id: `abut:${other.id}:above-centred`, label: `centred on the house side of ${other.label}`, at: { xFt: midX, yFt: other.yFt - h } },
+    );
+  }
+  return out;
+}
+
 export interface SnapResult {
   readonly at: PlanPoint;
   /** The magnet that claimed the position, or null when it landed on the grid. */
@@ -120,6 +168,10 @@ export interface SnapResult {
  * Magnets are tested against the RAW pointer position, not the snapped one.
  * Snapping first would quantise the distance and make a magnet either
  * unreachable or sticky depending on where it fell between lattice points.
+ *
+ * Neighbours come first in the candidate list and win ties, because landing
+ * against the ledge you are aiming at matters more than landing on the pool's
+ * own geometry — that is the whole reason for dragging a stair onto one.
  */
 export function snapWithMagnets(
   raw: PlanPoint,
@@ -128,13 +180,18 @@ export function snapWithMagnets(
   poolLengthFt: number,
   poolWidthFt: number,
   rangeFt: number = MAGNET_RANGE_FT,
+  neighbours: readonly Neighbour[] = [],
 ): SnapResult {
   if (!Number.isFinite(raw.xFt) || !Number.isFinite(raw.yFt)) {
     return { at: { xFt: 0, yFt: 0 }, magnet: null };
   }
   let best: Magnet | null = null;
   let bestDistance = Number.POSITIVE_INFINITY;
-  for (const magnet of magnets(objectWidthFt, objectHeightFt, poolLengthFt, poolWidthFt)) {
+  const candidates = [
+    ...abutMagnets(objectWidthFt, objectHeightFt, neighbours),
+    ...magnets(objectWidthFt, objectHeightFt, poolLengthFt, poolWidthFt),
+  ];
+  for (const magnet of candidates) {
     const dx = magnet.at.xFt - raw.xFt;
     const dy = magnet.at.yFt - raw.yFt;
     const distance = Math.hypot(dx, dy);

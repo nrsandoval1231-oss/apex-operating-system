@@ -81,6 +81,17 @@ export interface StepSet {
   /** True if this step set is the required means of entry and exit. */
   readonly isRequiredEntryExit: boolean;
   /**
+   * Free position in plan feet — the top-left of the stair's footprint.
+   *
+   * A stair is normally built into a wall, which is what `placement` describes.
+   * But it is also how you get out of a tanning ledge, and a stair coming off a
+   * ledge is not against a pool wall at all — so it gets two degrees of freedom
+   * and snaps flush to whatever it is built against. Takes precedence over
+   * `placement`; position never affects displacement, which comes from tread
+   * size and count.
+   */
+  readonly position?: PlanPoint;
+  /**
    * Where the stair sits. Absent means the drawing falls back to its old
    * convention — centred on the shallow wall — and says so, rather than
    * silently placing an unplaced stair somewhere specific.
@@ -109,6 +120,11 @@ export interface Seat {
   readonly floorDepthFt: number;
   /** True if this surface is being used as the required means of entry and exit. */
   readonly isRequiredEntryExit: boolean;
+  /**
+   * Free position in plan feet — the top-left of the ledge's footprint. Takes
+   * precedence over `placement`, and is what a stair snaps against.
+   */
+  readonly position?: PlanPoint;
   /** Where the ledge sits. Absent falls back to the old indicative position. */
   readonly placement?: Placement;
 }

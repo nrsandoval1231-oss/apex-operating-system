@@ -110,3 +110,48 @@ describe('it prints at a scale someone can measure', () => {
     expect(longScale.inPerFt).toBeLessThan(sectionPrintScale(section).inPerFt);
   });
 });
+
+describe('the section draws what a builder would recognise', () => {
+  const svg = renderSectionView(STANDARD_MODEL).svg;
+  const step = STANDARD_MODEL.pool.steps[0]!;
+
+  it('descends the stair from the deck into the water, not out of it', () => {
+    // It used to build from the wall outward and upward: the toe against the
+    // wall and the top tread furthest into the pool, so you would have climbed
+    // OUT of the water to reach the deck.
+    const path = /<path class="sec-step" d="([^"]+)"/.exec(svg)?.[1] ?? '';
+    const points = [...path.matchAll(/([-\d.]+) ([-\d.]+)/g)].map(([, px, py]) => ({ x: +px!, y: +py! }));
+    expect(points.length).toBeGreaterThan(4);
+
+    // Highest tread (smallest y on screen) must be nearest the shallow-end wall
+    // (smallest x); the toe must be furthest into the pool.
+    const highest = points.reduce((best, p) => (p.y < best.y ? p : best));
+    const lowest = points.reduce((best, p) => (p.y > best.y ? p : best));
+    expect(highest.x).toBeLessThan(lowest.x);
+  });
+
+  it('spans the stair its real length into the pool', () => {
+    const path = /<path class="sec-step" d="([^"]+)"/.exec(svg)?.[1] ?? '';
+    const xs = [...path.matchAll(/([-\d.]+) ([-\d.]+)/g)].map(([, px]) => +px!);
+    const section = renderSectionView(STANDARD_MODEL);
+    const spanFt = (step.treadRunIn / 12) * step.treadCount;
+    expect((Math.max(...xs) - Math.min(...xs)) / section.pxPerFt).toBeCloseTo(spanFt, 1);
+  });
+
+  it('rests the bench on the floor beneath it rather than hanging it in the water', () => {
+    // The seat states a 4'-6" floor while sitting at the deep end, where the
+    // profile floor is 6'-0". It used to be drawn to its own stated depth and
+    // floated a foot and a half clear of the floor.
+    const path = /<path class="sec-seat" d="([^"]+)"/.exec(svg)?.[1] ?? '';
+    const ys = [...path.matchAll(/([-\d.]+) ([-\d.]+)/g)].map(([, , py]) => +py!);
+    const section = renderSectionView(STANDARD_MODEL);
+    const bottomFt = (Math.max(...ys) - section.originYPx) / section.pxPerFt;
+    expect(bottomFt).toBeCloseTo(STANDARD_MODEL.pool.profile.deepDepth, 1);
+  });
+
+  it('says so when the seat and the profile disagree about the floor', () => {
+    // One of them silently winning is how a drawing and a takeoff drift apart.
+    expect(svg).toContain('job states');
+    expect(svg).toContain('section has');
+  });
+});

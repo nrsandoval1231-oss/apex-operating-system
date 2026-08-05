@@ -16,6 +16,7 @@
  * drawn faintly and labelled indicative.
  */
 
+import { depthAtStation } from './profile.ts';
 import type { Job } from './types.ts';
 import { inToFt } from './units.ts';
 import { ELEVEN_BY_SEVENTEEN, choosePrintScale, type PrintScale } from './planView.ts';
@@ -230,40 +231,74 @@ export function renderSectionView(
     parts.push(txt(ctx, shallowEndX, -freeboard - 1.4, 'BREAKOVER', 'pv-station-label', 'middle'));
   }
 
-  // --- steps, drawn where the profile puts them ------------------------------
-  // Riser heights come from the job bottom-first, so the stair is built upward
-  // from the floor exactly as the code text reads it.
+  // --- steps ----------------------------------------------------------------
+  /*
+   * A stair DESCENDS from the deck into the water.
+   *
+   * This used to build from the shallow-end wall outward and upward, which drew
+   * the mirror image: the toe against the wall and the top tread furthest into
+   * the pool, so you would have climbed out of the water to reach the deck.
+   *
+   * Riser heights are stored bottom-first, so the stair is still built from the
+   * floor up — but from the TOE inward toward the wall. The top tread then lands
+   * at the wall, where somebody actually steps onto it.
+   */
   for (const step of job.pool.steps) {
     const treadRun = inToFt(step.treadRunIn);
-    let atX = 0;
-    let atY = step.floorDepthFt;
     const risers = step.riserHeightsIn;
+    const spanFt = treadRun * step.treadCount;
+    let atX = spanFt;
+    let atY = step.floorDepthFt;
     const poly: string[] = [`M ${n(x(atX))} ${n(y(atY))}`];
     for (let i = 0; i < step.treadCount; i += 1) {
       const rise = inToFt(risers[i] ?? 0);
       atY -= rise;
       poly.push(`L ${n(x(atX))} ${n(y(atY))}`);
-      atX += treadRun;
+      atX -= treadRun;
       poly.push(`L ${n(x(atX))} ${n(y(atY))}`);
     }
+    // Down the wall face and back along the floor closes the stair mass.
     poly.push(`L ${n(x(atX))} ${n(y(step.floorDepthFt))}`, 'Z');
     parts.push(`<path class="sec-step" d="${poly.join(' ')}"/>`);
     parts.push(
-      txt(ctx, atX + 0.4, step.floorDepthFt - 0.5, `${step.treadCount} treads @ ${step.treadRunIn}"`, 'pv-station-label', 'start'),
+      txt(ctx, spanFt + 0.4, step.floorDepthFt - 0.5, `${step.treadCount} treads @ ${step.treadRunIn}"`, 'pv-station-label', 'start'),
     );
   }
 
   // --- seats -----------------------------------------------------------------
+  /*
+   * A bench sits ON something. It used to be drawn from its top surface down to
+   * the seat's own `floorDepthFt`, while being positioned at the deep-end wall —
+   * two facts that disagree the moment they differ. On the standard model the
+   * seat states 4'-6" and the floor at the deep end is 6'-0", so the bench was
+   * drawn hanging in the water a foot and a half clear of the floor.
+   *
+   * It is now drawn down to the floor the PROFILE puts under it, so it always
+   * rests on something. Where the seat's own stated depth disagrees with the
+   * profile at that station, the label says so rather than one of the two
+   * quietly winning.
+   */
   for (const seat of job.pool.seats) {
     const top = inToFt(seat.depthBelowWaterlineIn);
     const run = inToFt(seat.surfaceDepthIn);
-    // Drawn on the deep-end side of the breakover, which is where a bench in a
-    // rectangular pool goes. Position is indicative; the dimensions are not.
+    // Drawn against the deep-end wall, which is where a bench in a rectangular
+    // pool goes. Position is indicative; the dimensions are not.
     const seatX = L - run;
+    const floorUnderSeat = depthAtStation(p, seatX);
     parts.push(
-      `<path class="sec-seat" d="M ${n(x(seatX))} ${n(y(seat.floorDepthFt))} L ${n(x(seatX))} ${n(y(top))} L ${n(x(L))} ${n(y(top))} L ${n(x(L))} ${n(y(seat.floorDepthFt))} Z"/>`,
+      `<path class="sec-seat" d="M ${n(x(seatX))} ${n(y(floorUnderSeat))} L ${n(x(seatX))} ${n(y(top))} L ${n(x(L))} ${n(y(top))} L ${n(x(L))} ${n(y(floorUnderSeat))} Z"/>`,
     );
-    parts.push(txt(ctx, seatX - 0.4, top - 0.6, `${seat.kind} ${feetInches(top)} below WL`, 'pv-station-label', 'end'));
+    const disagrees = Math.abs(seat.floorDepthFt - floorUnderSeat) > 0.05;
+    parts.push(txt(
+      ctx,
+      seatX - 0.4,
+      top - 0.6,
+      disagrees
+        ? `${seat.kind} ${feetInches(top)} below WL · job states ${feetInches(seat.floorDepthFt)} floor, section has ${feetInches(floorUnderSeat)}`
+        : `${seat.kind} ${feetInches(top)} below WL`,
+      'pv-station-label',
+      'end',
+    ));
   }
 
   parts.push(

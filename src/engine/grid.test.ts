@@ -15,6 +15,7 @@ import {
   snapToGrid,
   snapWithMagnets,
   clampWithin,
+  abutMagnets,
 } from './grid.ts';
 
 const L = 30;
@@ -144,5 +145,48 @@ describe('an inset spa stays in the water', () => {
     // No valid position exists, so it goes to the corner and the drawing shows
     // it overhanging — the truth — rather than being placed somewhere it fits.
     expect(clampWithin({ xFt: 5, yFt: 5 }, 99, 99, L, W)).toEqual({ xFt: 0, yFt: 0 });
+  });
+});
+
+describe('landing against something already there', () => {
+  const LEDGE = { id: 'B1', label: 'tanning ledge B1', xFt: 0, yFt: 0, widthFt: 8, heightFt: 5 };
+
+  it('offers a flush position on each side, aligned and centred', () => {
+    const all = abutMagnets(4, 3, [LEDGE]);
+    expect(all).toHaveLength(8);
+    // Flush off the deep side, top edges aligned.
+    expect(all.find((m) => m.id === 'abut:B1:right')!.at).toEqual({ xFt: 8, yFt: 0 });
+    // Flush off the deep side, centred on the ledge's height.
+    expect(all.find((m) => m.id === 'abut:B1:right-centred')!.at).toEqual({ xFt: 8, yFt: 1 });
+    // Flush off the yard side, centred on the ledge's width.
+    expect(all.find((m) => m.id === 'abut:B1:below-centred')!.at).toEqual({ xFt: 2, yFt: 5 });
+  });
+
+  it('leaves no gap — the object touches the neighbour exactly', () => {
+    // Half an inch between a stair and the ledge it comes off is a gap somebody
+    // has to build, and it will not be in the takeoff.
+    const at = abutMagnets(4, 3, [LEDGE]).find((m) => m.id === 'abut:B1:right')!.at;
+    expect(at.xFt).toBe(LEDGE.xFt + LEDGE.widthFt);
+  });
+
+  it('snaps a stair onto the ledge edge and names which side', () => {
+    const result = snapWithMagnets({ xFt: 8.4, yFt: 0.3 }, 4, 3, L, W, MAGNET_RANGE_FT, [LEDGE]);
+    expect(result.at).toEqual({ xFt: 8, yFt: 0 });
+    expect(result.magnet?.label).toBe('against the deep side of tanning ledge B1');
+  });
+
+  it('prefers the neighbour over the pool when both are equally near', () => {
+    // Dragging a stair at a ledge should land on the ledge, not on a pool corner
+    // that happens to be the same distance away.
+    const tie = { id: 'B2', label: 'ledge B2', xFt: -4, yFt: 0, widthFt: 4, heightFt: 3 };
+    const result = snapWithMagnets({ xFt: 0, yFt: 0 }, 4, 3, L, W, MAGNET_RANGE_FT, [tie]);
+    expect(result.magnet?.id).toBe('abut:B2:right');
+  });
+
+  it('still finds the pool magnets when no neighbour is near', () => {
+    const result = snapWithMagnets({ xFt: 0.2, yFt: 0.2 }, 4, 3, L, W, MAGNET_RANGE_FT, [
+      { id: 'far', label: 'far ledge', xFt: 100, yFt: 100, widthFt: 4, heightFt: 3 },
+    ]);
+    expect(result.magnet?.id).toBe('corner-in-shallow-house');
   });
 });

@@ -23,20 +23,24 @@ import {
   wallLengthFt,
 } from '../engine/placement.ts';
 import { inverseContentPoint, inverseDirection, normalizeTurns, rotationLabel, type QuarterTurns } from '../engine/planRotation.ts';
-import { clampWithin, GRID_FT, snapToGrid, snapWithMagnets, type Magnet, type PlanPoint } from '../engine/grid.ts';
+import {
+  clampWithin, GRID_FT, MAGNET_RANGE_FT, snapToGrid, snapWithMagnets,
+  type Magnet, type Neighbour, type PlanPoint,
+} from '../engine/grid.ts';
 import { inToFt } from '../engine/units.ts';
 import { resizePool } from '../engine/poolResize.ts';
 import type { Job, Placement, PoolWall } from '../engine/types.ts';
 
 /**
- * Two degrees of freedom, or one.
+ * Everything on the plan now moves in two dimensions.
  *
- * A step is built into a wall and a bench is a ledge along one, so both keep the
- * single degree of freedom `placement.ts` gives them — that constraint is the
- * truth, not a limitation. A spa and a bubbler genuinely go anywhere, so they
- * move on the grid instead.
+ * Steps started out wall-bound, and for a stair built into a pool wall that is
+ * the truth. But a stair is also how you get out of a tanning ledge, and one
+ * coming off a ledge is against no pool wall at all — so it needs the same two
+ * degrees of freedom, plus the ability to land flush on the ledge's edge.
+ * `abutMagnets` is what makes "flush" exact rather than nearly.
  */
-const MOVES_FREELY: ReadonlySet<Drag['kind']> = new Set(['spa', 'accessory']);
+const MOVES_FREELY: ReadonlySet<Drag['kind']> = new Set(['spa', 'accessory', 'step', 'seat']);
 
 /** What is being dragged, and what the pointer grabbed it by. */
 interface Drag {
@@ -206,6 +210,26 @@ export function MovablePlan({
         const r = placementRect(place, spa.widthFt, spa.lengthFt, source.pool.lengthFt, source.pool.widthFt, true);
         return { xFt: r.x, yFt: r.y, widthFt: r.widthFt, heightFt: r.heightFt };
       }
+      if (kind === 'step') {
+        const st = source.pool.steps.find((x) => x.id === id);
+        if (!st) return null;
+        const widthFt = inToFt(st.treadRunIn) * st.treadCount;
+        const heightFt = inToFt(st.treadWidthIn);
+        if (st.position) return { ...st.position, widthFt, heightFt };
+        const place = st.placement ?? { wall: 'shallow' as const, alongFt: (source.pool.widthFt - heightFt) / 2 };
+        const r = placementRect(place, heightFt, widthFt, source.pool.lengthFt, source.pool.widthFt);
+        return { xFt: r.x, yFt: r.y, widthFt: r.widthFt, heightFt: r.heightFt };
+      }
+      if (kind === 'seat') {
+        const st = source.pool.seats.find((x) => x.id === id);
+        if (!st) return null;
+        const widthFt = inToFt(st.surfaceDepthIn);
+        const heightFt = inToFt(st.surfaceWidthIn);
+        if (st.position) return { ...st.position, widthFt, heightFt };
+        const place = st.placement ?? { wall: 'bottom' as const, alongFt: source.pool.lengthFt * 0.62 };
+        const r = placementRect(place, heightFt, widthFt, source.pool.lengthFt, source.pool.widthFt);
+        return { xFt: r.x, yFt: r.y, widthFt: r.widthFt, heightFt: r.heightFt };
+      }
       const acc = (source.pool.accessories ?? []).find((a) => a.id === id);
       if (!acc) return null;
       if (acc.position) return { ...acc.position, widthFt: 1, heightFt: 1 };
@@ -216,11 +240,46 @@ export function MovablePlan({
     [],
   );
 
+  /**
+   * Everything else already on the plan, so a drag can land flush against it.
+   *
+   * The dragged object is excluded — an object cannot abut itself — and so is
+   * anything with no footprint worth snapping to. This is what lets a stair come
+   * off the edge of a tanning ledge exactly rather than nearly.
+   */
+  const neighboursFor = useCallback(
+    (source: Job, kind: Drag['kind'], id: string): Neighbour[] => {
+      const out: Neighbour[] = [];
+      const add = (nid: string, label: string, r: { xFt: number; yFt: number; widthFt: number; heightFt: number } | null) => {
+        if (r && !(nid === id)) out.push({ id: nid, label, ...r });
+      };
+      for (const st of source.pool.seats) add(st.id, `${st.kind} ${st.id}`, freeRectOf(source, 'seat', st.id));
+      for (const st of source.pool.steps) add(st.id, `steps ${st.id}`, freeRectOf(source, 'step', st.id));
+      if (source.spa) add(SPA_MOVE_ID, 'the spa', freeRectOf(source, 'spa', SPA_MOVE_ID));
+      // A bubbler is a point, not an edge; nothing meaningful abuts it.
+      void kind;
+      return out;
+    },
+    [freeRectOf],
+  );
+
   /** Writes a free position, leaving the legacy wall placement untouched. */
   const withPosition = useCallback(
     (source: Job, kind: Drag['kind'], id: string, position: PlanPoint): Job => {
       if (kind === 'spa') {
         return source.spa ? { ...source, spa: { ...source.spa, position } } : source;
+      }
+      if (kind === 'step') {
+        return {
+          ...source,
+          pool: { ...source.pool, steps: source.pool.steps.map((x) => (x.id === id ? { ...x, position } : x)) },
+        };
+      }
+      if (kind === 'seat') {
+        return {
+          ...source,
+          pool: { ...source.pool, seats: source.pool.seats.map((x) => (x.id === id ? { ...x, position } : x)) },
+        };
       }
       return {
         ...source,
@@ -489,6 +548,8 @@ export function MovablePlan({
         size.heightFt,
         L,
         W,
+        MAGNET_RANGE_FT,
+        neighboursFor(base, drag.kind, drag.id),
       );
       const held = bounded
         ? clampWithin(snapped.at, size.widthFt, size.heightFt, L, W)
@@ -712,11 +773,13 @@ function describe(job: Job, id: string): { label: string; where: string; free: b
   }
   const step = job.pool.steps.find((s) => s.id === id);
   if (step) {
+    if (step.position) return { label: `Steps ${step.id}`, where: at(step.position), free: true };
     const place = step.placement ?? { wall: 'shallow' as const, alongFt: (W - inToFt(step.treadWidthIn)) / 2 };
     return { label: `Steps ${step.id}`, where: `${place.wall} wall · ${fmt(place.alongFt)} from the corner`, free: false };
   }
   const seat = job.pool.seats.find((s) => s.id === id);
   if (seat) {
+    if (seat.position) return { label: `${seat.kind} ${seat.id}`, where: at(seat.position), free: true };
     const place = seat.placement ?? { wall: 'bottom' as const, alongFt: L * 0.62 };
     return { label: `${seat.kind} ${seat.id}`, where: `${place.wall} wall · ${fmt(place.alongFt)} from the corner`, free: false };
   }

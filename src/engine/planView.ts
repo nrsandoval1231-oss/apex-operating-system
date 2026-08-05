@@ -453,7 +453,11 @@ export function renderPlanView(
     const runFt = inToFt(st.treadRunIn);
     const depth = runFt * st.treadCount;
     const place = st.placement ?? { wall: 'shallow' as const, alongFt: (W - wFt) / 2 };
-    const rect = placementRect(place, wFt, depth, L, W);
+    // Free position wins. A stair coming off a tanning ledge is against no pool
+    // wall at all, so it is drawn run-along-x, width-along-y.
+    const rect = st.position
+      ? { x: st.position.xFt, y: st.position.yFt, widthFt: depth, heightFt: wFt }
+      : placementRect(place, wFt, depth, L, W);
     const selected = selectedId === st.id;
     parts.push(
       `<rect class="pv-step${selected ? ' pv-selected' : ''}${st.placement ? '' : ' pv-unplaced'}"`
@@ -481,7 +485,9 @@ export function renderPlanView(
     const wFt = inToFt(seat.surfaceWidthIn);
     const dFt = inToFt(seat.surfaceDepthIn);
     const place = seat.placement ?? { wall: 'bottom' as const, alongFt: L * 0.62 };
-    const rect = placementRect(place, wFt, dFt, L, W);
+    const rect = seat.position
+      ? { x: seat.position.xFt, y: seat.position.yFt, widthFt: dFt, heightFt: wFt }
+      : placementRect(place, wFt, dFt, L, W);
     const selected = selectedId === seat.id;
     parts.push(
       `<rect class="pv-seat${selected ? ' pv-selected' : ''}${seat.placement ? '' : ' pv-unplaced'}"`

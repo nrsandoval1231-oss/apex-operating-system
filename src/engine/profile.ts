@@ -88,3 +88,22 @@ function segmentBandArea(s: ProfileSegment, lo: number, hi: number): number {
 export function maxDepth(segments: readonly ProfileSegment[]): number {
   return segments.reduce((m, s) => Math.max(m, s.d1, s.d2), 0);
 }
+
+/**
+ * Water depth at a station along the pool's length.
+ *
+ * The section needs this to sit an object on the floor beneath it rather than at
+ * a depth entered somewhere else. Flat over the shallow run, linear through the
+ * transition, flat again over the deep run; a station past either end clamps to
+ * that end's depth rather than extrapolating a floor that does not exist.
+ */
+export function depthAtStation(
+  profile: { shallowRun: number; transitionRun: number; shallowDepth: number; deepDepth: number },
+  stationFt: number,
+): number {
+  const { shallowRun, transitionRun, shallowDepth, deepDepth } = profile;
+  if (!Number.isFinite(stationFt) || stationFt <= shallowRun) return shallowDepth;
+  if (transitionRun <= 0 || stationFt >= shallowRun + transitionRun) return deepDepth;
+  const through = (stationFt - shallowRun) / transitionRun;
+  return shallowDepth + through * (deepDepth - shallowDepth);
+}

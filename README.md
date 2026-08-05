@@ -18,7 +18,7 @@ JSON save/load)** are complete. Every step in the PRD's build order is done.
 ```bash
 npm install
 npm run dev     # takeoff sheet at localhost:5173
-npm test        # 439 tests
+npm test        # 448 tests
 npm run takeoff # same numbers, headless, for reconciliation
 ```
 
@@ -104,15 +104,15 @@ src/ui/              step 3 — the takeoff sheet
   305.1 lets a powered safety cover exempt the pool from barrier sections 305.2
   through 305.7, so the listing is load-bearing: without it the job has no
   barrier at all, and the check hard-fails rather than degrading quietly.
-- **Two degrees of freedom for the things that have two.** A step is built into
-  a wall and a bench is a ledge along one, so both keep the single degree of
-  freedom `placement.ts` gives them — that constraint is the truth, and a model
-  that cannot express a bench floating in open water is a model that cannot
-  express a mistake. A spa and a bubbler are not like that: a spa goes where the
-  yard says, a bubbler where the ledge is. Both now carry a free `position` and
-  move on a 6" lattice, with the pool's four inside corners, four outside
-  corners, four wall centres and its centre pulling harder than the rest — so
-  freedom does not cost symmetry, and the tool says which one it landed on. An
+- **Everything on the plan moves in two dimensions, on a 6" lattice.** The pool's
+  four inside corners, four outside corners, four wall centres and its centre
+  pull harder than the rest, so freedom does not cost symmetry and the tool says
+  which position it landed on. Objects also snap flush to **each other** —
+  `abutMagnets` puts a stair exactly on the edge of a tanning ledge, because half
+  an inch of gap between them is a gap somebody has to build and it will not be
+  in the takeoff. Steps began wall-bound, which is right for a stair built into a
+  pool wall and wrong for one coming off a ledge, where there is no pool wall
+  involved at all. An
   **inset spa is clamped inside the water**, because `insetIntoPool` is what
   tells the excavation engine it needs no cut outside the pool envelope; a spa
   flagged inset but drawn on the deck would report quantities for a pool nobody
@@ -144,6 +144,15 @@ src/ui/              step 3 — the takeoff sheet
   it. **It cannot put the deep end toward the house** — the house is drawn off
   the top wall and turns with the pool. That is a different feature and a
   different data change, and rotation must not be made to fake it.
+- **The section draws a stair that descends into the water.** It used to build
+  from the shallow-end wall outward and upward, drawing the mirror image: the toe
+  against the wall and the top tread furthest into the pool, so you would have
+  climbed out of the water to reach the deck. And a bench was drawn from its top
+  surface down to the seat's own stated floor depth while being positioned at the
+  deep-end wall — two facts that disagree the moment they differ, which on the
+  standard model left the bench hanging 1'-6" clear of the floor. A seat now
+  rests on the floor the profile puts under it, and where the seat's stated depth
+  disagrees the label says both rather than one quietly winning.
 - **The plan prints at a real architectural scale.** `choosePrintScale` picks
   the largest standard scale (1" down to 1/16") that fits the drawing's actual
   extents on 11x17, and the title block states it. A job too big for any standard
