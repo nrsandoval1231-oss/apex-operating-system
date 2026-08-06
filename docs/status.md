@@ -1,10 +1,14 @@
 # Apex Current Status
 
-**Last updated:** 2026-08-03
+**Last updated:** 2026-08-05
 
 **Program phase:** Phase 1 — Shared operational spine and controlled Gate vertical slice (Phase 0 preservation complete). **Apex OS build plan Steps 1–8 are complete, every MVP item in PRD §19 is built, and all content is approved.** Travis Sandoval approved the inspection list and lead times, the twelve added gate checklist items, and the nine customer-facing phase descriptions as written on 2026-08-03 (`docs/inspections-and-gate-checklists-2026-08-03.md`). Nothing is blocked on code and nothing is awaiting sign-off.
 
 **The only thing between this and a pilot is deployment.** Everything runs on loopback with embedded Postgres and a symmetric pilot JWT. A pilot with three to five real projects and a live customer link needs a managed environment, TLS, and real identity — see the launch blockers below. That is now the single remaining workstream.
+
+**Deployment is less blocked than it has been recorded as.** Only the DNS record needs a final hostname. The Cloudflare account, the R2 bucket, the Auth0 tenant and the Render blueprint do not, and Render serves a free `*.onrender.com` host that is enough to prove the stack end to end. The domain has been held back deliberately — Monsoon is expected to hand over the existing one (`apex-prds/decision-register.md` item 21) and a second purchase would be waste. **The hard line is unchanged: issue no real customer link until the hostname is final**, because a link's origin is fixed when it is issued and only the token hash is stored.
+
+**All 28 decision-register items are now decided.** Travis approved the nineteen that were his, as written, on 2026-08-05 — relayed by Nick, with no signed document, which the register records rather than implies. PRD 03 is written; PRD 04 has no remaining blocker. One precondition survives the approval: **the customer agreement must be amended before the broad reimbursable-cost definition is billed against.**
 
 **Production status:** Not production-ready
 
@@ -995,6 +999,59 @@ code change because `quantityModelVersion` travels as data.
 corrections found by drawing the thing rather than reading the code, but a third
 should prompt a look at whether the quantity model is being designed or
 discovered.
+
+## Designer becomes a drawing tool people can use — 2026-08-05
+
+Eleven commits, all pushed and green. The engine is unchanged in kind; what
+changed is that a builder can now draw in it, and that two of its numbers were
+wrong.
+
+**Quantity model v2 → v3 → v4 in one day.** Both moves were real corrections
+found by drawing the thing rather than reading the code, and both are recorded in
+their own sections above. Two versions in a day is not a pattern to repeat: a
+third should prompt asking whether the quantity model is being designed or
+discovered.
+
+**What the drawing gained.** A sheet rotation that turns the plan and the section
+together from one control, so the two cannot disagree about which end is the deep
+end. Free placement on a 6" grid for the spa, the fittings, the steps and the
+ledges, with the pool's corners and centre pulling harder so freedom does not cost
+symmetry — and objects snapping flush to each other, which is what lets a stair
+come off a tanning ledge with no gap for somebody to build. Corner-drag resizing
+on every object, floored at the code minimums. Six presets: three sizes, each with
+and without a shallow-end ledge.
+
+**Three bugs the drawing exposed that reading could not.** The section drew every
+stair climbing *out* of the water and every seat at the deep-end wall regardless
+of where it sat. Returns were drawn straddling the wall, half of each one out on
+the deck. And every button in the tool rendered in Impact, because the font stack
+named a face that is never loaded.
+
+**One regression shipped and caught the same day.** The presets inherited a deck
+outline sized to the 15x30 model, so once the deck gained a containment check the
+20x40 preset threw instead of opening. It was live for several commits. The gap
+was not a missing assertion — half the scenario list lived in `App.tsx` where no
+test could reach it. The list now lives in the engine and a test opens all eleven.
+
+**Presets no longer open onto a code stop.** They carried the standard model's
+placeholder gas appliances and pump, and the resulting red banner said "this
+configuration cannot be built as entered" on every job. It could — the numbers
+behind it were invented. A stop that fires every time teaches its reader to scroll
+past it.
+
+**A desktop shell is scaffolded, unbuilt.** Tauri, chosen over Electron for a
+~10 MB installer against ~150. Deliberately unsigned — a certificate is $200–400 a
+year and Apex is not buying one — so the installer is distributed on a USB stick
+or a share, where no Mark of the Web is applied and SmartScreen stays silent. It
+could not be built here: neither Rust nor the MSVC build tools are on the machine.
+See `Apex Designer/src-tauri/README.md`.
+
+| Commands | Result |
+|---|---|
+| Designer `npm test`, `tsc --noEmit`, `vite build` | **549 tests** passed; both clean |
+| `APEX_REQUIRE_DESIGNER_CONTRACT=1 pnpm verify` | **436 root tests**; the Designer contract among the three integration tests that ran |
+| CI on `main`, run `31049982302` | Green in 8m13s, with Postgres and S3 provisioned — **16 passed / 1 skipped** on integration, more than a local run covers |
+| Proposal `engine.test.mjs` / `whitaker-evidence.test.mjs` | **119** and **11**, unchanged |
 
 ## Next controlled milestone
 
