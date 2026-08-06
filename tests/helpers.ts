@@ -20,10 +20,19 @@ export interface LeadCapture {
 }
 
 /**
- * Intercept the lead webhook. `status` lets a test force a failure so the error path can be
- * exercised (AC-4.1) without depending on a real endpoint being down.
+ * Intercept the lead webhook. `status` lets a test force a transport failure so the error path
+ * can be exercised (AC-4.1) without depending on a real endpoint being down. `respondWith`
+ * sets the response BODY, which is the only place intake reports whether it actually routed
+ * the lead — it answers 200 for `accepted`, `duplicate`, and `quarantined` alike (AC-4.4).
+ *
+ * The default body is deliberately NOT the intake contract. Every non-production build points
+ * at a test endpoint that answers with something of its own, so the default here is the shape
+ * the form has to keep treating as delivered.
  */
-export async function mockWebhook(page: Page, { status = 200 } = {}): Promise<LeadCapture> {
+export async function mockWebhook(
+  page: Page,
+  { status = 200, respondWith }: { status?: number; respondWith?: unknown } = {},
+): Promise<LeadCapture> {
   const bodies: Record<string, unknown>[] = [];
   let resolveFirst: (v: Record<string, unknown>) => void;
   const first = new Promise<Record<string, unknown>>((r) => (resolveFirst = r));
@@ -32,10 +41,12 @@ export async function mockWebhook(page: Page, { status = 200 } = {}): Promise<Le
     const body = JSON.parse(route.request().postData() ?? '{}');
     bodies.push(body);
     if (bodies.length === 1) resolveFirst(body);
+    const responseBody =
+      respondWith ?? (status === 200 ? { ok: true } : { error: 'simulated failure' });
     await route.fulfill({
       status,
       contentType: 'application/json',
-      body: JSON.stringify(status === 200 ? { ok: true } : { error: 'simulated failure' }),
+      body: JSON.stringify(responseBody),
     });
   });
 

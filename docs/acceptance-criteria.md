@@ -39,7 +39,9 @@ npm test
 
 - [x] **AC-4.1** Webhook failure shows a clear error that tells the user what to do (call the phone number), not a silent failure or a raw stack trace. *(Asserts a tappable `tel:` link is present.)*
 - [x] **AC-4.2** Success shows the confirmation/capture panel and the lead is not double-submitted on a second click. *(Asserts the request count is exactly 1.)*
-- [x] **AC-4.3** Email and phone are validated; phone is normalized to digits in the payload. *(Also asserts zero requests are made when validation fails.)*
+- [x] **AC-4.3** Whichever contact fields are filled are validated; phone is normalized to digits in the payload. *(Also asserts zero requests are made when validation fails.)*
+- [x] **AC-4.4** A `status: "quarantined"` response shows the call-us error, **not** the capture panel — intake answers HTTP 200 whether it routed the lead or set it aside, so the status code alone is not confirmation. `accepted`, `duplicate`, and an unrecognized body all still show the capture panel. *(Four tests: one per outcome.)*
+- [x] **AC-4.5** The form requires `vertical` plus **at least one** of email or phone — matching intake, which quarantines only when both are empty. Neither one given is refused before any request; either one alone is sent. *(Three tests. Requiring both was silently discarding leads the engine would have accepted.)*
 
 ## AC-5 · Performance + SEO
 

@@ -47,6 +47,31 @@ Used as object keys for routing, consent, and campaign defaults. Do not alter ca
 3. **`vertical` is set by the visitor's action, not guessed:** the service selector in the form is the source of truth. If the visitor arrived via a vertical CTA (e.g. clicked "Start my pool quote"), pre-select that vertical but still let them change it. Never submit with the default silently if they interacted with the selector.
 4. **`landing_page` is the first path, `page_submitted` is where they converted.** Both are needed — one measures which content pulls leads, the other measures where the form converts.
 
+## What the form requires before it will send
+
+Mirror the receiving end, nothing stricter. `apex-lead-engine/docs/data-contract.md` quarantines a payload only when:
+
+- `lead_id` is missing or malformed
+- `vertical` is not one of the four enum strings
+- **both** `email` and `phone` are empty — no way to respond
+- `consent_sms` is not a boolean
+
+So the form requires **`vertical`, and at least one of email or phone**. Whichever contact field the visitor fills must be well-formed; the other may be empty. Demanding both is not a safer default — it refuses to send leads intake would have accepted, and the lead is then lost entirely rather than merely incomplete.
+
+## The response — a 200 is not confirmation
+
+Intake answers **HTTP 200 for every outcome** and puts the real one in the body:
+
+```json
+{ "status": "accepted",    "lead_id": "...", "routed_to": "pools@apexgetsitdone.com", "dedupe_status": "new" }
+{ "status": "duplicate",   "lead_id": "...", "dedupe_status": "duplicate" }
+{ "status": "quarantined", "lead_id": "...", "reason": "vertical not in enum" }
+```
+
+`accepted` and `duplicate` are both successes from the visitor's side — their request is in. **`quarantined` is a failure and must show the call-us error**, never the capture panel: nothing was routed, so a confirmation would tell the customer to stop chasing a callback nobody is going to make.
+
+A response body that is not one of these shapes is treated as delivered. Every non-production build points at a test endpoint that answers with something of its own, and failing those would show a false error on every pre-launch submission.
+
 ## Per-vertical config (drives consent, routing defaults, campaign fallback)
 
 | vertical | consent brand name | default campaign | routed_to (n8n uses this) |

@@ -16,6 +16,7 @@ import {
   buildLeadObject,
   detectDevice,
   emptyAttribution,
+  isRejectedByIntake,
   isValidEmail,
   isValidPhone,
   type LeadPayload,
@@ -63,10 +64,29 @@ export default function QuoteForm({ webhookUrl, phoneDisplay, phoneE164 }: Props
 
   const consentText = buildConsentText(vertical);
 
+  /**
+   * At least one way to reach them, and whatever they did give must be well-formed (AC-4.3).
+   *
+   * Requiring BOTH was stricter than the contract on the other end: intake quarantines a lead
+   * only when email and phone are *both* empty (apex-lead-engine `docs/data-contract.md`).
+   * Someone willing to leave a phone number but not an email is a lead the engine would have
+   * accepted, and this form was refusing to send it.
+   */
   function validate(): boolean {
     const errs: { email?: string; phone?: string } = {};
-    if (!isValidEmail(email)) errs.email = 'Enter a valid email so we can reach you.';
-    if (!isValidPhone(phone)) errs.phone = 'Enter a phone number with area code — that’s how we text you back.';
+    const emailGiven = email.trim() !== '';
+    const phoneGiven = phone.trim() !== '';
+
+    if (!emailGiven && !phoneGiven) {
+      const needOne = 'Add an email or a phone number so we can reach you.';
+      errs.email = needOne;
+      errs.phone = needOne;
+    } else {
+      if (emailGiven && !isValidEmail(email)) errs.email = 'Enter a valid email so we can reach you.';
+      if (phoneGiven && !isValidPhone(phone))
+        errs.phone = 'Enter a phone number with area code — that’s how we text you back.';
+    }
+
     setFieldErrors(errs);
     return Object.keys(errs).length === 0;
   }
@@ -100,6 +120,12 @@ export default function QuoteForm({ webhookUrl, phoneDisplay, phoneE164 }: Props
         body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error(`Webhook responded ${res.status}`);
+
+      // A 200 is not proof the lead was routed — intake answers 200 for a quarantined lead
+      // too, and the outcome is in the body (AC-4.4). Showing "captured & routed" for one of
+      // those tells the customer to stop chasing us when no crew has been notified.
+      const outcome: unknown = await res.json().catch(() => null);
+      if (isRejectedByIntake(outcome)) throw new Error('Lead was quarantined by intake');
 
       // GA4 / GTM: lead_submit with vertical + source (AC-5.5). No-op if no dataLayer.
       const w = window as unknown as { dataLayer?: unknown[] };
