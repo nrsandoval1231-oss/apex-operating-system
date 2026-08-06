@@ -45,7 +45,7 @@ The palette is approximated from Apex's charcoal-lion identity. If the maintaine
 
 ```bash
 npm run dev     # http://localhost:4321
-npm test        # 82 acceptance assertions, desktop + mobile
+npm test        # 122 acceptance assertions, desktop + mobile
 ```
 
 ## Before any production deploy
@@ -63,6 +63,14 @@ completely normal in a browser — that is the whole reason the script exists.
 Work is not done until it passes `docs/acceptance-criteria.md`. Most of those are now automated in `tests/` — run `npm test` before reporting a task complete, and walk the manual checklist for the rest. If you added a feature with no corresponding acceptance criterion, add one, and add a test for it.
 
 **Testing gotcha:** the quote form is a `client:visible` React island, and Astro server-renders it. The full form markup — including `aria-pressed` on the service buttons — exists before hydration, so a click can land on inert HTML and vanish. Use `openQuoteForm()` from `tests/helpers.ts`, which waits for `astro-island:not([ssr])`.
+
+**Testing gotcha, agents only:** Astro 7 detects an AI-agent environment (via `am-i-vibing`, which reads `CLAUDECODE`, `CURSOR_TRACE_ID`, `GEMINI_CLI` and friends) and **starts `astro dev` in the background**, so the foreground process exits immediately. Playwright's `webServer` sees that as `Process from config.webServer exited early` and the whole suite fails before a single test runs. Nothing is wrong with the site, and a human running `npm test` in a normal terminal never sees it. Run the suite with the variable cleared:
+
+```bash
+env -u CLAUDECODE npm test
+```
+
+Do **not** "fix" `playwright.config.ts` for this — the config is correct for the humans and the CI that actually run it. `astro dev stop` / `status` / `logs` manage a server that got left behind in the background.
 
 ## Map
 
