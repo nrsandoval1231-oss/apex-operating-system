@@ -15,10 +15,19 @@
     --char:#1B1C1E; --char2:#25272A; --steel:#54585E; --concrete:#E9E5DE; --paper:#F6F4EF;
     --line:#D4CFC5; --amber:#E0901B; --amber-d:#95560A; --pool:#0E6E7C; --ink:#141517;
     --ok:#2f8250; --warn:#b5721a; --lowc:#b0472e;
+
+    /* Brand accents, matching apex-website/src/styles/global.css and Apex Designer.
+       SAGE IS THE BRAND; amber is interaction and alerts only. The customer proposal
+       has no interactions, so nothing in the printed document should be amber.
+
+       Two sages, and picking the wrong one is the easy mistake: raw --sage is 1.59:1
+       on paper and unreadable as small text, but 9.75:1 on --char. So --sage on dark,
+       --sage-ink on light. */
+    --sage:#a1ccca; --sage-ink:#2f6b68; --brand-char:#383c3d;
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.55 Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
-  h1,h2,h3{font-family:Oswald,Impact,system-ui,sans-serif;text-transform:uppercase;letter-spacing:.01em;margin:0;font-weight:700;line-height:1}
+  h1,h2,h3{font-family:Oswald,"Arial Narrow",system-ui,sans-serif;text-transform:uppercase;letter-spacing:.01em;margin:0;font-weight:700;line-height:1}
   .mono{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace}
   header{background:var(--char);color:#F4F2EE;padding:18px 22px;display:flex;flex-wrap:wrap;gap:8px 18px;align-items:baseline}
   header h1{font-size:24px}
@@ -84,10 +93,18 @@
   .kpi b{display:block;font-family:Oswald,sans-serif;font-size:20px;line-height:1.1}
   .kpi span{font:600 9.5px/1.3 "JetBrains Mono",monospace;letter-spacing:.09em;text-transform:uppercase;color:var(--steel)}
   /* ─── Customer proposal ──────────────────────────────────────────────────────
-     A print-first document, not a screen view. Charcoal masthead and amber rule
-     come from the approved site mockup; Designer Pools teal (--pool) carries the
-     spec band, because on this project the QUANTITIES are the pitch — PRD 02's
-     whole thesis is that Apex can prove the number, not just state it. */
+     A print-first document, not a screen view. Charcoal masthead, and SAGE carries
+     every accent: the rule, the spec band, and the total. This is the one artefact a
+     customer physically holds, so it has to look like it came from the same company
+     as the website that produced the lead — the site moved to sage-as-brand on
+     2026-07-29 and Apex Designer followed on 2026-08-05.
+
+     Sage also happens to suit the spec band, which is the signature here: on this
+     project the QUANTITIES are the pitch — PRD 02's whole thesis is that Apex can
+     prove the number, not just state it.
+
+     Nothing in this document is amber. Amber is interaction and alerts, and a
+     printed proposal has neither. */
   .proposal-doc{display:none;padding:26px 18px 64px}
   body.proposal-mode{background:var(--concrete)}
   body.proposal-mode > header,body.proposal-mode > .wrap{display:none}
@@ -100,20 +117,21 @@
   /* masthead */
   .pd-top{background:var(--char);color:#F4F2EE;padding:26px 44px 22px;position:relative}
   .pd-brand{display:flex;align-items:center;gap:15px}
-  .pd-brand > svg{width:44px;height:44px;flex:none}
-  .pd-wm{font-family:Oswald,Impact,sans-serif;font-weight:700;font-size:31px;letter-spacing:.18em;line-height:1}
+  /* The lockup carries its own sage panel, so it sits on the charcoal masthead as a badge.
+     Do not knock the panel out or recolour it — it is drawn that way. */
+  .pd-logo{display:block;flex:none;height:38px;width:auto}
   .pd-tagline{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:8.5px;font-weight:500;
-    letter-spacing:.3em;color:var(--amber);margin-top:4px}
+    letter-spacing:.3em;color:var(--sage);margin-top:4px}
   .pd-doctype{margin-left:auto;text-align:right}
-  .pd-doctype .l{font-family:Oswald,Impact,sans-serif;font-size:19px;font-weight:600;letter-spacing:.2em;line-height:1}
+  .pd-doctype .l{font-family:Oswald,"Arial Narrow",system-ui,sans-serif;font-size:19px;font-weight:600;letter-spacing:.2em;line-height:1}
   .pd-doctype .r{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:10px;letter-spacing:.12em;color:#9E968B;margin-top:5px}
-  .pd-rule{height:3px;background:var(--amber);margin:22px 0 0}
+  .pd-rule{height:3px;background:var(--sage);margin:22px 0 0}
   /* auto-fit, not an inline column count — the cell count varies (an unnamed proposal drops
      "Prepared for") and an inline grid-template would outrank the mobile media query below */
   .pd-meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:18px;padding-top:16px}
   .pd-meta span{display:block;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:8.5px;
     font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:#9E968B;margin-bottom:5px}
-  .pd-meta b{font-family:Oswald,Impact,sans-serif;font-size:16px;font-weight:500;letter-spacing:.03em;color:#F4F2EE}
+  .pd-meta b{font-family:Oswald,"Arial Narrow",system-ui,sans-serif;font-size:16px;font-weight:500;letter-spacing:.03em;color:#F4F2EE}
 
   /* cover + document body */
   .pd-cover,.pd-body{padding:34px 44px 40px;position:relative;z-index:1}
@@ -124,17 +142,17 @@
   /* running head — orients page 2 in print, where the masthead doesn't repeat */
   .pd-runhead{display:none}
   .pd-eyebrow{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:10px;font-weight:500;
-    letter-spacing:.24em;text-transform:uppercase;color:var(--amber-d)}
-  .proposal-doc .pd-h1{font-family:Oswald,Impact,sans-serif;font-weight:700;font-size:40px;line-height:1.02;
+    letter-spacing:.24em;text-transform:uppercase;color:var(--sage-ink)}
+  .proposal-doc .pd-h1{font-family:Oswald,"Arial Narrow",system-ui,sans-serif;font-weight:700;font-size:40px;line-height:1.02;
     letter-spacing:.005em;text-transform:uppercase;margin:12px 0 0;color:var(--char)}
-  .proposal-doc .pd-h1 em{font-style:normal;color:var(--pool)}
+  .proposal-doc .pd-h1 em{font-style:normal;color:var(--sage-ink)}
   .pd-lede{font-size:14.5px;line-height:1.6;color:var(--steel);margin:12px 0 0;max-width:52ch}
 
   /* spec band — the signature: what they're actually buying, measured */
   .pd-specs{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);
     border:1px solid var(--line);margin:26px 0 6px}
-  .pd-spec{background:#fff;padding:15px 14px;border-top:3px solid var(--pool)}
-  .pd-spec b{display:block;font-family:Oswald,Impact,sans-serif;font-weight:600;font-size:27px;
+  .pd-spec{background:#fff;padding:15px 14px;border-top:3px solid var(--sage-ink)}
+  .pd-spec b{display:block;font-family:Oswald,"Arial Narrow",system-ui,sans-serif;font-weight:600;font-size:27px;
     line-height:1;color:var(--char);font-variant-numeric:tabular-nums}
   .pd-spec span{display:block;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:8.5px;
     font-weight:500;letter-spacing:.13em;text-transform:uppercase;color:var(--steel);margin-top:7px;line-height:1.45}
@@ -148,7 +166,7 @@
   .pd-tbl td.n{text-align:right;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:14px;
     font-variant-numeric:tabular-nums;white-space:nowrap;padding-left:20px}
   .pd-tbl tr.allow td{color:var(--steel)}
-  .pd-tbl .dag{color:var(--amber-d);font-size:11px;vertical-align:super;margin-left:3px}
+  .pd-tbl .dag{color:var(--sage-ink);font-size:11px;vertical-align:super;margin-left:3px}
 
   /* totals */
   .pd-sums{margin-top:2px}
@@ -158,20 +176,24 @@
     font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--ink)}
   .pd-total{display:flex;align-items:center;justify-content:space-between;gap:20px;
     background:var(--char);color:#F4F2EE;padding:19px 22px;margin-top:12px}
-  .pd-total span{font-family:Oswald,Impact,sans-serif;font-size:17px;font-weight:500;
+  .pd-total span{font-family:Oswald,"Arial Narrow",system-ui,sans-serif;font-size:17px;font-weight:500;
     letter-spacing:.17em;text-transform:uppercase}
-  .pd-total b{font-family:Oswald,Impact,sans-serif;font-size:34px;font-weight:700;line-height:1;
-    color:var(--amber);font-variant-numeric:tabular-nums}
+  .pd-total b{font-family:Oswald,"Arial Narrow",system-ui,sans-serif;font-size:34px;font-weight:700;line-height:1;
+    color:var(--sage);font-variant-numeric:tabular-nums}
 
   /* footnotes */
   .pd-notes{margin-top:26px;border-top:1px solid var(--line);padding-top:16px}
   .pd-notes p{font-size:12px;line-height:1.65;color:var(--steel);margin:0 0 9px}
   .pd-notes p:last-child{margin-bottom:0}
-  .pd-notes .dag{color:var(--amber-d);font-weight:600}
+  .pd-notes .dag{color:var(--sage-ink);font-weight:600}
   .pd-fine{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:9.5px;line-height:1.7;
     letter-spacing:.02em;color:#8A857D;margin-top:18px}
-  .pd-mark{position:absolute;right:-46px;bottom:-56px;width:300px;height:300px;
-    color:var(--char);opacity:.045;pointer-events:none;z-index:0}
+  /* A wordmark, not the old lion silhouette. The retired mark was the wrong identity even at
+     4.5% opacity, and the real lockup is a 4.2:1 rectangle that cannot bleed off a corner as a
+     square. Typography is the honest way to keep the designer's intent here. */
+  .pd-mark{position:absolute;right:-30px;bottom:-38px;pointer-events:none;z-index:0;
+    font-family:Oswald,"Arial Narrow",system-ui,sans-serif;font-weight:700;font-size:170px;
+    line-height:1;letter-spacing:.06em;color:var(--char);opacity:.045;user-select:none}
 
   @media(max-width:720px){
     .pd-top,.pd-body{padding-left:22px;padding-right:22px}
@@ -196,7 +218,7 @@
     .pd-cover{break-after:page}
     .pd-runhead{display:flex;justify-content:space-between;align-items:baseline;gap:16px;
       border-bottom:1px solid var(--line);padding-bottom:9px;margin-bottom:24px}
-    .pd-runhead b{font-family:Oswald,Impact,sans-serif;font-weight:600;font-size:14px;letter-spacing:.15em}
+    .pd-runhead b{font-family:Oswald,"Arial Narrow",system-ui,sans-serif;font-weight:600;font-size:14px;letter-spacing:.15em}
     .pd-runhead span{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:9.5px;
       letter-spacing:.1em;color:var(--steel)}
   }
@@ -582,15 +604,22 @@ $('exportCsv').addEventListener('click', () => {
  * confirmed testing this), so a same-document view is the reliable path. `window.print()` then
  * prints just this section; the print stylesheet hides the builder chrome.
  */
-/** Brand lion mark (from the approved site mockup). `mono` flattens it to a silhouette. */
-const lion = (cls, mono) => {
-  const a = mono ? 'currentColor' : '#E0901B';
-  return `<svg class="${cls}" viewBox="0 0 64 64" aria-hidden="true">
-    <path fill="currentColor" d="M32 3 L40 11 L52 9 L49 21 L61 27 L50 33 L54 46 L41 43 L36 55 L32 47 L28 55 L23 43 L10 46 L14 33 L3 27 L15 21 L12 9 L24 11 Z"/>
-    <path fill="${a}" d="M32 20 L38 26 L35 34 L32 30 L29 34 L26 26 Z"/>
-    <circle cx="25" cy="27" r="2.4" fill="${a}"/><circle cx="39" cy="27" r="2.4" fill="${a}"/>
-    <path fill="${a}" d="M27 39 h10 l-5 6 Z"/></svg>`;
-};
+/**
+ * The real Apex logo lockup — the same asset the website serves, copied into this repo so the
+ * document has no cross-repository dependency (`brand/apex-logo.png`, 801×191).
+ *
+ * It replaces a hand-drawn starburst "lion" carried over from the pitch mockup. That mark was
+ * an approximation and was never Apex's actual identity; the website retired it on 2026-07-29.
+ * Shipping it here mattered more than anywhere else, because this is the document a customer
+ * keeps — it was the only place the retired mark still reached a paying customer.
+ *
+ * The lockup brings its own solid sage panel, which is why it sits on the charcoal masthead as
+ * a badge rather than being knocked out or recoloured. It also already contains the word APEX,
+ * so the masthead must not set that as text too — doing so says the brand name twice.
+ */
+const LOGO_RATIO = 801 / 191;
+const apexLogo = (h) =>
+  `<img class="pd-logo" src="brand/apex-logo.png" width="${Math.round(h * LOGO_RATIO)}" height="${h}" alt="Apex">`;
 
 /** Feet as a builder would letter it: 24 → 24'-0", 3.5 → 3'-6". */
 function ftIn(v) {
@@ -722,9 +751,8 @@ function proposalHtml() {
 <div class="pd-sheet">
   <div class="pd-top">
     <div class="pd-brand">
-      ${lion('', false)}
       <div>
-        <div class="pd-wm">APEX</div>
+        ${apexLogo(38)}
         <div class="pd-tagline">DESIGNER POOLS</div>
       </div>
       <div class="pd-doctype">
@@ -778,7 +806,7 @@ function proposalHtml() {
         agreement. Prepared ${today} · Apex Designer Pools · Lubbock, TX · 806.605.0502</p>
     </div>
   </div>
-  ${lion('pd-mark', true)}
+  <div class="pd-mark" aria-hidden="true">APEX</div>
 </div>`;
 }
 
