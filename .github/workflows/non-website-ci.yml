@@ -81,6 +81,7 @@ jobs:
       # available in a job-level `env`. This carries "is the key configured" —
       # never the key itself — into the two steps that need to branch on it.
       HAS_DESIGNER_KEY: ${{ secrets.APEX_DESIGNER_DEPLOY_KEY != '' }}
+      HAS_PROPOSAL_KEY: ${{ secrets.APEX_PROPOSAL_DEPLOY_KEY != '' }}
     steps:
       - uses: actions/checkout@v7
 
@@ -107,6 +108,27 @@ jobs:
         if: env.HAS_DESIGNER_KEY != 'true'
         run: |
           echo "::warning title=Designer contract unverified::APEX_DESIGNER_DEPLOY_KEY is not set, so apex-designer was not checked out and the Designer contract test will skip. See docs/runbooks/deployment.md section 8."
+
+      # The Proposal engine, for integration-tests/takeoff-to-proposal.test.ts — the only test
+      # that runs the whole chain: Designer measures, the quantities are approved, Proposal
+      # prices them, the proposal is issued. It needs BOTH sibling repositories, so it skips
+      # unless this key is configured as well as the Designer one.
+      #
+      # Source only, and no install: the Proposal engine is deliberately dependency-free plain
+      # ESM, which is why it can simply be imported.
+      - name: Check out the Proposal engine
+        if: env.HAS_PROPOSAL_KEY == 'true'
+        uses: actions/checkout@v7
+        with:
+          repository: nrsandoval1231-oss/apex-proposal-engine
+          path: apex-proposal-engine
+          ssh-key: ${{ secrets.APEX_PROPOSAL_DEPLOY_KEY }}
+          persist-credentials: false
+
+      - name: Note that the takeoff-to-proposal chain will not be verified
+        if: env.HAS_PROPOSAL_KEY != 'true' || env.HAS_DESIGNER_KEY != 'true'
+        run: |
+          echo "::warning title=Chain unverified::The takeoff-to-proposal chain test needs BOTH apex-designer and apex-proposal-engine checked out. Set APEX_PROPOSAL_DEPLOY_KEY (and APEX_DESIGNER_DEPLOY_KEY) as read-only deploy keys to run it; until then it skips, which is not a pass."
 
       # MinIO speaks the S3 API. Run as a step rather than a service container
       # because the image needs a command (`server /data`), which the services
@@ -159,6 +181,10 @@ jobs:
           # instead of skipping if the engine is missing, so a checkout that
           # lands in the wrong path or a revoked key is red rather than green.
           APEX_REQUIRE_DESIGNER_CONTRACT: ${{ env.HAS_DESIGNER_KEY == 'true' && '1' || '' }}
+          # Set only when BOTH checkouts were supposed to happen. The chain test then fails
+          # instead of skipping if either engine is missing — the console warning it prints is
+          # swallowed by vitest, so this variable is the only thing that makes the skip visible.
+          APEX_REQUIRE_TAKEOFF_CHAIN: ${{ (env.HAS_DESIGNER_KEY == 'true' && env.HAS_PROPOSAL_KEY == 'true') && '1' || '' }}
       - run: pnpm audit --prod --audit-level high
 
       # The container is built AND RUN. A Dockerfile that merely builds proves
