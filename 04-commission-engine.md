@@ -1,67 +1,193 @@
 # PRD 04 — Commission Engine
 
-> **STATUS: NOT WRITTEN — UNBLOCKED 2026-08-05.** Placeholder only; do not build from it yet. But
-> the formula is settled, every input is answered, and PRD 03 is written. Ready to write.
+> **STATUS: WRITTEN (v0.1) — 2026-08-05.** Every input is answered and PRD 03 is
+> written. The formula was settled long before this document; what took the time
+> was three inputs, and all three closed on 2026-08-05 — the allowance mechanic
+> and both contested points in the formula.
 > **Depends on:** `00-foundation.md`, `03-cost-capture-allocation.md`
+> **Gates:** nothing. This is the end of the chain the project started for.
 >
-> All three inputs are answered and **approved by Travis on 2026-08-05**: the allowance mechanic
-> recalculates against final approved cost (`decision-register.md` item 3), and both contested points
-> in the formula are resolved below. **The remaining dependency is PRD 03 being written** — its own
-> gates are open too, so nothing here is waiting on a decision.
+> **It cannot run until one job is reconciled.** PRD 03 §13's ninth item — a
+> single job carried all the way to a declared actual GP — is what Stage 2 reads.
+> Until that exists this engine has nothing to compute against. That is a
+> sequencing fact, not a missing decision.
 
-## The formula — settled (Foundation §1, §3, §7)
+---
 
-Pools, 30% of gross profit, paid in two stages:
+## 1. What this is for
 
-- **Stage 1 — at sale:** 15% of **estimated** GP from the accepted proposal, paid as an **advance**.
-- **Stage 2 — at reconciliation:** trues up to 30% of **collected** GP, floored at zero. A disaster
-  job means the rep keeps Stage 1; it never goes negative and the advance is never clawed back.
-- **GP is calculated before commission** (Foundation §1.4). Non-negotiable — otherwise the
-  definition is circular.
-- **The Lever B expanded cost base counts toward commission GP** (Foundation §3.3, decided
-  2026-08-05 against the recommendation on file). Worth about **$950 per pool**, ~$18,000 a year at
-  19 pools. **Tier 1 only** — if Tier 2 (PM time, supervision, trucks) is ever moved into the base
-  under Foundation §3.2, this is revisited, not inherited.
-- **Excluded from the base:** sales tax, pass-through amounts carrying no fee, financing charges,
-  warranty rework, unapproved overruns, and uncollected revenue.
+**Commission standardisation is the reason this project started.** Everything
+else — the takeoff, the cost capture, the gates — sits underneath the question of
+what a salesperson is owed and when.
 
-**Two corrections this makes to earlier versions of this document.** It previously stated the Lever B
-exclusion as decided; Foundation §3.3 only ever *recommended* it, and the decision has now gone the
-other way. It also described Stage 2 as a top-up at reconciliation without saying against what —
-which is now collected GP, making reconciliation a recalculation rather than a release gate.
+The engine's job is narrow: take a reconciled job, compute two payments, and show
+the arithmetic. It is a **layer, not a platform feature.** Monday will not do
+two-stage margin-based commission natively and should not be made to.
 
-**What that costs, stated once:** Foundation §7.1. The rep is now paid more when a job costs more,
-on a wider base, because reconciliation recalculates rather than caps. Two mitigations are designed
-and deliberately not adopted — capping Stage 2 at the lesser of estimated and collected GP, and
-excluding Apex-initiated change orders. Both are engine rules, not redesigns, if the exposure proves
-real.
+---
 
-Remodel, coatings, and pool service commission structures are **undefined**. Recurring-revenue commission for Pool Service is a genuinely open design problem (Foundation §2 amendment needed — "one Job = one contract" doesn't describe a service account).
+## 2. The formula
 
-## Why it isn't written
+Pools. **30% of gross profit**, in two stages.
 
-Three inputs were missing. **Two are now answered; one is not.**
+| Stage | When | Amount |
+|---|---|---|
+| **1** | At sale, on the accepted proposal | 15% of **estimated** GP, paid as an **advance** |
+| **2** | At reconciliation | Trues up to 30% of **collected** GP, floored at zero |
 
-1. ~~**The allowance mechanic** (Foundation §6).~~ **Answered 2026-08-05** — the fee recalculates
-   against final approved allowance cost, in both directions, and approved changes and
-   customer-selected upgrades carry the same fee unless expressly excluded. Whitaker's $17,000 of
-   allowances therefore resolve at actuals, not at estimate.
-2. ~~**Which §7 option**~~ **Answered 2026-08-05, and none of the three** — Foundation §7.1. Stage 1
-   is an advance, Stage 2 trues up on collected GP, and the perverse incentive is accepted rather
-   than blunted. Two mitigations stay on the shelf.
-3. ~~**Actual GP has to be computable**, which requires PRD 03.~~ **PRD 03 is written as of
-   2026-08-05**, including the payment-application input this formula needs. Nothing is blocking
-   this document now.
+**Stage 1 is an advance.** It is money against a commission that is *earned* on
+collection. That distinction is what resolved the conflict between paying at sale
+and settling on collected GP — Foundation §7.1 records the three alternatives and
+why this was chosen over them.
 
-**A collected-GP formula raises one input PRD 03 did not previously have to carry:** payment
-application per job. Stage 2 cannot be computed from cost data alone — it needs to know what was
-actually collected against the contract, by job, net of the exclusions above. `docs/status.md`
-records that Apex OS holds draw status and a named human's invoice confirmation but is explicitly
-**not** the financial authority, so this comes from QuickBooks. Worth naming in PRD 03's scope
-before it is written rather than discovered while building the engine.
+**The advance is never clawed back.** A disaster job means the rep keeps Stage 1
+and Stage 2 floors at zero. Deliberate: a commission plan that can go negative is
+one salespeople price into their behaviour, and the behaviour it buys is not the
+one Apex wants.
 
-## Build note for when it unblocks
+### 2.1 What is in the base
 
-The engine is a **layer**, not a platform feature. Monday.com won't do two-stage margin-based commission natively. The mechanic: n8n pulls reconciled job-cost data, computes both stages, and writes the result back. Small, well-bounded, and genuinely the highest-value custom work in the engagement.
+**GP is calculated before sales commission** (Foundation §1.4). Non-negotiable —
+commission paid on gross profit that already has commission inside it is a
+definition eating its own tail. It never books to a job cost code, and PRD 03 §4
+has no code for it precisely so that cannot happen by accident.
 
-**Adoption angle worth remembering:** Stage 2 can't be calculated until every cost is logged and the job is reconciled. No cost data, no second check. The commission engine is therefore the enforcement mechanism that makes the whole costing system stick.
+**The Lever B expanded base counts — Tier 1 only** (Foundation §3.3, decided
+2026-08-05 against the recommendation that had been on file). Worth about **$950
+per pool**, roughly **$18,000 on a 19-pool year**.
+
+That figure is 30% of the added *gross profit* — the fee on the moved base, about
+$3,200 — not 30% of the added revenue. Getting that wrong overstates the cost of
+the decision roughly fivefold, which it did while the decision was being made.
+Foundation §1.5 carries the worked example to check a statement against.
+
+**If Tier 2 ever moves into the base, this is revisited rather than inherited.**
+The original objection — that a rep did not earn a fee on reclassified PM salary —
+is wrong about permits and geotech and still right about supervision time.
+
+**Excluded outright:** sales tax · pass-through amounts carrying no fee ·
+financing charges · warranty rework · unapproved overruns · uncollected revenue.
+
+---
+
+## 3. What "collected" requires
+
+Stage 2 cannot be computed from cost data. It needs, per Job ID, what was
+**invoiced**, what was **collected** and when, and what remains **outstanding** —
+net of the exclusions above.
+
+**QuickBooks is the authority.** PRD 03 §8 carries this input specifically
+because this document forced it: Apex OS holds draw status and a named human's
+invoice confirmation but is explicitly not the financial authority
+(`docs/status.md`). Apex OS says a draw is *ready to bill*. QuickBooks says
+whether it was billed and whether the money arrived.
+
+**Partial collection is the normal case, not an edge case.** The draw schedule is
+10 / 30 / 30 / 20 / 10, so a job is collected in five pieces over months. Stage 2
+is computed on what has actually landed at the moment it runs — which means a job
+can be reconciled for cost and still owe a further top-up as the final draw
+clears.
+
+**The engine must therefore be re-runnable per job, not a one-shot at close.**
+Each run pays the difference between what is now earned and what has already been
+paid. That single property is what keeps "settle on collected GP" from meaning
+"wait until every dollar is in before paying anything".
+
+---
+
+## 4. The incentive this accepts
+
+**Under cost-plus, commission on GP rewards cost overruns.** Costs rise → the 30%
+fee rises → GP rises → commission rises. On a Whitaker-sized job a 10% overrun
+adds roughly **$1,050** to the cheque. That is arithmetic, not a hypothetical.
+
+Foundation §7 offered three ways to blunt it. **None was taken**, and §7.1
+records that as a chosen position rather than an oversight. **The engine must not
+quietly implement one of them:** reconciliation is a *recalculation*, not a cap.
+Building in a cap "to be safe" would be reversing a decision in code that was
+made in a document.
+
+**What makes it defensible.** Commission is earned on *collected* GP, so a job
+that overruns and cannot be collected pays nothing extra. Unapproved overruns are
+excluded from the base outright. The residual exposure is *approved* overruns on
+*collected* jobs — which under cost-plus is largely scope the customer asked for
+and paid for.
+
+**Two mitigations are designed and deliberately unadopted.** Both are engine
+rules rather than redesigns if the exposure proves real:
+
+1. Cap Stage 2 at the **lesser** of estimated and collected GP.
+2. Exclude **Apex-initiated** change orders while including customer-initiated
+   ones.
+
+**The trigger to revisit is the first job whose commission is materially larger
+than its estimate implied** — not a quarterly review, and not a feeling. That is
+checkable: Stage 2 exceeding Stage 1 by more than the schedule predicts is a
+report, and it should exist from day one.
+
+---
+
+## 5. Mechanics
+
+**n8n pulls reconciled job-cost and payment data, computes both stages, writes
+the result back.** Small, well-bounded, and genuinely the highest-value custom
+work in the engagement.
+
+The engine holds no state of its own. Given a Job ID it reads the accepted
+proposal's estimated GP, the reconciled actual cost, the collected total, and
+what has already been paid out. All four exist once PRD 03 holds.
+
+**Every payment shows its arithmetic.** A commission statement a salesperson
+cannot check is one they will dispute, and the dispute costs more than the
+transparency buys. Foundation §1.5 exists to be checked against by hand.
+
+### 5.1 It is also the enforcement mechanism
+
+**Stage 2 cannot be calculated until every cost is logged and the job is
+reconciled. No cost data, no second cheque.**
+
+That is not a side effect to engineer around — it is what makes the whole costing
+system stick. PRD 03 asks a real behaviour change of the office and the field,
+and this is the reason anyone completes it.
+
+---
+
+## 6. What is not defined
+
+**Remodel, coatings and pool service commission structures are undefined.** The
+formula above is built from a pool estimate with a disclosed cost-plus fee, and
+none of those three has that shape.
+
+**Pool Service is a genuine design problem, not an omission.** Foundation §2's
+rule — *one Job = one contract = one GP calculation = one commission
+calculation* — does not describe a service account, which is recurring revenue
+with no completion and no reconciliation. Amending §2 is a prerequisite to
+commissioning service at all, and register item 15 keeps service out of the first
+implementation for exactly this reason.
+
+**Sales fee-rate discretion is settled and belongs here:** none unilateral
+(register item 8). Sales may recommend a deviation; anything below the standard
+rate, or any unusual exclusion, needs written approval. Without that rule the
+commission base is whatever the rep negotiated, and the fee rate holding at 30%
+(item 4) means nothing.
+
+---
+
+## 7. Definition of done
+
+1. Stage 1 computes from an accepted proposal and pays 15% of estimated GP.
+2. Stage 2 computes from a reconciled job and trues up to 30% of collected GP,
+   floored at zero, with the advance never clawed back.
+3. Tier 1 Lever B costs are in the base; Tier 2 is not.
+4. The six exclusions in §2.1 are applied and visible as line items, not netted
+   away silently.
+5. Re-running Stage 2 after a later draw clears pays the additional top-up and
+   nothing else (§3).
+6. A report exists for Stage 2 exceeding what the estimate implied (§4).
+7. One statement reconciles by hand against Foundation §1.5.
+8. **One real job pays both stages end to end.**
+
+**Item 8 is the one that matters, and it is the same job PRD 03 §13 ends on.**
+The chain — takeoff → proposal → cost capture → reconciliation → commission — has
+never been run once on real work. Running it once is worth more than any further
+specification of it, including this document.

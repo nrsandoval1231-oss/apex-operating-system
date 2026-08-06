@@ -14,7 +14,7 @@ Operational modernization for Apex (Lubbock, TX). One brand, four verticals: **D
 | **01** | [Lead Capture, Funnels & Marketing](01-lead-capture-funnels.md) | ✅ **Written** · handed off | Access transfer for launch only |
 | **02** | [Pool Proposal & Takeoff Engine](02-proposal-takeoff-engine.md) | ✅ **Written** (v0.2) · engine built | Back-test passes on 1 job; needs a 2nd |
 | **03** | [Cost Capture & Allocation](03-cost-capture-allocation.md) | ✅ **Written** (v0.1) | Amend the agreement before billing anything in §5 |
-| **04** | [Commission Engine](04-commission-engine.md) | 🟡 **Stub — ready to write** | Formula settled; PRD 03 written. Nothing left blocking |
+| **04** | [Commission Engine](04-commission-engine.md) | ✅ **Written** (v0.1) | Needs one reconciled job before it can run |
 | **05** | [CRM & Pipeline Analytics](05-crm-pipeline-analytics.md) | ⏸ **Stub — deferred** | Needs ~60 days of real lead data |
 | **06** | [Job Execution & Crew Scheduling](06-project-management.md) | ✅ **Written** (v0.1) | Phase 1 has **no** blockers |
 
@@ -25,6 +25,13 @@ Operational modernization for Apex (Lubbock, TX). One brand, four verticals: **D
 > positions already on file; all three are **resolved in §4** and written through to Foundation
 > §3.3, Foundation §7.1, and PRD 04. Read §4 before building anything commission-related — it also
 > carries a correction to a cost figure that was quoted while those decisions were still open.
+
+**Five of seven are written.** 03 and 04 landed 2026-08-05 once Travis approved
+the decisions that gated them. Neither can *run* yet, and both say so: the chain
+they complete — takeoff → proposal → cost capture → reconciliation → commission —
+has never been executed once on real work. **One job carried end to end is worth
+more than any further specification**, and it is the last item in both documents'
+definitions of done.
 
 **00 is the source of truth.** Every other document references it. Definitions live there once — cost codes, GP definition, allocation policy, the enum of verticals — so the PRDs can't drift apart and contradict each other at integration time.
 
