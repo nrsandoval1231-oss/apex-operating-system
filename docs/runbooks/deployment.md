@@ -82,7 +82,9 @@ is what survives an operator mistake.
 #      APEX_PUBLIC_ORIGIN          https://apex.<domain>
 #      APEX_CUSTOMER_CONTACT_PHONE +1806…        (optional)
 #
-#    DATABASE_URL is supplied by Render from the database. Do not type it.
+#    DATABASE_URL is the database's EXTERNAL connection string, pasted by hand.
+#    Render's blueprint can only wire the private-network URL, and that endpoint
+#    is self-signed — see §6, "self-signed certificate on the very first deploy".
 
 # 3. Deploy.
 ```
@@ -257,6 +259,46 @@ rather than failing on the first request:
 | `must be an origin with no path` | `APEX_PUBLIC_ORIGIN` has a trailing path. |
 | `S3_ENDPOINT is set but these are missing` | Partial storage configuration. |
 | `must be set together` | Only one of issuer/audience is set. |
+| `DEPTH_ZERO_SELF_SIGNED_CERT` | `DATABASE_CA_CERT` is missing. See below. |
+
+### `self-signed certificate` on the very first deploy
+
+The whole log is a stack trace ending in `DEPTH_ZERO_SELF_SIGNED_CERT`, thrown
+from `withMigrationLock` before any migration runs.
+
+**Cause.** Render's blueprint can only wire the **private-network** database URL,
+and that endpoint presents a **self-signed** certificate. Render publishes no CA
+for it. This system offers no way to encrypt without verifying, so the connection
+is refused rather than downgraded.
+
+**Fix: use the external connection string.** In the Render dashboard open
+**apex-postgres**, copy the **External Database URL**, and set it on the
+**apex-os** service as `DATABASE_URL`. Then redeploy.
+
+That endpoint presents a Let's Encrypt certificate which verifies against the
+system roots with nothing else configured. Verified rather than assumed:
+
+```bash
+openssl s_client -starttls postgres \
+  -connect <db>.oregon-postgres.render.com:5432 </dev/null
+# depth=0 CN=oregon-postgres.render.com … Verify return code: 0 (ok)
+```
+
+**What this costs, stated plainly:** database traffic now leaves the private
+network and crosses the internet on every query — TLS-protected and verified, but
+slower and no longer private-by-topology. For a pilot that is an acceptable
+trade; for a busy production system it is worth closing.
+
+**The tighter arrangement**, when someone has ten minutes: open a shell on the
+`apex-os` service, capture the private endpoint's self-signed certificate, paste
+it into `DATABASE_CA_CERT`, and point `DATABASE_URL` back at the internal host.
+That restores the private network *and* keeps verification, which is what
+`DATABASE_CA_CERT` exists for. Setting the certificate alone changes nothing —
+the URL has to move too.
+
+This bit on the first real deploy, 2026-08-06. `render.yaml` used
+`fromDatabase: connectionString`, which cannot be anything but the private URL,
+so the deploy could never have succeeded as written.
 
 ### A staff member cannot sign in
 

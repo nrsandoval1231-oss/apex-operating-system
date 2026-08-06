@@ -55,7 +55,12 @@ export interface PostgresOptions {
   readonly onPoolError?: (error: Error) => void;
 }
 
-const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '']);
+/*
+ * `[::1]` carries its brackets: `new URL(...).hostname` keeps them for IPv6, so the bare
+ * `::1` below never matched anything and IPv6 loopback was silently getting TLS forced on.
+ * Both spellings are kept because only one of them is what the URL parser actually hands us.
+ */
+const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]', '::1', '']);
 
 /**
  * TLS configuration, secure by default.
