@@ -31,7 +31,10 @@
   .mono{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace}
   header{background:var(--char);color:#F4F2EE;padding:18px 22px;display:flex;flex-wrap:wrap;gap:8px 18px;align-items:baseline}
   header h1{font-size:24px}
-  header .sub{font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--amber)}
+  /* Brand label on the charcoal masthead, so sage — not amber. Amber stays for the genuine
+     interactions below (focus rings, the primary button, alert flags), which is the whole
+     distinction the two-accent palette encodes. */
+  header .sub{font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--sage)}
   .wrap{max-width:1240px;margin:0 auto;padding:22px;display:grid;grid-template-columns:340px 1fr;gap:22px;align-items:start}
   @media(max-width:900px){.wrap{grid-template-columns:1fr}}
   .panel{background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:18px}
