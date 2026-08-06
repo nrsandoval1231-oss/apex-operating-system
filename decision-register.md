@@ -247,10 +247,60 @@ So the register isn't mistaken for the whole picture:
 
 ## 7. Two things that need a second data point, not a decision
 
-**A second completed pool.** The takeoff engine reproduces Whitaker exactly — but Whitaker is what
-calibrated it, so that result is partly circular. One completed job the model has never seen,
-landing within 10%, is what turns "method proven" into "numbers trusted."
+Neither needs anyone to decide anything. They need one job to finish, and the
+paperwork from it.
 
-**Crew-days on two pools.** Fixes the WIP cap at a measured number instead of a modelled one.
+### 7.1 A second completed pool — exactly what to collect
 
-Neither needs anyone to decide anything. They need one job to finish.
+The takeoff engine reproduces Whitaker exactly, **but Whitaker is what calibrated
+it**, so that result is partly circular. One completed job the model has never
+seen, landing within 10%, is what turns *method proven* into *numbers trusted*.
+
+**Whitaker alone cannot do this**, and its own evidence README says so: it holds
+dollars, not quantities. `$4,000` for "Rebar / Rebar Labor" with no pounds behind
+it. So a second job needs more than Whitaker had.
+
+**A — the money chain** (proposal → cost capture → reconciliation → commission):
+
+- [ ] The customer estimate **as issued**
+- [ ] The completed-job **transaction report** — every cost line
+- [ ] **What was invoiced and collected, and when.** New requirement: PRD 04
+      settles on *collected* GP and Whitaker carries no payment timeline
+- [ ] **What the salesperson was actually paid**, so the engine's answer can be
+      checked against reality rather than only against itself
+
+**B — the takeoff** (the part Whitaker explicitly cannot support):
+
+- [ ] Pool **length × width**, and the depth profile — shallow depth, deep depth,
+      and the shallow / transition / deep runs
+- [ ] **Spa** — size, and inset / attached / spillover
+- [ ] **Steps and benches** — tread count, tread run, tread width; bench depth
+      below waterline
+- [ ] **The deck slab dimensions** — the actual poured area, not a border width
+- [ ] **Quantities actually ordered** — gunite yards, rebar weight, plaster, tile,
+      coping, excavation loads hauled
+
+B is the half that matters most, because it is the half nothing has ever tested.
+
+**Transcribe it the way Whitaker was transcribed:** manual, visually verified,
+integer cents, blank source cells left `null` rather than inferred, and the
+document's SHA-256 recorded. `classification` fields stay `null` until an
+authorised owner maps them to cost codes — a guessed cost code is worse than an
+unclassified one.
+
+### 7.2 What a completed job cannot prove
+
+**It proves the arithmetic, not the system.** Gates, evidence photos, draw
+releases and the customer progress page all happen *during* construction, and a
+finished pool cannot retroactively pass a pre-gunite gate with photos nobody
+took.
+
+So the second artefact is not paperwork at all: **name a pool that is about to
+start.** That is PRD FINAL §20.12 and it is what tests everything the completed
+job cannot. The two together are the pilot.
+
+### 7.3 Crew-days on two pools
+
+One number per phase. It retires the largest assumption in the capacity model and
+feeds Tier 2 allocation, which PRD 03 §6.1 currently refuses to approximate.
+Start before the tooling exists — a note on a phone is enough.
