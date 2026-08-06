@@ -218,6 +218,22 @@ server.listen(port, HOST, () => {
       '  !  No APEX_CUSTOMER_CONTACT_PHONE set: customer progress pages will show no call or text route.',
     );
   }
+  /*
+   * Evidence on a container filesystem is erased by the next deploy, and a Gate
+   * signature whose photograph has vanished is worse than no record at all.
+   *
+   * Bound to loopback this is just a developer's machine and unremarkable. Bound
+   * to anything else it is a deployment, and the storage note above reads as
+   * reassuring configuration rather than a countdown.
+   */
+  if (!s3Endpoint && HOST !== '127.0.0.1' && HOST !== '::1') {
+    console.warn(
+      '\n  !  EVIDENCE IS EPHEMERAL: no object storage is configured, so evidence is being written\n'
+      + `     to this container at ${evidenceDirectory} and will be DESTROYED by the next deploy.\n`
+      + '     Set S3_ENDPOINT, S3_BUCKET, S3_ACCESS_KEY_ID and S3_SECRET_ACCESS_KEY before any\n'
+      + '     real job records evidence against a Gate.',
+    );
+  }
   if (localUserId) {
     console.warn(
       `\n  !  LOCAL PILOT MODE: requests from this machine act as ${localUserId} with no token.`
