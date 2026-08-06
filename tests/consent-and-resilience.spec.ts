@@ -235,6 +235,21 @@ test.describe('AC-5.5 · analytics event', () => {
     await page.getByRole('button', { name: /get my quote/i }).click();
     await hook.payload();
 
+    /*
+     * Wait for the capture panel, NOT just for the request.
+     *
+     * `hook.payload()` resolves the moment the route handler INTERCEPTS the POST, which is
+     * several ticks before the app's `await fetch` resumes, reads the response body, and
+     * pushes the event. Asserting straight after it was a race that the mobile project lost
+     * under CI load on the first run of this workflow — reported as flaky, hidden by retries.
+     *
+     * The panel is the honest synchronisation point: QuoteForm pushes to the dataLayer and
+     * only then calls setCaptured/setStatus, so a visible panel means the push has already
+     * happened. That also keeps the assertion below exact — waiting until the count reaches 1
+     * would hide a double push, whereas this still fails on one.
+     */
+    await expect(page.locator('.capture[role="status"]')).toBeVisible();
+
     const events = await page.evaluate(() =>
       ((window as unknown as { dataLayer?: Record<string, unknown>[] }).dataLayer ?? []).filter(
         (e) => e.event === 'lead_submit',
