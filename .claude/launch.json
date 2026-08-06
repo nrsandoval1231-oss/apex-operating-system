@@ -30,7 +30,7 @@
     {
       "name": "apex-website",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev", "--prefix", "apex-website/apex-website"],
+      "runtimeArgs": ["run", "dev", "--prefix", "apex-website"],
       "port": 4321
     }
   ]
