@@ -110,6 +110,9 @@ importers:
         specifier: ^8.22.0
         version: 8.22.0
     devDependencies:
+      '@apex/contracts':
+        specifier: workspace:*
+        version: link:../contracts
       '@types/pg':
         specifier: ^8.20.3
         version: 8.20.3
