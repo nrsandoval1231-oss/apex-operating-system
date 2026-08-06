@@ -3,6 +3,11 @@ import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { PGlite } from '@electric-sql/pglite';
 import { applyOperationalMigrations, STORAGE_MIGRATION } from './index.js';
+import {
+  ApprovedTakeoffRevisionSchema,
+  calculateQuantityPayloadSha256,
+  type AuthoritativeQuantity,
+} from '@apex/contracts';
 import { beforeEach, describe, it, expect } from 'vitest';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -77,18 +82,72 @@ describe('Apex Operating System - Local Demo', () => {
        values ($1, $2, 1, 'active')`,
       [jobId, leadId]
     );
+    /*
+     * A CONTRACT-VALID approved revision, not an illustrative one.
+     *
+     * This previously carried a repeat('c', 64) digest, a quantity with no calcId, and a Calc
+     * ledger entry missing formula/inputs/value/unit. Nothing here asserted on any of it, so it
+     * passed — but this file is a narrated walkthrough of the lifecycle, and the shape it walks
+     * through is the shape a reader copies. It could never have been served as pricing
+     * authority: GET /api/jobs/:jobId/approved-takeoff answers 409 for exactly this row.
+     *
+     * The digest is derived rather than typed, so the demo cannot drift from the contract.
+     */
+    const demoQuantities: AuthoritativeQuantity[] = [
+      { code: 'pool.water-volume', value: 12881, unit: 'gal', calcId: 'geom.total.volumeGal' },
+    ];
+    const demoCalcLedger = [
+      {
+        id: 'geom.total.volumeGal',
+        label: 'Total volume',
+        formula: 'V = A_surface x d_avg x 7.48',
+        inputs: [
+          { symbol: 'A_surface', label: 'Surface area', value: 336, unit: 'sf' },
+          { symbol: 'd_avg', label: 'Average depth', value: 5.12, unit: 'ft' },
+        ],
+        value: 12881,
+        unit: 'gal',
+      },
+    ];
+    const demoQuantityDigest = calculateQuantityPayloadSha256(demoQuantities);
     await db.query(
       `insert into takeoff_revisions
        (revision_id, job_id, revision_number, status, engine_version, quantity_model_version,
         job_input_sha256, calc_ledger_sha256, quantity_payload_sha256, quantities, calc_ledger,
         blocking_issues, created_by, approved_at, approved_by)
        values ($1, $2, 1, 'approved', 'designer-1', 'designer-quantity-v2',
-               repeat('a', 64), repeat('b', 64), repeat('c', 64),
-               '[{"code":"pool.water-volume","value":12881,"unit":"gal"}]',
-               '[{"id":"geom.total.volumeGal","label":"Total volume"}]',
+               repeat('a', 64), repeat('b', 64), $4, $5, $6,
                '[]', $3, now(), $3)`,
-      [revisionId, jobId, userId]
+      [revisionId, jobId, userId, demoQuantityDigest, JSON.stringify(demoQuantities), JSON.stringify(demoCalcLedger)]
     );
+    /*
+     * Prove the demo's revision is servable, rather than trusting that it looks right.
+     *
+     * Without this the data drifts back the moment someone edits it: nothing else in this file
+     * asserts on the revision at all, which is exactly how it came to carry a placeholder
+     * digest and a quantity with no calcId. This is the same schema
+     * GET /api/jobs/:jobId/approved-takeoff validates against before serving.
+     */
+    ApprovedTakeoffRevisionSchema.parse({
+      revisionId,
+      leadId,
+      jobId,
+      revisionNumber: 1,
+      status: 'approved',
+      engineVersion: 'designer-1',
+      jobInputSha256: 'a'.repeat(64),
+      calcLedgerSha256: 'b'.repeat(64),
+      quantityPayloadSha256: demoQuantityDigest,
+      quantityModelVersion: 'designer-quantity-v2',
+      createdAt: new Date().toISOString(),
+      createdBy: userId,
+      approvedAt: new Date().toISOString(),
+      approvedBy: userId,
+      blockingIssues: [],
+      quantities: demoQuantities,
+      calcLedger: demoCalcLedger,
+    });
+
     log.ok('Created job and approved takeoff revision');
     log.data('Job ID', jobId);
 
@@ -108,10 +167,13 @@ describe('Apex Operating System - Local Demo', () => {
         takeoff_revision_id, quantity_payload_sha256, quantity_model_version,
         pricing_library_version, proposal_payload_sha256, proposal_payload,
         total_cents, created_by, created_at)
-       values ($1, $2, $3, null, 1, 'draft', $4, repeat('c', 64), 'designer-quantity-v2',
+       values ($1, $2, $3, null, 1, 'draft', $4, $6, 'designer-quantity-v2',
                'proposal-pricing-v1', repeat('d', 64), '{"status":"draft","total":100000}',
                100000, $5, now())`,
-      [proposalVersionId, proposalId, leadId, revisionId, userId]
+      // The SAME digest as the revision it is priced from. A proposal version pinning a
+      // different hash than its own takeoff revision is the precise thing the digest exists
+      // to make impossible, so the demo must not depict it.
+      [proposalVersionId, proposalId, leadId, revisionId, userId, demoQuantityDigest]
     );
     log.ok('Created draft proposal');
     log.data('Proposal Version ID', proposalVersionId);
