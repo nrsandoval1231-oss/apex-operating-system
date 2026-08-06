@@ -117,6 +117,14 @@ what makes a free-host deployment safe to do now: prove the stack, issue nothing
 Not one. Every screen renders seeded test data, and that has been true since the
 2026-07-31 audit said so. Steps 1 and 3 are what change it.
 
+**Expected 2026-08-06: a second completed pool.** PRD 03 and PRD 04 are both
+written and neither can run until one job has been carried end to end. The exact
+collection list is `apex-prds/decision-register.md` §7.1 — and the half that
+matters is the half Whitaker never had, because Whitaker holds dollars and no
+measured quantities. A completed job proves the arithmetic; it cannot prove the
+gates, the evidence or the draws, which is why §7.2 asks separately for the name
+of a pool that is about to start.
+
 ## Eight things that are not obvious
 
 1. **The restore procedure has never been run.** It is written

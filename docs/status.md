@@ -1053,6 +1053,31 @@ See `Apex Designer/src-tauri/README.md`.
 | CI on `main`, run `31049982302` | Green in 8m13s, with Postgres and S3 provisioned — **16 passed / 1 skipped** on integration, more than a local run covers |
 | Proposal `engine.test.mjs` / `whitaker-evidence.test.mjs` | **119** and **11**, unchanged |
 
+## The chain has never been run — 2026-08-05
+
+PRD 03 (Cost Capture & Allocation) and PRD 04 (Commission Engine) were written on
+2026-08-05, once Travis approved the decisions that gated them. Five of the seven
+PRDs are now written.
+
+**Neither can run, and both say so.** The chain they complete — takeoff →
+proposal → cost capture → reconciliation → commission — has never been executed
+once on real work, and the last item in both definitions of done is the same
+single job.
+
+Two artefacts close it, and they are different things:
+
+- **A second completed pool**, for the arithmetic. `apex-prds/decision-register.md`
+  §7.1 is the exact collection list. The critical half is quantities, not
+  dollars: Whitaker calibrated the takeoff so its exactness is circular, and its
+  evidence set explicitly cannot support independent quantity validation.
+- **A pool about to start**, for the system. Gates, evidence photos, draw
+  releases and the customer page all happen during construction and cannot be
+  reconstructed afterwards. This is PRD FINAL §20.12.
+
+**Commission standardisation is what this project was started for.** It is now
+specified end to end and waiting on one job rather than on any further
+specification.
+
 ## Next controlled milestone
 
 One pilot job must demonstrate:
