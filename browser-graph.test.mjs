@@ -55,25 +55,38 @@ for (const name of graph) {
   check(`${name} imports no node: builtin`, offenders.length === 0, offenders.join(', '));
 }
 
-// (2) The page must use the path that does not demand an approved revision.
-// Checked on the import statement rather than call sites, because aliasing
-// `legacyReplayTakeoff as takeoff` is exactly what report.mjs and backtest.mjs do.
-const importsProductionPath = /import\s*\{[^}]*(?<![\w])takeoff\s*(?:,|\})/.test(
-  (inlineModule ?? '').replace(/legacyReplayTakeoff as takeoff/g, 'legacyReplayTakeoff as ALIASED'),
-);
-check(
-  'index.html does not import the production takeoff path',
-  !importsProductionPath,
-  'the production path throws without an approved Designer revision, which this page cannot supply',
-);
+/*
+ * (2) The page must carry BOTH takeoff paths and choose between them.
+ *
+ * This assertion was the opposite until 2026-08-06: it required the page NOT to import the
+ * production path. That guard was correct for its time and its stated reason was explicit —
+ * the production path "throws without an approved Designer revision, WHICH THIS PAGE CANNOT
+ * SUPPLY". The page can supply one now: it loads an approved revision, validates it through
+ * readApprovedQuantityAuthority, and routes to the production path only when one is pinned.
+ * The premise expired, so the assertion had to change rather than be worked around.
+ *
+ * What must not be lost is the fail-closed boundary, and that is not a question about imports.
+ * It is asserted at runtime below, in both directions.
+ */
 check(
   'index.html imports the no-revision path',
-  /legacyReplayTakeoff\s+as\s+takeoff/.test(inlineModule ?? ''),
+  /(?<![\w])legacyReplayTakeoff\s*(?:,|\})/.test(inlineModule ?? ''),
+  'draft pricing must still work with no revision loaded',
+);
+check(
+  'index.html imports the production path',
+  /(?<![\w])takeoff\s+as\s+\w+/.test(inlineModule ?? ''),
+  'the page can now price against an approved Designer revision',
+);
+check(
+  'index.html routes on a pinned revision rather than calling one path unconditionally',
+  /approvedRevision\s*\?/.test(inlineModule ?? ''),
+  'each path refuses the other\'s inputs, so the choice must be explicit',
 );
 
 // Draft pricing is not permission to issue. If this ever passes, the fail-closed
 // boundary between a draft and a customer-issuable proposal has been lost.
-const { legacyReplayTakeoff } = await import('./engine.mjs');
+const { legacyReplayTakeoff, takeoff: productionTakeoff } = await import('./engine.mjs');
 const draft = legacyReplayTakeoff({ length: 24, width: 14, spa: {} });
 check('a draft prices', draft.pricing.cost > 0, String(draft.pricing.cost));
 check(
@@ -81,6 +94,43 @@ check(
   draft.proposalGate.canIssue === false
     && draft.proposalGate.blockers.some((blocker) => blocker.code === 'approved-takeoff-required'),
   JSON.stringify(draft.proposalGate.blockers?.map((b) => b.code)),
+);
+
+/*
+ * The two paths must keep refusing each other's inputs. This is what makes the page's routing
+ * safe: if either guard were relaxed, a mis-routed call would silently price a customer
+ * proposal against the wrong quantity authority instead of throwing.
+ */
+const throws = (fn) => { try { fn(); return false; } catch { return true; } };
+const { approvedTakeoffFixture } = await import('./approved-takeoff.fixture.mjs');
+check(
+  'the production path refuses to run without a revision',
+  throws(() => productionTakeoff({ length: 24, width: 14, spa: {} })),
+);
+check(
+  'the legacy path refuses to run with a revision',
+  throws(() => legacyReplayTakeoff({ length: 24, width: 14, spa: {}, approvedTakeoffRevision: approvedTakeoffFixture() })),
+);
+
+/*
+ * And the wiring has to actually clear the blocker it was built to clear. Without this, the
+ * loader could silently stop pinning and every proposal would quietly fall back to being
+ * unissuable — which is precisely the state this change existed to fix.
+ */
+const priced = productionTakeoff({
+  length: 24, width: 14, spa: {},
+  approvedTakeoffRevision: approvedTakeoffFixture(),
+  directLines: [], allowances: [],
+});
+check(
+  'an approved revision clears the approved-takeoff blocker',
+  !priced.proposalGate.blockers.some((blocker) => blocker.code === 'approved-takeoff-required'),
+  JSON.stringify(priced.proposalGate.blockers?.map((b) => b.code)),
+);
+check(
+  'a revision-priced takeoff carries the digest it was priced from',
+  /^[a-f0-9]{64}$/.test(priced.quantityPayloadSha256 ?? ''),
+  String(priced.quantityPayloadSha256),
 );
 
 if (failures.length) {

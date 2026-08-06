@@ -92,6 +92,24 @@
   .kpi div{background:var(--paper);border:1px solid var(--line);border-radius:9px;padding:10px 12px}
   .kpi b{display:block;font-family:Oswald,sans-serif;font-size:20px;line-height:1.1}
   .kpi span{font:600 9.5px/1.3 "JetBrains Mono",monospace;letter-spacing:.09em;text-transform:uppercase;color:var(--steel)}
+  /* approved-revision loader */
+  .rev-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .rev-file{position:relative;overflow:hidden;display:inline-block}
+  .rev-file input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer}
+  .rev-file span{display:inline-block;font:600 13px Oswald,"Arial Narrow",system-ui,sans-serif;
+    text-transform:uppercase;letter-spacing:.05em;padding:9px 14px;border-radius:8px;
+    border:1.5px solid var(--line);background:#fff;cursor:pointer}
+  .rev-status{margin-top:10px;font-size:12.5px;line-height:1.5}
+  .rev-status:empty{display:none}
+  .rev-pinned{border-left:3px solid var(--sage-ink);background:#eef5f4;padding:10px 12px;border-radius:0 8px 8px 0}
+  .rev-pinned dl{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;margin:6px 0 0}
+  .rev-pinned dt{font:600 9.5px/1.5 "JetBrains Mono",monospace;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--steel)}
+  .rev-pinned dd{margin:0;font-family:"JetBrains Mono",monospace;font-size:11.5px;word-break:break-all}
+  .rev-bad{border-left:3px solid var(--lowc);background:#fdf1ee;padding:10px 12px;border-radius:0 8px 8px 0}
+  .rev-bad b{display:block;margin-bottom:3px}
+  /* Dimensions stop driving the takeoff once a revision is pinned — say so where they are. */
+  .dims-descriptive{opacity:.62}
   /* ─── Customer proposal ──────────────────────────────────────────────────────
      A print-first document, not a screen view. Charcoal masthead, and SAGE carries
      every accent: the rule, the spec band, and the total. This is the one artefact a
@@ -233,6 +251,23 @@
 <div class="wrap">
   <!-- ───────────── INPUTS ───────────── -->
   <div>
+    <!-- Sits above Pool because it governs everything below it: once a revision is pinned,
+         Designer's measured quantities replace the parametric takeoff entirely. -->
+    <div class="panel" id="revisionPanel">
+      <h2>Approved Designer takeoff <small class="tag" id="revisionMode">draft — not issuable</small></h2>
+      <div class="rev-actions">
+        <label class="rev-file">
+          <input type="file" id="revisionFile" accept="application/json,.json">
+          <span>Load revision (.json)</span>
+        </label>
+        <button type="button" id="revisionClear" style="display:none">Unpin</button>
+      </div>
+      <div id="revisionStatus" class="rev-status"></div>
+      <p class="note">A proposal may only be issued against the approved Designer revision it is priced
+        from. Without one this page produces <b>draft pricing</b> — useful for a conversation, never
+        for a customer.</p>
+    </div>
+
     <div class="panel">
       <h2>Pool</h2>
       <div class="row">
@@ -404,7 +439,48 @@
 // and the issue button was dead. Draft pricing and customer issuance are
 // separate states: this prices a draft, and the issue gate below still refuses
 // to release one without approved Designer quantity authority.
-import { legacyReplayTakeoff as takeoff, finalizeProposal, DEFAULT_ALLOWANCES, DIRECT_LINES_SEED, fmtMoney, deckArea } from './engine.mjs';
+import { legacyReplayTakeoff, takeoff as productionTakeoff, finalizeProposal, DEFAULT_ALLOWANCES, DIRECT_LINES_SEED, fmtMoney, deckArea } from './engine.mjs';
+
+/**
+ * The approved Designer takeoff revision this proposal is priced from, or null.
+ *
+ * Two takeoff paths exist and the engine refuses to blur them: `legacyReplayTakeoff` throws if
+ * handed a revision, `takeoff` throws without one. That is the whole reason "Generate customer
+ * proposal" could never be clicked before — this page only ever called the legacy path, so
+ * `approvedTakeoffRevisionId` was always empty and the issue gate always blocked.
+ *
+ * Pinning one flips the page from draft pricing to production pricing: geometry and every
+ * measured line come from Designer's signed quantities instead of the parametric takeoff.
+ */
+let approvedRevision = null;
+
+/**
+ * Deck square footage for DISPLAY, from whichever authority is in play.
+ *
+ * Two sources, and conflating them is a real error rather than a tidiness point. With no
+ * approved revision the builder derives the deck from the border rule (w·P + 4w²). With one,
+ * `yard.deck-area` is one of the seventeen SIGNED quantities — so recomputing it here would
+ * print a number on the customer document that Designer never signed, and quietly disagree
+ * with the deck cost line sitting directly beneath it.
+ *
+ * This also fixes a latent crash. `approvedGeometryProjection` puts the pool as dimensions
+ * only, with no `perimeter`, so the old unconditional `deckArea({perimeter: geometry.pool.
+ * perimeter})` threw "perimeter must be a non-negative finite number" the moment a revision
+ * was pinned. Nothing caught it before because no path in this page could reach the
+ * production takeoff at all.
+ */
+function deckInfo(t) {
+  const signed = t.lines?.find((line) => line.quantityAuthority?.code === 'yard.deck-area');
+  if (signed) return { sqFt: signed.quantityAuthority.value, derived: false, borderFt: null, signed: true };
+  return {
+    ...deckArea({
+      perimeter: t.geometry.pool.perimeter,
+      deckBorderFt: +$('deckBorder').value,
+      deckSqFt: (+$('deckSqFt').value || undefined),
+    }),
+    signed: false,
+  };
+}
 
 const $ = (id) => document.getElementById(id);
 const money = fmtMoney;
@@ -453,6 +529,7 @@ function readInputs() {
     actualJobCost: actual > 0 ? actual : undefined,
     backSolveResidual: $('backSolveResidual').checked,
     allowances, directLines, includeMissing: $('includeMissing').checked,
+    ...(approvedRevision ? { approvedTakeoffRevision: approvedRevision } : {}),
   };
 }
 
@@ -460,7 +537,10 @@ let last = null;
 function render() {
   let t;
   try {
-    t = last = takeoff(readInputs());
+    // Route by what is pinned. Each path refuses the other's inputs, so this is the only
+    // place the distinction is decided.
+    const inputs = readInputs();
+    t = last = approvedRevision ? productionTakeoff(inputs) : legacyReplayTakeoff(inputs);
   } catch (error) {
     last = null;
     $('exportProposal').disabled = true;
@@ -484,8 +564,9 @@ function render() {
     `A <b>${(p.feeRate*100).toFixed(0)}% fee</b> on cost is a <b>${p.trueMarginPct.toFixed(2)}% gross margin</b> — not ${(p.feeRate*100).toFixed(0)}% `
     + `(margin = fee ÷ (1+fee), Foundation §1). Commission is paid on this GP and never books to a cost code (§1.4).`;
 
-  const deck = deckArea({ perimeter: t.geometry.pool.perimeter, deckBorderFt: +$('deckBorder').value, deckSqFt: (+$('deckSqFt').value || undefined) });
-  $('deckDerived').textContent = `${deck.sqFt.toFixed(0)} sq ft${deck.derived ? '' : ' (entered)'}`;
+  const deck = deckInfo(t);
+  $('deckDerived').textContent = `${deck.sqFt.toFixed(0)} sq ft${
+    deck.signed ? ' (signed by Designer)' : deck.derived ? '' : ' (entered)'}`;
 
   // customer view
   $('customerView').innerHTML = t.budgetByCode.filter(b=>b.extended>0).map(b =>
@@ -715,7 +796,7 @@ function proposalHtml() {
   const name = $('customerName').value.trim();
   const hasSpa = $('hasSpa').checked;
   const length = +$('length').value, width = +$('width').value;
-  const deck = deckArea({ perimeter: g.pool.perimeter, deckBorderFt: +$('deckBorder').value, deckSqFt: (+$('deckSqFt').value || undefined) });
+  const deck = deckInfo(t);
   const d = new Date();
   const today = d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   const ref = `APX-${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
@@ -819,6 +900,98 @@ $('exportProposal').addEventListener('click', () => {
   $('proposalDoc').querySelector('#proposalPrint').addEventListener('click', () => window.print());
 });
 
+/* ─── Approved Designer takeoff ────────────────────────────────────────────────
+ *
+ * What loading a file proves, and what it does not.
+ *
+ * It proves INTEGRITY. `readApprovedQuantityAuthority` re-derives the SHA-256 over the ordered
+ * (code, value, unit, calcId) tuples and refuses the revision unless it matches, so quantities
+ * cannot be edited after the digest was minted. It also enforces the canonical unit for every
+ * code, resolves each quantity to its Calc ledger entry, and rejects any revision that is not
+ * `approved` or that still carries blocking issues.
+ *
+ * It does NOT prove AUTHORITY. Nothing here can tell whether someone entitled to approve
+ * actually approved this revision — that fact lives in the operational database as
+ * approvedBy/approvedAt and a durable event. Anyone can mint a self-consistent file.
+ *
+ * That trade is acceptable only because the issued proposal records the revisionId and digest
+ * it was priced from, so a fabricated revision is DETECTABLE afterwards: its id will not
+ * reconcile against the takeoff_revisions row. Detectable, not prevented. Closing it properly
+ * means reading the revision from the operational record instead of a file, and no endpoint
+ * serves one yet.
+ */
+const revEl = {
+  status: $('revisionStatus'), mode: $('revisionMode'),
+  file: $('revisionFile'), clear: $('revisionClear'),
+};
+
+const shortHash = (hash) => `${hash.slice(0, 12)}…${hash.slice(-8)}`;
+
+function paintRevisionState() {
+  const pinned = approvedRevision != null;
+  revEl.clear.style.display = pinned ? '' : 'none';
+  revEl.mode.textContent = pinned ? 'production pricing' : 'draft — not issuable';
+  revEl.mode.style.color = pinned ? 'var(--ok)' : '';
+  // The dimension fields still label the customer document but no longer compute anything.
+  // Dimming says so without taking the control away.
+  $('length').closest('.panel').classList.toggle('dims-descriptive', pinned);
+}
+
+function pinRevision(parsed) {
+  approvedRevision = parsed;
+  render();
+  // render() catches the engine's refusal and leaves `last` null. A failed pin must never be
+  // reported as success, so unwind it here.
+  if (!last) {
+    const reason = $('proposalGate').textContent;
+    approvedRevision = null;
+    revEl.status.className = 'rev-status';
+    revEl.status.innerHTML = `<div class="rev-bad"><b>Not a usable approved revision.</b>${esc(reason)}</div>`;
+    paintRevisionState();
+    render();
+    return;
+  }
+  revEl.status.className = 'rev-status';
+  revEl.status.innerHTML = `<div class="rev-pinned"><b>Pinned to an approved revision.</b>
+    Every measured line below is Designer's now, not this page's.
+    <dl>
+      <dt>revision</dt><dd>${esc(parsed.revisionId ?? '—')}</dd>
+      <dt>job</dt><dd>${esc(parsed.jobId ?? '—')}</dd>
+      <dt>model</dt><dd>${esc(last.quantityModelVersion ?? '—')}</dd>
+      <dt>digest</dt><dd>${last.quantityPayloadSha256 ? shortHash(last.quantityPayloadSha256) : '—'}</dd>
+      <dt>quantities</dt><dd>${parsed.quantities?.length ?? 0} signed facts</dd>
+    </dl>
+    <p style="margin:8px 0 0;font-size:11.5px;color:var(--steel)">Integrity is verified against the
+    digest. Approval authority is not — that lives in the operational record, and this id has to
+    reconcile against it before the proposal is relied on.</p></div>`;
+  paintRevisionState();
+}
+
+revEl.file.addEventListener('change', async (event) => {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  try {
+    pinRevision(JSON.parse(await file.text()));
+  } catch (error) {
+    approvedRevision = null;
+    revEl.status.className = 'rev-status';
+    revEl.status.innerHTML = `<div class="rev-bad"><b>Not a usable approved revision.</b>${
+      esc(error instanceof Error ? error.message : String(error))}</div>`;
+    paintRevisionState();
+    render();
+  } finally {
+    event.target.value = ''; // let the same file be chosen again after a fix
+  }
+});
+
+revEl.clear.addEventListener('click', () => {
+  approvedRevision = null;
+  revEl.status.innerHTML = '';
+  paintRevisionState();
+  render();
+});
+
+paintRevisionState();
 render();
 </script>
 </body>
