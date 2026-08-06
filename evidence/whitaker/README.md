@@ -23,3 +23,21 @@ It cannot support:
 - automatic production rate calibration;
 - fuzzy or guessed cost-code assignments;
 - treating Whitaker as a second independent job.
+
+## What a second job needs to carry
+
+Whitaker is the calibration job, so its exactness is partly circular and the
+limits above are structural rather than temporary. A second job closes them only
+if it carries **quantities as well as dollars** — the four bullets under "cannot
+support" are all downstream of the fact that this evidence set has no measured
+quantity in it.
+
+`apex-prds/decision-register.md` §7.1 is the collection list, kept there because
+it is a request to a person rather than a property of these fixtures. In short:
+the estimate and the transaction report as here, **plus** the payment timeline
+that PRD 04's collected-GP formula needs, **plus** the pool's dimensions and the
+quantities actually ordered.
+
+Transcribe it the way these were transcribed: manual and visually verified,
+integer cents, blank cells `null` rather than inferred, source SHA-256 recorded,
+and `classification` left `null` until an authorised owner maps it.
