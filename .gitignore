@@ -3,3 +3,7 @@ dist/
 public/
 *.local
 .DS_Store
+
+# Rust build output for the desktop shell. Large and fully regenerable.
+src-tauri/target/
+src-tauri/gen/
