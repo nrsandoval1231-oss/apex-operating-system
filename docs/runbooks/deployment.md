@@ -403,79 +403,126 @@ remove the old deploy key. Adding before removing keeps CI green throughout.
 
 ---
 
-## 8b. The Proposal engine deploy key
+## 8b. Deploy key for the Proposal engine
 
-`integration-tests/takeoff-to-proposal.test.ts` runs the whole chain — Designer
-measures, the quantities are approved, Proposal prices them, the proposal is
-issued. It is the only test that reaches into **two** sibling repositories, so it
-needs the Designer key from §8 *and* a second one for `apex-proposal-engine`.
+**What this is for.** One test — the chain test — needs to read two other
+repositories. This key lets CI read `apex-proposal-engine`. Without it that test
+is skipped, so the chain from measurement to customer price is never checked
+automatically.
 
-**Not installed yet.** Until it is, the chain test skips in CI and the workflow
-prints a `Chain unverified` warning annotation. That is a real gap, not a
-fallback: the chain is the thing that turns a measured quantity into a customer
-dollar figure, and locally is currently the only place it is ever exercised.
+**Status: not installed.** Do this once. It takes about five minutes, and you
+need to be signed in to GitHub as the owner of both repositories.
 
-Identical procedure to §8, different repository and secret name:
+---
 
-```bash
-# 1. A key pair used for nothing else. No passphrase — a workflow cannot answer
-#    a prompt.
-ssh-keygen -t ed25519 -C "apex-os-ci -> apex-proposal-engine" -f ./apex-proposal-ci -N ""
-```
+### Step 1 — Make the key
 
-2. **Public** half (`apex-proposal-ci.pub`) → `apex-proposal-engine` → Settings →
-   Deploy keys → Add. Title `apex-os CI`. **Leave "Allow write access"
-   unchecked** — CI only reads, and a writable key in a workflow is a way to
-   rewrite pricing from a pull request.
-3. **Private** half (`apex-proposal-ci`, the whole file including the
-   `-----BEGIN…` and `-----END…` lines) → `apex-operating-system` → Settings →
-   Secrets and variables → Actions → New repository secret, named
-   **`APEX_PROPOSAL_DEPLOY_KEY`**.
-4. Delete both local files.
+Run this. It creates two files in your home folder.
 
 ```bash
-rm ./apex-proposal-ci ./apex-proposal-ci.pub
+ssh-keygen -t ed25519 -C "apex-os-ci -> apex-proposal-engine" -f ~/apex-proposal-ci -N ""
 ```
 
-### Confirming it works
+You now have two files:
 
-Re-run an existing build on `main`; a re-run picks up current secrets. Three
-things prove it, and the third is the one that matters:
+| File | What it is | Who may see it |
+|---|---|---|
+| `apex-proposal-ci.pub` | the **public** key — one line | anyone, safely |
+| `apex-proposal-ci` | the **private** key — many lines | nobody but GitHub |
 
-- **Check out the Proposal engine** ran rather than skipping.
-- The `Chain unverified` warning step skipped rather than running. They invert
-  together, the same way §8's pair does.
-- The integration output shows the chain test **passing**, not skipping:
+Do not put either file inside a git folder.
+
+---
+
+### Step 2 — Put the public key on the Proposal engine
+
+1. Open <https://github.com/nrsandoval1231-oss/apex-proposal-engine/settings/keys>
+2. Click **Add deploy key**
+3. **Title:** `apex-os CI`
+4. **Key:** paste the whole contents of `apex-proposal-ci.pub`
+5. **Leave "Allow write access" UNTICKED**
+6. Click **Add key**
+
+Why untick it: CI only needs to read. A key that can also write is a way for a
+pull request to change pricing code.
+
+---
+
+### Step 3 — Put the private key on the Apex OS repo
+
+1. Open <https://github.com/nrsandoval1231-oss/apex-operating-system/settings/secrets/actions>
+2. Click **New repository secret**
+3. **Name:** `APEX_PROPOSAL_DEPLOY_KEY`
+4. **Secret:** paste the whole contents of `apex-proposal-ci`, including the
+   first line beginning `-----BEGIN` and the last line beginning `-----END`
+5. Click **Add secret**
+
+---
+
+### Step 4 — Delete both files
+
+```bash
+rm ~/apex-proposal-ci ~/apex-proposal-ci.pub
+```
+
+GitHub now holds the key safely in two places. A copy on a laptop is a third
+place that cannot protect it.
+
+---
+
+### Step 5 — Check that it worked
+
+1. Open the **Actions** tab on `apex-operating-system`
+2. Click the most recent run on `main`
+3. Click **Re-run all jobs** — a re-run picks up the new secret, so you do not
+   need to commit anything
+4. When it finishes, open the `verify` job and search the log for
+   `takeoff-to-proposal`
+
+You want to see exactly this:
 
 ```text
 ✓ integration-tests/takeoff-to-proposal.test.ts (5 tests | 1 skipped)
 ```
 
-Read that line the same way as §8's. The file holds five chain assertions plus a
-guard that runs *only* when an engine is missing. Five passing and one skipping
-is the shape that means both engines were found. **Six skipped means the chain
-never ran** — and unlike §8, you cannot rely on seeing a console warning say so.
+How to read it:
 
-### Why the variable, not the warning
-
-Both this test and the Designer one print a console warning when they skip.
-**Vitest intercepts console output, so neither warning is visible in a normal
-run.** Verified by hiding the Proposal engine: a default `pnpm test` reported
-`5 skipped` and nothing else. A skip nobody can see is indistinguishable from
-coverage.
-
-`APEX_REQUIRE_TAKEOFF_CHAIN` is therefore the real control. The workflow sets it
-only when **both** deploy keys are configured, so a checkout landing in the wrong
-directory or a revoked key **fails the run**. It was exercised in all three
-states rather than reasoned about: engines present with the guard on passes; an
-engine hidden with the guard on fails and names the missing path; the same state
-with the guard unset skips quietly.
-
-### When it breaks
-
-| Symptom | Cause |
+| What you see | What it means |
 |---|---|
-| Checkout step fails with a permission error | Key removed from `apex-proposal-engine`, or the public half was never added |
-| `APEX_REQUIRE_TAKEOFF_CHAIN is set … Proposal at "…": false` | Checkout succeeded but not into `apex-proposal-engine/`; check the `path:` in the workflow |
-| Warning `Chain unverified` | One or both secrets absent. Expected on forks, and expected here until this key is installed |
-| Chain skips but Designer contract passes | Only `APEX_DESIGNER_DEPLOY_KEY` is set; the chain needs both |
+| `5 tests \| 1 skipped` | **Working.** The single skip is a guard that only runs when an engine is missing |
+| `6 skipped` | **Not working.** The checkout did not land, and nothing was tested |
+| Step `Check out the Proposal engine` was skipped | The secret is missing or its name is misspelt |
+
+---
+
+### If something goes wrong
+
+| What you see | What is wrong |
+|---|---|
+| Checkout fails with a permission error | The public key was never added in Step 2, or has been removed |
+| Warning `Chain unverified` | One of the two secrets is missing. The chain needs **both** this key and the Designer key from §8 |
+| `APEX_REQUIRE_TAKEOFF_CHAIN is set … Proposal at "…": false` | The checkout worked but landed in the wrong folder. Check `path:` in the workflow |
+| The chain skips, but the Designer test passes | Only the Designer key is set. Add this one as well |
+
+---
+
+### One thing worth knowing
+
+When this test skips it prints a warning saying so — **but you will never see
+it.** Vitest hides console output, so a skipped run just reports `6 skipped` and
+nothing else. That was confirmed by hiding the engine and watching a normal run
+say nothing at all.
+
+So the thing that actually protects you is the `APEX_REQUIRE_TAKEOFF_CHAIN`
+variable. The workflow switches it on only when **both** deploy keys exist, and
+then a missing engine **fails the build** instead of quietly skipping. That
+behaviour was tested in all three states: both engines present and it passes; an
+engine missing and it fails, naming the file it could not find; the same state
+with the variable off and it skips silently.
+
+---
+
+### Rotating this key later
+
+Add the new public key first, then replace the secret, then delete the old deploy
+key. In that order CI never goes red in between.
