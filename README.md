@@ -13,8 +13,8 @@ Operational modernization for Apex (Lubbock, TX). One brand, four verticals: **D
 | **00** | [Foundation — Definitions & Data Model](00-foundation.md) | ✅ **Written** (v0.2) | — |
 | **01** | [Lead Capture, Funnels & Marketing](01-lead-capture-funnels.md) | ✅ **Written** · handed off | Access transfer for launch only |
 | **02** | [Pool Proposal & Takeoff Engine](02-proposal-takeoff-engine.md) | ✅ **Written** (v0.2) · engine built | Back-test passes on 1 job; needs a 2nd |
-| **03** | [Cost Capture & Allocation](03-cost-capture-allocation.md) | 🟡 **Stub — unblocked 2026-08-05** | Ready to write. Amend the agreement before relying on it |
-| **04** | [Commission Engine](04-commission-engine.md) | 🟡 **Stub — unblocked 2026-08-05** | Formula settled. Sequenced behind PRD 03 |
+| **03** | [Cost Capture & Allocation](03-cost-capture-allocation.md) | ✅ **Written** (v0.1) | Amend the agreement before billing anything in §5 |
+| **04** | [Commission Engine](04-commission-engine.md) | 🟡 **Stub — ready to write** | Formula settled; PRD 03 written. Nothing left blocking |
 | **05** | [CRM & Pipeline Analytics](05-crm-pipeline-analytics.md) | ⏸ **Stub — deferred** | Needs ~60 days of real lead data |
 | **06** | [Job Execution & Crew Scheduling](06-project-management.md) | ✅ **Written** (v0.1) | Phase 1 has **no** blockers |
 

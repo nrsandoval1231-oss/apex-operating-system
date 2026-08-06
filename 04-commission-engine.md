@@ -1,7 +1,7 @@
 # PRD 04 — Commission Engine
 
 > **STATUS: NOT WRITTEN — UNBLOCKED 2026-08-05.** Placeholder only; do not build from it yet. But
-> the formula is settled and every input is answered, so it is ready to be written.
+> the formula is settled, every input is answered, and PRD 03 is written. Ready to write.
 > **Depends on:** `00-foundation.md`, `03-cost-capture-allocation.md`
 >
 > All three inputs are answered and **approved by Travis on 2026-08-05**: the allowance mechanic
@@ -49,8 +49,9 @@ Three inputs were missing. **Two are now answered; one is not.**
 2. ~~**Which §7 option**~~ **Answered 2026-08-05, and none of the three** — Foundation §7.1. Stage 1
    is an advance, Stage 2 trues up on collected GP, and the perverse incentive is accepted rather
    than blunted. Two mitigations stay on the shelf.
-3. **Actual GP has to be computable**, which requires PRD 03. **Still the dependency** — but PRD 03
-   is itself unblocked as of 2026-08-05, so this is a sequencing matter rather than a decision.
+3. ~~**Actual GP has to be computable**, which requires PRD 03.~~ **PRD 03 is written as of
+   2026-08-05**, including the payment-application input this formula needs. Nothing is blocking
+   this document now.
 
 **A collected-GP formula raises one input PRD 03 did not previously have to carry:** payment
 application per job. Stage 2 cannot be computed from cost data alone — it needs to know what was
