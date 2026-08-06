@@ -17,11 +17,36 @@ services:
     healthCheckPath: /ready
     autoDeploy: false # Deploys are a decision, not a consequence of pushing.
     envVars:
-      # Supplied by Render from the database below — never typed by hand.
+      # The EXTERNAL connection string, pasted once. Deliberately not `fromDatabase`.
+      #
+      # This was `fromDatabase: connectionString` and the first deploy died on it:
+      # DEPTH_ZERO_SELF_SIGNED_CERT, thrown before a single migration ran.
+      #
+      # `fromDatabase` only supplies the PRIVATE-NETWORK URL, and that endpoint
+      # presents a self-signed certificate. Render publishes no CA for it, and this
+      # system offers no way to encrypt without verifying — that combination looks
+      # secure and authenticates nothing. So the private URL cannot be used as-is.
+      #
+      # The external endpoint presents a Let's Encrypt certificate that verifies
+      # against the system roots with nothing configured. Checked, not assumed:
+      #   openssl s_client -starttls postgres \
+      #     -connect <db>.oregon-postgres.render.com:5432
+      #   depth=0 CN=oregon-postgres.render.com … Verify return code: 0 (ok)
+      #
+      # The cost is real and worth stating: this traffic leaves the private network
+      # and crosses the internet, TLS-protected and verified, on every query. The
+      # tighter arrangement is the private URL with its self-signed certificate
+      # pinned into DATABASE_CA_CERT below — that keeps both the private network and
+      # verification, and needs the certificate read from inside a Render shell.
+      # See docs/runbooks/deployment.md §2.
       - key: DATABASE_URL
-        fromDatabase:
-          name: apex-postgres
-          property: connectionString
+        sync: false
+
+      # Optional, and the way back to the private network when someone captures the
+      # internal certificate. Setting this does not by itself switch endpoints —
+      # DATABASE_URL has to point at the private host too.
+      - key: DATABASE_CA_CERT
+        sync: false
 
       # Identity. From the Auth0 or Clerk tenant once it exists.
       - key: APEX_OIDC_ISSUER
