@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import type { Database, Queryable } from '@apex/database';
 import {
   ApexEventSchema,
+  ApprovedTakeoffRevisionSchema,
   CustomerMilestoneProjectionSchema,
   DRAW_CODES,
   DRAW_SCHEDULE_TEMPLATE,
@@ -16,6 +17,7 @@ import {
   readLeadIdentity,
   type ActionCard,
   type ApexEvent,
+  type ApprovedTakeoffRevision,
   type ConstructionPhaseKey,
   type CustomerMilestoneKey,
   type CustomerMilestoneProjection,
@@ -733,6 +735,81 @@ export class GateService {
       createdAt: new Date(row.created_at).toISOString(),
       updatedAt: new Date(row.updated_at).toISOString(),
     };
+  }
+
+  /**
+   * The job's current approved Designer takeoff revision, or null when it has none.
+   *
+   * This is the only place the operational record hands out the quantities themselves. Every
+   * other read exposes `revision_id` alone, which is why the Proposal engine had no way to
+   * price against real approved quantities and its customer proposal could never be issued.
+   *
+   * Two properties make the result safe to price against, and both are deliberate:
+   *
+   * The envelope is validated by `ApprovedTakeoffRevisionSchema` before it leaves. That schema
+   * re-derives the SHA-256 over the ordered quantity tuples and refuses a mismatch, so a row
+   * corrupted in place cannot be served as authority. Serving it unvalidated would push that
+   * check onto every consumer, and the one that forgets is the one that misprices a job.
+   *
+   * `leadId` is joined from `jobs` rather than stored on the revision. The contract requires it
+   * and the table has no such column; `jobs.lead_id` is NOT NULL, so the join always supplies
+   * one. Inventing a nullable field on the contract instead would have let a revision exist
+   * with no traceable lead.
+   */
+  async getApprovedTakeoffRevision(jobId: JobId): Promise<ApprovedTakeoffRevision | null> {
+    const result = await this.db.query<{
+      revision_id: string;
+      lead_id: string;
+      job_id: string;
+      revision_number: number;
+      status: string;
+      engine_version: string;
+      job_input_sha256: string;
+      calc_ledger_sha256: string;
+      quantity_payload_sha256: string;
+      quantity_model_version: string;
+      created_at: string | Date;
+      created_by: string;
+      approved_at: string | Date | null;
+      approved_by: string | null;
+      blocking_issues: unknown;
+      quantities: unknown;
+      calc_ledger: unknown;
+    }>(
+      `select tr.revision_id, j.lead_id, tr.job_id, tr.revision_number, tr.status,
+              tr.engine_version, tr.job_input_sha256, tr.calc_ledger_sha256,
+              tr.quantity_payload_sha256, tr.quantity_model_version,
+              tr.created_at, tr.created_by, tr.approved_at, tr.approved_by,
+              tr.blocking_issues, tr.quantities, tr.calc_ledger
+         from takeoff_revisions tr
+         join jobs j on j.job_id = tr.job_id
+        where tr.job_id = $1 and tr.status = 'approved'`,
+      [jobId],
+    );
+    const row = result.rows[0];
+    if (!row) return null;
+
+    // Parse rather than cast. A row that cannot satisfy the contract is a broken record, and
+    // the throw belongs here — at the boundary that claims authority — not downstream.
+    return ApprovedTakeoffRevisionSchema.parse({
+      revisionId: row.revision_id,
+      leadId: row.lead_id,
+      jobId: row.job_id,
+      revisionNumber: row.revision_number,
+      status: row.status,
+      engineVersion: row.engine_version,
+      jobInputSha256: row.job_input_sha256,
+      calcLedgerSha256: row.calc_ledger_sha256,
+      quantityPayloadSha256: row.quantity_payload_sha256,
+      quantityModelVersion: row.quantity_model_version,
+      createdAt: new Date(row.created_at).toISOString(),
+      createdBy: row.created_by,
+      approvedAt: row.approved_at === null ? null : new Date(row.approved_at).toISOString(),
+      approvedBy: row.approved_by,
+      blockingIssues: row.blocking_issues,
+      quantities: row.quantities,
+      calcLedger: row.calc_ledger,
+    });
   }
 
   /** Ordered phase history for a job. Append-only in the database. */

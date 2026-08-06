@@ -4,11 +4,21 @@ import { join } from 'node:path';
 import type { AddressInfo } from 'node:net';
 import { PGlite } from '@electric-sql/pglite';
 import { applyOperationalMigrations } from '@apex/database';
-import { ActionCardListSchema, DailyBriefSchema, createCanonicalId } from '@apex/contracts';
+import {
+  ActionCardListSchema,
+  DailyBriefSchema,
+  calculateQuantityPayloadSha256,
+  createCanonicalId,
+  type AuthoritativeQuantity,
+} from '@apex/contracts';
 import { SignJWT } from 'jose';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { LocalEvidenceStorage } from '@apex/storage';
 import { createGateApi } from './server.js';
+
+const FIXTURE_QUANTITIES: AuthoritativeQuantity[] = [
+  { code: 'pool.water-volume', value: 1, unit: 'gal', calcId: 'fixture.calc' },
+];
 
 const secretText = 'test-only-secret-that-is-more-than-thirty-two-bytes';
 const secret = new TextEncoder().encode(secretText);
@@ -68,11 +78,19 @@ beforeEach(async () => {
   await db.query(
     `insert into job_customer_access (job_id, auth_user_id) values ($1, '00000000-0000-0000-0000-000000000013')`, [ids.job],
   );
+  // The digest is derived rather than a `repeat('c', 64)` placeholder, because
+  // GET /approved-takeoff validates it before serving and a placeholder is exactly
+  // the corrupt row it exists to refuse. Nothing else here reads it, so this only
+  // makes the fixture honest about what it claims to be.
   await db.query(
     `insert into takeoff_revisions
      (revision_id, job_id, revision_number, status, engine_version, quantity_model_version, job_input_sha256, calc_ledger_sha256, quantity_payload_sha256, quantities, calc_ledger, created_by, approved_at, approved_by)
-     values ($1, $2, 1, 'approved', 'designer-test', 'quantity-v1', $3, $4, repeat('c', 64), '[{"code":"pool.water-volume","value":1,"unit":"gal","calcId":"fixture.calc"}]', '[{"id":"fixture.calc","label":"Fixture quantity","formula":"Q = 1","inputs":[],"value":1,"unit":"gal"}]', $5, now(), $5)`,
-    [ids.revision, ids.job, 'a'.repeat(64), 'b'.repeat(64), ids.office],
+     values ($1, $2, 1, 'approved', 'designer-test', 'quantity-v1', $3, $4, $6, $7, '[{"id":"fixture.calc","label":"Fixture quantity","formula":"Q = 1","inputs":[],"value":1,"unit":"gal"}]', $5, now(), $5)`,
+    [
+      ids.revision, ids.job, 'a'.repeat(64), 'b'.repeat(64), ids.office,
+      calculateQuantityPayloadSha256(FIXTURE_QUANTITIES),
+      JSON.stringify(FIXTURE_QUANTITIES),
+    ],
   );
   server = createGateApi({ db, jwtSecret: secretText, storage: new LocalEvidenceStorage(storage), maxEvidenceBytes: 1024 });
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
@@ -269,6 +287,95 @@ describe('Gate HTTP vertical slice', () => {
 
     expect((await call('/api/brief?date=nope', office)).status).toBe(422);
     expect((await call('/api/brief', customer)).status).toBe(403);
+  });
+
+  /**
+   * The measured authority a customer proposal is priced from. Before this route existed the
+   * quantities were reachable only by querying Postgres directly, so the Proposal engine could
+   * never issue against a real approved takeoff.
+   */
+  it('serves the approved takeoff revision to staff, with its quantities and calc ledger', async () => {
+    const office = await token(ids.office, 'office');
+    const response = await call(`/api/jobs/${ids.job}/approved-takeoff`, office);
+    expect(response.status).toBe(200);
+
+    const revision = await response.json() as {
+      revisionId: string; jobId: string; leadId: string; status: string;
+      quantityPayloadSha256: string;
+      quantities: Array<{ code: string; value: number; unit: string; calcId: string }>;
+      calcLedger: Array<{ id: string }>;
+      blockingIssues: unknown[];
+    };
+    expect(revision.revisionId).toBe(ids.revision);
+    expect(revision.jobId).toBe(ids.job);
+    expect(revision.leadId).toBe(ids.lead);
+    expect(revision.status).toBe('approved');
+    expect(revision.blockingIssues).toEqual([]);
+    expect(revision.quantities).toHaveLength(1);
+    expect(revision.quantities[0]?.code).toBe('pool.water-volume');
+    expect(revision.calcLedger[0]?.id).toBe('fixture.calc');
+    // Served intact: the digest still describes the quantities that came with it, so the
+    // Proposal engine's independent re-derivation will agree.
+    expect(revision.quantityPayloadSha256).toBe(calculateQuantityPayloadSha256(FIXTURE_QUANTITIES));
+  });
+
+  it('never serves the approved takeoff to a customer', async () => {
+    const customer = await token(ids.customer, 'customer');
+    expect((await call(`/api/jobs/${ids.job}/approved-takeoff`, customer)).status).toBe(403);
+  });
+
+  /**
+   * Rows seeded before the digest was enforced carry placeholder hashes and quantities with no
+   * calcId. They are not authority and never were, so the answer has to distinguish "your
+   * request was wrong" (422) from "this record cannot be trusted" — otherwise the operator
+   * retries instead of fixing the data.
+   */
+  it('409s when the stored revision fails its own integrity contract', async () => {
+    const office = await token(ids.office, 'office');
+    /*
+     * Seeded wrong at INSERT, not edited afterwards. An approved revision cannot be tampered
+     * with in place — the database answers "Approved takeoff quantity evidence is immutable"
+     * to any such update — so the only way a corrupt one exists is to have been written that
+     * way, which is precisely what the pre-digest demo seed does.
+     */
+    const staleLead = createCanonicalId('lead');
+    const staleJob = createCanonicalId('job');
+    const staleRevision = createCanonicalId('revision');
+    await db.query(
+      `insert into leads (lead_id, intake_source, source_record_id, idempotency_key, accepted_payload)
+       values ($1, 'test', 'source-stale', 'test:source-stale', '{}')`,
+      [staleLead],
+    );
+    await db.query(
+      `insert into jobs (job_id, lead_id, signed_proposal_version, status) values ($1, $2, 1, 'active')`,
+      [staleJob, staleLead],
+    );
+    await db.query(
+      `insert into takeoff_revisions
+       (revision_id, job_id, revision_number, status, engine_version, quantity_model_version,
+        job_input_sha256, calc_ledger_sha256, quantity_payload_sha256, quantities, calc_ledger,
+        created_by, approved_at, approved_by)
+       values ($1, $2, 1, 'approved', 'designer-test', 'quantity-v1',
+               repeat('a', 64), repeat('b', 64), repeat('c', 64), $4, $5, $3, now(), $3)`,
+      [
+        staleRevision, staleJob, ids.office,
+        JSON.stringify(FIXTURE_QUANTITIES),
+        '[{"id":"fixture.calc","label":"Fixture quantity","formula":"Q = 1","inputs":[],"value":1,"unit":"gal"}]',
+      ],
+    );
+
+    const response = await call(`/api/jobs/${staleJob}/approved-takeoff`, office);
+    expect(response.status).toBe(409);
+    const body = await response.json() as { error: string; detail: string };
+    expect(body.error).toMatch(/integrity contract/i);
+    expect(body.detail).toMatch(/SHA-256/i);
+  });
+
+  it('404s for a job with no approved takeoff, without saying whether the job exists', async () => {
+    const office = await token(ids.office, 'office');
+    const unknownJob = createCanonicalId('job');
+    const response = await call(`/api/jobs/${unknownJob}/approved-takeoff`, office);
+    expect(response.status).toBe(404);
   });
 
   it('requires a token when local pilot mode is off', async () => {

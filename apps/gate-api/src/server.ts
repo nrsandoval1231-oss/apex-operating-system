@@ -752,6 +752,53 @@ export function createGateApi(options: GateApiOptions) {
         return sendJson(response, 200, summary);
       }
 
+      /*
+       * The job's approved Designer takeoff, quantities and Calc ledger included.
+       *
+       * Staff only, and deliberately so: this is the measured authority a customer proposal is
+       * priced from, and the Proposal engine pins its digest into whatever it issues. Until
+       * this route existed the quantities lived only in the database, so the Proposal builder
+       * had nothing real to price against and its customer proposal could never be issued.
+       *
+       * 404 covers both "no such job" and "this job has no approved revision". They are the
+       * same answer to the only question being asked — is there an approved takeoff to price
+       * from — and splitting them would tell an unauthorised caller which job ids exist.
+       */
+      const approvedTakeoffMatch = url.pathname.match(
+        /^\/api\/jobs\/(job_[0-9A-HJKMNP-TV-Z]{26})\/approved-takeoff$/,
+      );
+      if (request.method === 'GET' && approvedTakeoffMatch) {
+        requireStaff(actor);
+        const jobId = idSchemas.job.parse(approvedTakeoffMatch[1]);
+        let revision;
+        try {
+          revision = await service.getApprovedTakeoffRevision(jobId);
+        } catch (error) {
+          /*
+           * A stored revision that fails its own contract is not a bad request, and letting it
+           * fall through to the generic ZodError handler would answer 422 — "you sent something
+           * invalid" — when the caller sent a job id and it was fine. The record is the problem.
+           *
+           * This is not hypothetical: rows seeded before the digest was enforced carry
+           * placeholder hashes and quantities with no calcId, so they can never be served as
+           * authority. Saying so plainly is the difference between someone fixing the data and
+           * someone retrying the request.
+           */
+          if (error instanceof z.ZodError) {
+            return sendJson(response, 409, {
+              error: 'The stored approved takeoff revision for this job fails its own integrity '
+                + 'contract and cannot be served as pricing authority.',
+              detail: error.message,
+            });
+          }
+          throw error;
+        }
+        if (revision === null) {
+          return sendJson(response, 404, { error: 'This job has no approved takeoff revision.' });
+        }
+        return sendJson(response, 200, revision);
+      }
+
       const projectMatch = url.pathname.match(/^\/api\/jobs\/(job_[0-9A-HJKMNP-TV-Z]{26})\/project$/);
       if (projectMatch) {
         requireStaff(actor);
