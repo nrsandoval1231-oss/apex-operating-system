@@ -1,7 +1,8 @@
 # Apex OS — handoff
 
-**As of:** 2026-08-05, CI green on `main` — and now genuinely checking the
-Designer contract, which it had never done before.
+**As of:** 2026-08-05, end of day. CI green on `main` and genuinely checking the
+Designer contract. All seven repositories are pushed; nothing lives only on one
+machine.
 
 Deliberately short. `docs/status.md` is the source of truth for status and this
 does not restate it — what follows is the state of play, what is in flight, and
@@ -9,48 +10,55 @@ the things a newcomer would not guess.
 
 ---
 
-## Branches — all landed, 2026-08-05
+## Branches — all landed
 
-Nothing is unmerged. Verified by diffing each branch against `origin/main`, not
-by reading the branch list: the work was rebased onto `main` under new SHAs, so
-the branches survive as content-identical duplicates that `git branch --merged`
-does not recognise.
+Nothing is unmerged anywhere. Verified by diffing each branch against
+`origin/main`, not by reading the branch list: the 2026-08-04 work was rebased
+onto `main` under new SHAs, so four branches survive as content-identical
+duplicates that `git branch --merged` does not recognise —
+`feat/builder-design-tool`, `fix/builder-runs-in-a-browser`,
+`docs/deploy-key-installed`, and `dev/designer-launch-config` which is strictly
+behind. All four can be deleted from their remotes; until they are, the branch
+list implies open work that does not exist.
 
-| Repo | Stale branch | Diff vs `origin/main` |
-|---|---|---|
-| `apex-designer` | `feat/builder-design-tool` | empty — same tree, 11 rebased commits |
-| `apex-proposal-engine` | `fix/builder-runs-in-a-browser` | empty |
-| `apex-operating-system` | `docs/deploy-key-installed` | empty |
-| `apex-operating-system` | `dev/designer-launch-config` | strictly behind `main` |
+**All seven repositories are pushed.** `apex-website` was carrying twelve
+commits from 2026-07-28/29 that had never left the machine — a week of the
+website workstream living on one disk. Pushed 2026-08-05.
 
-All four can be deleted from their remotes. Until they are, the branch list
-implies open work that does not exist.
+## What Apex Designer became
 
-**Apex Designer was the 2026-08-04 session's main work** and is a change in kind, not
-degree. It was a calculator that printed a plan; it is now something a builder
-draws in. Three preset sizes (12×24, 15×30, 20×40 — roughly 90% of Lubbock
-work), drag to move and resize, a draggable section for depth, add/remove for
-every object, saved designs, and an order list. 380 tests, up from 318.
+Two sessions, and it is a change in kind rather than degree: it was a calculator
+that printed a plan, and it is now something a builder draws in with the takeoff
+running underneath.
 
-Two properties worth preserving. **Placement never affects quantities** — moving
-a bench changes the drawing and nothing in the takeoff, which is what let all of
-this land without touching the approved-quantity digest. And **the spa's own
-suction and return went on the presets, not `STANDARD_MODEL`**, deliberately:
-developed run length is one of the seventeen signed quantities and
-`STANDARD_MODEL` is the fixture the digest is pinned against. The Designer
-contract test was run with `APEX_REQUIRE_DESIGNER_CONTRACT=1` to confirm the
-digest did not move.
+**The 2026-08-05 session is recorded in `docs/status.md`.** Rotation of both
+drawings from one control, free grid placement with objects snapping flush to
+each other, corner-drag resizing, six presets, and a Tauri desktop shell that is
+scaffolded but unbuilt. The rotate tool that the previous handoff listed as *not
+built, and asked for* is built: a **view transform**, not a model change, because
+shallow and deep are physical facts that a sheet rotation must not redefine.
 
-**The proposal builder fix matters more than its size.** Every field on the page
-read "—" and no button did anything, for two stacked reasons: `node:crypto` in
-the module graph killed evaluation before any handler attached, and the page
-called the production takeoff path, which refuses without an approved Designer
-revision. Nothing tested that page; `browser-graph.test.mjs` now does.
+Three properties worth carrying forward, and one that was given up.
 
-**Not built, and asked for:** a rotate tool. Two approaches, both real — a view
-transform (drags map through the inverse; dimension text inverts at 180°) or a
-model change (redefines what "shallow wall" means for every placed object).
-Worth choosing deliberately.
+**Kept: the spa's own suction and return live on the presets, not on
+`STANDARD_MODEL`.** Developed run length is one of the seventeen signed
+quantities and `STANDARD_MODEL` is the fixture the digest is pinned against.
+
+**Kept: the engine has no UI imports.** That is what made the desktop shell a
+window rather than a rewrite, and it is worth defending the next time something
+looks easier to put in a component.
+
+**Kept: refuse rather than approximate.** A deck drawn through the water is
+refused with coordinates; presets state no pump and no gas load rather than
+carrying placeholders that pass.
+
+**Given up, deliberately: "placement never affects quantities."** That property
+is what let the whole drag-and-drop layer land without touching the digest, and
+it is gone as of quantity model v4. Moving a bench from the shallow end to the
+deep end now changes the takeoff — because it genuinely displaces more water, and
+the tool was only silent about it while the floor depth was a number typed once
+and never revisited. **Laying out a design is now an act that changes what gets
+ordered.**
 
 ## Where it stands
 
@@ -67,32 +75,49 @@ ever opened a link.
 
 ## In flight right now
 
-Nothing is blocked on code, and as of 2026-08-05 only one thing is blocked on a
-person: **a domain has not been chosen or registered.**
+Nothing is blocked on code. All 28 decision-register items are decided — Travis
+approved the nineteen that were his on 2026-08-05. **What remains is four things
+that need a person, and only one of them is a purchase.**
 
-Auth0 is the confirmed identity provider. Render, Cloudflare R2 and the identity
-tenant are all downstream of the domain, so the order below is not a preference.
-`docs/runbooks/deployment.md` §1–2 is the procedure.
+**The domain is the recorded blocker and it is smaller than it looks.** It has
+been held back on purpose: Monsoon is expected to hand over the existing domain
+(register item 21), and buying a second is waste if that lands. The thing worth
+pressing is not the domain, it is *whether Monsoon has actually been asked and
+gave a date.* If they have and it is moving, waiting is right. If nobody has
+asked, that is the blocker — not the twelve dollars.
 
-Next four actions, in order:
+**Only the DNS record needs a final hostname.** The Cloudflare account is needed
+for R2 regardless, and the R2 bucket, the Auth0 tenant and the Render blueprint
+do not care what the host is called. Render serves a free `*.onrender.com`, which
+is enough to prove the whole stack end to end and convert "built but never run"
+into "running". `docs/runbooks/deployment.md` §1–2 is the procedure.
 
-1. **Register a domain.** Deliberately its own, not the canonical marketing
-   domain — that one is entangled in the Monsoon access transfer and a
-   three-way naming choice, and Apex OS should not wait on either. Cloudflare,
-   on an Apex-owned email, since the same account is needed for R2. Register
-   only; the DNS record needs a Render service that does not exist yet.
-2. Create the Render blueprint, the R2 bucket, and the Auth0 tenant. **Allowed
-   Web Origins** is the one that silently breaks sign-in if missed.
-3. Fill the nine `sync: false` variables in the Render dashboard.
-4. Deploy, then `curl -s https://<domain>/ready` and read the four startup
-   lines. Those lines are what the process actually resolved; the dashboard only
-   says what it was told.
+The four actions, in the order that unblocks the most:
 
-**Issue no real customer link until the domain is final.** A link's origin is
+1. **Ask Monsoon**, if nobody has. Ten minutes, and it settles the domain either
+   way — a committed date means wait, silence for a week means buy one.
+2. **Stand up Cloudflare + R2, the Auth0 tenant, and the Render blueprint, and
+   deploy to the free host.** No domain needed. **Allowed Web Origins** is the
+   setting that silently breaks sign-in if missed. Then `curl -s
+   https://<host>/ready` and read the four startup lines — those are what the
+   process actually resolved, where the dashboard only says what it was told.
+3. **Get Travis to name the three-to-five pilot jobs** (PRD FINAL §20.12). Five
+   minutes, and the Definition of Done cannot begin without it.
+4. **Start the contract amendment**, and pair it with the SMS consent question
+   (D-14) — one lawyer conversation answers both. Item 1's approval does not
+   discharge its own precondition: nothing in PRD 03 §5 may be billed until the
+   agreement is amended.
+
+**Issue no real customer link until the hostname is final.** A link's origin is
 fixed when it is issued and only the token hash is stored, so a link sent
-against a host you later move off cannot be recovered — only reissued.
+against a host you later move off cannot be recovered — only reissued. This is
+what makes a free-host deployment safe to do now: prove the stack, issue nothing.
 
-## Seven things that are not obvious
+**The thing none of the above is.** No real Apex project exists in this system.
+Not one. Every screen renders seeded test data, and that has been true since the
+2026-07-31 audit said so. Steps 1 and 3 are what change it.
+
+## Eight things that are not obvious
 
 1. **The restore procedure has never been run.** It is written
    (runbook §5) and untested. An untested backup is a belief, not a control —
@@ -121,7 +146,14 @@ against a host you later move off cannot be recovered — only reissued.
    two business days routine, three for finals, rounded up so a deadline fires
    early rather than late. Tighten them once real inspections have been observed;
    it is one number per row and only sharpens the warnings.
-7. **One test failed once and has not reproduced.** A `duplicate key on
+7. **Placement now affects quantities, as of quantity model v4.** For most of
+   this project's life it did not, and that invariant is quoted in several
+   places that predate 2026-08-05. Step and seat floor depth is derived from
+   where the object sits, so moving one changes its displacement and every
+   volume downstream. A revision approved under v2 or v3 does not mean the same
+   thing as one approved under v4; that is what the version string is for, and
+   the database deliberately keeps the older values on historical rows.
+8. **One test failed once and has not reproduced.** A `duplicate key on
    app_users_pkey` during a fresh-clone run, not seen again across many full runs
    or in CI. Unexplained. If it reappears, capture the failing file.
 
@@ -135,6 +167,9 @@ against a host you later move off cannot be recovered — only reissued.
 | `docs/runbooks/deployment.md` | What to type, in what order, and what to do when it breaks |
 | `docs/decisions/construction-model.md` | Confirmed phases, gates, draws, inspections |
 | `docs/inspections-and-gate-checklists-2026-08-03.md` | The approved inspection list and checklists |
+| `apex-prds/decision-register.md` | All 28 decisions, who made them, and the three reversals in §4 |
+| `apex-prds/03-cost-capture-allocation.md` | How actual GP per job is captured; the gate for the commission engine |
+| `Apex Designer/src-tauri/README.md` | Building the desktop shell, and why it is unsigned |
 
 ## Running it locally
 
