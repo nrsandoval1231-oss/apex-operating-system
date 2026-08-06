@@ -57,8 +57,23 @@ ENV PORT=4100
 # package boundaries.
 ENV APEX_APP_DIR=/app/apps/apex-os/dist
 
-# node, not root. Nothing here writes to the image, and evidence goes to object
-# storage rather than a container filesystem.
+# The local evidence fallback needs somewhere it can actually write.
+#
+# `main.ts` permits that fallback whenever no object storage is configured, but
+# /app is root-owned from the build stage, so a non-root process cannot create
+# its own evidence directory. The failure is silent and expensive to diagnose:
+# the app boots perfectly, serves requests, and reports evidence:false from
+# /ready forever — so the platform never routes traffic and the deploy times out
+# fifteen minutes later with a healthy process running inside it.
+#
+# That is exactly what happened on the first real deploy, 2026-08-06.
+#
+# This makes the fallback work; it does not make it good. Evidence on a
+# container filesystem is erased by the next deploy. Object storage is the only
+# configuration fit for a real job — see docs/runbooks/deployment.md §1.
+RUN mkdir -p /app/var/gate-evidence && chown -R node:node /app/var
+
+# node, not root.
 USER node
 
 EXPOSE 4100
