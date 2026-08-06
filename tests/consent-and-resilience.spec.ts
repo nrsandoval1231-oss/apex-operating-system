@@ -134,6 +134,95 @@ test.describe('AC-4 · form resilience', () => {
     await page.waitForTimeout(300);
     expect(hook.count()).toBe(0);
   });
+
+  /*
+   * AC-4.5 — the form used to demand BOTH email and phone while intake quarantines a lead
+   * only when both are missing. Every visitor who would give one but not the other was
+   * turned away by our own validation, and the lead never reached the engine at all.
+   */
+  test('AC-4.5 · a phone with no email is a valid lead and is sent', async ({ page }) => {
+    const hook = await mockWebhook(page);
+    await page.goto('/');
+    await openQuoteForm(page);
+    await fillContact(page, { email: '' });
+    await page.getByRole('button', { name: /get my quote/i }).click();
+
+    const body = await hook.payload();
+    expect(body.email).toBe('');
+    expect(body.phone).toBe('8065550142');
+    await expect(page.locator('.capture[role="status"]')).toBeVisible();
+  });
+
+  test('AC-4.5 · an email with no phone is a valid lead and is sent', async ({ page }) => {
+    const hook = await mockWebhook(page);
+    await page.goto('/');
+    await openQuoteForm(page);
+    await fillContact(page, { phone: '' });
+    await page.getByRole('button', { name: /get my quote/i }).click();
+
+    const body = await hook.payload();
+    expect(body.email).toBe('dana.reyes@example.com');
+    expect(body.phone).toBe('');
+    await expect(page.locator('.capture[role="status"]')).toBeVisible();
+  });
+
+  test('AC-4.5 · neither email nor phone is refused before any request is made', async ({
+    page,
+  }) => {
+    const hook = await mockWebhook(page);
+    await page.goto('/');
+    await openQuoteForm(page);
+    await fillContact(page, { email: '', phone: '' });
+    await page.getByRole('button', { name: /get my quote/i }).click();
+
+    await expect(page.locator('#em-err')).toContainText(/email or a phone/i);
+    await expect(page.locator('#ph-err')).toContainText(/email or a phone/i);
+    await page.waitForTimeout(300);
+    expect(hook.count()).toBe(0);
+  });
+
+  /*
+   * AC-4.4 — intake answers HTTP 200 whether it accepted the lead or set it aside, and says
+   * which in the body. Reading only the status code showed "Lead captured & routed" to a
+   * customer whose request had been quarantined: they stop chasing, and nobody is coming.
+   */
+  test('AC-4.4 · a quarantined 200 shows the call-us error, not the capture panel', async ({
+    page,
+  }) => {
+    await mockWebhook(page, {
+      status: 200,
+      respondWith: { status: 'quarantined', lead_id: 'apex_test', reason: 'vertical not in enum' },
+    });
+    await page.goto('/');
+    await openQuoteForm(page);
+    await fillContact(page);
+    await page.getByRole('button', { name: /get my quote/i }).click();
+
+    const error = page.locator('.form-error');
+    await expect(error).toBeVisible();
+    await expect(error).toContainText(/call/i);
+    await expect(error.locator('a[href^="tel:"]')).toBeVisible();
+    await expect(page.locator('.capture[role="status"]')).toHaveCount(0);
+  });
+
+  for (const [label, respondWith] of [
+    ['accepted', { status: 'accepted', lead_id: 'apex_test', routed_to: 'pools@apexgetsitdone.com' }],
+    ['duplicate', { status: 'duplicate', lead_id: 'apex_test', dedupe_status: 'duplicate' }],
+    // Not the intake contract at all — the shape a test endpoint answers with. Must still
+    // read as delivered, or every pre-launch submission reports a false failure.
+    ['an unrecognized body', { ok: true }],
+  ] as const) {
+    test(`AC-4.4 · ${label} still shows the capture panel`, async ({ page }) => {
+      await mockWebhook(page, { status: 200, respondWith });
+      await page.goto('/');
+      await openQuoteForm(page);
+      await fillContact(page);
+      await page.getByRole('button', { name: /get my quote/i }).click();
+
+      await expect(page.locator('.capture[role="status"]')).toBeVisible();
+      await expect(page.locator('.form-error')).toHaveCount(0);
+    });
+  }
 });
 
 test.describe('AC-5.5 · analytics event', () => {
