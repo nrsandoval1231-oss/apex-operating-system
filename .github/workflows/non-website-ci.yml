@@ -243,6 +243,52 @@ jobs:
           docker logs apex-os
           docker rm -f apex-os
 
+      # The configuration the step above cannot reach: NO object storage.
+      #
+      # That run always passes S3 settings, so it only ever exercises the bucket
+      # path — and the fallback shipped broken for exactly that reason. /app is
+      # root-owned from the build stage and the process runs as `node`, so the
+      # local evidence directory could not be created, /ready answered
+      # evidence:false forever, and the first real deploy timed out after fifteen
+      # minutes with a perfectly healthy process inside it.
+      #
+      # Readiness is the assertion. A container that starts is not the claim;
+      # a container the platform will route traffic to is.
+      - name: Run the container with no object storage configured
+        run: |
+          docker run --rm --network host -e PGPASSWORD=apex postgres:16 \
+            psql -h localhost -U apex -d apex_test -c 'create database apex_nostorage'
+
+          docker run -d --name apex-os-nostorage --network host \
+            -e PORT=4301 \
+            -e DATABASE_URL='postgres://apex:apex@localhost:5432/apex_nostorage' \
+            -e GATE_JWT_SECRET=container-smoke-test-secret-at-least-32-bytes \
+            -e APEX_PUBLIC_ORIGIN=https://apex.example.com \
+            apex-os:ci
+
+          for attempt in $(seq 1 45); do
+            if curl -sf http://localhost:4301/health > /dev/null; then break; fi
+            if [ "$attempt" = "45" ]; then
+              echo "Container never became live"; docker logs apex-os-nostorage; exit 1
+            fi
+            sleep 2
+          done
+
+          ready=$(curl -sf http://localhost:4301/ready) || {
+            echo "Readiness failed with no object storage — the platform would never route to this"
+            docker logs apex-os-nostorage; exit 1; }
+          echo "ready: $ready"
+          echo "$ready" | grep -q '"evidence":true' || {
+            echo "evidence:false — the local fallback cannot write its own directory"
+            docker logs apex-os-nostorage; exit 1; }
+
+          # Ephemeral storage in a deployment must announce itself, because the
+          # banner line alone reads as configuration rather than a countdown.
+          docker logs apex-os-nostorage 2>&1 | grep -qi 'EVIDENCE IS EPHEMERAL' || {
+            echo "Deployed with container-disk evidence and no warning"; exit 1; }
+
+          docker rm -f apex-os-nostorage
+
       - name: Refuse to ship an image that disables authentication
         run: |
           # GATE_LOCAL_USER removes authentication for anything that can reach
