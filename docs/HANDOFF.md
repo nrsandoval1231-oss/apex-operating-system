@@ -87,29 +87,25 @@ hostname is still `*.onrender.com`, so issuing one remains forbidden.
 
 ## In flight right now
 
-### Picked up mid-sentence on 2026-08-07 — read this first
+### The Designer handover — built 2026-08-07
 
-Work stopped partway through **adding a Designer → Apex OS export path**. Nothing
-was written: both repositories are clean and everything described below is
-committed and deployed. This is the intent, so the next session does not
-re-derive it.
+Designer and Apex OS are connected. **Send to Apex OS** in Designer exports the
+submission as a file; **Attach takeoff…** on the Apex OS project page reads that
+file and posts it. Before this, the takeoffs on Gamble and Zephyr had been posted
+by hand from a script.
 
-Designer has no connection to Apex OS. The takeoff now on Gamble and Zephyr got
-there by running Designer's engine from a script and posting the result by hand.
-The receiving end exists (`POST /api/jobs/:id/approved-takeoff`); the handover
-does not.
+A file rather than a direct call, deliberately: Designer runs on a builder's
+machine, so posting from there would need CORS on the API *and* a second PKCE
+sign-in implementation living inside a drawing tool. The file avoids both, and
+attaching stays an act performed by a named person already signed in — which is
+what `TAKEOFF_APPROVAL_AUTHORITY` says it is.
 
-**The shape that was chosen, and why.** Designer runs on localhost and Apex OS is
-remote, so a direct browser POST would need CORS on the API *and* a second
-implementation of the PKCE sign-in inside Designer. Both are avoidable: have
-Designer **export the submission as a JSON file**, and give Apex OS's project page
-an **"Attach approved takeoff"** control that reads that file and posts it
-same-origin, already authenticated. No CORS, no second auth flow, and approving a
-takeoff stays an office act with a name against it — which is what
-`TAKEOFF_APPROVAL_AUTHORITY` already says it is.
-
-Note that `Apex Designer/` is a **separate private repository**, so that half is
-committed there, not here.
+The Designer half lives in the **separate private `apex-designer` repository**
+(commit `a1c888f`). `integration-tests/designer-contract.test.ts` is the only
+place the two meet: it parses what Designer's `buildApexSubmission` actually
+produces, through JSON, against the receiving schema. Neither repository's own
+suite can catch a drift — each pins its own side and both stay green while the
+two stop agreeing.
 
 ### The three office buttons that do not exist
 

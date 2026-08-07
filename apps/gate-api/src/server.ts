@@ -66,10 +66,16 @@ const appDirectory = process.env.APEX_APP_DIR?.trim()
  * exchange is a cross-origin POST from the browser to the provider's token
  * endpoint, and a bare `'self'` blocks it — silently, from the user's side, as
  * "sign-in does nothing". Only the origin is allowed, not the whole internet.
+ *
+ * `font-src` allows `data:` because the build inlines small font files as data
+ * URIs. `'self'` alone blocked the app's OWN typeface on every page: the console
+ * logged a CSP violation and the UI quietly fell back to a substitute face. The
+ * allowance is narrow — a data URI is bytes the page already carries, not a
+ * fetch to anywhere — and it buys back the typography the app ships with.
  */
 const appCsp = (issuer: string | undefined): string => {
   const providerOrigin = issuer === undefined ? '' : ` ${new URL(issuer).origin}`;
-  return "default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; "
+  return "default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self' data:; "
     + `connect-src 'self'${providerOrigin}; img-src 'self' blob: data:; `
     + "object-src 'none'; base-uri 'none'; frame-ancestors 'none'";
 };

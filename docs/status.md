@@ -1240,6 +1240,60 @@ and safe, but not what a superintendent should read. The fix that fits is having
 the API return the display name from `app_users`, where identity is already
 authoritative, rather than adding a provider claim.
 
+## Designer hands a takeoff to Apex OS — 2026-08-07
+
+The two halves of the chain were connected but not joined: the bridge accepted an
+approved takeoff over HTTP and Designer could produce one, and nothing carried it
+between them. The revisions on Gamble and Zephyr got there by running the engine
+from a script.
+
+**Designer: "Send to Apex OS"** exports the submission the receiving contract
+accepts, as a downloaded file. **Apex OS: "Attach takeoff…"** on the project page
+reads that file and posts it same-origin.
+
+**Why a file.** Designer runs on a builder's machine and Apex OS is elsewhere, so
+a direct POST would need CORS on the API *and* a second PKCE sign-in
+implementation living inside a drawing tool — a second auth flow being exactly
+the kind of duplication this project avoids elsewhere. The file crosses that gap
+without either, and attaching remains an act performed by a named person who is
+already signed in, which is what the service's authority rule already requires.
+
+Deliberate constraints:
+
+- **The export cannot carry a digest, revision id, approver or status.** Absent by
+  construction on both sides. The receiver computes the hashes from the bytes it
+  received; a drawing tool that could name its own approver could approve on
+  somebody else's behalf.
+- **The job model travels verbatim**, because the receiver hashes it into
+  `job_input_sha256` — a summary would defeat the column.
+- **A design with blocking code failures cannot be exported at all.** That refusal
+  already existed at the quantity-export boundary; it is now surfaced beside the
+  button rather than restated.
+- **The file is parsed against the contract before it is sent.** The API would
+  refuse a malformed one anyway, but a 422 reads as "something went wrong" where
+  a local parse names the field. Nothing is repaired in transit — what is being
+  attached is evidence.
+- **Replacing an approved takeoff is a checkbox that states its cost**, matching
+  the refusal the API gives without it.
+
+| Verification | Result |
+|---|---|
+| Designer `npm test` | **556 tests** passed (seven new pinning the submission shape) |
+| `pnpm verify` | **480 tests** passed |
+| Cross-repository contract test | Parses Designer's real export, through JSON, against the receiving schema |
+| Live, deployed | Hoitz offers "Attach takeoff…"; Gamble offers "Replace takeoff…" with the cost stated |
+
+`integration-tests/designer-contract.test.ts` is the only place the two
+repositories meet. Each pins its own side and both would stay green while they
+stopped agreeing, so the round trip is asserted there or nowhere — and that
+failure would otherwise surface on a job site.
+
+**Also fixed:** the staff app's own inlined typeface was blocked by its own CSP.
+The build inlines small fonts as `data:` URIs and `font-src 'self'` refused them,
+so every page logged a violation and quietly rendered in a fallback face.
+`font-src 'self' data:` is a narrow allowance — a data URI is bytes the page
+already carries, not a fetch to anywhere.
+
 ## Next controlled milestone
 
 One pilot job must demonstrate:
