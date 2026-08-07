@@ -48,8 +48,17 @@
         </details>
       </div>
 
-      <label>Job ID<input id="job-id" autocomplete="off" placeholder="job_…"></label>
-      <label>Gate<select id="gate-choice"><option value="">Load the job first</option></select></label>
+      <!--
+        A name, not a 30-character id. The console asked for one because it was
+        built when both the token and the job id were pasted in; typing a ULID on
+        a phone at a job site is a mistake waiting to be made.
+      -->
+      <label>Job<select id="job-choice"><option value="">Loading jobs…</option></select></label>
+      <details id="job-manual">
+        <summary>Enter a Job ID instead</summary>
+        <label>Job ID<input id="job-id" autocomplete="off" placeholder="job_…"></label>
+      </details>
+      <label>Gate<select id="gate-choice"><option value="">Choose a job first</option></select></label>
       <div class="actions"><button id="open-job" class="primary">Open Gate</button></div>
       <p id="setup-error" class="error" role="alert"></p>
     </section>
