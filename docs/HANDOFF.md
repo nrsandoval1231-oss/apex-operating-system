@@ -1,10 +1,11 @@
 # Apex OS — handoff
 
-**As of:** 2026-08-06, end of day. CI green on `main` and genuinely checking the
+**As of:** 2026-08-07. CI green on `main` and genuinely checking the
 Designer contract. All seven repositories are pushed; nothing lives only on one
-machine. **The stack is now deployed and live** at
+machine. **The stack is now deployed, live, and has been signed into** at
 `https://apex-os-nqlx.onrender.com` — see "First deploy, end to end" in
-`docs/status.md` for the three fixes and the verification that got it there.
+`docs/status.md` for the fixes and the verification that got it there. The
+deployed database is empty: the system is running and holds no real project yet.
 
 Deliberately short. `docs/status.md` is the source of truth for status and this
 does not restate it — what follows is the state of play, what is in flight, and
@@ -72,8 +73,11 @@ checklists, and the customer-facing copy as written on 2026-08-03.
 (staff sign-in) that was found missing partway through. Nothing is blocked on
 code.
 
-**Nothing is deployed yet.** No account exists, no data is real, no customer has
-ever opened a link.
+**It is deployed, as of 2026-08-06/07.** The Render service, the managed
+Postgres, the R2 evidence bucket and the Auth0 tenant all exist and work
+together, and a real staff account has signed in. **No data is real and no
+customer has ever opened a link** — the deployed database is empty, and the
+hostname is still `*.onrender.com`, so issuing one remains forbidden.
 
 ## In flight right now
 
@@ -166,6 +170,17 @@ of a pool that is about to start.
 8. **One test failed once and has not reproduced.** A `duplicate key on
    app_users_pkey` during a fresh-clone run, not seen again across many full runs
    or in CI. Unexplained. If it reappears, capture the failing file.
+9. **Signing in and being allowed in are two separate steps, and the second is a
+   database write.** Auth0 authenticating someone grants them nothing: the app
+   maps the token's `sub` to `app_users.oidc_subject` and reads the role from
+   **that table, never from the token**. A brand-new deployment therefore refuses
+   everyone, and it looks like broken sign-in — `/app/callback` returns 200 while
+   every `/api/*` call returns 403. The fix is one row (runbook §3), not an
+   identity-provider setting. Two details cost real time on 2026-08-07: the
+   provider prefix on the subject (`google-oauth2|…` vs `github|…`) is the only
+   reliable record of which button was actually used, and **the app never logs the
+   subject it rejected**, so an unlinked user cannot be diagnosed from the logs —
+   the value has to be read out of the provider's own user list.
 
 ## Where the detail lives
 

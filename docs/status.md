@@ -1,10 +1,10 @@
 # Apex Current Status
 
-**Last updated:** 2026-08-06
+**Last updated:** 2026-08-07
 
 **Program phase:** Phase 1 — Shared operational spine and controlled Gate vertical slice (Phase 0 preservation complete). **Apex OS build plan Steps 1–8 are complete, every MVP item in PRD §19 is built, and all content is approved.** Travis Sandoval approved the inspection list and lead times, the twelve added gate checklist items, and the nine customer-facing phase descriptions as written on 2026-08-03 (`docs/inspections-and-gate-checklists-2026-08-03.md`). Nothing is blocked on code and nothing is awaiting sign-off.
 
-**The stack is deployed and running.** As of 2026-08-06, `apex-os` is live on Render's free host at `https://apex-os-nqlx.onrender.com` — Postgres migrated, R2-backed evidence storage wired up, and staff Auth0 sign-in confirmed working end to end. See "First deploy, end to end" below. What remains before a real pilot is people-dependent, not code- or infrastructure-dependent: the final hostname, naming the pilot jobs, and the contract amendment.
+**The stack is deployed, running, and has been signed into.** As of 2026-08-07, `apex-os` is live on Render's free host at `https://apex-os-nqlx.onrender.com` — Postgres migrated, R2-backed evidence storage wired up, and a real staff account authenticated through Auth0 and authorized against `app_users`. See "First deploy, end to end" below. **The deployed database is empty**, so every screen renders its honest empty state; no real Apex project exists in it yet. What remains before a real pilot is people-dependent, not code- or infrastructure-dependent: the final hostname, naming the pilot jobs, and the contract amendment.
 
 **Deployment is less blocked than it has been recorded as.** Only the DNS record needs a final hostname. The Cloudflare account, the R2 bucket, the Auth0 tenant and the Render blueprint do not, and Render serves a free `*.onrender.com` host that is enough to prove the stack end to end. The domain has been held back deliberately — Monsoon is expected to hand over the existing one (`apex-prds/decision-register.md` item 21) and a second purchase would be waste. **The hard line is unchanged: issue no real customer link until the hostname is final**, because a link's origin is fixed when it is issued and only the token hash is stored.
 
@@ -1099,7 +1099,38 @@ The stack went from "built but never run" to live and verified, in three fixes f
 | Browser: `/app` sign-in before Auth0 fixes | `Callback URL mismatch`, then (after URL fix) `Client is not authorized to access resource server` |
 | Browser: `/app` sign-in after both Auth0 fixes | Reaches the real Auth0 login form; redirect, authorize, and callback all succeed |
 
-**Not done here:** the hostname is still `*.onrender.com`, so no real customer link may be issued (unchanged hard line, see above). No real Apex account was signed in with, so staff login past the Auth0 form is unverified. The restore procedure referenced in `docs/HANDOFF.md` is still untested.
+**Staff sign-in completed end to end — 2026-08-07.** The first human signed into
+Apex OS over the internet. Authentication had in fact been working since the
+Auth0 fixes above; what looked like "it will not let me sign in" was the
+authorization half doing its job — `/app/callback` returned 200 while every
+`/api/*` call returned 403, because `app_users` was empty and **the role comes
+from that table, never from the token.** An identity the provider vouches for
+still grants nothing until someone links it, which is the property that makes
+authorization auditable in the database rather than in a claim.
+
+Linking one row (`google-oauth2|…` → `admin`) closed it; the same request path
+went `403` → `200` in the server log. Two things worth recording because they
+cost time:
+
+- **The account arrived through Google, not GitHub** as assumed at the time. The
+  subject prefix is the authority on which button was actually used, and it is
+  worth reading rather than remembering.
+- **The app never logs the subject it rejected**, so an unlinked user cannot be
+  diagnosed from the logs alone — the value has to come from the provider's own
+  user list. That is a defensible privacy choice and it is also the reason this
+  took a round trip; noted here rather than changed.
+
+The signed-in Today feed renders **empty**, which is correct rather than
+disappointing: this database is fresh and holds none of the seeded pilot data
+(Whitaker, Johnson) that every screenshot before this ran against. Wired screens
+never fall back to sample data, so the first honest state of a real deployment is
+an empty one that says so.
+
+**Not done here:** the hostname is still `*.onrender.com`, so no real customer
+link may be issued (unchanged hard line, see above). No real Apex project exists
+in the deployed database — the system is live and empty, and closing that is
+`§20.12`'s pilot jobs, not further code. The restore procedure referenced in
+`docs/HANDOFF.md` is still untested.
 
 ## Next controlled milestone
 
