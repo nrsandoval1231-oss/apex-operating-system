@@ -34,8 +34,13 @@ export default function QueryState({
     return (
       <div className="state is-error" role="alert">
         <h3>{needsToken ? 'Session expired' : offline ? 'No connection' : 'Could not load'}</h3>
+        {/*
+          * Wording matters here: this is what someone reads when the working day
+          * stops. It said "paste a fresh one", which described the pilot-token
+          * flow and became wrong the moment staff signed in with a real provider.
+          */}
         <p>{needsToken
-          ? 'This pilot token is no longer valid. Sign out and paste a fresh one.'
+          ? 'Your session is no longer valid. Sign out and sign in again to continue.'
           : error.message}</p>
         {!needsToken && (
           <button type="button" className="action action-quiet" onClick={onRetry}>
