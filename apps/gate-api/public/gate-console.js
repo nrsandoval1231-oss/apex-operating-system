@@ -427,6 +427,22 @@ byId('release').addEventListener('click', (event) => run(event.currentTarget, as
 renderSession();
 
 /**
+ * The link to Designer is shown on a computer and hidden on a phone.
+ *
+ * Designer runs on the builder's own machine, so the link only works where it
+ * is running — never from the field. Probing for it was the first instinct and
+ * would breach this page's own `connect-src 'self'`, trading a dead link for a
+ * console full of CSP violations.
+ *
+ * A coarse pointer check instead: a touch device is somebody on a job site, and
+ * the link is not for them. It says where it goes, so a laptop without Designer
+ * running gets a connection error rather than a surprise.
+ */
+if (window.matchMedia('(pointer: fine)').matches) {
+  byId('designer-link').classList.remove('hidden');
+}
+
+/**
  * Populate the job picker on load, and again whenever a session appears.
  *
  * A failure here is reported but not fatal: the typed-id fallback still works,
