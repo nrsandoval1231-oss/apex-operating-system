@@ -87,7 +87,52 @@ hostname is still `*.onrender.com`, so issuing one remains forbidden.
 
 ## In flight right now
 
-Nothing is blocked on code. All 28 decision-register items are decided — Travis
+### Picked up mid-sentence on 2026-08-07 — read this first
+
+Work stopped partway through **adding a Designer → Apex OS export path**. Nothing
+was written: both repositories are clean and everything described below is
+committed and deployed. This is the intent, so the next session does not
+re-derive it.
+
+Designer has no connection to Apex OS. The takeoff now on Gamble and Zephyr got
+there by running Designer's engine from a script and posting the result by hand.
+The receiving end exists (`POST /api/jobs/:id/approved-takeoff`); the handover
+does not.
+
+**The shape that was chosen, and why.** Designer runs on localhost and Apex OS is
+remote, so a direct browser POST would need CORS on the API *and* a second
+implementation of the PKCE sign-in inside Designer. Both are avoidable: have
+Designer **export the submission as a JSON file**, and give Apex OS's project page
+an **"Attach approved takeoff"** control that reads that file and posts it
+same-origin, already authenticated. No CORS, no second auth flow, and approving a
+takeoff stays an office act with a name against it — which is what
+`TAKEOFF_APPROVAL_AUTHORITY` already says it is.
+
+Note that `Apex Designer/` is a **separate private repository**, so that half is
+committed there, not here.
+
+### The three office buttons that do not exist
+
+Steps a job needs exactly once, each currently an API call with no UI:
+
+1. **Open as a construction project** — `POST /api/jobs/:id/project`
+2. **Create the draw schedule** — `POST /api/jobs/:id/draws`, from the contract total
+3. **Confirm a draw invoiced** — `POST /api/jobs/:id/draws/:code/invoice`
+
+The Gate workflow — the operationally hard part, and the one a superintendent
+touches daily — is fully built and now verified working in the deployed console.
+These three are office acts done once per job, and they are the cheapest gap left
+to close.
+
+### Still genuinely unbuilt
+
+**Closing a job has no endpoint**, and **cost capture → commission (PRD 03/04) is
+specified but not built.** The chain today runs from a drawn pool to a released,
+invoiceable draw. That is the honest boundary.
+
+---
+
+All 28 decision-register items are decided — Travis
 approved the nineteen that were his on 2026-08-05. **What remains is four things
 that need a person, and only one of them is a purchase.**
 
