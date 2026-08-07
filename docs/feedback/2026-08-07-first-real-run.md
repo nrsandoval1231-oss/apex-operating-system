@@ -41,6 +41,37 @@ cellular takes time — so the control still has to show that something is
 happening and say so when it fails. Removing the button must not remove the
 feedback.
 
+## 1d. The owner cannot drill down from Today to what actually happened
+
+> travis should be able to look at the today screen and drill all the way down to
+> exactly whats going on. right now he cant click anything.
+
+Also asked for: opening **previous** Gates, and seeing the **photos that were
+approved and passed**.
+
+Checked rather than assumed, because the shape of the gap matters:
+
+- **Today cards do carry a link.** `actionHref` is set on every card and rendered
+  as the small action button — "Review and countersign" and so on. So there is one
+  clickable target per card, in the least prominent place on it, and the card
+  itself is dead. It reads as unclickable because effectively it is.
+- **The link only ever goes to the project page.** Every card resolves to the same
+  destination regardless of what it is about, so "drill down to exactly what is
+  going on" ends one level too early.
+- **A released Gate cannot be opened anywhere in Apex OS.** The project page lists
+  Gates with a status badge and nothing behind it. Gate detail lives only in the
+  field console, which is built for the person doing the work rather than the
+  owner reviewing it.
+- **Evidence cannot be viewed by staff at all.** `GET /api/evidence/:id` exists and
+  serves the bytes; the staff app calls it in exactly one place —
+  `CustomerPage.tsx`, to toggle whether a photo is customer-visible. There is no
+  screen where somebody can look at the photographs that passed a requirement.
+
+That last one is the sharpest. The system takes photographs, hashes them, stores
+them immutably and refuses to release a Gate without them — and then never shows
+them to the person whose signature the whole control exists to protect. The
+evidence is being collected for an audit nobody can perform.
+
 ## 2. Too complicated for the people who will use it
 
 > the people using this are not software engineers. they are laborors. they need
