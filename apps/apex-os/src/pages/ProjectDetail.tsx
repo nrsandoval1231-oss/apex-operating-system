@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { CONSTRUCTION_PHASES, type DrawStatus, type VisitStatus } from '@apex/contracts';
 import { useDrawSchedule, useJob, useJobGates, useJobInspections, useJobSchedule } from '../api/useJobs';
 import AttachTakeoff from '../components/AttachTakeoff';
 import AssignSuperintendent from '../components/AssignSuperintendent';
 import ConfirmInvoice from '../components/ConfirmInvoice';
+import GateDetail from '../components/GateDetail';
 import Inspections from '../components/Inspections';
 import OpenProject from '../components/OpenProject';
 import QueryState from '../components/QueryState';
@@ -60,6 +62,9 @@ const PENDING = [
 
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>();
+  // Which Gate is open for review. One at a time: this is for looking at a
+  // specific signature, not for scanning them all at once.
+  const [openGate, setOpenGate] = useState<string | null>(null);
   const { data: job, error, loading, reload } = useJob(id);
   const gates = useJobGates(id);
   const gatePlan = gates.data ?? [];
@@ -201,22 +206,42 @@ export default function ProjectDetail() {
       {gatePlan.length > 0 && (
         <ul className="schedule">
           {gatePlan.map((entry) => (
-            <li key={entry.definitionKey}>
-              <div style={{ minWidth: 0 }}>
-                <div className="what">{entry.title}</div>
-                <div className="note">
-                  {[
-                    entry.drawCode === null ? 'No draw' : 'Releases a draw',
-                    entry.requiresCountersign ? 'Owner countersign' : null,
-                  ].filter(Boolean).join(' · ')}
+            <li key={entry.definitionKey} className="is-stacked">
+              <div className="row-line">
+                <div style={{ minWidth: 0 }}>
+                  <div className="what">{entry.title}</div>
+                  <div className="note">
+                    {[
+                      entry.drawCode === null ? 'No draw' : 'Releases a draw',
+                      entry.requiresCountersign ? 'Owner countersign' : null,
+                    ].filter(Boolean).join(' · ')}
+                  </div>
+                </div>
+                <div className="figure">
+                  <span className={`tag ${GATE_TAG(entry.status)}`}>
+                    {/* Not opened is not the same as skipped, and must never read as passed. */}
+                    {entry.status === null ? 'Not opened' : GATE_STATUS_LABEL[entry.status]}
+                  </span>
+                  {/*
+                    * Only a Gate that exists can be looked into. One never opened
+                    * has no requirements, no evidence and nothing to review — an
+                    * expander there would open onto an empty box.
+                    */}
+                  {entry.gateInstanceId !== null && (
+                    <button
+                      type="button"
+                      className="action action-quiet"
+                      aria-expanded={openGate === entry.definitionKey}
+                      onClick={() => setOpenGate(openGate === entry.definitionKey ? null : entry.definitionKey)}
+                    >
+                      {openGate === entry.definitionKey ? 'Hide proof' : 'See proof'}
+                    </button>
+                  )}
                 </div>
               </div>
-              <div className="figure">
-                <span className={`tag ${GATE_TAG(entry.status)}`}>
-                  {/* Not opened is not the same as skipped, and must never read as passed. */}
-                  {entry.status === null ? 'Not opened' : GATE_STATUS_LABEL[entry.status]}
-                </span>
-              </div>
+              {openGate === entry.definitionKey && entry.gateInstanceId !== null && (
+                <GateDetail gateInstanceId={entry.gateInstanceId} />
+              )}
             </li>
           ))}
         </ul>
