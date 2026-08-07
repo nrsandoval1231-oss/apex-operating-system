@@ -219,8 +219,15 @@ const loadGateChoices = async () => {
     const label = entry.status === null ? 'not opened' : entry.status;
     const draw = entry.drawCode === null ? '' : ' · releases a draw';
     const seal = entry.requiresCountersign ? ' · needs countersign' : '';
-    choice.append(element('option', '', `${entry.title} — ${label}${draw}${seal}`)).lastChild;
-    choice.lastChild.value = entry.definitionKey;
+    /*
+     * `Node.append` returns undefined, so reading `.lastChild` off its result
+     * threw on the first iteration and the picker only ever listed one Gate —
+     * whichever came first. Six of the seven templates were unreachable from the
+     * field since they were introduced. Build the option, then append it.
+     */
+    const option = element('option', '', `${entry.title} — ${label}${draw}${seal}`);
+    option.value = entry.definitionKey;
+    choice.append(option);
   });
   const outstanding = plan.find((entry) => entry.status !== 'released');
   if (outstanding) choice.value = outstanding.definitionKey;
