@@ -73,10 +73,16 @@ checklists, and the customer-facing copy as written on 2026-08-03.
 (staff sign-in) that was found missing partway through. Nothing is blocked on
 code.
 
-**It is deployed, as of 2026-08-06/07.** The Render service, the managed
-Postgres, the R2 evidence bucket and the Auth0 tenant all exist and work
-together, and a real staff account has signed in. **No data is real and no
-customer has ever opened a link** — the deployed database is empty, and the
+**It is deployed and the chain runs, as of 2026-08-06/07.** The Render service,
+the managed Postgres, the R2 evidence bucket and the Auth0 tenant all exist and
+work together; a real staff account has signed in; and the three pilot jobs
+(Gamble, Zephyr, Hoitz) are in the deployed database. Two carry an approved
+Designer takeoff — 17 tamper-evident quantities each — with a Gate open against
+them. `docs/status.md`, "The chain runs", has the detail.
+
+**What is still not real.** The attached takeoff is Designer's `STANDARD_MODEL`,
+not either customer's drawn pool. No evidence has been captured, nothing signed
+or released, no draw earned, and **no customer has ever opened a link** — the
 hostname is still `*.onrender.com`, so issuing one remains forbidden.
 
 ## In flight right now
@@ -119,9 +125,13 @@ fixed when it is issued and only the token hash is stored, so a link sent
 against a host you later move off cannot be recovered — only reissued. This is
 what makes a free-host deployment safe to do now: prove the stack, issue nothing.
 
-**The thing none of the above is.** No real Apex project exists in this system.
-Not one. Every screen renders seeded test data, and that has been true since the
-2026-07-31 audit said so. Steps 1 and 3 are what change it.
+**The thing none of the above is — mostly closed 2026-08-07.** For the whole life
+of this project no real Apex project existed in the system and every screen
+rendered seeded test data. Three named jobs now exist in the deployed database
+and two carry an approved takeoff with an open Gate. What is still seeded is the
+*design*: the quantities came from Designer's `STANDARD_MODEL`, so the jobs are
+real and their pools are not yet. A drawn pool per job replaces that with one
+`supersedeExisting` call.
 
 **Expected 2026-08-06: a second completed pool.** PRD 03 and PRD 04 are both
 written and neither can run until one job has been carried end to end. The exact
