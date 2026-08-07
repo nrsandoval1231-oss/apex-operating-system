@@ -1288,11 +1288,18 @@ repositories meet. Each pins its own side and both would stay green while they
 stopped agreeing, so the round trip is asserted there or nowhere — and that
 failure would otherwise surface on a job site.
 
-**Also fixed:** the staff app's own inlined typeface was blocked by its own CSP.
-The build inlines small fonts as `data:` URIs and `font-src 'self'` refused them,
-so every page logged a violation and quietly rendered in a fallback face.
-`font-src 'self' data:` is a narrow allowance — a data URI is bytes the page
-already carries, not a fetch to anywhere.
+**Also fixed:** a font the staff app inlines as a `data:` URI was blocked by its
+own CSP. `font-src 'self'` covers the self-hosted `.woff2` files but not an
+inlined one, so every page load logged a violation. `font-src 'self' data:` is a
+narrow allowance — a data URI is bytes the page already carries, not a fetch to
+anywhere.
+
+**Scope, corrected after measuring rather than assuming.** The commit message for
+this fix says the page "rendered in a fallback face", which overstates it. Reading
+`document.fonts` afterwards shows Oswald, Inter and JetBrains Mono all loading
+from `/app/assets/` and none failing — they are self-hosted and were never
+blocked. One inlined face among thirty registered was refused. The violation was
+real and worth removing; the visible damage was not what the commit claims.
 
 ## Next controlled milestone
 
