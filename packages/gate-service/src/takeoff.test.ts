@@ -142,3 +142,183 @@ describe('getApprovedTakeoffRevision', () => {
     expect(other).toBeNull();
   });
 });
+
+/**
+ * Recording an approved takeoff — the write half, and the link that had no path
+ * outside the test suite until now.
+ *
+ * The tests below are mostly about what the boundary refuses and what it declines
+ * to take on trust. It cannot re-derive a quantity (the Designer engine is another
+ * repository on purpose), so everything it CAN check has to actually be checked.
+ */
+describe('recordApprovedTakeoff', () => {
+  const submission = {
+    engineVersion: 'designer-0.1.0',
+    quantityModelVersion: 'designer-quantity-v4',
+    jobModel: { shape: 'rectangle', lengthFt: 30, widthFt: 15 },
+    quantities,
+    calcLedger,
+    supersedeExisting: false,
+  };
+  const officeActor = { kind: 'user', userId: ids.office, role: 'office' } as const;
+
+  it('stores a revision that can immediately be served as authority', async () => {
+    const revision = await service.recordApprovedTakeoff({
+      jobId: ids.job,
+      actor: officeActor,
+      submission,
+      idempotencyKey: 'takeoff-first',
+    });
+
+    expect(revision.status).toBe('approved');
+    expect(revision.revisionNumber).toBe(1);
+    expect(revision.approvedBy).toBe(ids.office);
+    expect(revision.quantities).toHaveLength(2);
+    // Read back through the consumer's own parser, not the object we just built.
+    expect(await service.getApprovedTakeoffRevision(ids.job)).toMatchObject({
+      revisionId: revision.revisionId,
+    });
+  });
+
+  /**
+   * The digest is the product. Computing it here — never accepting one — is what
+   * makes "these are the approved quantities" checkable by anyone later.
+   */
+  it('computes the quantity digest itself rather than accepting one', async () => {
+    const revision = await service.recordApprovedTakeoff({
+      jobId: ids.job,
+      actor: officeActor,
+      submission,
+      idempotencyKey: 'takeoff-digest',
+    });
+    expect(revision.quantityPayloadSha256).toBe(calculateQuantityPayloadSha256(quantities));
+  });
+
+  /**
+   * The same design serialised with its keys in a different order is the same
+   * design. If this ever fails, `job_input_sha256` has started recording the
+   * sender's formatting instead of the input.
+   */
+  it('hashes the job model canonically, so key order does not change the input hash', async () => {
+    const first = await service.recordApprovedTakeoff({
+      jobId: ids.job,
+      actor: officeActor,
+      submission,
+      idempotencyKey: 'takeoff-order-a',
+    });
+    const reordered = { widthFt: 15, lengthFt: 30, shape: 'rectangle' };
+    const second = await service.recordApprovedTakeoff({
+      jobId: ids.otherJob,
+      actor: officeActor,
+      submission: { ...submission, jobModel: reordered },
+      idempotencyKey: 'takeoff-order-b',
+    });
+    expect(second.jobInputSha256).toBe(first.jobInputSha256);
+  });
+
+  /**
+   * Replacing an approved revision invalidates any price derived from it. That is
+   * a different intention from approving a first one and must be said out loud —
+   * the same rule the customer link follows.
+   */
+  it('refuses a second approval unless superseding is asked for', async () => {
+    await service.recordApprovedTakeoff({
+      jobId: ids.job, actor: officeActor, submission, idempotencyKey: 'takeoff-one',
+    });
+    await expect(service.recordApprovedTakeoff({
+      jobId: ids.job, actor: officeActor, submission, idempotencyKey: 'takeoff-two',
+    })).rejects.toThrow(/already has an approved takeoff revision/i);
+  });
+
+  it('supersedes the previous revision when asked, and keeps it intact', async () => {
+    const first = await service.recordApprovedTakeoff({
+      jobId: ids.job, actor: officeActor, submission, idempotencyKey: 'takeoff-a',
+    });
+    const second = await service.recordApprovedTakeoff({
+      jobId: ids.job,
+      actor: officeActor,
+      submission: { ...submission, supersedeExisting: true },
+      idempotencyKey: 'takeoff-b',
+    });
+
+    expect(second.revisionNumber).toBe(2);
+    const rows = await db.query<{ revision_id: string; status: string; superseded_by_revision_id: string | null }>(
+      'select revision_id, status, superseded_by_revision_id from takeoff_revisions order by revision_number',
+    );
+    // The old revision is retired, not deleted: something was priced against it.
+    expect(rows.rows[0]).toMatchObject({
+      revision_id: first.revisionId,
+      status: 'superseded',
+      superseded_by_revision_id: second.revisionId,
+    });
+    expect(rows.rows[1]).toMatchObject({ revision_id: second.revisionId, status: 'approved' });
+  });
+
+  /** Deciding the quantities is not the same act as building against them. */
+  it('refuses a superintendent, who may release a Gate but not decide quantities', async () => {
+    const superintendent = createCanonicalId('user');
+    await db.query(
+      `insert into app_users (user_id, auth_user_id, role, display_name)
+       values ($1, '00000000-0000-0000-0000-000000000003', 'superintendent', 'Super')`,
+      [superintendent],
+    );
+    await expect(service.recordApprovedTakeoff({
+      jobId: ids.job,
+      actor: { kind: 'user', userId: superintendent, role: 'superintendent' },
+      submission,
+      idempotencyKey: 'takeoff-super',
+    })).rejects.toThrow(/may not approve a Designer takeoff/i);
+  });
+
+  /**
+   * The one consistency check this boundary can genuinely make. A quantity whose
+   * value disagrees with the Calc it cites is not a rounding difference — it is a
+   * claim with no derivation behind it.
+   */
+  it('refuses a quantity that does not equal the Calc entry it names', async () => {
+    await expect(service.recordApprovedTakeoff({
+      jobId: ids.job,
+      actor: officeActor,
+      submission: {
+        ...submission,
+        quantities: [{ ...quantities[0]!, value: 99999 }, quantities[1]!],
+      },
+      idempotencyKey: 'takeoff-mismatch',
+    })).rejects.toThrow(/must equal its Calc result/i);
+  });
+
+  it('refuses a quantity carrying the wrong unit for its code', async () => {
+    await expect(service.recordApprovedTakeoff({
+      jobId: ids.job,
+      actor: officeActor,
+      submission: {
+        ...submission,
+        quantities: [{ ...quantities[0]!, unit: 'cf' }, quantities[1]!],
+      },
+      idempotencyKey: 'takeoff-unit',
+    })).rejects.toThrow(/must use gal/i);
+  });
+
+  it('refuses an unknown job rather than orphaning a revision', async () => {
+    await expect(service.recordApprovedTakeoff({
+      jobId: createCanonicalId('job'),
+      actor: officeActor,
+      submission,
+      idempotencyKey: 'takeoff-nojob',
+    })).rejects.toThrow(/Unknown Job/i);
+  });
+
+  /** The approval is an event, not just a row: the audit trail is the product too. */
+  it('records created and approved events against the job', async () => {
+    await service.recordApprovedTakeoff({
+      jobId: ids.job, actor: officeActor, submission, idempotencyKey: 'takeoff-events',
+    });
+    const events = await db.query<{ event_type: string }>(
+      'select event_type from events where job_id = $1 order by recorded_at',
+      [ids.job],
+    );
+    const types = events.rows.map((row) => row.event_type);
+    expect(types).toContain('takeoff_revision.created');
+    expect(types).toContain('takeoff_revision.approved');
+  });
+});
