@@ -1,16 +1,16 @@
 # Apex Current Status
 
-**Last updated:** 2026-08-05
+**Last updated:** 2026-08-06
 
 **Program phase:** Phase 1 — Shared operational spine and controlled Gate vertical slice (Phase 0 preservation complete). **Apex OS build plan Steps 1–8 are complete, every MVP item in PRD §19 is built, and all content is approved.** Travis Sandoval approved the inspection list and lead times, the twelve added gate checklist items, and the nine customer-facing phase descriptions as written on 2026-08-03 (`docs/inspections-and-gate-checklists-2026-08-03.md`). Nothing is blocked on code and nothing is awaiting sign-off.
 
-**The only thing between this and a pilot is deployment.** Everything runs on loopback with embedded Postgres and a symmetric pilot JWT. A pilot with three to five real projects and a live customer link needs a managed environment, TLS, and real identity — see the launch blockers below. That is now the single remaining workstream.
+**The stack is deployed and running.** As of 2026-08-06, `apex-os` is live on Render's free host at `https://apex-os-nqlx.onrender.com` — Postgres migrated, R2-backed evidence storage wired up, and staff Auth0 sign-in confirmed working end to end. See "First deploy, end to end" below. What remains before a real pilot is people-dependent, not code- or infrastructure-dependent: the final hostname, naming the pilot jobs, and the contract amendment.
 
 **Deployment is less blocked than it has been recorded as.** Only the DNS record needs a final hostname. The Cloudflare account, the R2 bucket, the Auth0 tenant and the Render blueprint do not, and Render serves a free `*.onrender.com` host that is enough to prove the stack end to end. The domain has been held back deliberately — Monsoon is expected to hand over the existing one (`apex-prds/decision-register.md` item 21) and a second purchase would be waste. **The hard line is unchanged: issue no real customer link until the hostname is final**, because a link's origin is fixed when it is issued and only the token hash is stored.
 
 **All 28 decision-register items are now decided.** Travis approved the nineteen that were his, as written, on 2026-08-05 — relayed by Nick, with no signed document, which the register records rather than implies. PRD 03 is written; PRD 04 has no remaining blocker. One precondition survives the approval: **the customer agreement must be amended before the broad reimbursable-cost definition is billed against.**
 
-**Production status:** Not production-ready
+**Production status:** Deployed to a free host for end-to-end verification; not yet pilot-ready. No real customer link has been issued.
 
 **Current source of truth for status:** This file. `docs/HANDOFF.md` is a one-page orientation that points here rather than restating it.
 
@@ -1077,6 +1077,29 @@ Two artefacts close it, and they are different things:
 **Commission standardisation is what this project was started for.** It is now
 specified end to end and waiting on one job rather than on any further
 specification.
+
+## First deploy, end to end — 2026-08-06
+
+The stack went from "built but never run" to live and verified, in three fixes found by actually deploying rather than by inspection.
+
+**1. The private database URL could not be verified (`6dec1f8`).** `render.yaml` wired `DATABASE_URL` to Render's private-network Postgres endpoint, which presents a self-signed certificate Render publishes no CA for. The app refuses to connect without verifying — correctly — so the blueprint could never have deployed as written. `DATABASE_URL` now takes the external connection string, whose Let's Encrypt certificate verifies against system roots. Cost recorded rather than glossed: database traffic now leaves the private network, TLS-protected but no longer private by topology. `resolveSsl` also had no tests at all until this fix; writing them turned up a second, unrelated bug — `::1` never matched Node's bracketed `[::1]` hostname, so local dev connections were silently forced onto TLS.
+
+**2. The evidence fallback could not write, so the app never became ready (`380955a`).** With no object storage configured, `main.ts` falls back to the local filesystem — a fallback the container image did not support, because `/app` was root-owned while the process ran as `node`. `mkdir` failed silently, `/ready` answered 503 forever, and Render killed the deploy after fifteen minutes with the app otherwise fully healthy. Fixed three ways: the fallback directory is now owned by `node`; the app prints a loud warning naming the risk whenever evidence is on ephemeral local storage; and CI now runs the container a second time with **no** object storage configured, so this path is actually exercised instead of only ever testing against S3.
+
+**3. R2 object storage and Auth0 were then configured against the live host**, closing the two remaining gaps between "deploys" and "usable":
+
+- Cloudflare R2 bucket `apex-evidence` created by hand (never by the app — no `CreateBucket` permission granted), versioning checked, and an **account-scoped** R2 API token (not user-scoped, so it survives independent of any one person's account access) issued with only `GetObject`/`PutObject`/`DeleteObject`/`HeadBucket`. `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` set on the Render service. Redeployed; startup log now reads `Evidence   S3-compatible bucket apex-evidence at https://<account>.r2.cloudflarestorage.com` with no ephemeral-storage warning.
+- Auth0 staff sign-in was broken two ways in sequence, both found by actually driving the sign-in flow in a browser rather than reading the dashboard: **Allowed Callback URLs / Web Origins / Logout URLs** on the Apex OS SPA application did not include `https://apex-os-nqlx.onrender.com`, and separately the Apex OS application had no **Application Access** grant against the `https://api.apex-os` API (a first-party authorization step, distinct from the URL allow-lists). Both corrected in the Auth0 dashboard. Verified by driving the full redirect → `/authorize` → `/app/callback` → Auth0 login-form round trip in a browser; login itself was not completed, since no real Apex account credentials were exercised.
+
+| Verification | Result |
+|---|---|
+| Render deploy of `main` at `6dec1f8` (pre-fix) | `update_failed` — timed out after 15 minutes, evidence directory unwritable |
+| Render deploy of `main` at `1d7df25` (post-fix, no object storage yet) | Live in ~40s; ephemeral-evidence warning present as designed |
+| Render deploy after R2 env vars set | Live; evidence logged as the R2 bucket, no warning |
+| Browser: `/app` sign-in before Auth0 fixes | `Callback URL mismatch`, then (after URL fix) `Client is not authorized to access resource server` |
+| Browser: `/app` sign-in after both Auth0 fixes | Reaches the real Auth0 login form; redirect, authorize, and callback all succeed |
+
+**Not done here:** the hostname is still `*.onrender.com`, so no real customer link may be issued (unchanged hard line, see above). No real Apex account was signed in with, so staff login past the Auth0 form is unverified. The restore procedure referenced in `docs/HANDOFF.md` is still untested.
 
 ## Next controlled milestone
 

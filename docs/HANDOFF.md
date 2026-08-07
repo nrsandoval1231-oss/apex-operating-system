@@ -1,8 +1,10 @@
 # Apex OS — handoff
 
-**As of:** 2026-08-05, end of day. CI green on `main` and genuinely checking the
+**As of:** 2026-08-06, end of day. CI green on `main` and genuinely checking the
 Designer contract. All seven repositories are pushed; nothing lives only on one
-machine.
+machine. **The stack is now deployed and live** at
+`https://apex-os-nqlx.onrender.com` — see "First deploy, end to end" in
+`docs/status.md` for the three fixes and the verification that got it there.
 
 Deliberately short. `docs/status.md` is the source of truth for status and this
 does not restate it — what follows is the state of play, what is in flight, and
