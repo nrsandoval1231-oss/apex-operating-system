@@ -1,6 +1,7 @@
 import { Link, useParams } from 'react-router';
 import { CONSTRUCTION_PHASES, type DrawStatus, type VisitStatus } from '@apex/contracts';
 import { useDrawSchedule, useJob, useJobGates, useJobInspections, useJobSchedule } from '../api/useJobs';
+import AttachTakeoff from '../components/AttachTakeoff';
 import Inspections from '../components/Inspections';
 import QueryState from '../components/QueryState';
 import {
@@ -335,6 +336,17 @@ export default function ProjectDetail() {
             : job.approvedTakeoffRevisionId.slice(-12)}
         </dd>
       </dl>
+      {id !== undefined && (
+        <AttachTakeoff
+          jobId={id}
+          hasApproved={job.approvedTakeoffRevisionId !== null}
+          /*
+           * Gates reload too: a job with no approved takeoff cannot open one, so
+           * attaching is exactly the moment that list stops being refusals.
+           */
+          onAttached={() => { reload(); gates.reload(); }}
+        />
+      )}
 
       {/* ----------------------------------------------------- inspections */}
 
