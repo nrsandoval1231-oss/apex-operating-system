@@ -4,7 +4,7 @@
 
 **Program phase:** Phase 1 — Shared operational spine and controlled Gate vertical slice (Phase 0 preservation complete). **Apex OS build plan Steps 1–8 are complete, every MVP item in PRD §19 is built, and all content is approved.** Travis Sandoval approved the inspection list and lead times, the twelve added gate checklist items, and the nine customer-facing phase descriptions as written on 2026-08-03 (`docs/inspections-and-gate-checklists-2026-08-03.md`). Nothing is blocked on code and nothing is awaiting sign-off.
 
-**The stack is deployed, signed into, and carrying real jobs.** As of 2026-08-07, `apex-os` is live on Render's free host at `https://apex-os-nqlx.onrender.com` — Postgres migrated, R2-backed evidence storage wired up, and a real staff account authenticated through Auth0 and authorized against `app_users`. See "First deploy, end to end" below. The three pilot jobs named by Travis — **Gamble, Zephyr and Hoitz** — now exist in the deployed database, and two of them carry an approved Designer takeoff with an open Gate; see "The chain runs" below. What remains before a real pilot is people-dependent, not code- or infrastructure-dependent: the final hostname, each job's real drawn design and contract value, and the contract amendment.
+**The whole chain has now been run by a person.** As of 2026-08-07, `apex-os` is live at `https://apex-os-nqlx.onrender.com`, and **Gamble went from a drawn pool to $120,000 of earned draws through seven released Gates without a script in the operating path** — see "A job ran the whole chain" below. The three pilot jobs Travis named — **Gamble, Zephyr and Hoitz** — are all in the deployed database with approved takeoffs; Hoitz carries the first takeoff a person actually drew. What remains before a real pilot is now a mix of the people-dependent (final hostname, real designs and contract values, the contract amendment) and sixteen pieces of recorded field feedback, of which the sharpest are that action cards name work the product cannot perform and that nobody can view the evidence the system so carefully collects.
 
 **Deployment is less blocked than it has been recorded as.** Only the DNS record needs a final hostname. The Cloudflare account, the R2 bucket, the Auth0 tenant and the Render blueprint do not, and Render serves a free `*.onrender.com` host that is enough to prove the stack end to end. The domain has been held back deliberately — Monsoon is expected to hand over the existing one (`apex-prds/decision-register.md` item 21) and a second purchase would be waste. **The hard line is unchanged: issue no real customer link until the hostname is final**, because a link's origin is fixed when it is issued and only the token hash is stored.
 
@@ -1300,6 +1300,67 @@ this fix says the page "rendered in a fallback face", which overstates it. Readi
 from `/app/assets/` and none failing — they are self-hosted and were never
 blocked. One inlined face among thirty registered was refused. The violation was
 real and worth removing; the visible damage was not what the commit claims.
+
+## A job ran the whole chain — 2026-08-07
+
+**Gamble went from a drawn pool to $120,000 earned, in the deployed system, by a
+person clicking.** No scripts in the operating path. This is the run PRD 03 §13
+and PRD 04 §7 both end on, and it had never happened before.
+
+What it produced:
+
+| | |
+|---|---|
+| Approved takeoff | 17 signed quantities, `designer-quantity-v4` |
+| Gates | **7 of 7 released**, including the two-signature pre-gunite hold point |
+| Construction phase | 9 of 9, carried by the Gates rather than set by hand |
+| Contract | $120,000.00 |
+| Draws | 10/30/30/20/10 → $12,000 / $36,000 / $36,000 / $24,000 / $12,000 |
+| Ready to bill | **$120,000.00** |
+
+**Hoitz carries the first takeoff a person drew**, exported from Designer and
+attached through the UI. Its digest differs from Gamble's and Zephyr's, which
+share one because both were posted from a script — the difference between a
+fixture replayed and a pool designed.
+
+**Two stand-ins, recorded rather than glossed.** Gamble's contract came from a
+signed proposal row written by hand, because the Proposal engine is not wired to
+Apex OS and there is deliberately no field that takes a contract number — a
+contract value with no proposal behind it is a figure nobody agreed to. And the
+pre-gunite countersign was made by a second `admin` rather than by the
+superintendent who signed off, because the sign-off was recorded as the owner
+first. The two-person rule held either way; what it cannot enforce is *which* two.
+
+**Three bugs found by driving, none of which had a failing test:**
+
+1. Six of seven Gates were unreachable from the field console — the picker threw
+   after its first option and had done since the seven templates shipped.
+2. The Permit Gate's release panel said "Authorize gunite" under IRREVERSIBLE HOLD
+   POINT, naming the wrong irreversible act on the screen built for informed
+   sign-off.
+3. Attaching a takeoff was refused for an `Idempotency-Key` the staff app had
+   never sent, because until that route existed no route it could reach demanded
+   one.
+
+**Sixteen pieces of feedback** are in
+[`docs/feedback/2026-08-07-first-real-run.md`](feedback/2026-08-07-first-real-run.md),
+captured during the run and deliberately not acted on until it finished. The
+sharpest three:
+
+- **Action cards name work the product cannot do.** "Confirm invoice" and "assign
+  super" navigate to a page with no such control, so the card cannot be cleared.
+  The feed's own rule is that a card must state a consequence; one that cannot be
+  acted on teaches the owner to scroll past the ones that matter.
+- **Nobody can look at the evidence.** The system photographs the work, hashes it,
+  stores it immutably and refuses to release a Gate without it — then shows it to
+  no one. It is collected for an audit nobody can perform.
+- **`/api/today` takes 6.5–10.2 s** against 0.23 s for `/api/jobs`, measured on the
+  same instance in the same minute. It is the screen the owner opens first.
+
+**Where the chain still stops:** invoicing has an API and no button, a job cannot
+be closed at all, and cost capture → commission (PRD 03/04) is written but
+unbuilt. A job therefore has no ending — which is the last thing the run turned
+up, and the thing both PRDs finish on.
 
 ## Next controlled milestone
 

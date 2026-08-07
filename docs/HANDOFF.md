@@ -107,6 +107,20 @@ produces, through JSON, against the receiving schema. Neither repository's own
 suite can catch a drift — each pins its own side and both stay green while the
 two stop agreeing.
 
+### The run happened — 2026-08-07
+
+**Gamble was carried from a drawn pool to $120,000 of earned draws by a person
+clicking, in the deployed system.** Seven Gates released including the
+two-signature hold point, phase 9 of 9, draws split 10/30/30/20/10, full contract
+ready to bill. `docs/status.md`, "A job ran the whole chain", has the detail and
+the two stand-ins it relied on.
+
+**Read the field feedback before building anything:**
+[`docs/feedback/2026-08-07-first-real-run.md`](feedback/2026-08-07-first-real-run.md).
+Sixteen items from the person who drove it. Two of them conflict with decisions
+already approved and say so; the rest are the product asking to be simpler. The
+one-line summary is his: *the engine is beautiful but it belongs under the hood.*
+
 ### The three office buttons that do not exist
 
 Steps a job needs exactly once, each currently an API call with no UI:
