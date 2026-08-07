@@ -19,6 +19,17 @@ Designer runs on `localhost:5173` on a builder's machine and the field console i
 served from the deployed host. They do not share an origin, and on a phone the
 localhost Designer does not exist at all.
 
+## 1b. No way to the next Gate without reloading the page
+
+Finishing a Gate leaves you in the workspace with no way back to the picker. The
+only route to the next Gate is reloading the browser — on a phone, on a job site,
+with wet hands.
+
+The cause is small and known: `render()` hides the setup panel once a Gate is
+open and nothing ever shows it again. A "Next Gate" or "Change Gate" control that
+returns to the picker — ideally offering the next unreleased Gate directly, since
+the plan is already loaded and already knows which one that is.
+
 ## 2. Too complicated for the people who will use it
 
 > the people using this are not software engineers. they are laborors. they need
