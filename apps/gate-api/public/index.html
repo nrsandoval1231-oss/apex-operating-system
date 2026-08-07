@@ -22,12 +22,35 @@
     </header>
 
     <section id="setup" class="panel setup">
-      <h2>Controlled-pilot access</h2>
-      <p>Use a short-lived Gate API token. It stays in this browser tab only.</p>
+      <h2>Field access</h2>
+
+      <!--
+        Signed in elsewhere on this origin, the console simply uses that session.
+        Nobody should be copying a JWT into a phone on a job site, and asking them
+        to was worse credential practice than whatever the paste box protected.
+      -->
+      <div id="session-known" class="session-state hidden">
+        <p>Signed in as <strong id="session-user">…</strong>.</p>
+        <button id="sign-out" type="button" class="link-quiet">Sign out</button>
+      </div>
+
+      <div id="session-missing" class="session-state hidden">
+        <p>You are not signed in on this device.</p>
+        <div class="actions"><a id="sign-in" class="primary" href="/app">Sign in</a></div>
+        <!--
+          The paste box survives as a fallback rather than the front door: the
+          controlled pilot still issues out-of-band tokens, and a device that
+          cannot complete a browser redirect should not be stranded on site.
+        -->
+        <details>
+          <summary>Use a pilot token instead</summary>
+          <label>Bearer token<input id="token" type="password" autocomplete="off" placeholder="Short-lived JWT"></label>
+        </details>
+      </div>
+
       <label>Job ID<input id="job-id" autocomplete="off" placeholder="job_…"></label>
-      <label>Bearer token<input id="token" type="password" autocomplete="off" placeholder="Short-lived JWT"></label>
       <label>Gate<select id="gate-choice"><option value="">Load the job first</option></select></label>
-      <div class="actions"><button id="open-job" class="primary">Open pre-gunite Gate</button></div>
+      <div class="actions"><button id="open-job" class="primary">Open Gate</button></div>
       <p id="setup-error" class="error" role="alert"></p>
     </section>
 

@@ -1,9 +1,54 @@
 const byId = (id) => document.getElementById(id);
-const state = { token: sessionStorage.getItem('apex-gate-token') ?? '', jobId: sessionStorage.getItem('apex-job-id') ?? '', gate: null };
+
+const TOKEN_KEY = 'apex-gate-token';
+
+/*
+ * The session is shared with Apex OS through `localStorage` on this origin, so
+ * signing in once at /app signs you in here too. Read through a helper rather
+ * than captured at load: another tab can sign in or out while this page is open.
+ */
+const readSession = () => {
+  try { return localStorage.getItem(TOKEN_KEY) ?? ''; } catch { return ''; }
+};
+
+const state = {
+  token: readSession(),
+  jobId: (() => { try { return localStorage.getItem('apex-job-id') ?? ''; } catch { return ''; } })(),
+  gate: null,
+};
 const jobInput = byId('job-id');
 const tokenInput = byId('token');
 jobInput.value = state.jobId;
-tokenInput.value = state.token;
+
+/**
+ * Who is signed in, read from the token itself.
+ *
+ * Display only — the server verifies the signature and decides the role, and
+ * nothing here is trusted for anything. Showing a name matters because the
+ * session now outlives the tab: somebody has to be able to notice they are
+ * about to sign a hold point as the last person who used this phone.
+ */
+const describeSession = (token) => {
+  try {
+    const claims = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+    if (typeof claims.exp === 'number' && claims.exp * 1000 < Date.now()) return null;
+    return claims.email ?? claims.name ?? claims.sub ?? 'this device';
+  } catch {
+    // A pilot token that does not decode is still usable; the server is the judge.
+    return 'this device';
+  }
+};
+
+const renderSession = () => {
+  const known = state.token !== '' && describeSession(state.token) !== null;
+  byId('session-known').classList.toggle('hidden', !known);
+  byId('session-missing').classList.toggle('hidden', known);
+  if (known) byId('session-user').textContent = describeSession(state.token);
+  else if (state.token !== '') {
+    setError('setup-error', 'That session has expired. Sign in again to continue.');
+    state.token = '';
+  }
+};
 
 const request = async (path, options = {}) => {
   const response = await fetch(path, {
@@ -189,13 +234,33 @@ const openSelectedGate = async () => {
   render();
 };
 
+byId('sign-out').addEventListener('click', () => {
+  try { localStorage.removeItem(TOKEN_KEY); } catch { /* nothing to clear */ }
+  state.token = '';
+  renderSession();
+  render();
+});
+
+/* Signing in or out in another tab takes effect here without a reload. */
+window.addEventListener('storage', (event) => {
+  if (event.key !== null && event.key !== TOKEN_KEY) return;
+  state.token = readSession();
+  renderSession();
+});
+
 byId('open-job').addEventListener('click', async () => {
   setError('setup-error', '');
   state.jobId = jobInput.value.trim();
-  state.token = tokenInput.value.trim();
+  // A pasted pilot token is a deliberate override; otherwise use the shared session.
+  const pasted = tokenInput.value.trim();
+  state.token = pasted !== '' ? pasted : readSession();
   if (!state.jobId) return setError('setup-error', 'A Job ID is required.');
-  sessionStorage.setItem('apex-job-id', state.jobId);
-  sessionStorage.setItem('apex-gate-token', state.token);
+  if (!state.token) return setError('setup-error', 'Sign in first, or supply a pilot token.');
+  try { localStorage.setItem('apex-job-id', state.jobId); } catch { /* not worth failing over */ }
+  if (pasted !== '') {
+    try { localStorage.setItem(TOKEN_KEY, pasted); } catch { /* in-memory is enough */ }
+    renderSession();
+  }
   try {
     await loadGateChoices();
     await openSelectedGate();
@@ -220,3 +285,6 @@ byId('release').addEventListener('click', (event) => run(event.currentTarget, as
   const result = await request(`/api/gates/${state.gate.gateInstanceId}/${path}`, { method: 'POST', idempotent: true, body: '{}' });
   state.gate = result.state;
 }));
+
+/* Reflect the shared session as soon as the page loads. */
+renderSession();
