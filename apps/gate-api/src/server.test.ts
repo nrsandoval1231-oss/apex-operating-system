@@ -325,6 +325,88 @@ describe('Gate HTTP vertical slice', () => {
   });
 
   /**
+   * The write half of the same route — the Designer bridge. `ids.job` already
+   * carries an approved revision from the fixture, which makes it the right job to
+   * prove the refusal on and the wrong one to prove a first approval on.
+   */
+  describe('recording an approved takeoff over HTTP', () => {
+    const submission = {
+      engineVersion: 'designer-0.1.0',
+      quantityModelVersion: 'designer-quantity-v4',
+      jobModel: { lengthFt: 30, widthFt: 15 },
+      quantities: [{ code: 'pool.wetted-area', value: 900, unit: 'sf', calcId: 'bridge.calc' }],
+      calcLedger: [
+        { id: 'bridge.calc', label: 'Wetted area', formula: 'A = f + w', inputs: [], value: 900, unit: 'sf' },
+      ],
+    };
+    const send = (jobId: string, bearer: string, body: unknown) => call(
+      `/api/jobs/${jobId}/approved-takeoff`,
+      bearer,
+      { method: 'POST', body: JSON.stringify(body), headers: { 'idempotency-key': createCanonicalId('event') } },
+    );
+
+    const freshJob = async () => {
+      const leadId = createCanonicalId('lead');
+      const jobId = createCanonicalId('job');
+      await db.query(
+        `insert into leads (lead_id, intake_source, source_record_id, idempotency_key, accepted_payload)
+         values ($1, 'test', $2, $3, '{}')`,
+        [leadId, `src-${jobId}`, `key-${jobId}`],
+      );
+      await db.query(
+        `insert into jobs (job_id, lead_id, signed_proposal_version, status) values ($1, $2, 1, 'active')`,
+        [jobId, leadId],
+      );
+      return jobId;
+    };
+
+    it('accepts a Designer export from the office and serves it straight back as authority', async () => {
+      const office = await token(ids.office, 'office');
+      const jobId = await freshJob();
+
+      const created = await send(jobId, office, submission);
+      expect(created.status).toBe(201);
+
+      const served = await call(`/api/jobs/${jobId}/approved-takeoff`, office);
+      expect(served.status).toBe(200);
+      expect((await served.json() as { quantities: unknown[] }).quantities).toHaveLength(1);
+    });
+
+    /** A homeowner cannot decide what was measured. */
+    it('refuses a customer', async () => {
+      const customer = await token(ids.customer, 'customer');
+      expect((await send(await freshJob(), customer, submission)).status).toBe(403);
+    });
+
+    /** Releasing a Gate and deciding the quantities behind it are different acts. */
+    it('refuses a superintendent with 409 rather than letting the role decide quantities', async () => {
+      const superintendent = await token(ids.superintendent, 'superintendent');
+      expect((await send(await freshJob(), superintendent, submission)).status).toBe(409);
+    });
+
+    /** Replacing priced authority has to be asked for. */
+    it('refuses a second approval that does not ask to supersede', async () => {
+      const office = await token(ids.office, 'office');
+      const response = await send(ids.job, office, submission);
+      expect(response.status).toBe(409);
+      expect((await response.json() as { error: string }).error).toMatch(/already has an approved takeoff/i);
+    });
+
+    /**
+     * A digest is not something a caller gets to assert. Sending one is a sign the
+     * client thinks it owns the evidence, and the strict schema says otherwise.
+     */
+    it('rejects a submission that tries to supply its own digest', async () => {
+      const office = await token(ids.office, 'office');
+      const response = await send(await freshJob(), office, {
+        ...submission,
+        quantityPayloadSha256: 'f'.repeat(64),
+      });
+      expect(response.status).toBe(422);
+    });
+  });
+
+  /**
    * Rows seeded before the digest was enforced carry placeholder hashes and quantities with no
    * calcId. They are not authority and never were, so the answer has to distinguish "your
    * request was wrong" (422) from "this record cannot be trusted" — otherwise the operator

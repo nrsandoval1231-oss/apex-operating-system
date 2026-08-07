@@ -215,6 +215,44 @@ export const ApprovedTakeoffRevisionSchema = TakeoffRevisionSchema.extend({
 });
 export type ApprovedTakeoffRevision = z.infer<typeof ApprovedTakeoffRevisionSchema>;
 
+/**
+ * What Apex Designer hands over when a takeoff is approved.
+ *
+ * This is deliberately NOT `ApprovedTakeoffRevision`. The fields a submitter does
+ * not get to assert are absent by construction rather than ignored on arrival:
+ *
+ * - **No digests.** `quantityPayloadSha256` and `calcLedgerSha256` are computed
+ *   by the receiver from the bytes it actually received. A digest supplied by the
+ *   caller is an assertion about evidence, not the evidence, and the entire point
+ *   of the digest is that nobody has to take the sender's word for it.
+ * - **No `revisionId`, `revisionNumber`, `approvedAt`, `approvedBy` or `status`.**
+ *   Identity, ordering and authority are the receiver's to assign. A caller that
+ *   could name its own approver could approve as somebody else.
+ * - **`jobModel` is the Designer input, carried verbatim.** It is hashed into
+ *   `jobInputSha256` on arrival, which is what makes that column mean "the input
+ *   this system saw" rather than "a hash the sender chose".
+ *
+ * `quantities` and `calcLedger` are the exact shapes `exportDesignerQuantityPayload`
+ * returns, so the export crosses the boundary without translation — the property
+ * the cross-repository contract test exists to defend.
+ */
+export const DesignerTakeoffSubmissionSchema = z.strictObject({
+  engineVersion: z.string().min(1).max(80),
+  quantityModelVersion: z.string().min(1).max(80),
+  jobModel: z.record(z.string(), z.unknown()),
+  quantities: z.array(AuthoritativeQuantitySchema).min(1),
+  calcLedger: z.array(CalcLedgerEntrySchema).min(1),
+  /**
+   * Replacing an existing approved revision must be asked for, never inferred.
+   * A second approval is a different intention from a first one — it invalidates
+   * pricing already derived from the revision it replaces — and the customer-link
+   * rule applies here for the same reason: issuing twice is refused rather than
+   * silently treated as a rotation.
+   */
+  supersedeExisting: z.boolean().default(false),
+});
+export type DesignerTakeoffSubmission = z.infer<typeof DesignerTakeoffSubmissionSchema>;
+
 export const ProposalVersionSchema = z.strictObject({
   proposalVersionId: idSchemas.proposal_version,
   proposalId: idSchemas.proposal,
