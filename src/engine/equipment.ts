@@ -209,6 +209,29 @@ export function computeGasDemand(gas: GasParams): GasResult {
     source: gas.fuel === 'propane' ? 'NFPA 58' : 'NFPA 54 / IFGC',
   });
 
+  /*
+   * Load nobody has measured.
+   *
+   * A fixture carries stand-in house appliances so the shared-run arithmetic is
+   * not silently understated — leaving them out is how a run gets undersized.
+   *
+   * These do NOT soften any check. Subtracting them to decide a gas line is
+   * adequate would be guessing in the dangerous direction, and the answer to
+   * "is this pipe big enough" must stay conservative. What they change is what
+   * the failure SAYS: a reader who does not know the load is partly invented
+   * will price a meter upgrade off it.
+   */
+  const placeholderAppliances = gas.connectedLoad.filter((appliance) => appliance.placeholder === true);
+  const placeholderLoadCfh = placeholderAppliances.reduce(
+    (total, appliance) => total + appliance.btuPerHour / perCf, 0,
+  );
+  const placeholderCaveat = placeholderAppliances.length === 0
+    ? ''
+    : ` ${placeholderLoadCfh.toFixed(0)} cfh of this load is placeholder — `
+      + `${placeholderAppliances.map((appliance) => appliance.label).join(', ')} — `
+      + 'so this is not yet a finding about the real house. Enter the appliances it actually has, '
+      + 'and the meter capacity read off the meter, then read this again.';
+
   const totalBtu = gas.connectedLoad.reduce((a, x) => a + x.btuPerHour, 0);
   const totalConnectedLoadBtu = calc({
     id: 'gas.total.btu',
@@ -259,11 +282,23 @@ export function computeGasDemand(gas: GasParams): GasResult {
         'Meter capacity governs everything downstream of it and the tool cannot know it — read it off the meter or ask the utility.',
     };
   } else if (totalConnectedLoadCfh.value > gas.meterCapacityCfh) {
+    /*
+     * A load built partly from placeholders cannot condemn a job.
+     *
+     * The existing-house appliances a fixture carries are stand-ins nobody has
+     * measured, and they are large: on the standard model they are 205 of the
+     * 455 cfh. Reporting "the meter or the service has to change" from numbers
+     * nobody entered states a finding the tool has not earned — and an
+     * expensive one, since the answer is a utility call. Say instead that the
+     * job cannot be judged until the real house is entered, and name the
+     * appliances standing in for it.
+     */
     meterCheck = {
       status: 'fail',
       message:
-        `Total connected load ${totalConnectedLoadCfh.value.toFixed(1)} cfh exceeds the ${gas.meterCapacityCfh} cfh meter. ` +
-        'No pipe size fixes this — the meter or the service has to change. This is the governing constraint on the whole system.',
+        `Total connected load ${totalConnectedLoadCfh.value.toFixed(1)} cfh exceeds the ${gas.meterCapacityCfh} cfh meter. `
+        + 'No pipe size fixes this — the meter or the service has to change. This is the governing constraint on the whole system.'
+        + placeholderCaveat,
     };
   } else {
     meterCheck = {
@@ -362,8 +397,9 @@ export function computeGasDemand(gas: GasParams): GasResult {
         label: gas.intendedSizeLabel,
         status: 'too-small',
         message:
-          `${gas.intendedSizeLabel} carries only ${row.capacityCfh} cfh at ${row.lengthFt} ft in the entered table, against ${totalConnectedLoadCfh.value.toFixed(0)} cfh of connected load. ` +
-          'The shop standard does not hold on this job — this is the case the table exists to catch.',
+          `${gas.intendedSizeLabel} carries only ${row.capacityCfh} cfh at ${row.lengthFt} ft in the entered table, against ${totalConnectedLoadCfh.value.toFixed(0)} cfh of connected load. `
+          + 'The shop standard does not hold on this job — this is the case the table exists to catch.'
+          + placeholderCaveat,
       };
     }
   }

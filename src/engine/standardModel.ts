@@ -257,9 +257,9 @@ export const STANDARD_MODEL: Job = {
         { label: 'Pool heater', btuPerHour: 250000, isNew: true },
         // PLACEHOLDER. Existing house appliances on the shared run belong here.
         // Leaving them out is how a run gets undersized.
-        { label: 'Furnace (existing, PLACEHOLDER)', btuPerHour: 100000, isNew: false },
-        { label: 'Water heater (existing, PLACEHOLDER)', btuPerHour: 40000, isNew: false },
-        { label: 'Range (existing, PLACEHOLDER)', btuPerHour: 65000, isNew: false },
+        { label: 'Furnace (existing, PLACEHOLDER)', btuPerHour: 100000, isNew: false, placeholder: true },
+        { label: 'Water heater (existing, PLACEHOLDER)', btuPerHour: 40000, isNew: false, placeholder: true },
+        { label: 'Range (existing, PLACEHOLDER)', btuPerHour: 65000, isNew: false, placeholder: true },
       ],
       // Meter capacity as given for this job. A 250 cfh diaphragm meter is a
       // common residential size, and it is the governing constraint here.

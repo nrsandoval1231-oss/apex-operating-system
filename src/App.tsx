@@ -122,7 +122,33 @@ export function App() {
   const exportForApex = () => {
     setExportError(null);
     try {
-      const submission = buildApexSubmission(job, runTakeoff(job));
+      /*
+       * Say what is blocking, not just that something is.
+       *
+       * The engine's refusal is deliberately short — "blocking code or safety
+       * failures" — because it has no idea which sheet the reader is looking at.
+       * From here the failing areas are known, and so is the thing that sends
+       * people hunting through their own drawing for a fault that is not there:
+       * a fixture's placeholder appliances failing the gas checks.
+       */
+      const checked = runTakeoff(job);
+      if (checked.hasCodeFailure) {
+        const areas = checked.codeFailureAreas.join(', ');
+        const placeholders = job.equipment?.gas?.connectedLoad
+          .some((appliance) => appliance.placeholder === true) ?? false;
+        setExportError(
+          `Cannot export: ${areas} ${checked.codeFailureAreas.length === 1 ? 'has' : 'have'} a failing check.`
+          + (placeholders
+            ? ' Some of the gas load is placeholder — existing house appliances nobody has entered'
+              + ' yet — so this may not be a fault in the pool you drew. Open Advanced → equipment'
+              + ' and enter what the house actually has, or start from a Lubbock standard preset,'
+              + ' which carries no gas load.'
+            : ' See the compliance path on the failing check.'),
+        );
+        return;
+      }
+
+      const submission = buildApexSubmission(job, checked);
       const blob = new Blob([JSON.stringify(submission, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');

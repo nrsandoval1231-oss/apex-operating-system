@@ -37,7 +37,7 @@ describe('the Apex OS submission', () => {
    */
   it('asserts no digest, revision id, approver or status', () => {
     const job = safeStandardJob();
-    const submission = buildApexSubmission(job, runTakeoff(job)) as Record<string, unknown>;
+    const submission = buildApexSubmission(job, runTakeoff(job)) as unknown as Record<string, unknown>;
 
     for (const forbidden of [
       'quantityPayloadSha256',

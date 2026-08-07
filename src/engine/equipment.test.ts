@@ -78,6 +78,28 @@ describe('SAFETY: meter capacity governs and the tool cannot know it', () => {
     expect(over.meterCheck.message).toMatch(/no pipe size fixes this/i);
   });
 
+  /**
+   * Placeholders must not soften the check — subtracting them to decide a gas
+   * line is adequate would be guessing in the dangerous direction. What they
+   * change is what the failure says, because a reader who does not know the load
+   * is partly invented will go and price a meter upgrade off it.
+   */
+  it('still fails on a placeholder-inflated load, but says which part is invented', () => {
+    const over = computeGasDemand(gasWith({ meterCapacityCfh: 400 }));
+    expect(over.meterCheck.status).toBe('fail');
+    expect(over.meterCheck.message).toMatch(/placeholder/i);
+    expect(over.meterCheck.message).toMatch(/not yet a finding about the real house/i);
+  });
+
+  it('says nothing about placeholders when every appliance was entered', () => {
+    const measured = computeGasDemand(gasWith({
+      meterCapacityCfh: 200,
+      connectedLoad: [{ label: 'Pool heater', btuPerHour: 250000, isNew: true }],
+    }));
+    expect(measured.meterCheck.status).toBe('fail');
+    expect(measured.meterCheck.message).not.toMatch(/placeholder/i);
+  });
+
   it('passes when the load fits the meter', () => {
     expect(computeGasDemand(gasWith({ meterCapacityCfh: 800 })).meterCheck.status).toBe('pass');
   });

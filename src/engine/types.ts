@@ -476,6 +476,17 @@ export interface GasAppliance {
   readonly btuPerHour: number;
   /** False for appliances already on the run before this job. */
   readonly isNew: boolean;
+  /**
+   * True for a stand-in nobody has measured — the existing house appliances a
+   * fixture carries so the shared-run arithmetic is not silently understated.
+   *
+   * Structured rather than inferred from the label. The word PLACEHOLDER has
+   * been in these labels from the start, and reading it back out of a string
+   * would make a display decision load-bearing. A failure that depends on these
+   * is a failure to *judge* the job, not a finding about it, and the difference
+   * has to survive into the result.
+   */
+  readonly placeholder?: boolean;
 }
 
 /**
