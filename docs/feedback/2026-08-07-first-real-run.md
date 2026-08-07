@@ -57,7 +57,10 @@ Checked rather than assumed, because the shape of the gap matters:
   itself is dead. It reads as unclickable because effectively it is.
 - **The link only ever goes to the project page.** Every card resolves to the same
   destination regardless of what it is about, so "drill down to exactly what is
-  going on" ends one level too early.
+  going on" ends one level too early. Asked for again separately — *"i need to be
+  able to click into the project from the today page"* — which is worth reading
+  carefully: the destination is already right, it is the target that is too small
+  to find. The whole card should be the link.
 - **A released Gate cannot be opened anywhere in Apex OS.** The project page lists
   Gates with a status badge and nothing behind it. Gate detail lives only in the
   field console, which is built for the person doing the work rather than the
@@ -71,6 +74,61 @@ That last one is the sharpest. The system takes photographs, hashes them, stores
 them immutably and refuses to release a Gate without them — and then never shows
 them to the person whose signature the whole control exists to protect. The
 evidence is being collected for an audit nobody can perform.
+
+## 1e. Today takes seconds to load
+
+Measured against the deployed system rather than recorded as an impression:
+
+| Endpoint | Time |
+|---|---|
+| `/api/today` | **6.5 s, 10.2 s, 6.7 s** |
+| `/api/jobs` | 0.23 s, 0.28 s |
+
+Same instance, same minute, so it is not a cold start — and it is the screen the
+owner opens first every morning.
+
+Not yet diagnosed, and the obvious guess looks wrong: `readCardSnapshot` issues
+three batched queries, not one per job, so this is not a naive N+1. Earlier in the
+same session `/api/today` was answering in 52–1158 ms on the same data shape, so
+something changed as Gamble accumulated Gates, evidence and events. Needs
+profiling against the real query plans before anyone "optimises" it.
+
+Worth holding onto while fixing: the derivation is deliberately pure and takes
+`today` as an argument, which is what makes the feed reproducible and every rule
+unit-testable. Caching must not quietly reintroduce a clock.
+
+## 1f. Cards tell you to do things the product cannot do
+
+> i click the button to confirm invoice and nothing happens its still there. then
+> i assign super and nothing happes still there and clickable
+
+Not a broken button — a missing one. Both cards navigate to the project page and
+sit there afterwards, because **there is no control on that page for either
+action**, so nothing changes and the condition that produced the card is still
+true.
+
+The whole staff app writes in exactly two places: `Inspections.tsx` and
+`CustomerPage.tsx`. Everything else is read-only. So the action feed is derived
+from state, correctly names what needs doing, links somewhere — and then the
+product has no way to do it.
+
+Three office acts have an API and no UI:
+
+| Card says | Endpoint that exists | Control |
+|---|---|---|
+| Draw released but unbilled | `POST /api/jobs/:id/draws/:code/invoice` | none |
+| No superintendent assigned | `POST /api/jobs/:id/project` | none |
+| Job not opened as a project | `POST /api/jobs/:id/project` | none |
+
+This is the worst failure mode in the feedback so far, and it is worse than a
+missing feature. The action feed's entire promise is that a card states a
+consequence and can be acted on — the design note says *"a card must state a
+consequence or it is not generated"*. A card that cannot be cleared teaches the
+owner that the feed is decorative, which is exactly what the feed was built to
+avoid. It will train him to scroll past the ones that matter.
+
+Already recorded as "the three office buttons that do not exist" in
+`docs/HANDOFF.md`. This is what their absence feels like from the chair.
 
 ## 2. Too complicated for the people who will use it
 
