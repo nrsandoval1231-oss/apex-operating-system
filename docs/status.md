@@ -1192,6 +1192,54 @@ been earned. Hoitz was deliberately left untouched as a control.
 a deployed system, on a real job, with tamper-evident quantities. Every remaining
 step of `§20.12` is exercised code that has never had real input — not missing code.
 
+## Field access, and two bugs the field would have hit — 2026-08-07
+
+Signing in worked; staying signed in did not. The token lived in
+`sessionStorage` with no refresh behind it, so staff re-authenticated all day,
+and the Gate field console — which shares that storage key — could not see a
+session established in another tab. That is why the console asked a
+superintendent to paste a bearer token into a phone on a job site.
+
+The tab-scoping was a deliberate choice protecting a shared office machine. It
+was buying that protection with a hand-copied JWT, which is worse credential
+practice than the thing it protected against. **The session moved to
+`localStorage`**: it survives a closed tab, is shared across tabs on this origin,
+and signing in at `/app` signs you in on the field console too. Existing sessions
+are migrated rather than dropped. The cost is stated rather than hidden — an
+abandoned session on a shared machine lasts until somebody signs out — so both
+surfaces show who is signed in, offer Sign out, and propagate a sign-out to other
+tabs through a `storage` listener. The paste box survives behind a disclosure for
+a device that cannot complete a redirect.
+
+**Two bugs found by driving the deployed console against a real job**, neither
+findable by reading:
+
+1. **Six of the seven Gates were unreachable from the field.** The picker read
+   `.lastChild` off the return value of `Node.append`, which is `undefined`, so
+   it threw after the first option. Excavation, Pre-gunite, Shell, Deck & tile,
+   Equipment and Final had never been openable from the console since the seven
+   templates shipped. The screen looked plausible: one option, a generic error.
+2. **The Permit Gate said "Authorize gunite."** Both headings were hardcoded when
+   pre-gunite was the only template. That sentence sits under IRREVERSIBLE HOLD
+   POINT on the screen whose whole purpose is informed sign-off, and it named the
+   wrong irreversible act. Both headings now come from the Gate actually open, and
+   fall back to neutral wording rather than guessing. A test asserting the console
+   HTML contained "Pre-gunite Gate" was pinning the bug in place; it now asserts
+   the console was served, not what it claims to be.
+
+| Verification | Result |
+|---|---|
+| `pnpm verify` | **480 tests** passed (nine new on session storage) |
+| Deployed console, real job, no pasted token | Permit Gate opens, four requirements render, release correctly locked |
+| Gate picker | All seven Gates listed with their draw and countersign consequences |
+| Headings | "Permit Gate" and "Authorize permit" |
+
+**Known and not fixed:** the console shows `Signed in as google-oauth2|1093…` —
+the raw subject, because the access token carries no name or email claim. Correct
+and safe, but not what a superintendent should read. The fix that fits is having
+the API return the display name from `app_users`, where identity is already
+authoritative, rather than adding a provider claim.
+
 ## Next controlled milestone
 
 One pilot job must demonstrate:
