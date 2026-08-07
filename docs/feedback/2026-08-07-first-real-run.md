@@ -130,6 +130,21 @@ avoid. It will train him to scroll past the ones that matter.
 Already recorded as "the three office buttons that do not exist" in
 `docs/HANDOFF.md`. This is what their absence feels like from the chair.
 
+## 1g. The Gate dropdown is empty after choosing a job
+
+Pick a job, open the Gate dropdown, and it still reads "Choose a job first" with
+nothing in it. The Gates only load when **Open Gate** is pressed —
+`loadGateChoices()` runs inside that handler and nowhere else — so the two
+dropdowns are filled by different events and one of them looks broken.
+
+**Caused by the job picker added earlier today.** Before it, the flow was: type an
+id, press Open Gate. Nothing selected a job as a distinct act, so nothing implied
+the Gates should appear. Introducing a job dropdown created exactly that
+expectation and did not satisfy it, which is a fair description of a bug.
+
+Fix is small: load the Gate plan when the job selection changes, not only when
+Open Gate is pressed.
+
 ## 2. Too complicated for the people who will use it
 
 > the people using this are not software engineers. they are laborors. they need
