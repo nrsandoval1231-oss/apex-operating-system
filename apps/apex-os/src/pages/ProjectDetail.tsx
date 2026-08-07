@@ -2,6 +2,7 @@ import { Link, useParams } from 'react-router';
 import { CONSTRUCTION_PHASES, type DrawStatus, type VisitStatus } from '@apex/contracts';
 import { useDrawSchedule, useJob, useJobGates, useJobInspections, useJobSchedule } from '../api/useJobs';
 import AttachTakeoff from '../components/AttachTakeoff';
+import AssignSuperintendent from '../components/AssignSuperintendent';
 import ConfirmInvoice from '../components/ConfirmInvoice';
 import Inspections from '../components/Inspections';
 import OpenProject from '../components/OpenProject';
@@ -160,6 +161,13 @@ export default function ProjectDetail() {
             <dt>Super</dt>
             <dd className={phase.superintendentName === null ? 'unset' : ''}>
               {phase.superintendentName ?? 'Not assigned'}
+              {id !== undefined && (
+                <AssignSuperintendent
+                  jobId={id}
+                  currentUserId={phase.superintendentUserId ?? null}
+                  onAssigned={reload}
+                />
+              )}
             </dd>
             <dt>Target</dt>
             <dd className={targetWindow(phase) === null ? 'unset' : ''}>

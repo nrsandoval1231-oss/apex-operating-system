@@ -1025,6 +1025,89 @@ export class GateService {
   }
 
   /** Ordered phase history for a job. Append-only in the database. */
+  /**
+   * The people a job can be assigned to.
+   *
+   * Only superintendents: this exists to fill the one field that names one, and
+   * returning the whole staff list would invite assigning a job to the office.
+   * Inactive users are excluded — someone who has left should not be offered as
+   * the person responsible for a pour.
+   */
+  async listSuperintendents(): Promise<readonly { userId: UserId; displayName: string }[]> {
+    const result = await this.db.query<{ user_id: string; display_name: string }>(
+      `select user_id, display_name from app_users
+        where role = 'superintendent' and active = true
+        order by display_name`,
+    );
+    return result.rows.map((row) => ({ userId: row.user_id as UserId, displayName: row.display_name }));
+  }
+
+  /**
+   * Put a named superintendent on an open project, or take one off.
+   *
+   * Assignable only after a project is open, because that is the record the name
+   * lives on. Recorded as an event like every other change to a project: who is
+   * responsible for a job is exactly the kind of fact somebody will need to
+   * reconstruct months later, and a column that is quietly overwritten cannot
+   * answer "who was it in August".
+   */
+  async assignSuperintendent(input: {
+    jobId: JobId;
+    superintendentUserId: UserId | null;
+    actor: EventActor;
+    idempotencyKey: string;
+  }): Promise<ProjectSnapshot> {
+    if (input.actor.kind !== 'user') {
+      throw new DomainRuleError('Assigning a superintendent requires an authenticated human actor.');
+    }
+    if (!PROJECT_AUTHORITY.includes(input.actor.role as (typeof PROJECT_AUTHORITY)[number])) {
+      throw new DomainRuleError(`Role ${input.actor.role} may not assign a superintendent.`);
+    }
+
+    const project = await this.getProject(input.jobId);
+    if (project === null) {
+      throw new DomainRuleError('This job has no construction project yet, so nobody can be assigned to it.');
+    }
+
+    if (input.superintendentUserId !== null) {
+      const candidate = await this.db.query<{ role: string; active: boolean }>(
+        'select role, active from app_users where user_id = $1',
+        [input.superintendentUserId],
+      );
+      const row = candidate.rows[0];
+      if (!row) throw new DomainRuleError('Unknown user.');
+      if (row.role !== 'superintendent' || !row.active) {
+        throw new DomainRuleError('Only an active superintendent can be assigned to a project.');
+      }
+    }
+
+    const actor = input.actor;
+    const at = new Date().toISOString();
+
+    await this.db.transaction(async (tx) => {
+      await tx.query(
+        'update projects set superintendent_user_id = $2, updated_at = now() where job_id = $1',
+        [input.jobId, input.superintendentUserId],
+      );
+      await this.writeEvent(tx, {
+        eventType: 'project.superintendent_assigned',
+        jobId: input.jobId,
+        actor,
+        at,
+        correlationId: createCanonicalId('event'),
+        idempotencyKey: `${commandKey(input.idempotencyKey)}:project.superintendent_assigned`,
+        payload: {
+          superintendentUserId: input.superintendentUserId,
+          assignedBy: actor.userId,
+        },
+      });
+    });
+
+    const updated = await this.getProject(input.jobId);
+    if (!updated) throw new Error('The project disappeared while assigning a superintendent.');
+    return updated;
+  }
+
   async getProjectPhaseHistory(jobId: JobId): Promise<readonly ProjectPhaseHistoryEntry[]> {
     const result = await this.db.query<{
       from_phase_key: string | null;
@@ -1117,6 +1200,7 @@ export class GateService {
     eventType:
       | 'project.created'
       | 'project.phase_changed'
+      | 'project.superintendent_assigned'
       | 'takeoff_revision.created'
       | 'takeoff_revision.approved'
       | 'takeoff_revision.superseded';

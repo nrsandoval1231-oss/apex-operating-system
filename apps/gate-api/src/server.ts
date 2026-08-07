@@ -123,6 +123,11 @@ const MoveVisitSchema = z.strictObject({
 });
 
 /** Confirming an invoice records what a human did in the accounting system. */
+/** Null clears the assignment: taking somebody off a job is a real intention. */
+const AssignSuperintendentSchema = z.strictObject({
+  superintendentUserId: idSchemas.user.nullable(),
+});
+
 const InvoiceConfirmationSchema = z.strictObject({
   invoiceReference: z.string().min(1).max(160),
   dueDate: DaySchema.optional(),
@@ -844,6 +849,30 @@ export function createGateApi(options: GateApiOptions) {
           });
           return sendJson(response, 201, project);
         }
+      }
+
+      /*
+       * The people a job can be assigned to. Superintendents only — this fills
+       * the one field that names one, and offering the whole staff list would
+       * invite assigning a pour to the office.
+       */
+      if (request.method === 'GET' && url.pathname === '/api/superintendents') {
+        requireStaff(actor);
+        return sendJson(response, 200, await service.listSuperintendents());
+      }
+
+      const superMatch = url.pathname.match(
+        /^\/api\/jobs\/(job_[0-9A-HJKMNP-TV-Z]{26})\/project\/superintendent$/,
+      );
+      if (request.method === 'POST' && superMatch) {
+        requireStaff(actor);
+        const body = AssignSuperintendentSchema.parse(await readJson(request));
+        return sendJson(response, 200, await service.assignSuperintendent({
+          jobId: idSchemas.job.parse(superMatch[1]),
+          superintendentUserId: body.superintendentUserId,
+          actor,
+          idempotencyKey: idempotency(request),
+        }));
       }
 
       const phaseMatch = url.pathname.match(/^\/api\/jobs\/(job_[0-9A-HJKMNP-TV-Z]{26})\/project\/phase$/);

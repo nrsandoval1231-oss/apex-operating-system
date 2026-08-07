@@ -215,3 +215,90 @@ describe('the fixed construction model', () => {
       .rejects.toThrow(/fixed by/i);
   });
 });
+
+/**
+ * Naming who is responsible for a job.
+ *
+ * The Today feed has raised "no superintendent assigned" since the card engine
+ * shipped, and the name could only be set when the project was opened — so the
+ * card named a fact nobody could change.
+ */
+describe('assigning a superintendent', () => {
+  it('puts a named superintendent on an open project', async () => {
+    await open();
+    const updated = await service.assignSuperintendent({
+      jobId: ids.job,
+      superintendentUserId: ids.superintendent,
+      actor: owner,
+      idempotencyKey: 'assign-super-key',
+    });
+    expect(updated.superintendentUserId).toBe(ids.superintendent);
+    expect((await service.getProject(ids.job))?.superintendentName).toBe('Site Super');
+  });
+
+  /** Taking somebody off a job is as much a fact as putting them on it. */
+  it('clears the assignment when given null', async () => {
+    await open({ superintendentUserId: ids.superintendent });
+    const cleared = await service.assignSuperintendent({
+      jobId: ids.job,
+      superintendentUserId: null,
+      actor: owner,
+      idempotencyKey: 'clear-super-key',
+    });
+    expect(cleared.superintendentUserId).toBeNull();
+  });
+
+  /**
+   * Who was responsible in August is exactly the question somebody asks months
+   * later. A column quietly overwritten cannot answer it.
+   */
+  it('records the assignment as an event', async () => {
+    await open();
+    await service.assignSuperintendent({
+      jobId: ids.job,
+      superintendentUserId: ids.superintendent,
+      actor: owner,
+      idempotencyKey: 'assign-super-event',
+    });
+    const events = await db.query<{ event_type: string }>(
+      'select event_type from events where job_id = $1',
+      [ids.job],
+    );
+    expect(events.rows.map((row) => row.event_type)).toContain('project.superintendent_assigned');
+  });
+
+  /** The field does not name an office user, so neither does the assignment. */
+  it('refuses anyone who is not an active superintendent', async () => {
+    await open();
+    await expect(service.assignSuperintendent({
+      jobId: ids.job,
+      superintendentUserId: ids.office,
+      actor: owner,
+      idempotencyKey: 'assign-office-key',
+    })).rejects.toThrow(/only an active superintendent/i);
+  });
+
+  it('refuses a job with no project, because there is nothing to assign to', async () => {
+    await expect(service.assignSuperintendent({
+      jobId: ids.job,
+      superintendentUserId: ids.superintendent,
+      actor: owner,
+      idempotencyKey: 'assign-no-project',
+    })).rejects.toThrow(/no construction project/i);
+  });
+
+  it('refuses a role that may not open a project either', async () => {
+    await open();
+    await expect(service.assignSuperintendent({
+      jobId: ids.job,
+      superintendentUserId: ids.superintendent,
+      actor: fieldActor,
+      idempotencyKey: 'assign-field-key',
+    })).rejects.toThrow(/may not assign/i);
+  });
+
+  it('lists only active superintendents', async () => {
+    const people = await service.listSuperintendents();
+    expect(people.map((person) => person.userId)).toEqual([ids.superintendent]);
+  });
+});
