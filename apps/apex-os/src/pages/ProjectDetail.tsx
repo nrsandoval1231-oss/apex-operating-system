@@ -2,7 +2,9 @@ import { Link, useParams } from 'react-router';
 import { CONSTRUCTION_PHASES, type DrawStatus, type VisitStatus } from '@apex/contracts';
 import { useDrawSchedule, useJob, useJobGates, useJobInspections, useJobSchedule } from '../api/useJobs';
 import AttachTakeoff from '../components/AttachTakeoff';
+import ConfirmInvoice from '../components/ConfirmInvoice';
 import Inspections from '../components/Inspections';
+import OpenProject from '../components/OpenProject';
 import QueryState from '../components/QueryState';
 import {
   GATE_STATUS_LABEL,
@@ -114,9 +116,20 @@ export default function ProjectDetail() {
       <div className="section-rule"><h2>Construction</h2></div>
 
       {phase === null ? (
-        <p className="state-quiet">
-          This job has not been opened as a construction project, so it has no phase.
-        </p>
+        <>
+          <p className="state-quiet">
+            This job has not been opened as a construction project, so it has no phase.
+          </p>
+          {/*
+            * The Today feed has raised "job not opened as a project" since the
+            * card engine shipped and there was nowhere to act on it. Opening is
+            * the deliberate act that says a signed job is now under
+            * construction — a signed contract is not the same thing.
+            */}
+          {id !== undefined && (
+            <OpenProject jobId={id} onOpened={() => { reload(); gates.reload(); }} />
+          )}
+        </>
       ) : (
         <>
           <ol className="track-line" aria-label="Construction phase">
@@ -298,6 +311,15 @@ export default function ProjectDetail() {
                     {draw.amountCents === null ? 'No amount' : formatContract(draw.amountCents)}
                   </div>
                   <span className={`tag ${DRAW_TAG[draw.status]}`}>{DRAW_STATUS_LABEL[draw.status]}</span>
+                  {/*
+                    * Only an earned draw can be billed. A scheduled one has not
+                    * been released by its Gate, and an invoiced one is already
+                    * recorded — offering the action there would invite the
+                    * refusal the service already gives.
+                    */}
+                  {id !== undefined && draw.status === 'eligible' && (
+                    <ConfirmInvoice jobId={id} draw={draw} onDone={() => { draws.reload(); reload(); }} />
+                  )}
                 </div>
               </li>
             ))}
