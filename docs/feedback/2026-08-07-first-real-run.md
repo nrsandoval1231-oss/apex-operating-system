@@ -30,6 +30,17 @@ open and nothing ever shows it again. A "Next Gate" or "Change Gate" control tha
 returns to the picker — ideally offering the next unreleased Gate directly, since
 the plan is already loaded and already knows which one that is.
 
+## 1c. Attaching a photo takes two actions when it should take one
+
+Choose the file, then press **Upload proof**. The second press adds nothing: by
+the time a file is chosen the intent is not in doubt.
+
+Uploading on selection is the fix. Worth keeping while doing it: the failure
+states are real — a wrong evidence kind is refused, and a large photo over
+cellular takes time — so the control still has to show that something is
+happening and say so when it fails. Removing the button must not remove the
+feedback.
+
 ## 2. Too complicated for the people who will use it
 
 > the people using this are not software engineers. they are laborors. they need
