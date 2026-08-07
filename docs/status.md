@@ -4,7 +4,7 @@
 
 **Program phase:** Phase 1 — Shared operational spine and controlled Gate vertical slice (Phase 0 preservation complete). **Apex OS build plan Steps 1–8 are complete, every MVP item in PRD §19 is built, and all content is approved.** Travis Sandoval approved the inspection list and lead times, the twelve added gate checklist items, and the nine customer-facing phase descriptions as written on 2026-08-03 (`docs/inspections-and-gate-checklists-2026-08-03.md`). Nothing is blocked on code and nothing is awaiting sign-off.
 
-**The stack is deployed, running, and has been signed into.** As of 2026-08-07, `apex-os` is live on Render's free host at `https://apex-os-nqlx.onrender.com` — Postgres migrated, R2-backed evidence storage wired up, and a real staff account authenticated through Auth0 and authorized against `app_users`. See "First deploy, end to end" below. **The deployed database is empty**, so every screen renders its honest empty state; no real Apex project exists in it yet. What remains before a real pilot is people-dependent, not code- or infrastructure-dependent: the final hostname, naming the pilot jobs, and the contract amendment.
+**The stack is deployed, signed into, and carrying real jobs.** As of 2026-08-07, `apex-os` is live on Render's free host at `https://apex-os-nqlx.onrender.com` — Postgres migrated, R2-backed evidence storage wired up, and a real staff account authenticated through Auth0 and authorized against `app_users`. See "First deploy, end to end" below. The three pilot jobs named by Travis — **Gamble, Zephyr and Hoitz** — now exist in the deployed database, and two of them carry an approved Designer takeoff with an open Gate; see "The chain runs" below. What remains before a real pilot is people-dependent, not code- or infrastructure-dependent: the final hostname, each job's real drawn design and contract value, and the contract amendment.
 
 **Deployment is less blocked than it has been recorded as.** Only the DNS record needs a final hostname. The Cloudflare account, the R2 bucket, the Auth0 tenant and the Render blueprint do not, and Render serves a free `*.onrender.com` host that is enough to prove the stack end to end. The domain has been held back deliberately — Monsoon is expected to hand over the existing one (`apex-prds/decision-register.md` item 21) and a second purchase would be waste. **The hard line is unchanged: issue no real customer link until the hostname is final**, because a link's origin is fixed when it is issued and only the token hash is stored.
 
@@ -1131,6 +1131,66 @@ link may be issued (unchanged hard line, see above). No real Apex project exists
 in the deployed database — the system is live and empty, and closing that is
 `§20.12`'s pilot jobs, not further code. The restore procedure referenced in
 `docs/HANDOFF.md` is still untested.
+
+## The chain runs — 2026-08-07
+
+The takeoff → Gate link was the one place the chain had no path outside the test
+suite, and closing it moved a real job further than any job has ever been in this
+system. `takeoff_revisions` was written only by tests; `/api/jobs/:id/approved-takeoff`
+was GET-only; `GateService.createGate` refuses without an approved revision. So
+the deployed system stopped dead at the first checkpoint, with everything beyond
+it built and waiting.
+
+**The bridge.** `POST /api/jobs/:jobId/approved-takeoff` takes the Designer export
+verbatim and records it as the job's approved revision. Design decisions, each
+following a rule this project had already set somewhere else:
+
+- **The receiver computes the evidence and never accepts it.** `DesignerTakeoffSubmission`
+  cannot carry a digest, revision id, approver or status — absent by construction
+  rather than ignored on arrival. A caller that could name its own approver could
+  approve as somebody else, and a supplied hash is an assertion *about* evidence
+  rather than the evidence.
+- **The job model is hashed as canonical JSON**, keys sorted at every depth, so
+  the same design hashes the same however a client serialised it. Arrays keep
+  their order, because position is meaning in a list. Without this,
+  `job_input_sha256` would record the sender's formatting rather than the design.
+- **Replacing an approved revision is refused unless asked for**, because a second
+  approval invalidates pricing derived from the first — the rule the customer link
+  already follows. The superseded row is retired and linked, never deleted:
+  something was priced against it.
+- **Approval is closed to `superintendent`**, narrower than opening a project and
+  matching the draw schedule. Releasing a Gate against these quantities and
+  deciding what they are is not the same act.
+- **What it cannot do is stated in the code.** Nothing in this path re-derives a
+  quantity — the Designer engine is another repository on purpose. It refuses what
+  it *can* check: every quantity must carry the unit its code requires, name a Calc
+  entry that exists, and equal that entry's own result. "These are Designer's
+  numbers" stays a claim about Designer; "these bytes are what Apex approved"
+  becomes a fact about this system.
+
+| Verification | Result |
+|---|---|
+| `pnpm verify` | **471 tests** passed (14 new: nine on the service, five over HTTP) |
+| Designer contract with `APEX_REQUIRE_DESIGNER_CONTRACT=1` | Passed — the export still crosses without translation |
+| Gamble, driven through `GateService` | Approved takeoff (17 quantities, v4) → project opened → **Permit Gate opened** |
+| Zephyr, driven over live HTTP with a real Auth0 token | **201**; second POST without supersede **409**; GET serves it back as authority |
+| Gamble vs Zephyr digests | **Byte-identical** across the service-direct and HTTP paths from the same design |
+
+The last row is the one worth keeping. Two independent paths, the same input, the
+same `job_input_sha256`, `calc_ledger_sha256` and `quantity_payload_sha256` — the
+property the whole digest scheme rests on, demonstrated against the deployed
+system rather than in a fixture.
+
+**Honest limits on what this proves.** The takeoff attached to both jobs is
+Designer's `STANDARD_MODEL` (15×30 with a 6×6 spa), a real engine output but not
+either customer's actual pool; replacing it is one `supersedeExisting` call once
+someone draws the real thing. The Permit Gate is open and `not-started` — no
+evidence has been captured, nothing has been signed or released, and no draw has
+been earned. Hoitz was deliberately left untouched as a control.
+
+**What this does close:** the chain from a drawn pool to an open Gate now runs in
+a deployed system, on a real job, with tamper-evident quantities. Every remaining
+step of `§20.12` is exercised code that has never had real input — not missing code.
 
 ## Next controlled milestone
 
