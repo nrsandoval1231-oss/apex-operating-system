@@ -16,6 +16,14 @@ import { runTakeoff } from './engine/index.ts';
 import { buildApexSubmission, submissionFileName } from './engine/apexSubmission.ts';
 
 /**
+ * Where Apex OS lives. Configurable because Designer is built and run on a
+ * builder's machine while Apex OS is deployed somewhere else — they share no
+ * origin, and hard-coding one host means a second deployment cannot be reached
+ * without a rebuild of this tool.
+ */
+const APEX_OS_ORIGIN = import.meta.env.VITE_APEX_OS_ORIGIN ?? 'https://apex-os-nqlx.onrender.com';
+
+/**
  * A tight lot: same pool, 5 ft to the house slab. The 6 ft deep end violates
  * the 1:1 ratio in local 307.2.2.2. Kept here so the failing path is visible
  * without editing code — PRD open question 7 asks whether this is the common
@@ -225,6 +233,22 @@ export function App() {
                 Advanced
               </button>
               <button className="btn" onClick={exportForApex}>Send to Apex OS</button>
+              {/*
+                * Across to the field console. Designer runs on this machine and
+                * Apex OS is deployed elsewhere, so this is a plain link to a
+                * configured origin rather than navigation within one app —
+                * `VITE_APEX_OS_ORIGIN` at build time, falling back to the
+                * deployed host. A new tab, because a drawing in progress should
+                * not be replaced by another application.
+                */}
+              <a
+                className="btn ghost"
+                href={APEX_OS_ORIGIN}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Field console ↗
+              </a>
             </>
           )}
         />

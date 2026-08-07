@@ -1773,3 +1773,33 @@ tr.is-fail .check-message {
   font-size: 14px;
   font-weight: 600;
 }
+
+/* ------------------------------------------- the working, hidden by default */
+
+/*
+ * Two columns of every Calc table: the formula and its inputs. Hidden rather
+ * than removed — the ledger they render is what the approved-quantity digest is
+ * computed over, and a printed sheet always shows the full derivation because
+ * that is the document somebody checks.
+ */
+.sheet.is-plain .calcs th:nth-child(2),
+.sheet.is-plain .calcs td:nth-child(2),
+.sheet.is-plain .calcs th:nth-child(3),
+.sheet.is-plain .calcs td:nth-child(3) {
+  display: none;
+}
+
+.working-toggle {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 10px;
+}
+
+@media print {
+  .sheet.is-plain .calcs th:nth-child(2),
+  .sheet.is-plain .calcs td:nth-child(2),
+  .sheet.is-plain .calcs th:nth-child(3),
+  .sheet.is-plain .calcs td:nth-child(3) {
+    display: table-cell;
+  }
+}

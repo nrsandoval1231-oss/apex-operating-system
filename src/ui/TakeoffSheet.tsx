@@ -10,6 +10,7 @@
  * A panel naming what is missing has to be deleted the day nothing is.
  */
 
+import { useState } from 'react';
 import { runTakeoff, type CodeFailureArea } from '../engine/index.ts';
 import { feetInches, planPrintScale, renderPlanView } from '../engine/planView.ts';
 import { rotationLabel, type QuarterTurns } from '../engine/planRotation.ts';
@@ -158,6 +159,9 @@ export function TakeoffSheet({
    */
   view?: 'design' | 'full';
 }) {
+  /* Default off: the answer first, the derivation on request. */
+  const [showWorking, setShowWorking] = useState(false);
+
   let result;
   try {
     result = runTakeoff(job, details);
@@ -181,7 +185,24 @@ export function TakeoffSheet({
   const p = job.pool.profile;
 
   return (
-    <div className="sheet">
+    <div className={`sheet ${showWorking ? '' : 'is-plain'}`}>
+      {/*
+        * The engine belongs under the hood.
+        *
+        * Every table on this sheet led with a formula and its inputs, which is
+        * the derivation rather than the answer. What a superintendent needs is
+        * how much to order; the working is what makes it checkable, and being
+        * checkable does not require being read every time.
+        *
+        * Hidden, never removed. The Calc ledger is what the approved-quantity
+        * digest is computed over and what the compliance paths cite — this
+        * toggles two columns of a table and touches no number.
+        */}
+      <div className="working-toggle print-hide">
+        <button type="button" className="btn ghost" onClick={() => setShowWorking((open) => !open)}>
+          {showWorking ? 'Hide the working' : 'Show the working'}
+        </button>
+      </div>
       <header className="sheet-head">
         <div>
           <h1 className="sheet-title">{job.name}</h1>
