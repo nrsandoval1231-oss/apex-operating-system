@@ -12,6 +12,8 @@ import type { QuarterTurns } from './engine/planRotation.ts';
 import { JobEditor } from './ui/JobEditor.tsx';
 import { DesignControls } from './ui/DesignControls.tsx';
 import { SavedJobsPanel, useSavedJobs } from './ui/SavedJobs.tsx';
+import { runTakeoff } from './engine/index.ts';
+import { buildApexSubmission, submissionFileName } from './engine/apexSubmission.ts';
 
 /**
  * A tight lot: same pool, 5 ft to the house slab. The 6 ft deep end violates
@@ -68,6 +70,8 @@ export function App() {
    * and out of anything the takeoff or the quantity payload can see.
    */
   const [quarterTurns, setQuarterTurns] = useState<QuarterTurns>(0);
+  /** Why the last export refused, shown where the button is rather than in a dialog. */
+  const [exportError, setExportError] = useState<string | null>(null);
 
   const job = past.entries[past.cursor]!;
   const scenario = SCENARIOS[index]!;
@@ -100,6 +104,38 @@ export function App() {
 
   const undo = () => setPast((h) => ({ ...h, cursor: Math.max(h.cursor - 1, 0) }));
   const redo = () => setPast((h) => ({ ...h, cursor: Math.min(h.cursor + 1, h.entries.length - 1) }));
+
+  /**
+   * Hand this design to Apex OS.
+   *
+   * A downloaded file rather than a request. Designer runs on a builder's
+   * machine and Apex OS is somewhere else, so posting directly would need CORS
+   * on that API and a second sign-in implementation living in this tool. The
+   * file crosses that gap without either, and attaching it stays an office act
+   * performed by a named person who is already signed in — which is what the
+   * receiving side's authority rules already say it is.
+   *
+   * The takeoff is re-run here rather than reused from the sheet: the export
+   * refuses a design with blocking code failures, and that refusal has to be
+   * about the design on screen right now.
+   */
+  const exportForApex = () => {
+    setExportError(null);
+    try {
+      const submission = buildApexSubmission(job, runTakeoff(job));
+      const blob = new Blob([JSON.stringify(submission, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = submissionFileName(job);
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      // The engine's own sentence is more useful than anything restated here:
+      // it names the code or safety failure that makes the design unexportable.
+      setExportError(error instanceof Error ? error.message : 'This design could not be exported.');
+    }
+  };
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -162,9 +198,13 @@ export function App() {
               >
                 Advanced
               </button>
+              <button className="btn" onClick={exportForApex}>Send to Apex OS</button>
             </>
           )}
         />
+        {exportError !== null && (
+          <p className="export-error" role="alert">{exportError}</p>
+        )}
         <div className="switcher print-hide">
           <span>Start from:</span>
           {SCENARIOS.map((sc, i) => (sc.group === 'standard' ? (

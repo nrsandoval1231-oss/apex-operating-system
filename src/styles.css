@@ -1762,3 +1762,14 @@ tr.is-fail .check-message {
 @media print {
   .pv-size-grip { display: none; }
 }
+
+/* Why an export refused — beside the button that refused, not in a dialog. */
+.export-error {
+  margin: 0;
+  padding: 10px 16px;
+  background: #fdecec;
+  border-bottom: 1px solid #f0c9c9;
+  color: #8d2020;
+  font-size: 14px;
+  font-weight: 600;
+}
