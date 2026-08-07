@@ -314,3 +314,91 @@ describe('job summary read model', () => {
     expect(await service.getJob(createCanonicalId('job'))).toBeNull();
   });
 });
+
+/**
+ * The construction phase follows the Gate that released.
+ *
+ * These were independent and drifted the first time anyone drove them end to
+ * end: a job released through the pre-gunite hold point while its phase strip
+ * still read "Design, Engineering & Permitting". Both records were true about
+ * themselves and the screen showed two different jobs.
+ */
+describe('a released Gate carries the construction phase with it', () => {
+  const releasePreGunite = async () => {
+    await service.execute(ids.gate, {
+      type: 'start-gate', actor: fieldActor, at: '2026-07-29T14:00:00.000Z',
+    }, context('phase-start'));
+    const initial = await service.getGate(ids.gate);
+    for (const requirement of initial.requirements.values()) {
+      const proof = evidence(requirement.key, requirement.acceptedEvidenceKinds[0]);
+      await service.execute(ids.gate, {
+        type: 'add-evidence', actor: fieldActor, at: proof.capturedAt,
+        requirementKey: requirement.key, evidenceId: proof.evidenceId, kind: proof.kind,
+      }, { ...context(`phase-evidence-${requirement.key}`), evidence: proof });
+      await service.execute(ids.gate, {
+        type: 'evaluate-requirement', actor: fieldActor, at: '2026-07-29T14:05:00.000Z',
+        requirementKey: requirement.key, outcome: 'passed',
+      }, context(`phase-pass-${requirement.key}`));
+    }
+    await clearInspections('pre-gunite');
+    await service.execute(ids.gate, {
+      type: 'release-gate', actor: superintendentActor, at: '2026-07-29T14:10:00.000Z',
+    }, context('phase-signoff'));
+    return service.execute(ids.gate, {
+      type: 'countersign-gate', actor: ownerActor, at: '2026-07-29T14:20:00.000Z',
+    }, context('phase-countersign'));
+  };
+
+  it('moves the project to the phase the Gate belongs to', async () => {
+    await service.openProject({ jobId: ids.job, actor: ownerActor, idempotencyKey: 'phase-open-project' });
+    expect((await service.getProject(ids.job))?.currentPhaseKey).toBe('design-permitting');
+
+    await releasePreGunite();
+
+    // Pre-gunite guards the gunite phase, several steps on from where the
+    // project started. The jump is real work, not a skipped step.
+    expect((await service.getProject(ids.job))?.currentPhaseKey).toBe('gunite');
+  });
+
+  /**
+   * A jump of more than one phase needs a stated reason, and the released Gate
+   * is it. Recorded on the transition rather than left implied, so the history
+   * says why the project moved three phases in one act.
+   */
+  it('records the Gate as the reason for the move', async () => {
+    await service.openProject({ jobId: ids.job, actor: ownerActor, idempotencyKey: 'phase-open-reason' });
+    await releasePreGunite();
+
+    const history = await db.query<{ to_phase_key: string; reason: string | null }>(
+      `select to_phase_key, reason from project_phase_transitions
+        where job_id = $1 order by occurred_at desc limit 1`,
+      [ids.job],
+    );
+    expect(history.rows[0]?.to_phase_key).toBe('gunite');
+    expect(history.rows[0]?.reason).toMatch(/gate released/i);
+  });
+
+  /**
+   * Gates are deliberately not forced into sequence — a job imported mid-build
+   * opens Shell before anyone records a Permit gate. Letting a late Gate drag
+   * the phase backwards would turn that freedom into corruption.
+   */
+  it('never moves the phase backwards', async () => {
+    await service.openProject({ jobId: ids.job, actor: ownerActor, idempotencyKey: 'phase-open-back' });
+    await service.changeProjectPhase(ids.job, {
+      toPhaseKey: 'plaster-fill', actor: ownerActor, at: '2026-07-29T13:00:00.000Z',
+      reason: 'Imported mid-build.',
+    }, { idempotencyKey: 'phase-jump-forward' });
+
+    await releasePreGunite();
+
+    expect((await service.getProject(ids.job))?.currentPhaseKey).toBe('plaster-fill');
+  });
+
+  /** A job nobody has opened as a project has no phase to carry. */
+  it('does not fail a release on a job with no project', async () => {
+    const release = await releasePreGunite();
+    expect(release.state.status).toBe('released');
+    expect(await service.getProject(ids.job)).toBeNull();
+  });
+});
