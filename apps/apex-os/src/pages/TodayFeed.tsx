@@ -36,8 +36,19 @@ function Card({ card }: { card: ActionCard }) {
   const urgent = card.urgency === 'urgent';
   const tag = URGENCY_TAG[card.urgency];
 
+  /*
+   * The whole card is the link, not just the action at the bottom.
+   *
+   * The href was always there; it rendered as the smallest target on the card
+   * and everything else was dead, so the feed read as unclickable. The owner
+   * asked to "drill all the way down" and the way in was a few characters wide.
+   *
+   * The visible action stays. It names what this card wants done, which the
+   * card body cannot, and it is what somebody reaches for on a phone.
+   */
   return (
-    <article className={`row settle ${urgent ? 'is-urgent' : ''} ${card.urgency === 'routine' ? 'is-quiet' : ''}`}>
+    <article className={`row settle is-linked ${urgent ? 'is-urgent' : ''} ${card.urgency === 'routine' ? 'is-quiet' : ''}`}>
+      <Link to={card.actionHref} className="row-hit" aria-label={card.title} />
       <div className="row-head">
         <div style={{ minWidth: 0 }}>
           <div className="row-who">{card.customerName ?? `Job ${shortId(card.jobId)}`}</div>

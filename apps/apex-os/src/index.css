@@ -847,3 +847,33 @@ body {
   font-weight: 600;
   line-height: 1.45;
 }
+
+/* ------------------------------------------------------- clickable Today card */
+
+/*
+ * A full-card hit area laid over the row, with the real controls lifted above
+ * it. An anchor wrapping the whole card would put a link inside a link once the
+ * action is also an anchor, which is invalid and breaks keyboard navigation.
+ */
+.row.is-linked { position: relative; }
+
+.row-hit {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+}
+
+.row.is-linked > *:not(.row-hit) { position: relative; z-index: 1; }
+
+/* The action stays reachable and still looks like the thing to press. */
+.row.is-linked .row-foot .action { position: relative; z-index: 2; }
+
+@media (hover: hover) {
+  .row.is-linked:hover { border-color: var(--ink-3); }
+}
+
+.row-hit:focus-visible {
+  outline: 2px solid var(--text-accent, currentColor);
+  outline-offset: 2px;
+}
