@@ -16,6 +16,7 @@ const state = {
   jobId: (() => { try { return localStorage.getItem('apex-job-id') ?? ''; } catch { return ''; } })(),
   gate: null,
   plan: [],
+  jobs: [],
 };
 const jobInput = byId('job-id');
 const tokenInput = byId('token');
@@ -118,19 +119,43 @@ const renderRequirement = (requirement) => {
     note.placeholder = 'Required when failing; useful field context otherwise.';
     noteLabel.append(note);
     const controlsActions = element('div', 'actions');
-    const upload = element('button', '', 'Upload proof');
-    upload.disabled = !state.gate || state.gate.status === 'not-started';
-    upload.addEventListener('click', () => run(upload, async () => {
+    /*
+     * Choosing a file uploads it. Pressing a second button afterwards added
+     * nothing — by the time somebody has picked a photograph the intention is
+     * not in doubt — and it was two actions on a phone, outdoors, with the
+     * camera roll already open.
+     *
+     * The status line replaces the button rather than the feedback. Uploads
+     * genuinely fail: a wrong evidence kind is refused, and a site photograph
+     * over cellular takes real time. Losing the button must not lose the sense
+     * that something is happening.
+     */
+    const uploadStatus = element('p', 'upload-status', '');
+    file.disabled = !state.gate || state.gate.status === 'not-started';
+    file.addEventListener('change', async () => {
       const selected = file.files?.[0];
-      if (!selected) throw new Error('Choose an evidence file first.');
-      const kind = selected.type === 'application/pdf' ? 'document' : selected.type === 'video/mp4' ? 'video' : 'photo';
-      if (!requirement.acceptedEvidenceKinds.includes(kind)) throw new Error(`This requirement does not accept ${kind} evidence.`);
-      await request(`/api/gates/${state.gate.gateInstanceId}/evidence`, {
-        method: 'POST', idempotent: true,
-        body: JSON.stringify({ requirementKey: requirement.key, kind, mimeType: selected.type, contentBase64: await fileAsBase64(selected), capturedAt: new Date().toISOString() }),
-      });
-      await refresh();
-    }));
+      if (!selected) return;
+      setError('workspace-error', '');
+      uploadStatus.textContent = `Uploading ${selected.name}…`;
+      file.disabled = true;
+      try {
+        const kind = selected.type === 'application/pdf' ? 'document' : selected.type === 'video/mp4' ? 'video' : 'photo';
+        if (!requirement.acceptedEvidenceKinds.includes(kind)) {
+          throw new Error(`This requirement does not accept ${kind} evidence.`);
+        }
+        await request(`/api/gates/${state.gate.gateInstanceId}/evidence`, {
+          method: 'POST', idempotent: true,
+          body: JSON.stringify({ requirementKey: requirement.key, kind, mimeType: selected.type, contentBase64: await fileAsBase64(selected), capturedAt: new Date().toISOString() }),
+        });
+        await refresh();
+        render();
+      } catch (error) {
+        uploadStatus.textContent = '';
+        file.disabled = false;
+        file.value = '';
+        setError('workspace-error', error);
+      }
+    });
     const pass = element('button', '', 'Pass');
     pass.disabled = requirement.evidenceRequired && requirement.evidenceIds.length === 0;
     pass.addEventListener('click', () => run(pass, async () => {
@@ -147,8 +172,8 @@ const renderRequirement = (requirement) => {
       });
       await refresh();
     }));
-    controlsActions.append(upload, pass, fail);
-    controls.append(fileLabel, noteLabel, controlsActions);
+    controlsActions.append(pass, fail);
+    controls.append(fileLabel, uploadStatus, noteLabel, controlsActions);
     card.append(controls);
   }
   card.append(element('div', 'proof-count', `${requirement.evidenceIds.length} evidence record${requirement.evidenceIds.length === 1 ? '' : 's'}`));
@@ -161,7 +186,13 @@ const render = () => {
   byId('workspace').classList.remove('hidden');
   byId('connection').textContent = 'Authenticated';
   byId('connection').className = 'connection connected';
-  byId('job-label').textContent = state.gate.jobId;
+  /*
+   * The customer's name, not a 26-character id. Whoever is holding this phone
+   * knows the job as "Gamble"; the id is for the machine and belongs behind the
+   * detail, not at the top of the screen somebody works from.
+   */
+  const job = state.jobs.find((candidate) => candidate.jobId === state.gate.jobId);
+  byId('job-label').textContent = job?.customerName ?? state.gate.jobId;
   byId('revision-label').textContent = state.gate.approvedTakeoffRevisionId;
   const status = byId('gate-status');
   status.textContent = state.gate.status;
@@ -205,6 +236,12 @@ const render = () => {
   const awaiting = state.gate.status === 'awaiting-countersign';
   const ready = awaiting || (evidenceComplete && state.gate.status !== 'released' && state.gate.status !== 'not-started');
   const release = byId('release');
+  /*
+   * A released Gate has no button at all. Showing a greyed "Release" on work
+   * that is finished and immutable invites a press and then refuses it; the
+   * sentence beside it already says what happened.
+   */
+  release.classList.toggle('hidden', state.gate.status === 'released');
   release.disabled = !ready;
   release.textContent = awaiting
     ? 'Countersign and release'
@@ -237,6 +274,7 @@ const render = () => {
 const loadJobChoices = async () => {
   const choice = byId('job-choice');
   const jobs = await request('/api/jobs');
+  state.jobs = jobs;
   clear(choice);
 
   if (jobs.length === 0) {
@@ -279,8 +317,20 @@ const loadGateChoices = async () => {
     option.value = entry.definitionKey;
     choice.append(option);
   });
+  /*
+   * Land on the Gate somebody is most likely to want, and say so when there is
+   * none. Falling through to the first option meant a job with every Gate
+   * released reopened the one finished first, complete with a dead Release
+   * button — the screen telling somebody there was work left on a job they had
+   * just finished.
+   */
   const outstanding = plan.find((entry) => entry.status !== 'released');
-  if (outstanding) choice.value = outstanding.definitionKey;
+  if (outstanding) {
+    choice.value = outstanding.definitionKey;
+    byId('all-released').classList.add('hidden');
+  } else if (plan.length > 0) {
+    byId('all-released').classList.remove('hidden');
+  }
   return plan;
 };
 
@@ -298,6 +348,31 @@ byId('sign-out').addEventListener('click', () => {
   // Someone else's job list must not stay on screen after a sign-out.
   refreshJobChoices();
   render();
+});
+
+/*
+ * Choosing a job loads its Gates. They used to load only when Open Gate was
+ * pressed, so picking a job left the Gate dropdown reading "Choose a job first"
+ * with nothing in it — two dropdowns filled by different events, one of which
+ * looked broken.
+ */
+byId('job-choice').addEventListener('change', async () => {
+  setError('setup-error', '');
+  state.jobId = byId('job-choice').value;
+  byId('all-released').classList.add('hidden');
+  if (!state.jobId) return;
+  try { localStorage.setItem('apex-job-id', state.jobId); } catch { /* not worth failing over */ }
+  try { await loadGateChoices(); } catch (error) { setError('setup-error', error); }
+});
+
+/** Back to the picker without reloading the browser on a job site. */
+byId('change-gate').addEventListener('click', async () => {
+  state.gate = null;
+  byId('workspace').classList.add('hidden');
+  byId('setup').classList.remove('hidden');
+  setError('setup-error', '');
+  // Refresh the plan: the Gate just finished is no longer the one to offer.
+  try { await loadGateChoices(); } catch (error) { setError('setup-error', error); }
 });
 
 /* Signing in or out in another tab takes effect here without a reload. */
