@@ -595,6 +595,28 @@ export class GateService {
       }
     });
 
+    /*
+     * Carry the construction phase with the Gate that just released.
+     *
+     * The two were independent, and drifted the first time anyone drove them:
+     * a job could release through the pre-gunite hold point while its phase
+     * strip still read "Design, Engineering & Permitting". Both were telling the
+     * truth about themselves and the screen showed two different jobs.
+     *
+     * Done as a follow-on command rather than a side effect inside the release
+     * projection, so nothing here bypasses the phase rules. Authority is still
+     * checked, the move is still classified, and a jump of more than one phase
+     * still demands a reason — which a released Gate supplies and which is
+     * recorded on the transition rather than left implied.
+     *
+     * Deliberately one-directional: a Gate opened out of order on a job imported
+     * mid-build must not drag the phase backwards. Gates are not forced into
+     * sequence, and this must not force them into one.
+     */
+    if (persisted.some((event) => event.eventType === 'gate.released')) {
+      await this.advancePhaseForReleasedGate(state, command.actor, context.idempotencyKey);
+    }
+
     return {
       state: drafts.reduce(evolveGate, state),
       events: persisted,
@@ -1039,6 +1061,56 @@ export class GateService {
       currentPhaseKey: row.current_phase_key as ConstructionPhaseKey,
       jobComplete: row.job_status === 'complete' || row.job_status === 'closed',
     };
+  }
+
+  /**
+   * Move the project to the phase a just-released Gate belongs to, if it is
+   * behind. Silent when there is nothing to do, which is most of the time.
+   *
+   * Failures here are swallowed deliberately. The release has already happened
+   * and is durable; a phase that did not follow is a display inconsistency, and
+   * throwing would report a successful, irreversible release as an error to the
+   * person who just made it. Someone can always move the phase by hand.
+   */
+  private async advancePhaseForReleasedGate(
+    state: GateState,
+    actor: EventActor,
+    idempotencyKey: string,
+  ): Promise<void> {
+    try {
+      if (actor.kind !== 'user') return;
+
+      const definition = await this.db.query<{ phase_key: string | null; title: string }>(
+        `select phase_key, title from gate_definitions
+          where definition_key = $1 and version = $2`,
+        [state.definitionKey, state.definitionVersion],
+      );
+      const gatePhase = definition.rows[0]?.phase_key;
+      if (!gatePhase) return;
+
+      const project = await this.getProject(state.jobId);
+      // A job nobody has opened as a project has no phase to carry.
+      if (project === null) return;
+      if (project.currentPhaseKey === gatePhase) return;
+
+      const target = gatePhase as ConstructionPhaseKey;
+      if (constructionPhase(target).sequence <= constructionPhase(project.currentPhaseKey).sequence) {
+        return;
+      }
+
+      await this.changeProjectPhase(
+        state.jobId,
+        {
+          toPhaseKey: target,
+          actor,
+          at: new Date().toISOString(),
+          reason: `${definition.rows[0]!.title} Gate released.`,
+        },
+        { idempotencyKey: `${idempotencyKey}:phase` },
+      );
+    } catch {
+      // See the note above: the release stands regardless.
+    }
   }
 
   private async writeEvent(tx: Queryable, input: {
