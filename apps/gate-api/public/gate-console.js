@@ -226,6 +226,40 @@ const render = () => {
  * the console can no longer assume pre-gunite. Gates already opened are labelled
  * with their state; the rest are labelled as not yet opened, never as skipped.
  */
+/**
+ * Fill the job picker from the jobs this signed-in person can see.
+ *
+ * The server already scopes `/api/jobs` to the actor, so the list is what they
+ * are allowed to work on rather than everything that exists. A job with no
+ * customer name recorded shows its id: the intake payload may genuinely not
+ * carry a name, and inventing a label for it would be worse than an ugly one.
+ */
+const loadJobChoices = async () => {
+  const choice = byId('job-choice');
+  const jobs = await request('/api/jobs');
+  clear(choice);
+
+  if (jobs.length === 0) {
+    choice.append(element('option', '', 'No jobs on this account'));
+    return;
+  }
+
+  const placeholder = element('option', '', 'Choose a job…');
+  placeholder.value = '';
+  choice.append(placeholder);
+
+  jobs.forEach((job) => {
+    const label = job.customerName ?? job.jobId;
+    const where = job.addressLine ? ` — ${job.addressLine}` : '';
+    const option = element('option', '', `${label}${where}`);
+    option.value = job.jobId;
+    choice.append(option);
+  });
+
+  // Re-select whatever this device was last working on, if it is still listed.
+  if (jobs.some((job) => job.jobId === state.jobId)) choice.value = state.jobId;
+};
+
 const loadGateChoices = async () => {
   const choice = byId('gate-choice');
   const plan = await request(`/api/jobs/${state.jobId}/gates`);
@@ -261,6 +295,8 @@ byId('sign-out').addEventListener('click', () => {
   try { localStorage.removeItem(TOKEN_KEY); } catch { /* nothing to clear */ }
   state.token = '';
   renderSession();
+  // Someone else's job list must not stay on screen after a sign-out.
+  refreshJobChoices();
   render();
 });
 
@@ -269,15 +305,18 @@ window.addEventListener('storage', (event) => {
   if (event.key !== null && event.key !== TOKEN_KEY) return;
   state.token = readSession();
   renderSession();
+  // Signing in elsewhere should fill the picker here without a reload.
+  refreshJobChoices();
 });
 
 byId('open-job').addEventListener('click', async () => {
   setError('setup-error', '');
-  state.jobId = jobInput.value.trim();
+  // A typed id wins, so the fallback still works for a job the list cannot show.
+  state.jobId = jobInput.value.trim() || byId('job-choice').value;
   // A pasted pilot token is a deliberate override; otherwise use the shared session.
   const pasted = tokenInput.value.trim();
   state.token = pasted !== '' ? pasted : readSession();
-  if (!state.jobId) return setError('setup-error', 'A Job ID is required.');
+  if (!state.jobId) return setError('setup-error', 'Choose a job first.');
   if (!state.token) return setError('setup-error', 'Sign in first, or supply a pilot token.');
   try { localStorage.setItem('apex-job-id', state.jobId); } catch { /* not worth failing over */ }
   if (pasted !== '') {
@@ -311,3 +350,26 @@ byId('release').addEventListener('click', (event) => run(event.currentTarget, as
 
 /* Reflect the shared session as soon as the page loads. */
 renderSession();
+
+/**
+ * Populate the job picker on load, and again whenever a session appears.
+ *
+ * A failure here is reported but not fatal: the typed-id fallback still works,
+ * and a field user who cannot list jobs should still be able to open one they
+ * were sent directly.
+ */
+const refreshJobChoices = () => {
+  const choice = byId('job-choice');
+  if (!state.token) {
+    clear(choice);
+    choice.append(element('option', '', 'Sign in to list jobs'));
+    return;
+  }
+  loadJobChoices().catch((error) => {
+    clear(choice);
+    choice.append(element('option', '', 'Could not load jobs'));
+    setError('setup-error', error);
+  });
+};
+
+refreshJobChoices();
