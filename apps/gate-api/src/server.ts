@@ -9,6 +9,7 @@ import type { Database } from '@apex/database';
 import { StorageKeyError, type EvidenceStorage } from '@apex/storage';
 import {
   ConstructionPhaseKeySchema,
+  DesignerTakeoffSubmissionSchema,
   EventActorSchema,
   STAFF_ROLES,
   createCanonicalId,
@@ -797,6 +798,24 @@ export function createGateApi(options: GateApiOptions) {
           return sendJson(response, 404, { error: 'This job has no approved takeoff revision.' });
         }
         return sendJson(response, 200, revision);
+      }
+
+      /*
+       * The Designer bridge. Everything downstream of a takeoff — Gates, evidence,
+       * releases, draws — was reachable long before there was any way to put one in;
+       * until this existed, `takeoff_revisions` was written only by the test suite.
+       */
+      if (request.method === 'POST' && approvedTakeoffMatch) {
+        requireStaff(actor);
+        const jobId = idSchemas.job.parse(approvedTakeoffMatch[1]);
+        const submission = DesignerTakeoffSubmissionSchema.parse(await readJson(request));
+        const revision = await service.recordApprovedTakeoff({
+          jobId,
+          actor,
+          submission,
+          idempotencyKey: idempotency(request),
+        });
+        return sendJson(response, 201, revision);
       }
 
       const projectMatch = url.pathname.match(/^\/api\/jobs\/(job_[0-9A-HJKMNP-TV-Z]{26})\/project$/);

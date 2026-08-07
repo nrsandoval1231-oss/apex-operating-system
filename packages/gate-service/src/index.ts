@@ -12,6 +12,7 @@ import {
   JobSummarySchema,
   ScheduledVisitSchema,
   SubcontractorSchema,
+  calculateQuantityPayloadSha256,
   constructionPhase,
   createCanonicalId,
   readLeadIdentity,
@@ -22,6 +23,7 @@ import {
   type CustomerMilestoneKey,
   type CustomerMilestoneProjection,
   type DailyBrief,
+  type DesignerTakeoffSubmission,
   type DrawSchedule,
   type JobDraw,
   type ScheduledVisit,
@@ -88,6 +90,38 @@ const PROJECT_AUTHORITY = ['admin', 'office', 'superintendent'] as const;
 
 /** Roles that may book or move a crew. The field does not commit other people's time. */
 const SCHEDULE_AUTHORITY = ['admin', 'office', 'superintendent'] as const;
+
+/**
+ * Roles that may approve a Designer takeoff.
+ *
+ * Narrower than PROJECT_AUTHORITY, and deliberately so: an approved revision is
+ * what every price downstream is computed against, so this sits with the roles
+ * that already own money — the same reasoning that closed the draw schedule to
+ * the superintendent. A superintendent can release a Gate against these
+ * quantities; deciding what they are is a different act.
+ */
+const TAKEOFF_APPROVAL_AUTHORITY = ['admin', 'office'] as const;
+
+/**
+ * JSON with every object key sorted, at every depth. Arrays keep their order —
+ * position is meaning in a list and sorting one would destroy it.
+ */
+const canonicalJson = (value: unknown): string => {
+  const canonical = (node: unknown): unknown => {
+    if (Array.isArray(node)) return node.map(canonical);
+    if (node && typeof node === 'object') {
+      return Object.fromEntries(
+        Object.keys(node as Record<string, unknown>)
+          .sort()
+          .map((key) => [key, canonical((node as Record<string, unknown>)[key])]),
+      );
+    }
+    return node;
+  };
+  return JSON.stringify(canonical(value));
+};
+
+const sha256Hex = (value: string) => createHash('sha256').update(value).digest('hex');
 
 interface VisitRow {
   visit_id: string;
@@ -812,6 +846,162 @@ export class GateService {
     });
   }
 
+  /**
+   * Record an approved Designer takeoff against a Job — the write half of the
+   * quantity-authority boundary, and until now the one link in the chain with no
+   * path outside the test suite.
+   *
+   * **What this verifies, and what it cannot.** The Designer engine lives in a
+   * separate repository and is deliberately not a dependency here, so this method
+   * cannot re-derive a single quantity. What it can do is refuse anything
+   * internally inconsistent: every quantity must carry the unit its code requires,
+   * must name a Calc ledger entry that exists, and must equal that entry's own
+   * result — all enforced by `ApprovedTakeoffRevisionSchema` before a row is
+   * written. The digest is then computed here, from the received facts, so
+   * "the quantities are what Designer produced" remains a claim about Designer
+   * while "these bytes are what Apex approved" becomes a fact about this system.
+   * Those are different guarantees and the difference is worth keeping visible.
+   */
+  async recordApprovedTakeoff(input: {
+    jobId: JobId;
+    actor: EventActor;
+    submission: DesignerTakeoffSubmission;
+    idempotencyKey: string;
+  }): Promise<ApprovedTakeoffRevision> {
+    if (input.actor.kind !== 'user') {
+      throw new Error('Approving a takeoff requires an authenticated human actor.');
+    }
+    if (!TAKEOFF_APPROVAL_AUTHORITY.includes(input.actor.role as (typeof TAKEOFF_APPROVAL_AUTHORITY)[number])) {
+      throw new DomainRuleError(`Role ${input.actor.role} may not approve a Designer takeoff.`);
+    }
+    const actor = input.actor;
+
+    const job = await this.db.query<{ job_id: string }>('select job_id from jobs where job_id = $1', [input.jobId]);
+    if (!job.rows[0]) throw new DomainRuleError(`Unknown Job: ${input.jobId}.`);
+
+    const existing = await this.db.query<{ revision_id: string; revision_number: number }>(
+      `select revision_id, revision_number from takeoff_revisions
+        where job_id = $1 and status = 'approved'`,
+      [input.jobId],
+    );
+    const superseded = existing.rows[0] ?? null;
+    if (superseded && !input.submission.supersedeExisting) {
+      throw new DomainRuleError(
+        `Job ${input.jobId} already has an approved takeoff revision (${superseded.revision_id}). `
+        + 'Replacing it invalidates any pricing derived from it, so it must be asked for explicitly '
+        + 'with supersedeExisting.',
+      );
+    }
+
+    const highest = await this.db.query<{ max: number | null }>(
+      'select max(revision_number) as max from takeoff_revisions where job_id = $1',
+      [input.jobId],
+    );
+    const revisionNumber = (highest.rows[0]?.max ?? 0) + 1;
+    const revisionId = createCanonicalId('revision');
+
+    /*
+     * The job model is hashed as canonical JSON — keys sorted at every level — so
+     * the same design produces the same hash regardless of the order a client
+     * happened to serialise it in. Without that, `job_input_sha256` would record
+     * the sender's formatting rather than the design, and two identical takeoffs
+     * would appear to come from different inputs.
+     *
+     * The Calc ledger is hashed as received: its order is meaningful, and the
+     * quantity digest already pins the facts that carry authority.
+     */
+    const jobInputSha256 = sha256Hex(canonicalJson(input.submission.jobModel));
+    const calcLedgerSha256 = sha256Hex(JSON.stringify(input.submission.calcLedger));
+    const quantityPayloadSha256 = calculateQuantityPayloadSha256(input.submission.quantities);
+
+    const at = new Date().toISOString();
+    const correlationId = createCanonicalId('event');
+
+    await this.db.transaction(async (tx) => {
+      /*
+       * Retire the old revision before inserting the new one. `one_approved_takeoff_per_job`
+       * is a partial unique index, so two approved rows cannot coexist even for the
+       * length of a statement, and `superseded_by_revision_id` cannot point at a row
+       * that does not exist yet. Demote, insert, then link.
+       */
+      if (superseded) {
+        await tx.query(`update takeoff_revisions set status = 'superseded' where revision_id = $1`, [
+          superseded.revision_id,
+        ]);
+      }
+
+      await tx.query(
+        `insert into takeoff_revisions
+           (revision_id, job_id, revision_number, status, engine_version, quantity_model_version,
+            job_input_sha256, calc_ledger_sha256, quantity_payload_sha256,
+            quantities, calc_ledger, blocking_issues, created_by, approved_at, approved_by)
+         values ($1, $2, $3, 'approved', $4, $5, $6, $7, $8, $9::jsonb, $10::jsonb, '[]'::jsonb, $11, $12, $11)`,
+        [
+          revisionId,
+          input.jobId,
+          revisionNumber,
+          input.submission.engineVersion,
+          input.submission.quantityModelVersion,
+          jobInputSha256,
+          calcLedgerSha256,
+          quantityPayloadSha256,
+          JSON.stringify(input.submission.quantities),
+          JSON.stringify(input.submission.calcLedger),
+          actor.userId,
+          at,
+        ],
+      );
+
+      if (superseded) {
+        await tx.query(
+          'update takeoff_revisions set superseded_by_revision_id = $1 where revision_id = $2',
+          [revisionId, superseded.revision_id],
+        );
+      }
+
+      await this.writeEvent(tx, {
+        eventType: 'takeoff_revision.created',
+        jobId: input.jobId,
+        actor,
+        at,
+        correlationId,
+        idempotencyKey: `${commandKey(input.idempotencyKey)}:takeoff_revision.created`,
+        payload: { revisionId, revisionNumber, engineVersion: input.submission.engineVersion },
+      });
+
+      if (superseded) {
+        await this.writeEvent(tx, {
+          eventType: 'takeoff_revision.superseded',
+          jobId: input.jobId,
+          actor,
+          at,
+          correlationId,
+          idempotencyKey: `${commandKey(input.idempotencyKey)}:takeoff_revision.superseded`,
+          payload: { revisionId: superseded.revision_id, supersededByRevisionId: revisionId },
+        });
+      }
+
+      await this.writeEvent(tx, {
+        eventType: 'takeoff_revision.approved',
+        jobId: input.jobId,
+        actor,
+        at,
+        correlationId,
+        idempotencyKey: `${commandKey(input.idempotencyKey)}:takeoff_revision.approved`,
+        payload: { revisionId, approvedBy: actor.userId, calcLedgerSha256, quantityPayloadSha256 },
+      });
+    });
+
+    /*
+     * Read it back through the same parser every consumer uses rather than
+     * returning what we just built. If a row can be written that cannot be served
+     * as authority, that is worth discovering here and not on the first Gate.
+     */
+    const stored = await this.getApprovedTakeoffRevision(input.jobId);
+    if (!stored) throw new Error('The approved takeoff revision was not persisted.');
+    return stored;
+  }
+
   /** Ordered phase history for a job. Append-only in the database. */
   async getProjectPhaseHistory(jobId: JobId): Promise<readonly ProjectPhaseHistoryEntry[]> {
     const result = await this.db.query<{
@@ -852,7 +1042,12 @@ export class GateService {
   }
 
   private async writeEvent(tx: Queryable, input: {
-    eventType: 'project.created' | 'project.phase_changed';
+    eventType:
+      | 'project.created'
+      | 'project.phase_changed'
+      | 'takeoff_revision.created'
+      | 'takeoff_revision.approved'
+      | 'takeoff_revision.superseded';
     jobId: JobId;
     actor: EventActor;
     at: string;
