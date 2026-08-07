@@ -2,7 +2,10 @@ import { existsSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { ApprovedTakeoffRevisionSchema } from '../packages/contracts/src/records.ts';
+import {
+  ApprovedTakeoffRevisionSchema,
+  DesignerTakeoffSubmissionSchema,
+} from '../packages/contracts/src/records.ts';
 import { calculateQuantityPayloadSha256 } from '../packages/contracts/src/quantityDigest.ts';
 
 /**
@@ -40,6 +43,7 @@ interface DesignerEngine {
     readonly calcLedger: readonly { id: string; label: string; formula: string }[];
     readonly quantityModelVersion: string;
   };
+  readonly buildApexSubmission: (job: unknown, takeoff: unknown) => unknown;
   readonly STANDARD_MODEL: Record<string, unknown>;
 }
 
@@ -117,5 +121,38 @@ describe.skipIf(!engineAvailable)('Designer to canonical contract compatibility'
       label: 'Bond-beam form perimeter',
       formula: 'P_form = P_exc,bond-beam',
     });
+  });
+
+  /**
+   * The handover itself, not just the quantities inside it.
+   *
+   * Designer's "Send to Apex OS" writes a file that a person then attaches here.
+   * Nothing in either repository's own suite can catch a drift between what that
+   * file contains and what this one accepts: Designer's tests pin the shape it
+   * writes, ours pin the shape we take, and both stay green while the two stop
+   * agreeing. This is the only place they meet.
+   *
+   * The receiving schema is strict, so a field added on the far side in good
+   * faith fails the whole submission — and the failure would otherwise surface
+   * on a job site, to somebody who cannot read either codebase.
+   */
+  it('accepts the file Designer actually exports', () => {
+    const { runTakeoff, buildApexSubmission, STANDARD_MODEL } = engine!;
+    const job = { ...STANDARD_MODEL, equipment: undefined };
+    const submission = buildApexSubmission(job, runTakeoff(job));
+
+    // Through JSON, because that is how it travels: a Map, a Date or an
+    // undefined that survives in memory does not survive the file.
+    const parsed = DesignerTakeoffSubmissionSchema.parse(JSON.parse(JSON.stringify(submission)));
+
+    expect(parsed.quantities).toHaveLength(17);
+    expect(parsed.quantityModelVersion).toBe('designer-quantity-v4');
+    // Absent from the export and defaulted here: replacing an approved revision
+    // is the receiver's decision to require, not the sender's to declare.
+    expect(parsed.supersedeExisting).toBe(false);
+
+    // And the digest the receiver will compute is derivable from what arrived,
+    // which is the whole reason the sender is not allowed to supply one.
+    expect(calculateQuantityPayloadSha256(parsed.quantities)).toMatch(/^[a-f0-9]{64}$/);
   });
 });

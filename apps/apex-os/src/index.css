@@ -813,3 +813,37 @@ body {
   .nav a:first-child { padding-left: 0; }
   .nav a[aria-current='page'] { border-bottom-color: var(--sage); }
 }
+
+/* ------------------------------------------------- attach a Designer takeoff */
+
+.attach-takeoff { margin-top: 14px; }
+
+/*
+ * The control is a <label> wrapping a hidden file input, so it needs the
+ * inline-block and pointer that a real button gets from the element itself.
+ */
+.attach-takeoff > label.action { display: inline-block; cursor: pointer; }
+
+.attach-supersede {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 12px;
+  max-width: 62ch;
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 1.45;
+  cursor: pointer;
+}
+
+.attach-supersede input { margin-top: 3px; flex: none; }
+
+.attach-hint { margin-top: 10px; }
+
+.attach-error {
+  margin-top: 10px;
+  max-width: 62ch;
+  color: var(--bad, #c0392b);
+  font-weight: 600;
+  line-height: 1.45;
+}
