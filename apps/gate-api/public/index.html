@@ -67,6 +67,14 @@
     <section id="workspace" class="hidden" aria-live="polite">
       <div class="workspace-bar">
         <button id="change-gate" type="button" class="link-quiet">← Choose another Gate</button>
+        <!--
+          Across to Designer, which runs on the builder's own machine. Shown only
+          on a device with a fine pointer: on a phone the link is dead by
+          definition, and a link that goes nowhere on a job site teaches people
+          the screen lies. The label says where it goes so a laptop without
+          Designer running gets an honest connection error rather than a surprise.
+        -->
+        <a id="designer-link" class="link-quiet hidden" href="http://localhost:5173" target="_blank" rel="noreferrer">Open Designer on this computer ↗</a>
       </div>
       <div class="status-strip">
         <div><span>Job</span><strong id="job-label"></strong></div>
