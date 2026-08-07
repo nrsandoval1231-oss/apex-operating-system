@@ -669,7 +669,13 @@ describe('Gate HTTP vertical slice', () => {
     const consolePage = await fetch(`${baseUrl}/`);
     expect(consolePage.status).toBe(200);
     expect(consolePage.headers.get('content-security-policy')).toContain("object-src 'none'");
-    expect(await consolePage.text()).toContain('Pre-gunite Gate');
+    /*
+     * Asserts the console was served, not what Gate it names. This used to check
+     * for "Pre-gunite Gate", a title left over from when that was the only
+     * template; the heading is now filled in from whichever Gate is actually
+     * open, so pinning the old string here would have kept the wrong one alive.
+     */
+    expect(await consolePage.text()).toContain('APEX FIELD CONTROL');
     const unauthenticated = await fetch(`${baseUrl}/api/jobs/${ids.job}/gates/pre-gunite`, { method: 'POST' });
     expect(unauthenticated.status).toBe(403);
     const invalid = await call(`/api/jobs/${ids.job}/gates/pre-gunite`, 'not-a-valid-token', { method: 'POST' });

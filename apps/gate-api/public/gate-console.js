@@ -15,6 +15,7 @@ const state = {
   token: readSession(),
   jobId: (() => { try { return localStorage.getItem('apex-job-id') ?? ''; } catch { return ''; } })(),
   gate: null,
+  plan: [],
 };
 const jobInput = byId('job-id');
 const tokenInput = byId('token');
@@ -166,6 +167,20 @@ const render = () => {
   status.textContent = state.gate.status;
   status.className = `status ${state.gate.status}`;
 
+  /*
+   * Name the Gate that is actually open. The page was written when pre-gunite
+   * was the only template and kept saying so after seven shipped — including
+   * "Authorize gunite" above the release button on a Permit Gate, which is the
+   * wrong sentence to put over an irreversible hold point. If the plan cannot
+   * name it, say nothing rather than name it wrongly.
+   */
+  const entry = state.plan.find((candidate) => candidate.definitionKey === state.gate.definitionKey);
+  const gateName = entry?.title ?? null;
+  byId('gate-title').textContent = gateName === null ? 'Gate' : `${gateName} Gate`;
+  byId('release-title').textContent = gateName === null
+    ? 'Authorize this hold point'
+    : `Authorize ${gateName.toLowerCase()}`;
+
   const action = byId('gate-action');
   clear(action);
   if (state.gate.status === 'not-started') {
@@ -214,6 +229,7 @@ const render = () => {
 const loadGateChoices = async () => {
   const choice = byId('gate-choice');
   const plan = await request(`/api/jobs/${state.jobId}/gates`);
+  state.plan = plan;
   clear(choice);
   plan.forEach((entry) => {
     const label = entry.status === null ? 'not opened' : entry.status;
