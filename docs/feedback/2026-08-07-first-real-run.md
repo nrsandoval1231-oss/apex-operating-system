@@ -145,6 +145,26 @@ expectation and did not satisfy it, which is a fair description of a bug.
 Fix is small: load the Gate plan when the job selection changes, not only when
 Open Gate is pressed.
 
+## 1h. A finished job reopens its first Gate, with a dead button on it
+
+After the last Gate released, the console showed **Permit** — the first Gate,
+finished hours earlier — with a greyed-out **Release** and "Released. Everything
+this Gate triggers was projected from that event."
+
+Two separate faults in one screen:
+
+- **The picker has no idea the job is done.** It selects the first entry whose
+  status is not `released`; when every Gate is released that finds nothing and it
+  falls back to the first option. A job with all seven Gates complete should say
+  so, not silently reopen the one you finished first.
+- **A disabled Release on a released Gate is noise.** The state is correct — a
+  released Gate is immutable and there is nothing to press — but showing the
+  control at all invites the press and then refuses it. It should be absent, or
+  read "Released", rather than greyed.
+
+Neither is a bug in the domain. Both are the screen failing to say what the
+records already know.
+
 ## 2. Too complicated for the people who will use it
 
 > the people using this are not software engineers. they are laborors. they need
