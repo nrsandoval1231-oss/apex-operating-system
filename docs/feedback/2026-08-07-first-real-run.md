@@ -223,6 +223,36 @@ screen somebody works from.
 
 ---
 
+## 7. Finishing a job has no ending
+
+> it needs to have some kind of finality to it. like calculate final commission or
+> maybe it says congrats go start swimming now for the customer or something or
+> way to go to the super or great job or something like that
+
+The last Gate releases and nothing happens. The job does not complete, the
+customer is not told the pool is theirs, nobody is thanked, and no commission is
+calculated. The system spends seven Gates building toward a moment it does not
+have.
+
+This is not decoration. Three real things are missing behind it:
+
+- **A job cannot be closed.** There is no endpoint. `jobs.status` accepts
+  `complete`, the event vocabulary carries `job.closed` with
+  `reconciliationComplete`, and nothing can ever emit it.
+- **Handover is deliberately not phase 9.** The construction model says so
+  explicitly — *"a pool with water in it has not been handed over"* — and handover
+  is derived from job completion, which is the thing that cannot happen. So the
+  final customer milestone is unreachable by construction.
+- **The commission is the real ending.** PRD 04 Stage 2 pays on a reconciled job,
+  and PRD 03 §13.9 ends on "one job declared reconciled by a named person". The
+  celebration and the payout are the same moment, and it is the moment this whole
+  system was started to standardise.
+
+So "congrats, go start swimming" is the customer-facing half of the thing PRD 03
+and PRD 04 both end on. Worth building as one act rather than as a message: a job
+closes, the customer sees the pool is finished, the superintendent's work is
+acknowledged, and the commission is computed from what was actually collected.
+
 ## The theme
 
 Five of the six are one thing: **the tool shows its workings where it should show
