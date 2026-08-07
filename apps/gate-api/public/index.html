@@ -59,11 +59,15 @@
         <label>Job ID<input id="job-id" autocomplete="off" placeholder="job_…"></label>
       </details>
       <label>Gate<select id="gate-choice"><option value="">Choose a job first</option></select></label>
+      <p id="all-released" class="all-released hidden">Every Gate on this job is released.</p>
       <div class="actions"><button id="open-job" class="primary">Open Gate</button></div>
       <p id="setup-error" class="error" role="alert"></p>
     </section>
 
     <section id="workspace" class="hidden" aria-live="polite">
+      <div class="workspace-bar">
+        <button id="change-gate" type="button" class="link-quiet">← Choose another Gate</button>
+      </div>
       <div class="status-strip">
         <div><span>Job</span><strong id="job-label"></strong></div>
         <div><span>Approved revision</span><strong id="revision-label"></strong></div>
