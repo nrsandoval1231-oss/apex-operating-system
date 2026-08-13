@@ -12,12 +12,7 @@ import { ConstructionPhaseKeySchema, CustomerMilestoneKeySchema } from './projec
  */
 
 /**
- * Job lifecycle values accepted by the `jobs` table check constraint.
- *
- * NOTE: `JobSchema` in ./records.ts admits only 'active' | 'on-hold' | 'closed'.
- * The database is the wider of the two. The summary follows the database so a
- * legitimately stored row can never fail to render; reconciling the two sets is
- * tracked as an open item rather than silently narrowed here.
+ * Job lifecycle values accepted by both the `jobs` table and canonical contracts.
  */
 export const JobLifecycleStatusSchema = z.enum([
   'active',

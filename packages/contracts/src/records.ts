@@ -287,7 +287,7 @@ export const JobSchema = z.strictObject({
   jobId: idSchemas.job,
   leadId: idSchemas.lead,
   signedProposalVersionId: idSchemas.proposal_version,
-  status: z.enum(['active', 'on-hold', 'complete', 'closed']),
+  status: z.enum(['active', 'on-hold', 'complete', 'closed', 'cancelled']),
   currentTakeoffRevisionId: idSchemas.revision.nullable(),
   createdFromLeadId: idSchemas.lead,
   createdAt: z.string().datetime({ offset: true }),
