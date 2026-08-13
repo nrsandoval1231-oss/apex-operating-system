@@ -76,7 +76,9 @@ describe.skipIf(!available)('the Postgres adapter', () => {
     const gates = await db.query<{ count: string }>(
       'select count(*)::text as count from gate_definitions where active = true',
     );
-    expect(Number(gates.rows[0]?.count)).toBe(7);
+    // Migration 0030 adds Automation Programming Complete and Cover Install
+    // to the original seven active Gates.
+    expect(Number(gates.rows[0]?.count)).toBe(9);
   });
 
   it('rolls a failed transaction back and keeps the connection usable', async () => {
