@@ -11,6 +11,7 @@ import {
   ConstructionPhaseKeySchema,
   DesignerTakeoffSubmissionSchema,
   EventActorSchema,
+  readLeadIdentity,
   STAFF_ROLES,
   createCanonicalId,
   idSchemas,
@@ -755,18 +756,22 @@ export function createGateApi(options: GateApiOptions) {
         if (actor.kind !== 'user' || !['admin', 'office'].includes(actor.role)) throw new AuthError('Office access is required to create a design project.');
         const body = ManualProjectIntakeSchema.parse(await readJson(request, 100_000));
         const key = idempotency(request);
-        const existing = await options.db.query<{ job_id: string }>(
-          `select j.job_id from jobs j join leads l on l.lead_id = j.lead_id where l.idempotency_key = $1`,
+        const existing = await options.db.query<{ lead_id: string; accepted_payload: object; status: string }>(
+          `select lead_id, status, accepted_payload from leads where idempotency_key = $1`,
           [key],
         );
         if (existing.rows[0]) {
-          const summary = await service.getJob(idSchemas.job.parse(existing.rows[0].job_id));
-          if (!summary) throw new Error('The existing intake record could not be read.');
-          return sendJson(response, 200, summary);
+          const leadRow = existing.rows[0];
+          const leadIdentity = readLeadIdentity(leadRow.accepted_payload);
+          return sendJson(response, 200, {
+            leadId: leadRow.lead_id,
+            customerName: leadIdentity.customerName ?? null,
+            addressLine: leadIdentity.addressLine,
+            status: leadRow.status,
+            project: null,
+          });
         }
         const leadId = createCanonicalId('lead');
-        const jobId = createCanonicalId('job');
-        const address = `${body.streetAddress}, ${body.city}, ${body.state} ${body.postalCode}`;
         const acceptedPayload = {
           customerName: body.customerName,
           streetAddress: body.streetAddress,
@@ -778,21 +783,18 @@ export function createGateApi(options: GateApiOptions) {
           ...(body.referralSource ? { referralSource: body.referralSource } : {}),
           ...(body.notes ? { notes: body.notes } : {}),
         };
-        await options.db.transaction(async (tx) => {
-          await tx.query(
-            `insert into leads (lead_id, intake_source, source_record_id, idempotency_key, accepted_payload)
-             values ($1, 'manual-referral', $2, $3, $4::jsonb)`,
-            [leadId, `manual:${key}`, key, JSON.stringify(acceptedPayload)],
-          );
-          await tx.query(
-            `insert into jobs (job_id, lead_id, signed_proposal_version, status) values ($1, $2, 1, 'active')`,
-            [jobId, leadId],
-          );
+        await options.db.query(
+          `insert into leads (lead_id, intake_source, source_record_id, idempotency_key, accepted_payload)
+           values ($1, 'manual-referral', $2, $3, $4::jsonb)`,
+          [leadId, `manual:${key}`, key, JSON.stringify(acceptedPayload)],
+        );
+        return sendJson(response, 201, {
+          leadId,
+          customerName: body.customerName,
+          addressLine: `${body.streetAddress}, ${body.city}, ${body.state} ${body.postalCode}`,
+          status: 'accepted',
+          project: null,
         });
-        await service.openProject({ jobId, actor, idempotencyKey: `${key}:open-project` });
-        const summary = await service.getJob(jobId);
-        if (!summary) throw new Error(`Created intake project ${address}, but it could not be read back.`);
-        return sendJson(response, 201, summary);
       }
 
       if (request.method === 'GET' && url.pathname === '/api/today') {

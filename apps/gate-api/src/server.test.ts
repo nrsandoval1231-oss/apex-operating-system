@@ -104,7 +104,7 @@ afterEach(async () => {
 });
 
 describe('manual project intake', () => {
-  it('creates a referral lead, active job, and Design & Permitting project', async () => {
+  it('creates a referral lead and preserves idempotency before project kickoff', async () => {
     const office = await token(ids.office, 'office');
     const response = await call('/api/projects/intake', office, {
       method: 'POST',
@@ -117,12 +117,13 @@ describe('manual project intake', () => {
     });
     expect(response.status).toBe(201);
     const created = await response.json() as {
-      jobId: string; customerName: string | null; addressLine: string | null;
-      project: { currentPhaseKey: string } | null;
+      leadId: string; customerName: string | null; addressLine: string | null;
+      status: string; project: null;
     };
     expect(created.customerName).toBe('Jamie Referral');
     expect(created.addressLine).toBe('123 Main Street, Lubbock, TX 79401');
-    expect(created.project?.currentPhaseKey).toBe('design-permitting');
+    expect(created.status).toBe('accepted');
+    expect(created.project).toBeNull();
 
     const repeat = await call('/api/projects/intake', office, {
       method: 'POST',
@@ -132,7 +133,18 @@ describe('manual project intake', () => {
       }),
     });
     expect(repeat.status).toBe(200);
-    expect((await repeat.json() as { jobId: string }).jobId).toBe(created.jobId);
+    const returned = await repeat.json() as {
+      leadId: string;
+      customerName: string | null;
+      addressLine: string | null;
+      status: string;
+      project: null;
+    };
+    expect(returned.leadId).toBe(created.leadId);
+    expect(returned.customerName).toBe('Jamie Referral');
+    expect(returned.addressLine).toBe('123 Main Street, Lubbock, TX 79401');
+    expect(returned.status).toBe('accepted');
+    expect(returned.project).toBeNull();
   });
 
   it('does not allow a field user to create a project intake', async () => {
