@@ -1,66 +1,71 @@
-# Designer next slice — captured requirements
+# Designer workflow — implemented scope and deferred references
 
-Status: Requirements captured; implementation intentionally waiting for the Hayward brochure and dig-sheet reference upload.
+**Status:** Core workflow implemented and verified 2026-08-13. Catalog-backed equipment selection and a reference-matched excavator dig sheet remain deferred until source documents are supplied.
 
-## Pool geometry
+## Implemented
 
-- Add a **sport pool** depth profile where the deep point is in the middle of the pool.
-- Example longitudinal profile: `3 ft → 5 ft → 3 ft`.
-- Preserve ordinary shallow-to-deep profiles.
-- The section drawing, excavation calculations, volume, hydraulics, and dig sheet must use the same authoritative profile.
-- If a spa is moved, return locations and related plumbing placement must remain editable and movable.
-- Return locations must not be locked to the original spa/pool arrangement.
+### Pool geometry
 
-## Layout presentation
+- A true **Sports Pool 3′–5′–3′** depth profile places the deepest point in the center and returns to a shallow end.
+- Ordinary shallow-to-deep profiles remain supported.
+- The authoritative profile drives geometry, plan/section views, excavation, volume, hydraulics, quantities, exports, resizing, and saved job files.
+- Floor-depth queries inspect both footprint edges and every profile vertex, so steps/seats crossing the center-deep region use the actual deepest supporting floor.
+- The quantity contract is versioned as `designer-quantity-v5`; older approved revisions retain their historical version.
 
-- Keep the pool layout visually clean.
-- Pool width measurements must remain **outside** the pool water envelope.
-- Do not place width numbers inside the pool drawing.
-- Dimensions, return markers, spa, and features must remain readable without obscuring the water shape.
+### Layout presentation
 
-## Takeoff output
+- Pool dimensions remain outside the water envelope.
+- Plan and longitudinal-section views stay focused on the design rather than a bottom-of-screen data dump.
+- The normal workflow exposes design controls, warnings, the plan, the section, **Takeoff (.xlsx)**, and **Finish estimate**.
+- Raw JSON diagnostics are available only under **Advanced**.
 
-- Do not render the full takeoff data as a large populated block at the bottom of the Designer window.
-- Clicking the takeoff action should generate an `.xlsx` workbook for download.
-- The workbook should be saved with the other project documents and usable by the superintendent to see what to order.
-- The export should include, at minimum, project identity, geometry/depth profile, excavation/dig data, materials quantities, plumbing/returns, and equipment with quantities.
-- Keep the on-screen Designer surface focused on the clean plan and key warnings; retain detailed derivation in the downloadable workbook.
-- Verify the workbook opens, has professional formatting, and has no formula errors before delivery.
+### Ordering workbook
 
-## Equipment catalog
+- **Takeoff (.xlsx)** generates a real workbook rather than rendering the full takeoff payload in the application.
+- `Order List` is the first sheet and is intended for superintendent ordering.
+- Project metadata, geometry/profile, excavation assumptions, and calculation/reference information are secondary sheets.
+- Workbook and worksheet text is sanitized before export.
+- Designs with unresolved blockers cannot produce an authoritative export.
 
-- After the Hayward product brochure is uploaded, index the complete brochure rather than inventing products.
-- Populate equipment dropdowns from the indexed catalog.
-- Include relevant Hayward categories such as:
-  - lights;
-  - automation panels, including OmniPL where present in the source;
-  - pumps;
-  - filters;
-  - other required pool equipment from the brochure.
-- Equipment quantity must be adjustable per selected product.
-- Preserve source/model/specification provenance in the takeoff export.
+### Excavation information
 
-## Dig sheet
+- Excavation bank/haul volumes and estimated loads remain available because they are useful takeoff facts.
+- Soil/spoil assumptions are reference information under **Advanced**, not primary workflow requirements.
+- The workbook labels excavation assumptions for confirmation before ordering haul work.
 
-- The current meaning of “dig sheet” is not the intended field deliverable.
-- After the user uploads a reference dig sheet, reproduce the intended excavator-facing document.
-- It must clearly communicate how to dig the hole, including:
-  - pool outline and orientation;
-  - excavation offsets/overdig;
-  - depth callouts at clearly marked stations;
-  - sport-pool center deep point when applicable;
-  - spa relationship and any separate excavation;
-  - readable dimensions outside the pool shape.
-- Do not call the existing generic output a finished dig sheet until it matches the uploaded reference.
+### Apex handoff
 
-## Sequence
+- **New design project** creates a pre-contract opportunity, not a fabricated construction Job.
+- **Finish estimate** hands the exact design revision to Apex OS for approved-takeoff pricing and versioned Proposal creation.
+- Job creation occurs only after acceptance of an issued Proposal is recorded authoritatively.
 
-1. User uploads Hayward product brochure.
-2. User uploads representative dig sheet.
-3. Index both sources and map their fields/visual conventions.
-4. Implement the sport-pool profile and clean dimension placement.
-5. Implement movable returns/plumbing locations, including after spa movement.
-6. Replace bottom takeoff display with verified XLSX generation/download.
-7. Implement brochure-backed adjustable Hayward equipment selections.
-8. Implement the excavator-facing dig sheet.
-9. Verify with Designer tests, workbook inspection/recalculation, build, and live browser use.
+## Verification
+
+- Designer full suite: **580 tests passed**.
+- Strict TypeScript check passed.
+- Production build passed.
+- Root cross-repository contract accepts the real `designer-quantity-v5` export.
+- Headless Chrome rendered the workflow with sports-pool, `.xlsx`, Finish Estimate, and Advanced controls visible and no default verbose JSON dump.
+
+## Deferred: equipment catalog
+
+Do not invent products. After an approved Hayward brochure/catalog is supplied:
+
+1. Index the complete source.
+2. Populate equipment controls from source-backed categories and models.
+3. Keep quantity adjustable for each selected product.
+4. Preserve manufacturer/model/specification provenance in the workbook and Proposal inputs.
+5. Test source updates and unknown/discontinued products explicitly.
+
+## Deferred: excavator-facing dig sheet
+
+The current plan/section and excavation workbook are not a claim that a contractor-specific dig sheet has been reproduced. After a representative approved dig sheet is supplied:
+
+1. Map its field conventions and required stations.
+2. Produce the pool outline, orientation, overdig offsets, depth stations, sports-pool center deep point, spa relationship, and dimensions in that convention.
+3. Keep the deliverable distinct from the ordering workbook.
+4. Validate it with the intended excavator before calling it authoritative.
+
+## Acceptance rule for future Designer work
+
+Every new design fact must have one authoritative source and must propagate consistently through geometry, views, quantities, workbook, Apex submission, saved job files, and tests. Never patch only the picture or only the export.

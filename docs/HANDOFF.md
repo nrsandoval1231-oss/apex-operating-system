@@ -1,277 +1,83 @@
 # Apex OS — handoff
 
-**As of:** 2026-08-07. CI green on `main` and genuinely checking the
-Designer contract. All seven repositories are pushed; nothing lives only on one
-machine. **The stack is now deployed, live, and has been signed into** at
-`https://apex-os-nqlx.onrender.com` — see "First deploy, end to end" in
-`docs/status.md` for the fixes and the verification that got it there. The
-deployed database is empty: the system is running and holds no real project yet.
+**As of:** 2026-08-13
 
-Deliberately short. `docs/status.md` is the source of truth for status and this
-does not restate it — what follows is the state of play, what is in flight, and
-the things a newcomer would not guess.
+The unified non-Website lifecycle is implemented, pushed, and CI-green. Start with [`STATUS.md`](../STATUS.md) for the verified baseline, [`NEXT.md`](../NEXT.md) for staging acceptance, and [`docs/runbooks/deployment.md`](runbooks/deployment.md) for deployment operations.
 
----
+## Current authority
 
-## Branches — all landed
-
-Nothing is unmerged anywhere. Verified by diffing each branch against
-`origin/main`, not by reading the branch list: the 2026-08-04 work was rebased
-onto `main` under new SHAs, so four branches survive as content-identical
-duplicates that `git branch --merged` does not recognise —
-`feat/builder-design-tool`, `fix/builder-runs-in-a-browser`,
-`docs/deploy-key-installed`, and `dev/designer-launch-config` which is strictly
-behind. All four can be deleted from their remotes; until they are, the branch
-list implies open work that does not exist.
-
-**All seven repositories are pushed.** `apex-website` was carrying twelve
-commits from 2026-07-28/29 that had never left the machine — a week of the
-website workstream living on one disk. Pushed 2026-08-05.
-
-## What Apex Designer became
-
-Two sessions, and it is a change in kind rather than degree: it was a calculator
-that printed a plan, and it is now something a builder draws in with the takeoff
-running underneath.
-
-**The 2026-08-05 session is recorded in `docs/status.md`.** Rotation of both
-drawings from one control, free grid placement with objects snapping flush to
-each other, corner-drag resizing, six presets, and a Tauri desktop shell that is
-scaffolded but unbuilt. The rotate tool that the previous handoff listed as *not
-built, and asked for* is built: a **view transform**, not a model change, because
-shallow and deep are physical facts that a sheet rotation must not redefine.
-
-Three properties worth carrying forward, and one that was given up.
-
-**Kept: the spa's own suction and return live on the presets, not on
-`STANDARD_MODEL`.** Developed run length is one of the seventeen signed
-quantities and `STANDARD_MODEL` is the fixture the digest is pinned against.
-
-**Kept: the engine has no UI imports.** That is what made the desktop shell a
-window rather than a rewrite, and it is worth defending the next time something
-looks easier to put in a component.
-
-**Kept: refuse rather than approximate.** A deck drawn through the water is
-refused with coordinates; presets state no pump and no gas load rather than
-carrying placeholders that pass.
-
-**Given up, deliberately: "placement never affects quantities."** That property
-is what let the whole drag-and-drop layer land without touching the digest, and
-it is gone as of quantity model v4. Moving a bench from the shallow end to the
-deep end now changes the takeoff — because it genuinely displaces more water, and
-the tool was only silent about it while the floor depth was a number typed once
-and never revisited. **Laying out a design is now an act that changes what gets
-ordered.**
-
-## Where it stands
-
-**The product is built.** Apex OS v1 build plan Steps 1–8 are complete, every
-MVP item in PRD §19 exists, and Travis approved the inspection list, the gate
-checklists, and the customer-facing copy as written on 2026-08-03.
-
-**The deployment work is built too** — all nine planned slices plus a tenth
-(staff sign-in) that was found missing partway through. Nothing is blocked on
-code.
-
-**It is deployed and the chain runs, as of 2026-08-06/07.** The Render service,
-the managed Postgres, the R2 evidence bucket and the Auth0 tenant all exist and
-work together; a real staff account has signed in; and the three pilot jobs
-(Gamble, Zephyr, Hoitz) are in the deployed database. Two carry an approved
-Designer takeoff — 17 tamper-evident quantities each — with a Gate open against
-them. `docs/status.md`, "The chain runs", has the detail.
-
-**What is still not real.** The attached takeoff is Designer's `STANDARD_MODEL`,
-not either customer's drawn pool. No evidence has been captured, nothing signed
-or released, no draw earned, and **no customer has ever opened a link** — the
-hostname is still `*.onrender.com`, so issuing one remains forbidden.
-
-## In flight right now
-
-### The Designer handover — built 2026-08-07
-
-Designer and Apex OS are connected. **Send to Apex OS** in Designer exports the
-submission as a file; **Attach takeoff…** on the Apex OS project page reads that
-file and posts it. Before this, the takeoffs on Gamble and Zephyr had been posted
-by hand from a script.
-
-A file rather than a direct call, deliberately: Designer runs on a builder's
-machine, so posting from there would need CORS on the API *and* a second PKCE
-sign-in implementation living inside a drawing tool. The file avoids both, and
-attaching stays an act performed by a named person already signed in — which is
-what `TAKEOFF_APPROVAL_AUTHORITY` says it is.
-
-The Designer half lives in the **separate private `apex-designer` repository**
-(commit `a1c888f`). `integration-tests/designer-contract.test.ts` is the only
-place the two meet: it parses what Designer's `buildApexSubmission` actually
-produces, through JSON, against the receiving schema. Neither repository's own
-suite can catch a drift — each pins its own side and both stay green while the
-two stop agreeing.
-
-### The run happened — 2026-08-07
-
-**Gamble was carried from a drawn pool to $120,000 of earned draws by a person
-clicking, in the deployed system.** Seven Gates released including the
-two-signature hold point, phase 9 of 9, draws split 10/30/30/20/10, full contract
-ready to bill. `docs/status.md`, "A job ran the whole chain", has the detail and
-the two stand-ins it relied on.
-
-**Read the field feedback before building anything:**
-[`docs/feedback/2026-08-07-first-real-run.md`](feedback/2026-08-07-first-real-run.md).
-Sixteen items from the person who drove it. Two of them conflict with decisions
-already approved and say so; the rest are the product asking to be simpler. The
-one-line summary is his: *the engine is beautiful but it belongs under the hood.*
-
-### The three office buttons that do not exist
-
-Steps a job needs exactly once, each currently an API call with no UI:
-
-1. **Open as a construction project** — `POST /api/jobs/:id/project`
-2. **Create the draw schedule** — `POST /api/jobs/:id/draws`, from the contract total
-3. **Confirm a draw invoiced** — `POST /api/jobs/:id/draws/:code/invoice`
-
-The Gate workflow — the operationally hard part, and the one a superintendent
-touches daily — is fully built and now verified working in the deployed console.
-These three are office acts done once per job, and they are the cheapest gap left
-to close.
-
-### Still genuinely unbuilt
-
-**Closing a job has no endpoint**, and **cost capture → commission (PRD 03/04) is
-specified but not built.** The chain today runs from a drawn pool to a released,
-invoiceable draw. That is the honest boundary.
-
----
-
-All 28 decision-register items are decided — Travis
-approved the nineteen that were his on 2026-08-05. **What remains is four things
-that need a person, and only one of them is a purchase.**
-
-**The domain is the recorded blocker and it is smaller than it looks.** It has
-been held back on purpose: Monsoon is expected to hand over the existing domain
-(register item 21), and buying a second is waste if that lands. The thing worth
-pressing is not the domain, it is *whether Monsoon has actually been asked and
-gave a date.* If they have and it is moving, waiting is right. If nobody has
-asked, that is the blocker — not the twelve dollars.
-
-**Only the DNS record needs a final hostname.** The Cloudflare account is needed
-for R2 regardless, and the R2 bucket, the Auth0 tenant and the Render blueprint
-do not care what the host is called. Render serves a free `*.onrender.com`, which
-is enough to prove the whole stack end to end and convert "built but never run"
-into "running". `docs/runbooks/deployment.md` §1–2 is the procedure.
-
-The four actions, in the order that unblocks the most:
-
-1. **Ask Monsoon**, if nobody has. Ten minutes, and it settles the domain either
-   way — a committed date means wait, silence for a week means buy one.
-2. **Stand up Cloudflare + R2, the Auth0 tenant, and the Render blueprint, and
-   deploy to the free host.** No domain needed. **Allowed Web Origins** is the
-   setting that silently breaks sign-in if missed. Then `curl -s
-   https://<host>/ready` and read the four startup lines — those are what the
-   process actually resolved, where the dashboard only says what it was told.
-3. **Get Travis to name the three-to-five pilot jobs** (PRD FINAL §20.12). Five
-   minutes, and the Definition of Done cannot begin without it.
-4. **Start the contract amendment**, and pair it with the SMS consent question
-   (D-14) — one lawyer conversation answers both. Item 1's approval does not
-   discharge its own precondition: nothing in PRD 03 §5 may be billed until the
-   agreement is amended.
-
-**Issue no real customer link until the hostname is final.** A link's origin is
-fixed when it is issued and only the token hash is stored, so a link sent
-against a host you later move off cannot be recovered — only reissued. This is
-what makes a free-host deployment safe to do now: prove the stack, issue nothing.
-
-**The thing none of the above is — mostly closed 2026-08-07.** For the whole life
-of this project no real Apex project existed in the system and every screen
-rendered seeded test data. Three named jobs now exist in the deployed database
-and two carry an approved takeoff with an open Gate. What is still seeded is the
-*design*: the quantities came from Designer's `STANDARD_MODEL`, so the jobs are
-real and their pools are not yet. A drawn pool per job replaces that with one
-`supersedeExisting` call.
-
-**Expected 2026-08-06: a second completed pool.** PRD 03 and PRD 04 are both
-written and neither can run until one job has been carried end to end. The exact
-collection list is `apex-prds/decision-register.md` §7.1 — and the half that
-matters is the half Whitaker never had, because Whitaker holds dollars and no
-measured quantities. A completed job proves the arithmetic; it cannot prove the
-gates, the evidence or the draws, which is why §7.2 asks separately for the name
-of a pool that is about to start.
-
-## Eight things that are not obvious
-
-1. **The restore procedure has never been run.** It is written
-   (runbook §5) and untested. An untested backup is a belief, not a control —
-   exercise it before the pilot carries real money.
-2. **A customer link's origin is baked in when it is issued.** The database
-   stores only the token hash. Issue no real link until the domain is final, or
-   those links will point at a host you have moved off.
-3. **Row-level security is deliberately retired** (migration `0019`). The API is
-   the single enforcement point. The policies are kept but inactive, and
-   `pg_tables.rowsecurity` is false so the schema does not claim otherwise.
-   Revisit before multi-user SQL access.
-4. **The Designer contract test is the only one that reaches across
-   repositories**, and as of 2026-08-05 it finally runs in CI. `Apex Designer/`
-   is a separate private repository, so CI checks it out with a read-only deploy
-   key; without one the test skips, which for most of this project's life it
-   silently did. What makes the signal trustworthy is
-   `APEX_REQUIRE_DESIGNER_CONTRACT=1`: where the key is present, a missing
-   engine fails the run instead of reverting to a skip. Rotating the key means
-   adding the new public half **before** removing the old one, or CI goes red in
-   between.
-5. **The staff token lives in `sessionStorage` and there are no refresh
-   tokens.** Tab-scoped, gone on browser close, readable by any script on the
-   origin — which the `script-src 'self'` CSP is what makes acceptable. An
-   expired token returns the sign-in screen.
-6. **Inspection lead times are conservative placeholders**, not measurements —
-   two business days routine, three for finals, rounded up so a deadline fires
-   early rather than late. Tighten them once real inspections have been observed;
-   it is one number per row and only sharpens the warnings.
-7. **Placement now affects quantities, as of quantity model v4.** For most of
-   this project's life it did not, and that invariant is quoted in several
-   places that predate 2026-08-05. Step and seat floor depth is derived from
-   where the object sits, so moving one changes its displacement and every
-   volume downstream. A revision approved under v2 or v3 does not mean the same
-   thing as one approved under v4; that is what the version string is for, and
-   the database deliberately keeps the older values on historical rows.
-8. **One test failed once and has not reproduced.** A `duplicate key on
-   app_users_pkey` during a fresh-clone run, not seen again across many full runs
-   or in CI. Unexplained. If it reappears, capture the failing file.
-9. **Signing in and being allowed in are two separate steps, and the second is a
-   database write.** Auth0 authenticating someone grants them nothing: the app
-   maps the token's `sub` to `app_users.oidc_subject` and reads the role from
-   **that table, never from the token**. A brand-new deployment therefore refuses
-   everyone, and it looks like broken sign-in — `/app/callback` returns 200 while
-   every `/api/*` call returns 403. The fix is one row (runbook §3), not an
-   identity-provider setting. Two details cost real time on 2026-08-07: the
-   provider prefix on the subject (`google-oauth2|…` vs `github|…`) is the only
-   reliable record of which button was actually used, and **the app never logs the
-   subject it rejected**, so an unlinked user cannot be diagnosed from the logs —
-   the value has to be read out of the provider's own user list.
-
-## Where the detail lives
-
-| Document | What it answers |
-|---|---|
-| `docs/status.md` | Current status, per component. The authority. |
-| `docs/plans/apex-os-v1-build-plan.md` | What was built and why, Steps 1–8 |
-| `docs/plans/deployment.md` | Why deployment is shaped this way; the ten blockers |
-| `docs/runbooks/deployment.md` | What to type, in what order, and what to do when it breaks |
-| `docs/decisions/construction-model.md` | Confirmed phases, gates, draws, inspections |
-| `docs/inspections-and-gate-checklists-2026-08-03.md` | The approved inspection list and checklists |
-| `apex-prds/decision-register.md` | All 28 decisions, who made them, and the three reversals in §4 |
-| `apex-prds/03-cost-capture-allocation.md` | How actual GP per job is captured; the gate for the commission engine |
-| `Apex Designer/src-tauri/README.md` | Building the desktop shell, and why it is unsigned |
-
-## Running it locally
-
-```bash
-pnpm install && pnpm verify
+```text
+Opportunity
+→ Apex Designer (`designer-quantity-v5`)
+→ ordering Takeoff (.xlsx)
+→ Finish estimate
+→ durable versioned Proposal
+→ accepted Proposal / one Job + Project
+→ construction workflow
+→ close and archive
+→ immutable History
 ```
 
-`verify` builds the workspace, builds the staff app, and runs 436 tests. It
-works from a fresh clone. Postgres, S3, and Designer integration tests skip
-without `DATABASE_URL`, `S3_ENDPOINT`, and the Designer repository respectively —
-skipping is not passing, and each says so when it skips.
+Important boundaries:
 
-To run the app: `apps/gate-api` needs `GATE_JWT_SECRET` and optionally
-`GATE_LOCAL_USER` for a tokenless single-machine session. Neither may exist in a
-deployed environment, and the service refuses to start if they do.
+- Pre-contract intake creates an opportunity, not a fake Job.
+- Designer owns geometry and measured quantities.
+- Root `packages/pricing-engine`, `packages/gate-service`, database migrations, Gate API, and Apex OS own the production Proposal path.
+- The separate `apex-proposal-engine` repository is legacy reference/calibration evidence, not production authority.
+- Issued/signed Proposals, approved takeoffs, events, and archived records are immutable.
+- Closed Jobs reject operational mutations and have no reopen path.
+
+## What shipped
+
+### Designer
+
+- True 3′–5′–3′ sports profile across calculations, views, and exports.
+- Ordering-focused `.xlsx` workbook with `Order List` first.
+- Soil/excavation assumptions and JSON diagnostics under Advanced.
+- Finish Estimate handoff and export blockers.
+- 580 tests plus typecheck/build verification.
+
+### Estimate and Proposal
+
+- Typed `manual-approved-pricing-v1` engine.
+- Missing prices and unresolved scope fail closed; no inferred rate card exists.
+- Idempotent Finish Estimate pinned to opportunity + design digest.
+- Optimistic draft revisions; immutable issued/signed versions.
+- Print/save-as-PDF, copy-email, and `mailto:` preparation.
+- Acceptance of an issued version creates exactly one Job and Project.
+
+### Construction closeout and History
+
+- Eleven phases and nine active Gate definitions.
+- One authorized release signature for active Gates; historical countersigns retained.
+- Reconciliation-backed idempotent close.
+- API/service mutation refusal after close.
+- Searchable read-only History and retained takeoff/artifact reads.
+
+## Verification
+
+- Root unit suite: 514 tests passed.
+- Root CI verifies real PostgreSQL, MinIO/S3, dependency audit, container build/startup, storage warning path, and authentication-bypass refusal.
+- GitHub Actions run `31735048854` passed.
+- Root and Designer `main` branches are pushed and synchronized with their remotes.
+
+The optional legacy cross-repository Designer → proposal-engine test is skipped until `APEX_PROPOSAL_DEPLOY_KEY` is configured. This does not remove coverage from the root production Proposal path.
+
+## Remaining work
+
+This is now operational, not broad product implementation:
+
+1. Configure staging dependencies and deploy manually.
+2. Execute the full staged lifecycle in [`NEXT.md`](../NEXT.md).
+3. Run and document a backup restore.
+4. Use a final HTTPS origin before issuing real customer links.
+5. Supply approved Hayward catalog and excavator dig-sheet references before implementing those deferred Designer features.
+6. Either add the legacy proposal-engine deploy key or deliberately retire that obsolete CI dependency later.
+
+## Rules for the next engineer
+
+- Do not edit applied migrations; add a forward migration.
+- Do not infer prices, acceptance, email delivery, or reconciliation.
+- Do not restore mutation controls to History without a new explicit business decision and migration.
+- Do not rewrite `docs/archive/` or old `designer-quantity-v4` fixtures to appear current.
+- Treat `STATUS.md`, `NEXT.md`, and current decision/runbook documents as active guidance; older sections of `docs/status.md` are chronological history.

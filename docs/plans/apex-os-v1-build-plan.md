@@ -1,5 +1,7 @@
 # Apex OS v1 — Build Plan
 
+> **Historical completed plan.** Superseded for current status by root [`STATUS.md`](../../STATUS.md) and [`NEXT.md`](../../NEXT.md). Counts and authority statements below describe the plan when written; the active implementation has 11 phases, nine active Gate definitions, one release signature, the Opportunity/Proposal lifecycle, and immutable History.
+
 **Source PRD:** [`PRD FINAL.md`](../../PRD%20FINAL.md) (Apex OS v1, Designer Pools, powered by GATE v3)
 **Written:** 2026-07-31
 **Status:** Approved 2026-07-31. **Steps 1–8 are complete and every MVP item in §19 is built.** The inspection list, lead times, twelve added checklist items, and the nine customer-facing phase descriptions were approved as written by Travis Sandoval on 2026-08-03 (`docs/inspections-and-gate-checklists-2026-08-03.md`). **Nothing in this plan is blocked and no content is awaiting sign-off.** The only remaining gap before a pilot is deployment — see the launch blockers in `docs/status.md`.

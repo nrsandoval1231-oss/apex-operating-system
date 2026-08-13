@@ -1,24 +1,34 @@
 # Operational database
 
-These PostgreSQL migrations establish the non-Website operational authority.
+These forward-only PostgreSQL migrations establish the non-Website operational authority.
 
-## Migration order
+## Current scope
 
-1. `0001_core.sql` — canonical records, approved takeoff revisions, Gate/evidence/evaluation separation, draw eligibility, projections, integration links, and append-only events.
-2. `0002_rls.sql` — JWT-claim helpers and row-level authorization for admin, office, field, and customer roles.
-3. `0003_evidence_storage.sql` — private `gate-evidence` Supabase Storage bucket and job-scoped object policies.
-4. `0004_pre_gunite_definition.sql` — versioned pre-gunite definition and five evidence-bearing hold-point requirements.
-5. `0005_gate_instance_uniqueness.sql` — one instance of a Gate definition version per Job.
+The numbered migration chain now covers:
+
+- canonical Leads/opportunities, Jobs, takeoff revisions, Gates, requirements, evidence, draws, customer projections, and append-only events;
+- durable Proposal containers and immutable Proposal versions;
+- project phases, assignments, schedules, inspections, customer pages, daily briefs, and closeout reconciliation;
+- the current 11-phase construction model and nine active Gate definitions;
+- pre-contract takeoffs keyed to a Lead before Job creation;
+- idempotent Finish Estimate runs and Proposal acceptance binding;
+- retained closeout/archive metadata; and
+- private local/S3-compatible evidence storage policies and adapters.
+
+`packages/database/src/index.ts` is the runtime migration registry. Every new migration must be added there and covered by `migrations.test.ts`.
+
+## Rules
+
+1. Never edit or delete an applied migration.
+2. Reverse behavior with a new forward migration.
+3. Keep issued/signed Proposal versions, approved takeoff evidence, and durable events immutable at the database boundary as well as in services.
+4. Preserve historical Gate definition versions; change active checklists by adding a new version.
+5. Run managed PostgreSQL migrations under the advisory lock used by application startup.
 
 ## Verification
 
-`migrations.test.ts` executes the migrations against embedded PostgreSQL through PGlite and proves:
+The database suite executes the complete migration chain against embedded PostgreSQL and checks schema construction, migration registration/idempotency, takeoff/proposal protections, event immutability, and storage policy definitions.
 
-- the schema builds;
-- intake idempotency is unique;
-- only one takeoff revision can be approved per job;
-- evidence has no pass/fail columns;
-- durable events reject update and delete; and
-- evidence storage remains private and policy-protected.
+CI additionally executes the operational chain through the real `pg` adapter against PostgreSQL, exercises pooled transactions and calendar-date parsing, and runs S3-compatible evidence tests against MinIO.
 
-No managed database has been provisioned and no credentials belong in this repository. Before deployment, run the same migrations against a disposable PostgreSQL/Supabase environment and then exercise RLS with real authenticated roles.
+Local integration tests skip the external adapter cases when `DATABASE_URL`/S3 variables are absent. That is not treated as proof; GitHub Actions supplies those dependencies and must be green before deployment.

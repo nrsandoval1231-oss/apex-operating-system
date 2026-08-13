@@ -4,76 +4,99 @@
 
 **Canonical workspace:** `C:\Users\NickSandoval\Nick OS\02_Projects\Apex`
 
-**Current local runtime:** `http://127.0.0.1:4100`
-
 ## Current verified state
 
-- The local pilot is running in loopback-only mode with the canonical `var/local-db` and `var/local-evidence` paths.
-- `/ready` reports database and evidence readiness.
-- Apex OS Projects and Project Detail surfaces now support the 11-phase construction workflow.
-- The frontend Vite bundle was rebuilt and the local pilot was restarted so the live server serves the new asset snapshot.
-- Active Gates use one explicit release signature. Countersign/double approval is retired from active workflows; historical audit records remain preserved.
-- Equipment workflow includes `Automation Programming Complete` and `Install Cover` in the Gate plan.
-- Projects and Gates remain separate internal records presented through a unified Job-centered Project Workspace direction.
-- Designer now has a **New design project** intake for referrals and manually sourced friends/customers. Office/admin users can enter customer name, address, contact details, referral source, and notes; the API creates an idempotent lead/job and opens the project at Design & Permitting.
-- Today attention cards now preserve their canonical actionable-work count, refresh after writes, and link directly into the relevant Project/Gate workflow. The Running empty state no longer claims there is no project work.
-
-## Verified commands
+The unified non-Website lifecycle is implemented and pushed:
 
 ```text
-pnpm run test
-pnpm run typecheck
-pnpm run build
-pnpm --dir apps/apex-os run build
-git diff --check
+Opportunity
+→ Designer
+→ Takeoff Excel workbook
+→ Finish estimate
+→ versioned Proposal
+→ Proposal accepted / Job created
+→ Construction
+→ close and archive
+→ read-only History
 ```
 
-Results:
+### Lifecycle
 
-- Full suite: 31 test files, 494 tests passed.
-- Integration tests: 9 passed; 15 skipped because external Postgres/S3 configuration is unavailable.
-- Typecheck and builds passed.
-- Targeted referral-intake, address parsing, Gate HTTP, and Apex client tests: 3 test files, 51 tests passed.
-- Designer typecheck and production build passed.
+- Manual/referral intake creates a durable Lead/opportunity without fabricating a Job or signed Proposal.
+- Designer supports a true 3′–5′–3′ sports-pool profile across geometry, plan/section views, quantities, excavation, and exports.
+- Designer quantity model authority is `designer-quantity-v5`.
+- **Takeoff (.xlsx)** produces an ordering-focused workbook with `Order List` first; metadata, excavation, and calculation/reference material are secondary.
+- Soil/excavation assumptions and raw JSON diagnostics are under **Advanced**, not in the primary workflow.
+- **Finish estimate** pins the exact approved takeoff revision and is idempotent for opportunity + design digest.
+- Pricing uses `manual-approved-pricing-v1` and fails closed: missing estimates or unresolved direct scope become structured blockers; no amount is inferred.
+- Proposal drafts are server-backed and optimistically versioned. Issued and signed versions are immutable.
+- Recording acceptance of the exact issued Proposal idempotently creates one Job and one construction Project.
+- Proposal preview supports print/save-as-PDF, copy-email, and `mailto:` preparation without claiming that an email was sent.
+- Construction uses 11 phases and nine active Gate definitions. Active Gates use one authorized release signature; historical countersign records remain preserved.
+- Closing a project requires authoritative reconciliation, is idempotent, has no reopen path, and moves the project to searchable read-only History.
+- Closed jobs reject Gate, takeoff, assignment, schedule, inspection, draw, and customer-page mutations while retaining artifact reads.
+
+### Repository state
+
+- Root `main` is pushed to `origin/main`.
+- Apex Designer `main` is pushed to its independent `origin/main`.
+- The legacy proposal-engine repository remains clean and preserved as reference/calibration evidence; root packages are the production Proposal authority.
+- Temporary implementation worktrees and branches were removed after integration.
+- No production deployment or production data mutation was performed by this completion pass.
+
+## Verification baseline
+
+### Local
+
+- Root typecheck passed.
 - Apex OS production build passed.
-- `git diff --check` passed.
-- Live bundle contains `of 11`; live `/ready` is healthy.
+- Root unit suite: **34 files, 514 tests passed**.
+- Root integration suite without external services: **10 passed, 15 skipped**. The skips are the PostgreSQL/S3 cases that require service configuration.
+- Designer: **580 tests passed**, typecheck passed, production build passed.
+- Legacy proposal engine tests passed.
+- `git diff --check` passed across all three repositories.
+- Designer was launched with Vite and rendered in headless Chrome; the normal view showed the sports-pool control, Takeoff `.xlsx`, Finish Estimate, clean plan/section views, and no default verbose JSON dump.
 
-## Recent fixes
+### CI
 
-### Phase validation/display
+GitHub Actions run `31735048854` passed on root `main`:
 
-The Projects page previously failed with `currentPhaseSequence` maximum 9. The contract already allowed 11, but the served frontend was stale and two UI surfaces still displayed `of 9`. The Projects list and Project Detail UI now use `of 11`, and the rebuilt live bundle was verified to contain the new text.
+- `pnpm verify`;
+- real PostgreSQL adapter tests;
+- MinIO/S3 storage tests;
+- production dependency audit at high severity;
+- container image build;
+- container startup against real dependencies;
+- no-object-storage warning behavior; and
+- refusal to ship an image with local authentication bypass enabled.
 
-### Single-signature Gates
+CI checks out Apex Designer and verifies its contract. The optional legacy Designer → proposal-engine chain remains skipped until `APEX_PROPOSAL_DEPLOY_KEY` is configured; the production root Proposal workflow is covered by root pricing, service, API, migration, and integration tests.
 
-See [`docs/decisions/single-signature-gates.md`](decisions/single-signature-gates.md). Active release paths no longer create or require a countersign. Historical sign-off/countersign records remain audit-only.
+## Deployment status
 
-### Manual referral project intake
+The repository is ready for a controlled staging deployment. Deployment is not automatic and production has not been touched.
 
-Designer is now the intake surface for projects that begin as a friend, referral, or manually sourced customer rather than an existing signed job.
+Required staging configuration:
 
-1. Open **Designer**.
-2. Click **New design project**.
-3. Enter the customer name, street address, city, state, ZIP, and optional phone, email, referral source, and notes.
-4. Submit **Create design project**.
-5. Apex creates the durable referral lead and active job, opens the Project at **Design & Permitting**, and redirects to that Project Workspace.
+- managed PostgreSQL (`DATABASE_URL`, with verified TLS);
+- S3/R2-compatible private evidence storage;
+- OIDC issuer, audience, and public SPA client;
+- final HTTPS `APEX_PUBLIC_ORIGIN` before issuing customer links;
+- optional customer contact phone/label; and
+- real, approved price inputs for each estimate. There is intentionally no environment-backed inferred rate card.
 
-The endpoint is `POST /api/projects/intake`. It is limited to admin/office staff, requires an idempotency key, and retries return the original job rather than creating duplicates. Customer identity/address display is derived from the canonical lead payload; the postal code is included in the normalized address display.
+Migrations run forward on application startup under a PostgreSQL advisory lock. Follow [`docs/runbooks/deployment.md`](docs/runbooks/deployment.md); never edit an applied migration.
 
-### Today action consistency
+## Remaining operational work
 
-Today cards, the amber attention badge, and post-write refreshes now use the same actionable-work semantics. Gate cards retain a direct Project/Gate workflow link, and the Running empty state describes the absence of separate running cards without claiming that the project has no active work.
+1. Configure and deploy a staging environment.
+2. Execute the staging acceptance flow in [`NEXT.md`](NEXT.md).
+3. Exercise and document a backup restore before the pilot carries real money.
+4. Configure the optional proposal-engine deploy key only if the legacy cross-repository chain will remain supported; otherwise retire that check deliberately in a later cleanup.
+5. Obtain the brochure/reference inputs before implementing the deferred equipment-catalog and excavator-specific dig-sheet work.
 
-## Deliberately deferred
+## Historical records
 
-- The original Today amber badge mismatch is resolved in the current implementation; retain the walkthrough screenshot as historical evidence in `docs/feedback/walkthrough-feedback.md`.
-- Designer follow-up requirements remain pending source uploads and controlled implementation.
-- Current changes are being saved in Git for review.
-
-## Runtime access
-
-- Projects: `http://127.0.0.1:4100/app/projects`
-- Calendar: `http://127.0.0.1:4100/app/calendar`
-- History: `http://127.0.0.1:4100/app/historical`
-- Field Gate console: `http://127.0.0.1:4100/`
+- [`docs/status.md`](docs/status.md) is the chronological engineering record. Sections dated before this update describe the system as it existed then and are intentionally preserved.
+- [`docs/archive/`](docs/archive/README.md) contains immutable historical artifacts and old `designer-quantity-v4` fixtures; those files must not be rewritten to look current.
+- Current active guidance is this file, [`README.md`](README.md), [`NEXT.md`](NEXT.md), and the deployment runbook.

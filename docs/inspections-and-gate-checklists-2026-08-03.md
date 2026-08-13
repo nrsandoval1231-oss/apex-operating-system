@@ -1,5 +1,7 @@
 # Inspections and gate checklists — APPROVED
 
+> **Versioned historical authority:** The seven inspections and their approved requirements remain active evidence. Gate definitions have since expanded/versioned; current active counts and release authority are in root [`STATUS.md`](../STATUS.md) and [`docs/decisions/single-signature-gates.md`](decisions/single-signature-gates.md). Do not edit historical checklist versions to match the current model.
+
 **Date:** 2026-08-03
 **Approved:** 2026-08-03 by Travis Sandoval, as written, with no corrections.
 **Status:** This document is no longer a proposal. It is the authority for the

@@ -1,5 +1,7 @@
 # Apex OS — Deployment Plan
 
+> **Historical implementation plan:** The deployable image and safeguards are built. Current operator procedure is [`docs/runbooks/deployment.md`](../runbooks/deployment.md), and current staging acceptance is root [`NEXT.md`](../../NEXT.md).
+
 **Written:** 2026-08-03
 **Status:** All nine slices complete, plus slice 10 (staff sign-in), which was
 a gap found while walking through the Render setup: slice 4 built token

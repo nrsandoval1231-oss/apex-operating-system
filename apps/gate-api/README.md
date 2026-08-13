@@ -1,33 +1,46 @@
-# Gate API and field console
+# Gate API and Apex OS
 
-This app is the controlled-pilot pre-gunite vertical slice. It serves a loopback-only HTTP API and a superintendent console at `/`.
+`@apex/gate-api` is the authenticated HTTP boundary for the non-Website Apex lifecycle. It serves Apex OS at `/app`, customer-safe token pages at `/c/:token`, retained evidence, health/readiness endpoints, and the authoritative mutation routes.
 
-Implemented flow:
+## Supported lifecycle
 
 ```text
-approved Designer takeoff revision
-→ versioned pre-gunite requirements
-→ private binary evidence + SHA-256 metadata
-→ field evaluation
-→ authorized Gate release
-→ draw eligibility
-→ customer-safe milestone
+Opportunity intake
+→ approved takeoff / Finish estimate
+→ Proposal draft, issue, list, get, sign
+→ Job + Project
+→ Gates, inspections, schedules, draws, customer updates
+→ close/archive
+→ read-only History
 ```
 
-## Required environment
+All staff mutations require authenticated roles and idempotency where the command can be retried. The API delegates business authority to `@apex/gate-service`; it does not create browser-only workflow state.
 
-- `GATE_JWT_SECRET` — at least 32 bytes; never commit it.
-- `GATE_DATA_DIRECTORY` — local embedded PostgreSQL directory; defaults to `./var/gate-db`.
-- `GATE_EVIDENCE_DIRECTORY` — private evidence directory; defaults to `./var/gate-evidence`.
+## Local environment
+
 - `PORT` — optional; defaults to `4100`.
+- `HOST` — optional; defaults to `127.0.0.1`.
+- `GATE_DATA_DIRECTORY` — embedded PostgreSQL directory; defaults under `var/`.
+- `GATE_EVIDENCE_DIRECTORY` — private local evidence directory.
+- `GATE_LOCAL_USER` — optional canonical local user for loopback-only development. It cannot coexist with OIDC or a non-loopback bind.
 
-Run from the root:
+Production/staging uses managed PostgreSQL, OIDC, and S3-compatible storage. See [`../../docs/runbooks/deployment.md`](../../docs/runbooks/deployment.md) for the complete variable list and safety checks.
+
+Run from the root after building:
 
 ```bash
-pnpm build
+pnpm run typecheck
+pnpm --filter @apex/os build
 pnpm --filter @apex/gate-api start
 ```
 
-The server binds to `127.0.0.1` intentionally. Pilot tokens must be short-lived HS256 JWTs with issuer `apex-gate`, audience `apex-gate-api`, canonical User ID in `sub`, and `app_role`. The signed role is checked against the active database user before every protected request.
+Then open `http://127.0.0.1:4100/app`.
 
-This local adapter is not the production deployment profile. Production still requires managed PostgreSQL, asymmetric/JWKS authentication, object storage, TLS, monitoring, backup automation, and a completed recovery drill.
+## Safety
+
+- `GATE_LOCAL_USER` is a local bypass and startup refuses it outside loopback.
+- Missing authoritative prices remain Proposal blockers.
+- Issued/signed Proposal versions and approved takeoffs are immutable.
+- A Job is created only after explicit acceptance of an issued Proposal.
+- Closed Jobs retain reads but mutation routes return a domain refusal.
+- `/ready` checks both database and evidence storage; do not continue a deployment while it reports degraded.
