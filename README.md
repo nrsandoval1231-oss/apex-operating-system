@@ -1,6 +1,8 @@
 # Apex — Pool Proposal & Takeoff Engine (PRD 02)
 
-The **quantity layer**: turn pool dimensions into a defensible takeoff — quantities per cost
+> **Legacy reference/calibration repository (2026-08-13):** This engine preserves the Whitaker evidence, calibration experiments, and the optional historical cross-repository chain test. It is **not** the production Proposal authority. Current customer workflow lives in `apex-operating-system`: `packages/pricing-engine`, `packages/gate-service`, PostgreSQL Proposal migrations, Gate API, and Apex OS. Do not issue customer Proposals from this standalone UI or promote its one-job-fitted rates into production pricing.
+
+The **historical quantity-layer prototype** turns pool dimensions into a traceable takeoff — quantities per cost
 code × unit cost = the same dollar figures the customer already sees, now substantiated.
 Implements PRD 02 (`apex-prds/02-proposal-takeoff-engine.md`), grounded in `00-foundation.md`
 and the reverse-engineered `reference/whitaker-oasis-quantity-takeoff.md`.
