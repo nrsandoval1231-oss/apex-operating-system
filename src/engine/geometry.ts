@@ -13,8 +13,12 @@ import { seatFootprint, stepFootprint } from './placement.ts';
 import { runGeometryCodeChecks, checkFoundationSetback, type CodeCheck } from './codeChecks.ts';
 import {
   crossSectionArea,
+  depthStations,
   floorSlantLength,
+  segmentsFromProfile,
   totalRun,
+  validateDepthStations,
+  isStationDepthProfile,
   type ProfileSegment,
 } from './profile.ts';
 import type { Job, PoolBody, Seat, Spa, StepSet } from './types.ts';
@@ -59,22 +63,20 @@ export interface GeometryResult {
 /** Build the longitudinal segments from the depth profile, validating the runs. */
 export function buildSegments(pool: PoolBody): ProfileSegment[] {
   const p = pool.profile;
-  const segments: ProfileSegment[] = [
-    { name: 'Shallow flat', length: p.shallowRun, d1: p.shallowDepth, d2: p.shallowDepth },
-    { name: 'Transition', length: p.transitionRun, d1: p.shallowDepth, d2: p.deepDepth },
-    { name: 'Deep flat', length: p.deepRun, d1: p.deepDepth, d2: p.deepDepth },
-  ].filter((s) => s.length > 0);
+  const errors = validateDepthStations(p, pool.lengthFt);
+  if (errors.length > 0) throw new GeometryInputError(errors.join(' '));
+  if (!isStationDepthProfile(p) && p.deepDepth < p.shallowDepth) {
+    throw new GeometryInputError(
+      `Deep depth ${p.deepDepth} ft is less than shallow depth ${p.shallowDepth} ft.`,
+    );
+  }
+  const segments = segmentsFromProfile(p);
 
   const run = totalRun(segments);
   if (Math.abs(run - pool.lengthFt) > 0.01) {
     throw new GeometryInputError(
       `Depth profile runs total ${run.toFixed(2)} ft but the pool is ${pool.lengthFt.toFixed(2)} ft long. ` +
-        `Shallow ${p.shallowRun} + transition ${p.transitionRun} + deep ${p.deepRun} must equal the length.`,
-    );
-  }
-  if (p.deepDepth < p.shallowDepth) {
-    throw new GeometryInputError(
-      `Deep depth ${p.deepDepth} ft is less than shallow depth ${p.shallowDepth} ft.`,
+        'The final depth station must equal the pool length.',
     );
   }
   return segments;
@@ -109,21 +111,14 @@ export function computeGeometry(job: Job): GeometryResult {
     compute: ({ L, W }) => 2 * (L! + W!),
   });
 
-  const p = pool.profile;
+  const stations = depthStations(pool.profile);
   const poolSectionArea = calc({
     id: 'geom.pool.sectionArea',
     label: 'Longitudinal section area (one side wall)',
-    formula: 'A_sec = (L_sh x d_sh) + (L_tr x (d_sh + d_dp) / 2) + (L_dp x d_dp)',
+    formula: 'A_sec = SUM(run x (depth_start + depth_end) / 2)',
     unit: 'sf',
-    inputs: [
-      inp('L_sh', 'Shallow flat run', p.shallowRun, 'ft'),
-      inp('d_sh', 'Shallow depth', p.shallowDepth, 'ft'),
-      inp('L_tr', 'Transition run', p.transitionRun, 'ft'),
-      inp('L_dp', 'Deep flat run', p.deepRun, 'ft'),
-      inp('d_dp', 'Deep depth', p.deepDepth, 'ft'),
-    ],
-    compute: ({ L_sh, d_sh, L_tr, L_dp, d_dp }) =>
-      L_sh! * d_sh! + (L_tr! * (d_sh! + d_dp!)) / 2 + L_dp! * d_dp!,
+    inputs: segments.map((segment, index) => inp(`A_${index + 1}`, segment.name, segment.length * (segment.d1 + segment.d2) / 2, 'sf')),
+    compute: (values) => Object.values(values).reduce((total, value) => total + value, 0),
     notes: ['Trapezoidal rule on the piecewise-linear depth profile. Exact for straight slopes.'],
   });
 
@@ -187,7 +182,7 @@ export function computeGeometry(job: Job): GeometryResult {
           inputs: [
             inp('L_spa', 'Spa length', job.spa.lengthFt, 'ft'),
             inp('W_spa', 'Spa width', job.spa.widthFt, 'ft'),
-            inp('d_local', 'Pool depth where the spa sits', p.shallowDepth, 'ft'),
+            inp('d_local', 'Pool depth where the spa sits', stations[0]!.depthFt, 'ft'),
           ],
           compute: ({ L_spa, W_spa, d_local }) => L_spa! * W_spa! * d_local!,
           notes: [
@@ -248,19 +243,19 @@ export function computeGeometry(job: Job): GeometryResult {
   const poolWettedArea = calc({
     id: 'geom.pool.wettedArea',
     label: 'Pool wetted surface area',
-    formula: 'A_wet = (W x L_slant) + (2 x A_sec) + (W x d_sh) + (W x d_dp) + A_faces',
+    formula: 'A_wet = (W x L_slant) + (2 x A_sec) + (W x d_start) + (W x d_end) + A_faces',
     unit: 'sf',
     inputs: [
       inp('W', 'Pool width', pool.widthFt, 'ft'),
       inp('L_slant', 'Floor length measured on the slope', slant, 'ft'),
       fromCalc('A_sec', poolSectionArea),
-      inp('d_sh', 'Shallow depth (shallow end wall)', p.shallowDepth, 'ft'),
-      inp('d_dp', 'Deep depth (deep end wall)', p.deepDepth, 'ft'),
+      inp('d_start', 'Depth at first end wall', stations[0]!.depthFt, 'ft'),
+      inp('d_end', 'Depth at second end wall', stations.at(-1)!.depthFt, 'ft'),
       inp('A_faces', 'Exposed side faces of steps and benches', sideFaceAdj, 'sf'),
       inp('A_inset', 'Pool floor taken by an inset spa', insetPlanArea, 'sf'),
     ],
-    compute: ({ W, L_slant, A_sec, d_sh, d_dp, A_faces, A_inset }) =>
-      W! * L_slant! + 2 * A_sec! + W! * d_sh! + W! * d_dp! + A_faces! - A_inset!,
+    compute: ({ W, L_slant, A_sec, d_start, d_end, A_faces, A_inset }) =>
+      W! * L_slant! + 2 * A_sec! + W! * d_start! + W! * d_end! + A_faces! - A_inset!,
     notes: [
       'Floor uses the slope length, not the plan run.',
       'A step or bench against a wall covers as much surface as its tread and riser faces add, so only the exposed side faces are a net addition.',

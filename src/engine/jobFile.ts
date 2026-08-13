@@ -20,10 +20,11 @@
  */
 
 import { findPumpModel } from './pumpCatalog.ts';
+import { legacyProfileToStations, validateDepthStations } from './profile.ts';
 import type { Job } from './types.ts';
 
 /** Bumped when the shape changes in a way an older file cannot satisfy. */
-export const JOB_FILE_VERSION = 2;
+export const JOB_FILE_VERSION = 3;
 
 const INFINITY_SENTINEL = '__Infinity__';
 
@@ -103,10 +104,20 @@ export function parseJob(text: string): ParseResult {
 
   const restored = fromWire(body as Record<string, unknown>, warnings);
   if (version === 1) migrateVersion1Overdig(restored, warnings);
+  if (version < 3) migrateLegacyDepthProfile(restored, warnings);
   const errors = validateJob(restored);
   if (errors.length > 0) return { ok: false, errors };
 
   return { ok: true, job: restored as Job, warnings };
+}
+
+function migrateLegacyDepthProfile(job: unknown, warnings: string[]): void {
+  if (!isRec(job) || !isRec(job['pool']) || !isRec(job['pool']['profile'])) return;
+  const profile = job['pool']['profile'];
+  if (profile['kind'] === 'linear-stations') return;
+  const values = profile as unknown as import('./types.ts').LegacyDepthProfile;
+  job['pool']['profile'] = legacyProfileToStations(values);
+  warnings.push('Migrated the legacy shallow/transition/deep profile to equivalent linear depth stations. Quantities are unchanged.');
 }
 
 function fromWire(body: Record<string, unknown>, warnings: string[]): unknown {
@@ -196,6 +207,15 @@ export function validateJob(value: unknown): string[] {
     } else {
       for (const k of ['shallowRun', 'transitionRun', 'deepRun', 'shallowDepth', 'deepDepth']) {
         if (!isNum(p[k]) || (p[k] as number) < 0) e.push(`pool.profile.${k} must be a number of 0 or more.`);
+      }
+      if (p['kind'] === 'linear-stations') {
+        const stations = p['stations'];
+        if (!Array.isArray(stations)) {
+          e.push('pool.profile.stations must be a list.');
+        } else {
+          e.push(...validateDepthStations(p as unknown as import('./types.ts').DepthProfile, Number(pool['lengthFt']))
+            .map((message) => `pool.profile: ${message}`));
+        }
       }
     }
     const steps = pool['steps'];

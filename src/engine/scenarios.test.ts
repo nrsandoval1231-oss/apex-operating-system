@@ -104,8 +104,9 @@ describe('the refusal cases still refuse', () => {
 });
 
 describe('the scenario list itself', () => {
-  it('offers six standards and keeps the refusal cases separate', () => {
-    expect(SCENARIOS.filter((s) => s.group === 'standard')).toHaveLength(6);
+  it('offers the six build standards plus sports pool and keeps refusal cases separate', () => {
+    expect(SCENARIOS.filter((s) => s.group === 'standard')).toHaveLength(7);
+    expect(SCENARIOS.some((s) => s.tab === 'Sports pool 3′–5′–3′')).toBe(true);
     expect(SCENARIOS.filter((s) => s.group === 'reference').length).toBeGreaterThan(0);
   });
 

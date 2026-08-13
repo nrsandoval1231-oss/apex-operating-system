@@ -7,6 +7,7 @@
  */
 
 import type { DepthProfile, Job, PoolWall } from './types.ts';
+import { isStationDepthProfile } from './profile.ts';
 
 /** Half-foot snap for plan dimensions; nobody lays out a shell to the inch. */
 export const snapHalfFt = (ft: number) => Math.round(ft * 2) / 2;
@@ -28,6 +29,20 @@ export const MAX_POOL_WIDTH_FT = 40;
  * the customer bought, and it is the last thing to give.
  */
 export function fitProfileToLength(profile: DepthProfile, lengthFt: number): DepthProfile {
+  if (isStationDepthProfile(profile)) {
+    const oldLength = profile.stations.at(-1)!.stationFt;
+    const scale = oldLength > 0 ? lengthFt / oldLength : 1;
+    return {
+      ...profile,
+      stations: profile.stations.map((station, index) => ({
+        ...station,
+        stationFt: index === profile.stations.length - 1 ? lengthFt : station.stationFt * scale,
+      })),
+      shallowRun: profile.shallowRun * scale,
+      transitionRun: profile.transitionRun * scale,
+      deepRun: profile.deepRun * scale,
+    };
+  }
   let shallowRun = profile.shallowRun;
   let transitionRun = profile.transitionRun;
   let deepRun = lengthFt - shallowRun - transitionRun;

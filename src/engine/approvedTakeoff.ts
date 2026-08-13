@@ -28,7 +28,7 @@ export interface ExportedAuthoritativeQuantity {
 }
 
 export interface DesignerQuantityPayload {
-  readonly quantityModelVersion: 'designer-quantity-v4';
+  readonly quantityModelVersion: 'designer-quantity-v5';
   readonly quantities: readonly ExportedAuthoritativeQuantity[];
   readonly calcLedger: readonly Calc[];
 }
@@ -114,7 +114,7 @@ export function exportDesignerQuantityPayload(takeoff: TakeoffResult): DesignerQ
   });
 
   return deepFreeze({
-    quantityModelVersion: 'designer-quantity-v4',
+    quantityModelVersion: 'designer-quantity-v5',
     quantities,
     calcLedger: [...ledgerById.values()],
   });

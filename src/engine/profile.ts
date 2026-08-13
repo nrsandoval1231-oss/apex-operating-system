@@ -13,6 +13,87 @@ export interface ProfileSegment {
   readonly d2: number;
 }
 
+import type { DepthProfile, DepthStation, LegacyDepthProfile, StationDepthProfile } from './types.ts';
+
+export function isStationDepthProfile(profile: DepthProfile): profile is StationDepthProfile {
+  return profile.kind === 'linear-stations' && Array.isArray(profile.stations);
+}
+
+export function legacyProfileToStations(profile: LegacyDepthProfile): StationDepthProfile {
+  return {
+    shallowRun: profile.shallowRun,
+    transitionRun: profile.transitionRun,
+    deepRun: profile.deepRun,
+    shallowDepth: profile.shallowDepth,
+    deepDepth: profile.deepDepth,
+    kind: 'linear-stations',
+    stations: [
+      { stationFt: 0, depthFt: profile.shallowDepth },
+      { stationFt: profile.shallowRun, depthFt: profile.shallowDepth },
+      { stationFt: profile.shallowRun + profile.transitionRun, depthFt: profile.deepDepth },
+      { stationFt: profile.shallowRun + profile.transitionRun + profile.deepRun, depthFt: profile.deepDepth },
+    ].filter((station, index, all) => index === 0 || station.stationFt !== all[index - 1]!.stationFt),
+  };
+}
+
+export function depthStations(profile: DepthProfile): readonly DepthStation[] {
+  return isStationDepthProfile(profile) ? profile.stations : legacyProfileToStations(profile).stations;
+}
+
+export function sportsPoolProfile(lengthFt: number): StationDepthProfile {
+  const fifth = lengthFt / 5;
+  return {
+    shallowRun: fifth,
+    transitionRun: fifth,
+    deepRun: lengthFt - fifth * 2,
+    shallowDepth: 3,
+    deepDepth: 5,
+    kind: 'linear-stations',
+    preset: 'sports-3-5-3',
+    stations: [
+      { stationFt: 0, depthFt: 3 },
+      { stationFt: fifth, depthFt: 3 },
+      { stationFt: fifth * 2, depthFt: 5 },
+      { stationFt: fifth * 3, depthFt: 5 },
+      { stationFt: fifth * 4, depthFt: 3 },
+      { stationFt: lengthFt, depthFt: 3 },
+    ],
+  };
+}
+
+export function segmentsFromProfile(profile: DepthProfile): ProfileSegment[] {
+  const stations = depthStations(profile);
+  return stations.slice(0, -1).map((station, index) => {
+    const next = stations[index + 1]!;
+    const flat = station.depthFt === next.depthFt;
+    return {
+      name: flat ? `${station.depthFt} ft flat` : 'Slope',
+      length: next.stationFt - station.stationFt,
+      d1: station.depthFt,
+      d2: next.depthFt,
+    };
+  });
+}
+
+export function validateDepthStations(profile: DepthProfile, lengthFt: number): string[] {
+  const stations = depthStations(profile);
+  const errors: string[] = [];
+  if (stations.length < 2) errors.push('Depth profile requires at least two stations.');
+  if (stations[0]?.stationFt !== 0) errors.push('Depth profile must start at station 0.');
+  if (Math.abs((stations.at(-1)?.stationFt ?? -1) - lengthFt) > 0.01) {
+    errors.push(`Depth profile must end at pool length ${lengthFt.toFixed(2)} ft.`);
+  }
+  stations.forEach((station, index) => {
+    if (!Number.isFinite(station.stationFt) || !Number.isFinite(station.depthFt) || station.depthFt <= 0) {
+      errors.push(`Depth station ${index + 1} must have a finite station and positive depth.`);
+    }
+    if (index > 0 && station.stationFt <= stations[index - 1]!.stationFt) {
+      errors.push('Depth stations must be in strictly increasing order.');
+    }
+  });
+  return errors;
+}
+
 /** Longitudinal cross-section area (the area of one side wall). ft^2 */
 export function crossSectionArea(segments: readonly ProfileSegment[]): number {
   return segments.reduce((a, s) => a + (s.length * (s.d1 + s.d2)) / 2, 0);
@@ -98,14 +179,18 @@ export function maxDepth(segments: readonly ProfileSegment[]): number {
  * that end's depth rather than extrapolating a floor that does not exist.
  */
 export function depthAtStation(
-  profile: { shallowRun: number; transitionRun: number; shallowDepth: number; deepDepth: number },
+  profile: DepthProfile,
   stationFt: number,
 ): number {
-  const { shallowRun, transitionRun, shallowDepth, deepDepth } = profile;
-  if (!Number.isFinite(stationFt) || stationFt <= shallowRun) return shallowDepth;
-  if (transitionRun <= 0 || stationFt >= shallowRun + transitionRun) return deepDepth;
-  const through = (stationFt - shallowRun) / transitionRun;
-  return shallowDepth + through * (deepDepth - shallowDepth);
+  const stations = depthStations(profile);
+  if (!Number.isFinite(stationFt) || stationFt <= stations[0]!.stationFt) return stations[0]!.depthFt;
+  const last = stations.at(-1)!;
+  if (stationFt >= last.stationFt) return last.depthFt;
+  const right = stations.findIndex((station) => station.stationFt >= stationFt);
+  const a = stations[right - 1]!;
+  const b = stations[right]!;
+  const through = (stationFt - a.stationFt) / (b.stationFt - a.stationFt);
+  return a.depthFt + through * (b.depthFt - a.depthFt);
 }
 
 /**
@@ -121,12 +206,14 @@ export function depthAtStation(
  * and a figure that is too shallow is one that leaves it floating.
  */
 export function floorDepthUnder(
-  profile: { shallowRun: number; transitionRun: number; shallowDepth: number; deepDepth: number },
+  profile: DepthProfile,
   fromFt: number,
   toFt: number,
 ): number {
-  const deepEdge = Math.max(fromFt, toFt);
-  return depthAtStation(profile, deepEdge);
+  const a = Math.min(fromFt, toFt);
+  const b = Math.max(fromFt, toFt);
+  const candidates = [a, b, ...depthStations(profile).map((station) => station.stationFt).filter((x) => x > a && x < b)];
+  return Math.max(...candidates.map((station) => depthAtStation(profile, station)));
 }
 
 /**
@@ -141,7 +228,7 @@ export function floorDepthUnder(
  * profile this engine models and does not depend on a step count.
  */
 export function averageFloorDepthUnder(
-  profile: { shallowRun: number; transitionRun: number; shallowDepth: number; deepDepth: number },
+  profile: DepthProfile,
   fromFt: number,
   toFt: number,
 ): number {
@@ -149,11 +236,9 @@ export function averageFloorDepthUnder(
   const b = Math.max(fromFt, toFt);
   if (!(b > a)) return depthAtStation(profile, a);
 
-  const { shallowRun, transitionRun } = profile;
-  const transitionEnd = shallowRun + transitionRun;
   // Break the span on the profile's own vertices, then integrate each piece as a
   // trapezoid — exact, because depth is linear between vertices.
-  const cuts = [a, b, shallowRun, transitionEnd]
+  const cuts = [a, b, ...depthStations(profile).map((station) => station.stationFt)]
     .filter((x) => x >= a && x <= b)
     .sort((x, y) => x - y);
 

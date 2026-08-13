@@ -30,6 +30,7 @@ import { HydraulicsSection } from './HydraulicsSection.tsx';
 import { CoverSection, FinishesSection, YardSection } from './FinishesSection.tsx';
 import { EquipmentSection } from './EquipmentSection.tsx';
 import { num, num1 } from './format.ts';
+import { depthStations, maxDepth, segmentsFromProfile } from '../engine/profile.ts';
 
 /**
  * The plan is draggable when the sheet is given an onChange and static when it
@@ -183,6 +184,8 @@ export function TakeoffSheet({
   const section = renderSectionView(job, 1040, { quarterTurns });
   const sectionScale = sectionPrintScale(section);
   const p = job.pool.profile;
+  const stations = depthStations(p);
+  const deepest = maxDepth(segmentsFromProfile(p));
 
   return (
     <div className={`sheet ${showWorking ? '' : 'is-plain'}`}>
@@ -198,11 +201,11 @@ export function TakeoffSheet({
         * digest is computed over and what the compliance paths cite — this
         * toggles two columns of a table and touches no number.
         */}
-      <div className="working-toggle print-hide">
+      {view === 'full' && <div className="working-toggle print-hide">
         <button type="button" className="btn ghost" onClick={() => setShowWorking((open) => !open)}>
           {showWorking ? 'Hide the working' : 'Show the working'}
         </button>
-      </div>
+      </div>}
       <header className="sheet-head">
         <div>
           <h1 className="sheet-title">{job.name}</h1>
@@ -300,11 +303,19 @@ export function TakeoffSheet({
           <span>
             Prints at {sectionScale.label}
             {!sectionScale.fits && ' — DOES NOT FIT 11×17'} ·{' '}
-            {feetInches(p.shallowDepth)} shallow · {feetInches(p.deepDepth)} deep ·{' '}
+            {feetInches(stations[0]!.depthFt)} end depth · {feetInches(deepest)} maximum ·{' '}
             {feetInches(job.excavation.freeboardFt)} freeboard
           </span>
         </div>
       </SectionSheet>
+
+      <section className="excavation-summary" aria-label="Excavation summary">
+        <strong>Excavation</strong>
+        <span>{num1(x.totalBankCy.value)} BCY bank</span>
+        <span>{num1(x.spoilHaulLooseCy.value)} LCY haul</span>
+        <span>{Math.ceil(x.truckCount.value)} estimated loads</span>
+        <span className="warn-note">Confirm excavation assumptions before ordering haul.</span>
+      </section>
 
       {view === 'design' ? null : (
       <div className="takeoff-body">

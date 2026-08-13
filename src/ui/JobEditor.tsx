@@ -433,7 +433,7 @@ function SoilLayers({ job, onChange }: { job: Job; onChange: (j: Job) => void })
 
   return (
     <fieldset className="editor-group">
-      <legend>Soil profile</legend>
+      <legend>Excavation assumptions — soil layers</legend>
       <p className="editor-note">
         Layers run contiguously from grade; depths are recomputed as you edit. Swell has no default —
         the engine supplies no caliche figure, and a blank one stops the excavation module.

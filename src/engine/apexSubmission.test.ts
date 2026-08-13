@@ -78,7 +78,7 @@ describe('the Apex OS submission', () => {
 
   it('reports the quantity model version the engine actually used', () => {
     const job = safeStandardJob();
-    expect(buildApexSubmission(job, runTakeoff(job)).quantityModelVersion).toBe('designer-quantity-v4');
+    expect(buildApexSubmission(job, runTakeoff(job)).quantityModelVersion).toBe('designer-quantity-v5');
   });
 
   /**

@@ -17,6 +17,7 @@
     "app:build": "tauri build"
   },
   "dependencies": {
+    "exceljs": "^4.4.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },

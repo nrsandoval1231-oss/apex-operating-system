@@ -21,6 +21,7 @@ import type { Job, PoolWall } from './types.ts';
 import { inToFt } from './units.ts';
 import { placementRect } from './placement.ts';
 import { deckMargins } from './deck.ts';
+import { depthStations, maxDepth, segmentsFromProfile } from './profile.ts';
 import {
   contentTransform,
   normalizeTurns,
@@ -424,10 +425,13 @@ export function renderPlanView(
 
   // --- depth profile: breakover stations across the pool --------------------
   const p = pool.profile;
-  const stations: { at: number; label: string }[] = [
-    { at: p.shallowRun, label: 'breakover' },
-    { at: p.shallowRun + p.transitionRun, label: 'deep floor' },
-  ];
+  const profileStations = depthStations(p);
+  const profileSegments = segmentsFromProfile(p);
+  const deepest = maxDepth(profileSegments);
+  const stations = profileStations.slice(1, -1).map((station) => ({
+    at: station.stationFt,
+    label: station.depthFt === deepest ? 'middle deep' : 'breakover',
+  }));
   for (const st of stations) {
     if (st.at <= 0 || st.at >= L) continue;
     parts.push(
@@ -437,13 +441,13 @@ export function renderPlanView(
   }
 
   const depthY = W * 0.36;
-  parts.push(text(ctx, p.shallowRun / 2, depthY, `${feetInches(p.shallowDepth)} deep`, 'pv-depth', 'middle'));
-  parts.push(
-    text(ctx, p.shallowRun + p.transitionRun + p.deepRun / 2, depthY, `${feetInches(p.deepDepth)} deep`, 'pv-depth', 'middle'),
-  );
-  parts.push(
-    text(ctx, p.shallowRun + p.transitionRun / 2, depthY, 'slope', 'pv-depth-soft', 'middle'),
-  );
+  let profileCursor = 0;
+  for (const segment of profileSegments) {
+    const middle = profileCursor + segment.length / 2;
+    const label = segment.d1 === segment.d2 ? `${feetInches(segment.d1)} deep` : 'slope';
+    parts.push(text(ctx, middle, depthY, label, segment.d1 === segment.d2 ? 'pv-depth' : 'pv-depth-soft', 'middle'));
+    profileCursor += segment.length;
+  }
 
   // --- steps and seats ------------------------------------------------------
   // Drawn from each object's placement so the drawing shows where the thing is
@@ -550,7 +554,8 @@ export function renderPlanView(
   const hyd = job.hydraulics;
   if (hyd) {
     const sep = hyd.mainDrains.separationFt;
-    const mdX = p.shallowRun + p.transitionRun + p.deepRun / 2;
+    const deepestStations = profileStations.filter((station) => station.depthFt === deepest);
+    const mdX = ((deepestStations[0]?.stationFt ?? L / 2) + (deepestStations.at(-1)?.stationFt ?? L / 2)) / 2;
     for (let i = 0; i < hyd.mainDrains.count; i++) {
       const offset = (i - (hyd.mainDrains.count - 1) / 2) * sep;
       parts.push(drainSymbol(ctx, mdX, W / 2 + offset));
@@ -628,7 +633,7 @@ export function renderPlanView(
   // 1:1 depth-to-foundation, local 307.2.2.2. The drawing shows the verdict, not
   // just the dimension — a plan that draws a violation as an ordinary dimension
   // is how it gets built that way.
-  const governingDepth = Math.max(p.deepDepth, spa?.depthFt ?? 0);
+  const governingDepth = Math.max(deepest, spa?.depthFt ?? 0);
   const setbackOk = governingDepth <= setback;
   parts.push(
     dimV(
@@ -688,11 +693,11 @@ export function renderPlanView(
 
   // profile runs along the top
   let cursorX = 0;
-  for (const [len, label] of [
-    [p.shallowRun, 'shallow'],
-    [p.transitionRun, 'transition'],
-    [p.deepRun, 'deep'],
-  ] as const) {
+  for (const segment of profileSegments) {
+    const len = segment.length;
+    const label = segment.d1 === segment.d2
+      ? (segment.d1 === deepest && deepest > profileStations[0]!.depthFt ? 'middle deep' : 'shallow')
+      : 'transition';
     if (len > 0) {
       parts.push(dimH(ctx, cursorX, cursorX + len, -1.9, `${feetInches(len)} ${label}`, 'pv-dim-soft'));
       cursorX += len;

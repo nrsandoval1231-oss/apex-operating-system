@@ -13,7 +13,7 @@
 import type { DeckRect } from './deck.ts';
 import type { PlanPoint } from './grid.ts';
 
-/** Longitudinal depth profile. shallowRun + transitionRun + deepRun must equal length. */
+/** A saved pre-v3 profile. Readable for exact migration and compatibility. */
 export interface DepthProfile {
   /** Flat run at the shallow depth, measured from the shallow end wall. ft */
   readonly shallowRun: number;
@@ -25,7 +25,25 @@ export interface DepthProfile {
   readonly shallowDepth: number;
   /** Water depth over the deep flat. ft */
   readonly deepDepth: number;
+  /** Present on generalized profiles; these stations are calculation authority. */
+  readonly kind?: 'linear-stations';
+  readonly stations?: readonly DepthStation[];
+  readonly preset?: 'sports-3-5-3';
 }
+
+export interface DepthStation {
+  /** Distance from the first end wall. ft */
+  readonly stationFt: number;
+  /** Water depth at this station. ft */
+  readonly depthFt: number;
+}
+
+/** Calculation authority for generalized longitudinal floors. */
+export type LegacyDepthProfile = DepthProfile;
+export type StationDepthProfile = DepthProfile & {
+  readonly kind: 'linear-stations';
+  readonly stations: readonly DepthStation[];
+};
 
 /**
  * Which wall of the pool rectangle an object sits against, named as the plan

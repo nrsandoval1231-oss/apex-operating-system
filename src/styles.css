@@ -1176,7 +1176,24 @@ tr.is-fail .check-message {
 .run-takeoff {
   max-width: 1180px;
   margin: 10px auto 28px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
 }
+
+.excavation-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 18px;
+  margin: 16px 0;
+  padding: 12px 16px;
+  border: 1px solid var(--rule);
+  background: var(--paper);
+  font-size: 12px;
+}
+.excavation-summary strong { color: var(--ink); }
+.excavation-summary span { white-space: nowrap; }
 
 .run-takeoff-button {
   width: 100%;
@@ -1398,7 +1415,33 @@ tr.is-fail .check-message {
 
 .app-header-title span { color: var(--sage); }
 
+.apex-workspace-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 18px;
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.apex-workspace-nav a,
+.apex-workspace-nav .is-current {
+  padding: 7px 9px;
+  border: 1px solid transparent;
+  color: var(--ink-faint);
+  text-decoration: none;
+}
+.apex-workspace-nav a:hover,
+.apex-workspace-nav .is-current {
+  color: var(--sage);
+  border-color: var(--sage);
+}
+.apex-workspace-nav .is-current { cursor: default; }
+
 .app-header-right { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+
 
 /* --- the app chrome ---------------------------------------------------------
  *
@@ -1764,6 +1807,18 @@ tr.is-fail .check-message {
 }
 
 /* Why an export refused — beside the button that refused, not in a dialog. */
+.apex-handoff {
+  display: grid;
+  gap: 12px;
+  padding: 14px 18px;
+  background: #1b1c1e;
+  border: 1px solid #31353a;
+}
+.apex-handoff label { display: grid; gap: 7px; color: #a8a49c; font-size: 12px; }
+.apex-handoff select { min-height: 42px; padding: 0 10px; background: #212427; border: 1px solid #454a50; color: #f4f2ee; font: inherit; }
+.apex-handoff-success { display: grid; gap: 7px; padding-top: 10px; border-top: 1px solid #31353a; color: #a1ccca; }
+.apex-handoff-success span { color: #a8a49c; font-size: 12px; }
+
 .export-error {
   margin: 0;
   padding: 10px 16px;

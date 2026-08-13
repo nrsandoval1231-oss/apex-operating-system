@@ -14,6 +14,7 @@ import { DesignControls } from './ui/DesignControls.tsx';
 import { SavedJobsPanel, useSavedJobs } from './ui/SavedJobs.tsx';
 import { runTakeoff } from './engine/index.ts';
 import { buildApexSubmission, submissionFileName } from './engine/apexSubmission.ts';
+import { buildOrderWorkbook, orderWorkbookFileName } from './engine/orderWorkbook.ts';
 
 /**
  * Where Apex OS lives. Configurable because Designer is built and run on a
@@ -21,7 +22,8 @@ import { buildApexSubmission, submissionFileName } from './engine/apexSubmission
  * origin, and hard-coding one host means a second deployment cannot be reached
  * without a rebuild of this tool.
  */
-const APEX_OS_ORIGIN = import.meta.env.VITE_APEX_OS_ORIGIN ?? 'https://apex-os-nqlx.onrender.com';
+const APEX_OS_ORIGIN = import.meta.env.VITE_APEX_OS_ORIGIN ?? 'http://127.0.0.1:4100';
+const APEX_GATE_ORIGIN = import.meta.env.VITE_APEX_GATE_ORIGIN ?? 'http://127.0.0.1:4100';
 
 /**
  * A tight lot: same pool, 5 ft to the house slab. The 6 ft deep end violates
@@ -37,6 +39,13 @@ const APEX_OS_ORIGIN = import.meta.env.VITE_APEX_OS_ORIGIN ?? 'https://apex-os-n
  * or knocked out, per the note that ships with the asset. It already contains
  * the word APEX, so nothing here repeats it as text.
  */
+interface ApexJobChoice {
+  readonly jobId: string;
+  readonly customerName: string | null;
+  readonly addressLine: string | null;
+  readonly status: string;
+}
+
 function AppHeader({ jobName, right }: { jobName: string; right?: React.ReactNode }) {
   return (
     <header className="app-header">
@@ -45,6 +54,12 @@ function AppHeader({ jobName, right }: { jobName: string; right?: React.ReactNod
         <strong>Designer</strong>
         <span>{jobName}</span>
       </div>
+      <nav className="apex-workspace-nav" aria-label="Apex workspace">
+        <a href={`${APEX_OS_ORIGIN}/app/today`}>Today</a>
+        <a href={`${APEX_OS_ORIGIN}/app/projects`}>Projects</a>
+        <a href={`${APEX_GATE_ORIGIN}/`}>Gate</a>
+        <span className="is-current">Designer</span>
+      </nav>
       <div className="app-header-right">{right}</div>
     </header>
   );
@@ -80,6 +95,17 @@ export function App() {
   const [quarterTurns, setQuarterTurns] = useState<QuarterTurns>(0);
   /** Why the last export refused, shown where the button is rather than in a dialog. */
   const [exportError, setExportError] = useState<string | null>(null);
+  const [apexJobs, setApexJobs] = useState<readonly ApexJobChoice[]>([]);
+  const [selectedApexJobId, setSelectedApexJobId] = useState('');
+  const [sendingToApex, setSendingToApex] = useState(false);
+  const [apexHandoff, setApexHandoff] = useState<{ job: ApexJobChoice; revisionId: string } | null>(null);
+  const [showNewProject, setShowNewProject] = useState(false);
+  const [newProjectBusy, setNewProjectBusy] = useState(false);
+  const [newProjectError, setNewProjectError] = useState<string | null>(null);
+  const [newProject, setNewProject] = useState({
+    customerName: '', streetAddress: '', city: 'Lubbock', state: 'TX', postalCode: '',
+    phone: '', email: '', referralSource: '', notes: '',
+  });
 
   const job = past.entries[past.cursor]!;
   const scenario = SCENARIOS[index]!;
@@ -171,6 +197,94 @@ export function App() {
     }
   };
 
+  const downloadTakeoff = async () => {
+    setExportError(null);
+    try {
+      const destination = apexJobs.find((entry) => entry.jobId === selectedApexJobId);
+      const metadata = {
+        customerName: destination?.customerName ?? undefined,
+        projectName: job.name,
+        address: destination?.addressLine ?? undefined,
+        opportunityId: destination?.jobId ?? undefined,
+        revision: 1,
+      };
+      const bytes = await buildOrderWorkbook(job, metadata);
+      const workbookBuffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+      const blob = new Blob([workbookBuffer], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = orderWorkbookFileName(metadata);
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      setExportError(error instanceof Error ? error.message : 'The takeoff workbook could not be generated.');
+    }
+  };
+
+  const createNewProject = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setNewProjectError(null);
+    setNewProjectBusy(true);
+    try {
+      const response = await fetch(`${APEX_OS_ORIGIN}/api/projects/intake`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', accept: 'application/json', 'idempotency-key': crypto.randomUUID() },
+        body: JSON.stringify(newProject),
+      });
+      const body = await response.json() as { jobId?: string; error?: string };
+      if (!response.ok || !body.jobId) throw new Error(body.error ?? `Project intake failed (HTTP ${response.status}).`);
+      window.location.href = `${APEX_OS_ORIGIN}/app/projects/${body.jobId}`;
+    } catch (error) {
+      setNewProjectError(error instanceof Error ? error.message : 'The design project could not be created.');
+    } finally {
+      setNewProjectBusy(false);
+    }
+  };
+
+  useEffect(() => {
+    fetch(`${APEX_OS_ORIGIN}/api/jobs?view=active`, { headers: { accept: 'application/json' } })
+      .then(async (response) => {
+        if (!response.ok) throw new Error('Apex jobs could not be loaded.');
+        return response.json() as Promise<readonly ApexJobChoice[]>;
+      })
+      .then((jobs) => setApexJobs(jobs))
+      .catch(() => setApexJobs([]));
+  }, []);
+
+  const sendToApex = async () => {
+    setExportError(null);
+    setApexHandoff(null);
+    if (selectedApexJobId === '') {
+      setExportError('Choose the Apex project that owns this design before sending it.');
+      return;
+    }
+    const destination = apexJobs.find((entry) => entry.jobId === selectedApexJobId);
+    if (!destination) {
+      setExportError('The selected Apex project is no longer available. Reload the job list and try again.');
+      return;
+    }
+    setSendingToApex(true);
+    try {
+      const checked = runTakeoff(job);
+      if (checked.hasCodeFailure) throw new Error(`Cannot send: ${checked.codeFailureAreas.join(', ')} has a failing check.`);
+      const submission = buildApexSubmission(job, checked);
+      const response = await fetch(`${APEX_OS_ORIGIN}/api/jobs/${destination.jobId}/approved-takeoff`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', accept: 'application/json', 'idempotency-key': crypto.randomUUID() },
+        body: JSON.stringify({ ...submission, supersedeExisting: false }),
+      });
+      const body = await response.json() as { revisionId?: string; error?: string };
+      if (!response.ok) throw new Error(body.error ?? `Apex rejected the takeoff (HTTP ${response.status}).`);
+      setApexHandoff({ job: destination, revisionId: body.revisionId ?? 'created' });
+    } catch (error) {
+      setExportError(error instanceof Error ? error.message : 'The takeoff could not be sent to Apex OS.');
+    } finally {
+      setSendingToApex(false);
+    }
+  };
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'z') return;
@@ -232,7 +346,10 @@ export function App() {
               >
                 Advanced
               </button>
-              <button className="btn" onClick={exportForApex}>Send to Apex OS</button>
+              <button className="btn" onClick={() => { setNewProjectError(null); setShowNewProject(true); }}>
+                New design project
+              </button>
+              {showAdvanced && <button className="btn ghost" onClick={exportForApex}>Download JSON fallback</button>}
               {/*
                 * Across to the field console. Designer runs on this machine and
                 * Apex OS is deployed elsewhere, so this is a plain link to a
@@ -255,6 +372,42 @@ export function App() {
         {exportError !== null && (
           <p className="export-error" role="alert">{exportError}</p>
         )}
+        {showNewProject && (
+          <section className="panel print-hide" aria-label="New design project">
+            <div className="section-rule"><h2>New design project</h2></div>
+            <p className="note">Start a referral or friend project here. It will be created in Apex OS at Design &amp; Permitting, ready for the 11-phase project workflow.</p>
+            {newProjectError !== null && <p className="export-error" role="alert">{newProjectError}</p>}
+            <form className="intake-form" onSubmit={createNewProject}>
+              {([
+                ['customerName', 'Customer name', true], ['streetAddress', 'Street address', true], ['city', 'City', true],
+                ['state', 'State', true], ['postalCode', 'Postal code', true], ['phone', 'Phone', false],
+                ['email', 'Email', false], ['referralSource', 'Referral source', false], ['notes', 'Project notes', false],
+              ] as const).map(([key, label, required]) => (
+                <label key={key}><span>{label}</span>
+                  {key === 'notes' ? <textarea value={newProject[key]} required={required} onChange={(event) => setNewProject((current) => ({ ...current, [key]: event.target.value }))} />
+                    : <input value={newProject[key]} required={required} type={key === 'email' ? 'email' : 'text'} onChange={(event) => setNewProject((current) => ({ ...current, [key]: event.target.value }))} />}
+                </label>
+              ))}
+              <div className="inline-action"><button className="btn" type="submit" disabled={newProjectBusy}>{newProjectBusy ? 'Creating…' : 'Create design project'}</button><button className="btn ghost" type="button" onClick={() => setShowNewProject(false)}>Cancel</button></div>
+            </form>
+          </section>
+        )}
+        <div className="apex-handoff print-hide">
+          <label>
+            <span>Send this design to Apex project</span>
+            <select value={selectedApexJobId} onChange={(event) => setSelectedApexJobId(event.target.value)}>
+              <option value="">Choose a customer/job first</option>
+              {apexJobs.map((entry) => <option key={entry.jobId} value={entry.jobId}>{entry.customerName ?? entry.jobId} — {entry.addressLine ?? 'Address not recorded'}</option>)}
+            </select>
+          </label>
+          {apexHandoff !== null && (
+            <div className="apex-handoff-success" role="status">
+              <strong>Takeoff sent to {apexHandoff.job.customerName ?? 'Apex project'}.</strong>
+              <span>{apexHandoff.job.addressLine ?? apexHandoff.job.jobId} · revision recorded</span>
+              <a className="btn" href={`${APEX_OS_ORIGIN}/app/projects/${apexHandoff.job.jobId}`} target="_blank" rel="noreferrer">Open this project in Apex OS ↗</a>
+            </div>
+          )}
+        </div>
         <div className="switcher print-hide">
           <span>Start from:</span>
           {SCENARIOS.map((sc, i) => (sc.group === 'standard' ? (
@@ -272,7 +425,7 @@ export function App() {
             aria-expanded={showSaved}
             onClick={() => setShowSaved((open) => !open)}
           >
-            Saved designs {saved.length > 0 ? `(${saved.length})` : ''} {showSaved ? '−' : '+'}
+            Recovery cache {saved.length > 0 ? `(${saved.length})` : ''} {showSaved ? '−' : '+'}
           </button>
           {edited && <span className="switcher-edited">edited</span>}
         </div>
@@ -284,7 +437,7 @@ export function App() {
             onRemove={remove}
             onLoad={(loaded) => { reset(loaded); setEdited(true); }}
           >
-            {SCENARIOS.map((sc, i) => (sc.group === 'reference' ? (
+            {showAdvanced ? SCENARIOS.map((sc, i) => (sc.group === 'reference' ? (
               <button
                 key={sc.tab}
                 className="btn ghost"
@@ -293,7 +446,7 @@ export function App() {
               >
                 {sc.tab}
               </button>
-            ) : null))}
+            ) : null)) : null}
           </SavedJobsPanel>
         )}
         <DesignControls job={job} onChange={editJob} />
@@ -306,9 +459,15 @@ export function App() {
           onRotate={setQuarterTurns}
         />
         <div className="run-takeoff print-hide">
-          <button className="btn run-takeoff-button" onClick={() => setMode('outputs')}>
-            Run full takeoff → dig plan · material quantities · plumbing · equipment pad
+          <button className="btn run-takeoff-button" onClick={() => void downloadTakeoff()}>
+            Takeoff (.xlsx)
           </button>
+          <button className="btn run-takeoff-button" onClick={() => void sendToApex()} disabled={sendingToApex}>
+            {sendingToApex ? 'Finishing…' : 'Finish estimate'}
+          </button>
+          {showAdvanced && (
+            <button className="btn ghost" onClick={() => setMode('outputs')}>Engineering details</button>
+          )}
         </div>
       </main>
     </div>

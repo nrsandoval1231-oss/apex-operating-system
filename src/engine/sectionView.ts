@@ -16,7 +16,7 @@
  * drawn faintly and labelled indicative.
  */
 
-import { averageFloorDepthUnder } from './profile.ts';
+import { averageFloorDepthUnder, depthStations, maxDepth, segmentsFromProfile, isStationDepthProfile } from './profile.ts';
 import {
   contentTransform,
   normalizeTurns,
@@ -117,6 +117,9 @@ export function renderSectionView(
   const spa = job.spa;
   const freeboard = job.excavation.freeboardFt;
   const shell = job.excavation.shellThicknessFt;
+  const profileStations = depthStations(p);
+  const profileSegments = segmentsFromProfile(p);
+  const deepest = maxDepth(profileSegments);
 
   // Horizontal room for the depth dimension stack on the left, and for an
   // attached spa hanging off the deep end on the right.
@@ -133,7 +136,7 @@ export function renderSectionView(
   const bottomExtent = shell + 5.5;
 
   const contentW = leftExtent + L + rightExtent;
-  const contentH = topExtent + p.deepDepth + bottomExtent;
+  const contentH = topExtent + deepest + bottomExtent;
 
   // Same as the plan: on an odd quarter turn the caller's width is the layout's
   // height, so scaling off contentW regardless would overflow the column.
@@ -164,14 +167,9 @@ export function renderSectionView(
   // --- the floor line, which is the whole point of this view -----------------
   // Shallow flat, then the transition, then the deep flat. Read straight off the
   // profile: this drawing cannot disagree with the quantities.
-  const shallowEndX = p.shallowRun;
-  const deepStartX = p.shallowRun + p.transitionRun;
-  const floor: readonly (readonly [number, number])[] = [
-    [0, p.shallowDepth],
-    [shallowEndX, p.shallowDepth],
-    [deepStartX, p.deepDepth],
-    [L, p.deepDepth],
-  ];
+  const floor: readonly (readonly [number, number])[] = profileStations.map(
+    (station) => [station.stationFt, station.depthFt] as const,
+  );
 
   // Water body: down the shallow wall, along the floor, up the deep wall.
   const waterPath = [
@@ -186,10 +184,9 @@ export function renderSectionView(
   // reads as a built thing rather than a void.
   const shellPath = [
     `M ${n(x(-shell))} ${n(y(-freeboard))}`,
-    `L ${n(x(-shell))} ${n(y(p.shallowDepth + shell))}`,
-    `L ${n(x(shallowEndX))} ${n(y(p.shallowDepth + shell))}`,
-    `L ${n(x(deepStartX))} ${n(y(p.deepDepth + shell))}`,
-    `L ${n(x(L + shell))} ${n(y(p.deepDepth + shell))}`,
+    `L ${n(x(-shell))} ${n(y(profileStations[0]!.depthFt + shell))}`,
+    ...floor.map(([fx, fd]) => `L ${n(x(fx))} ${n(y(fd + shell))}`),
+    `L ${n(x(L + shell))} ${n(y(profileStations.at(-1)!.depthFt + shell))}`,
     `L ${n(x(L + shell))} ${n(y(-freeboard))}`,
     `L ${n(x(L))} ${n(y(-freeboard))}`,
     `L ${n(x(L))} ${n(y(0))}`,
@@ -239,18 +236,18 @@ export function renderSectionView(
   }
 
   // --- depth dimensions — what this view exists for --------------------------
-  parts.push(dimV(ctx, 0, p.shallowDepth, -3.2, feetInches(p.shallowDepth)));
-  parts.push(dimV(ctx, 0, p.deepDepth, -6.4, feetInches(p.deepDepth)));
+  parts.push(dimV(ctx, 0, profileStations[0]!.depthFt, -3.2, feetInches(profileStations[0]!.depthFt)));
+  parts.push(dimV(ctx, 0, deepest, -6.4, feetInches(deepest)));
   parts.push(dimV(ctx, -freeboard, 0, L + (spaRunsRight ? 0 : 3.2), `${feetInches(freeboard)} freeboard`, 'pv-dim-soft'));
 
   // --- run dimensions along the bottom ---------------------------------------
-  const dimRow = p.deepDepth + shell + 2.2;
+  const dimRow = deepest + shell + 2.2;
   let cursor = 0;
-  for (const [len, label] of [
-    [p.shallowRun, 'shallow'],
-    [p.transitionRun, 'transition'],
-    [p.deepRun, 'deep'],
-  ] as const) {
+  for (const segment of profileSegments) {
+    const len = segment.length;
+    const label = segment.d1 === segment.d2
+      ? (segment.d1 === deepest && deepest > profileStations[0]!.depthFt ? (p.preset === 'sports-3-5-3' ? 'middle deep' : 'deep') : 'shallow')
+      : 'transition';
     if (len > 0) {
       parts.push(dimH(ctx, cursor, cursor + len, dimRow, `${feetInches(len)} ${label}`, 'pv-dim-soft'));
       cursor += len;
@@ -259,11 +256,12 @@ export function renderSectionView(
   parts.push(dimH(ctx, 0, L, dimRow + 2.4, feetInches(L)));
 
   // --- breakover, the point a swimmer needs to know about --------------------
-  if (p.transitionRun > 0) {
+  for (const station of profileStations.slice(1, -1)) {
     parts.push(
-      `<line class="pv-station" x1="${n(x(shallowEndX))}" y1="${n(y(-freeboard - 0.8))}" x2="${n(x(shallowEndX))}" y2="${n(y(p.shallowDepth))}"/>`,
+      `<line class="pv-station" x1="${n(x(station.stationFt))}" y1="${n(y(-freeboard - 0.8))}" x2="${n(x(station.stationFt))}" y2="${n(y(station.depthFt))}"/>`,
     );
-    parts.push(txt(ctx, shallowEndX, -freeboard - 1.4, 'BREAKOVER', 'pv-station-label', 'middle'));
+    const label = station.depthFt === deepest && deepest > profileStations[0]!.depthFt ? 'MIDDLE DEEP' : 'BREAKOVER';
+    parts.push(txt(ctx, station.stationFt, -freeboard - 1.4, label, 'pv-station-label', 'middle'));
   }
 
   // --- steps ----------------------------------------------------------------
@@ -331,14 +329,16 @@ export function renderSectionView(
   }
 
   parts.push(
-    txt(ctx, L / 2, p.deepDepth + shell + 4.6, 'LONGITUDINAL SECTION ON POOL CENTRELINE · INDICATIVE POSITIONS, DIMENSIONED DEPTHS', 'pv-station-label', 'middle'),
+    txt(ctx, L / 2, deepest + shell + 4.6, 'LONGITUDINAL SECTION ON POOL CENTRELINE · INDICATIVE POSITIONS, DIMENSIONED DEPTHS', 'pv-station-label', 'middle'),
   );
 
   // --- grab handles ----------------------------------------------------------
   // Wide invisible strokes over the two floor flats and the two stations. The
   // drag rules — snapping, clamps, which run absorbs a move — live in
   // poolResize.ts; these only mark what can be grabbed.
-  if (options.interactive) {
+  if (options.interactive && !isStationDepthProfile(p)) {
+    const shallowEndX = p.shallowRun;
+    const deepStartX = p.shallowRun + p.transitionRun;
     const grab = (handle: string, x1f: number, y1f: number, x2f: number, y2f: number) =>
       `<line class="sec-grab" data-sec-handle="${handle}"`
       + ` x1="${n(x(x1f))}" y1="${n(y(y1f))}" x2="${n(x(x2f))}" y2="${n(y(y2f))}"/>`;

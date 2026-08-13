@@ -16,6 +16,21 @@ import { STANDARD_MODEL } from '../standardModel.ts';
 import { WHITAKER } from './whitaker.ts';
 import { LUBBOCK_STANDARDS } from './lubbockStandards.ts';
 import type { Job } from '../types.ts';
+import { sportsPoolProfile } from '../profile.ts';
+import { findPumpModel } from '../pumpCatalog.ts';
+
+export const SPORTS_POOL: Job = {
+  ...LUBBOCK_STANDARDS[1]!.job,
+  name: 'Sports pool 3′–5′–3′',
+  pool: {
+    ...LUBBOCK_STANDARDS[1]!.job.pool,
+    profile: sportsPoolProfile(LUBBOCK_STANDARDS[1]!.job.pool.lengthFt),
+  },
+  hydraulics: LUBBOCK_STANDARDS[1]!.job.hydraulics && {
+    ...LUBBOCK_STANDARDS[1]!.job.hydraulics,
+    pumpModel: findPumpModel('VSP32810'),
+  },
+};
 
 /** The standard model against a foundation too close for its depth. */
 export const TIGHT_LOT: Job = {
@@ -55,6 +70,7 @@ export const SCENARIOS: readonly Scenario[] = [
     details: [APEX_STANDARD_DETAIL],
     group: 'standard' as const,
   })),
+  { tab: 'Sports pool 3′–5′–3′', job: SPORTS_POOL, details: [APEX_STANDARD_DETAIL], group: 'standard' },
   { tab: 'Whitaker (built)', job: WHITAKER, details: [APEX_STANDARD_DETAIL], group: 'reference' },
   { tab: 'PRD standard model', job: STANDARD_MODEL, details: [APEX_STANDARD_DETAIL], group: 'reference' },
   { tab: 'Tight lot · 5 ft', job: TIGHT_LOT, details: [APEX_STANDARD_DETAIL], group: 'reference' },
