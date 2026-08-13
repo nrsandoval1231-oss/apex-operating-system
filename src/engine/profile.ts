@@ -200,10 +200,11 @@ export function depthAtStation(
  * invented instead — a new bench got `shallowDepth + 1` regardless of where it
  * sat, which is how the section came to draw a bench hanging clear of the floor.
  *
- * Depth never decreases with distance from the shallow end, so the deepest point
- * under a footprint is always its deep-side edge. Taking the deepest rather than
- * the average is deliberate: a seat has to reach the floor everywhere it spans,
- * and a figure that is too shallow is one that leaves it floating.
+ * A profile may rise or fall (the 3-5-3 sports profile does both), so inspect
+ * both edges and every profile vertex under the footprint. Taking the deepest
+ * rather than the average is deliberate: a seat has to reach the floor
+ * everywhere it spans, and a figure that is too shallow is one that leaves it
+ * floating.
  */
 export function floorDepthUnder(
   profile: DepthProfile,

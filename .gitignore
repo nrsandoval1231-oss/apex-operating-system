@@ -3,6 +3,7 @@ dist/
 public/
 *.local
 .DS_Store
+.hermes/
 
 # Rust build output for the desktop shell. Large and fully regenerable.
 src-tauri/target/
