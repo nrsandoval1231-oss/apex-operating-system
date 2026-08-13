@@ -192,6 +192,32 @@ const ManualProjectIntakeSchema = z.strictObject({
   notes: z.string().trim().max(2000).optional(),
 });
 
+const DirectPriceInputSchema = z.strictObject({
+  code: z.union([z.literal(300), z.literal(500), z.literal(600), z.literal(900),
+    z.literal(1100), z.literal(1200), z.literal(1300)]),
+  name: z.string().trim().min(1).max(200),
+  scopeStatus: z.enum(['quoted', 'not-applicable', 'unresolved']),
+  amountCents: z.number().int().nonnegative().nullable(),
+  basis: z.string().trim().min(1).max(1000),
+});
+  const FinishEstimateSchema = z.strictObject({
+    submission: DesignerTakeoffSubmissionSchema,
+    directLines: z.array(DirectPriceInputSchema),
+    measuredLines: z.array(z.strictObject({ id: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).max(80), amountCents: z.number().int().nonnegative().nullable(), basis: z.string().trim().min(1).max(1000) })),
+  feeRateBps: z.number().int().min(0).max(10000),
+});
+  const ExpectedProposalVersionSchema = z.strictObject({
+    expectedVersionNumber: z.number().int().positive(),
+    expectedDraftRevision: z.number().int().positive(),
+  });
+  const SignProposalSchema = ExpectedProposalVersionSchema.extend({
+    customerAcceptanceConfirmed: z.literal(true),
+  });
+  const UpdateProposalDraftSchema = FinishEstimateSchema.pick({ directLines: true, measuredLines: true, feeRateBps: true }).extend({
+  expectedVersionNumber: z.number().int().positive(),
+  expectedDraftRevision: z.number().int().positive(),
+});
+
 const ResolveDecisionSchema = z.strictObject({
   status: z.enum(['answered', 'withdrawn']),
   answerNote: z.string().min(1).max(2000).optional(),
@@ -795,6 +821,83 @@ export function createGateApi(options: GateApiOptions) {
           status: 'accepted',
           project: null,
         });
+      }
+
+      const opportunityProposalsMatch = url.pathname.match(
+        /^\/api\/opportunities\/(lead_[0-9A-HJKMNP-TV-Z]{26})\/proposals$/,
+      );
+      if (request.method === 'GET' && opportunityProposalsMatch) {
+        requireStaff(actor);
+        return sendJson(response, 200,
+          await service.listProposalVersions(idSchemas.lead.parse(opportunityProposalsMatch[1])));
+      }
+
+      const finishEstimateMatch = url.pathname.match(
+        /^\/api\/opportunities\/(lead_[0-9A-HJKMNP-TV-Z]{26})\/finish-estimate$/,
+      );
+      if (request.method === 'POST' && finishEstimateMatch) {
+        requireStaff(actor);
+        const body = FinishEstimateSchema.parse(await readJson(request, 2_000_000));
+        return sendJson(response, 201, await service.finishEstimate({
+          leadId: idSchemas.lead.parse(finishEstimateMatch[1]), actor,
+            submission: body.submission, directLines: body.directLines,
+            measuredLines: body.measuredLines,
+          feeRateBps: body.feeRateBps, idempotencyKey: idempotency(request),
+        }));
+      }
+
+      const proposalMatch = url.pathname.match(
+        /^\/api\/proposals\/(proposal_version_[0-9A-HJKMNP-TV-Z]{26})$/,
+      );
+      if (request.method === 'GET' && proposalMatch) {
+        requireStaff(actor);
+        const proposal = await service.getProposalVersion(idSchemas.proposal_version.parse(proposalMatch[1]));
+        return proposal ? sendJson(response, 200, proposal) : sendJson(response, 404, { error: 'Proposal version not found.' });
+      }
+
+      const issueProposalMatch = url.pathname.match(
+        /^\/api\/proposals\/(proposal_version_[0-9A-HJKMNP-TV-Z]{26})\/issue$/,
+      );
+      if (request.method === 'POST' && issueProposalMatch) {
+        requireStaff(actor);
+        const body = ExpectedProposalVersionSchema.parse(await readJson(request));
+        return sendJson(response, 200, await service.issueProposal({
+          proposalVersionId: idSchemas.proposal_version.parse(issueProposalMatch[1]),
+          expectedVersionNumber: body.expectedVersionNumber, actor,
+          expectedDraftRevision: body.expectedDraftRevision,
+          idempotencyKey: idempotency(request),
+        }));
+      }
+
+      const updateProposalMatch = url.pathname.match(
+        /^\/api\/proposals\/(proposal_version_[0-9A-HJKMNP-TV-Z]{26})\/draft$/,
+      );
+      if (request.method === 'POST' && updateProposalMatch) {
+        requireStaff(actor);
+        const body = UpdateProposalDraftSchema.parse(await readJson(request));
+        return sendJson(response, 200, await service.updateProposalDraft({
+          proposalVersionId: idSchemas.proposal_version.parse(updateProposalMatch[1]),
+          expectedVersionNumber: body.expectedVersionNumber,
+          expectedDraftRevision: body.expectedDraftRevision,
+            directLines: body.directLines, feeRateBps: body.feeRateBps,
+            measuredLines: body.measuredLines,
+          actor, idempotencyKey: idempotency(request),
+        }));
+      }
+
+      const signProposalMatch = url.pathname.match(
+        /^\/api\/proposals\/(proposal_version_[0-9A-HJKMNP-TV-Z]{26})\/sign$/,
+      );
+      if (request.method === 'POST' && signProposalMatch) {
+        requireStaff(actor);
+        const body = SignProposalSchema.parse(await readJson(request));
+        return sendJson(response, 200, await service.signProposal({
+          proposalVersionId: idSchemas.proposal_version.parse(signProposalMatch[1]),
+          expectedVersionNumber: body.expectedVersionNumber, actor,
+          expectedDraftRevision: body.expectedDraftRevision,
+          customerAcceptanceConfirmed: body.customerAcceptanceConfirmed,
+          idempotencyKey: idempotency(request),
+        }));
       }
 
       if (request.method === 'GET' && url.pathname === '/api/today') {

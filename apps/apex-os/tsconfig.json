@@ -5,6 +5,11 @@
     "lib": ["ES2023", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "moduleResolution": "bundler",
+    "paths": {
+      "@apex/contracts": ["../../packages/contracts/src/index.ts"],
+      "@apex/domain": ["../../packages/domain/src/index.ts"],
+      "@apex/pricing-engine": ["../../packages/pricing-engine/src/index.ts"]
+    },
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,

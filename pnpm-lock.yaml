@@ -26,6 +26,9 @@ importers:
       '@apex/domain':
         specifier: workspace:*
         version: link:../../packages/domain
+      '@apex/pricing-engine':
+        specifier: workspace:*
+        version: link:../../packages/pricing-engine
       '@fontsource-variable/jetbrains-mono':
         specifier: ^5.3.0
         version: 5.3.0
@@ -75,6 +78,9 @@ importers:
       '@apex/gate-service':
         specifier: workspace:*
         version: link:../../packages/gate-service
+      '@apex/pricing-engine':
+        specifier: workspace:*
+        version: link:../../packages/pricing-engine
       '@apex/storage':
         specifier: workspace:*
         version: link:../../packages/storage
@@ -134,6 +140,9 @@ importers:
       '@apex/domain':
         specifier: workspace:*
         version: link:../domain
+      '@apex/pricing-engine':
+        specifier: workspace:*
+        version: link:../pricing-engine
     devDependencies:
       '@electric-sql/pglite':
         specifier: 0.5.4
@@ -148,6 +157,12 @@ importers:
       '@types/node':
         specifier: ^26.1.2
         version: 26.1.2
+
+  packages/pricing-engine:
+    dependencies:
+      '@apex/contracts':
+        specifier: workspace:*
+        version: link:../contracts
 
 packages:
 

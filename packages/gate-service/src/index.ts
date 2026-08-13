@@ -67,6 +67,8 @@ import {
   type ProjectPhaseState,
 } from '@apex/domain';
 import { InspectionService } from './inspections.js';
+import { ProposalService, type FinishEstimateResult } from './proposal.js';
+export { ProposalService, type FinishEstimateResult } from './proposal.js';
 
 export interface EvidenceWrite {
   readonly evidenceId: EvidenceId;
@@ -369,6 +371,32 @@ const commandKey = (value: string) => {
 
 export class GateService {
   constructor(private readonly db: Database) {}
+
+  private proposalService(): ProposalService { return new ProposalService(this.db); }
+
+  finishEstimate(input: Parameters<ProposalService['finishEstimate']>[0]): Promise<FinishEstimateResult> {
+    return this.proposalService().finishEstimate(input);
+  }
+
+  issueProposal(input: Parameters<ProposalService['issueProposal']>[0]) {
+    return this.proposalService().issueProposal(input);
+  }
+
+  updateProposalDraft(input: Parameters<ProposalService['updateProposalDraft']>[0]) {
+    return this.proposalService().updateProposalDraft(input);
+  }
+
+  signProposal(input: Parameters<ProposalService['signProposal']>[0]) {
+    return this.proposalService().signProposal(input);
+  }
+
+  getProposalVersion(id: Parameters<ProposalService['getProposalVersion']>[0]) {
+    return this.proposalService().getProposalVersion(id);
+  }
+
+  listProposalVersions(leadId: Parameters<ProposalService['listProposalVersions']>[0]) {
+    return this.proposalService().listProposalVersions(leadId);
+  }
 
   /**
    * Open a Gate of the given definition on a job.

@@ -974,3 +974,58 @@ body {
   text-transform: none;
 }
 .archive-row .row-action { color: var(--sage); }
+
+/* ------------------------------------------- estimate completion + proposal */
+
+.estimate-sheet { padding-bottom: 48px; }
+.file-action { display: inline-block; cursor: pointer; }
+.file-action input { display: none; }
+.estimate-fee { display: grid; gap: 7px; max-width: 240px; color: var(--ink-2); font: 11px var(--f-mono); text-transform: uppercase; letter-spacing: .08em; }
+.estimate-fee input,
+.estimate-line input {
+  min-height: 44px; box-sizing: border-box; border: 1px solid var(--rule-bright);
+  background: var(--panel); color: var(--ink); padding: 10px 12px; font: 15px var(--f-mono);
+}
+.estimate-lines { margin: 18px 0 24px; border-top: 1px solid var(--rule); }
+.estimate-line { display: grid; grid-template-columns: minmax(0, 1fr) minmax(130px, 180px) auto; gap: 14px; align-items: center; padding: 13px 0; border-bottom: 1px solid var(--rule); }
+.estimate-line > div { display: grid; gap: 4px; }
+.estimate-line b { font: 500 17px var(--f-display); }
+.estimate-line span { color: var(--ink-3); font: 11px var(--f-mono); }
+.estimate-line label { display: flex; align-items: center; gap: 8px; color: var(--ink-2); font-size: 13px; }
+.estimate-line label:not(.estimate-na) input { width: 100%; }
+.estimate-na { min-height: 48px; }
+.estimate-complete { margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--rule-bright); }
+.estimate-complete p { max-width: 65ch; color: var(--ink-2); line-height: 1.5; }
+.estimate-actions, .proposal-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+
+.proposal-paper { margin-top: 22px; background: #f2eee3; color: #202224; border-top: 6px solid #1b1c1e; padding: clamp(22px, 5vw, 54px); }
+.proposal-paper > header { display: flex; justify-content: space-between; gap: 32px; align-items: flex-start; padding-bottom: 24px; border-bottom: 1px solid #a9a397; }
+.proposal-paper h2, .proposal-paper h3, .proposal-paper p { margin: 0; }
+.proposal-paper h2 { font: 600 clamp(24px, 5vw, 38px) var(--f-display); text-transform: uppercase; }
+.proposal-paper h3 { font: 600 20px var(--f-display); text-transform: uppercase; letter-spacing: .03em; }
+.proposal-paper header p { margin-top: 6px; color: #5b5a56; }
+.proposal-mark { font: 600 28px var(--f-display); letter-spacing: .04em; white-space: nowrap; }
+.proposal-mark span { display: block; color: #0e6e7c; font: 600 10px var(--f-mono); letter-spacing: .12em; }
+.proposal-total { display: flex; align-items: baseline; justify-content: space-between; gap: 24px; margin: 28px 0; padding: 18px 0; border-bottom: 1px solid #a9a397; }
+.proposal-total span { font: 500 16px var(--f-display); text-transform: uppercase; }
+.proposal-total b { font: 600 clamp(28px, 6vw, 46px) var(--f-mono); }
+.proposal-paper section > ul { list-style: none; padding: 0; margin: 14px 0 0; }
+.proposal-paper section > ul li { display: flex; justify-content: space-between; align-items: center; gap: 18px; padding: 11px 0; border-bottom: 1px solid #cbc5b8; }
+.proposal-paper .tag-clear { color: #164c49; border-color: #6faaa5; }
+.proposal-paper .tag-urgent { color: #6e4308; border-color: #b67b27; }
+.proposal-blockers { margin-top: 24px; padding: 16px; border: 1px solid #b67b27; }
+.proposal-blockers p { margin-top: 8px; }
+.proposal-paper footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; margin-top: 32px; padding-top: 14px; border-top: 1px solid #a9a397; color: #66635d; font: 10px var(--f-mono); text-transform: uppercase; letter-spacing: .06em; }
+
+@media (max-width: 620px) {
+  .estimate-line { grid-template-columns: 1fr; gap: 8px; }
+  .estimate-line label:not(.estimate-na) { display: grid; grid-template-columns: auto 1fr; }
+  .proposal-paper > header, .proposal-total { display: grid; gap: 14px; }
+  .proposal-paper section > ul li { align-items: flex-start; }
+}
+
+@media print {
+  .nav, .session, .proposal-title, .proposal-actions, .notice, .error { display: none !important; }
+  .app, .sheet { max-width: none; padding: 0; background: white; }
+  .proposal-paper { margin: 0; min-height: 100vh; box-sizing: border-box; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+}

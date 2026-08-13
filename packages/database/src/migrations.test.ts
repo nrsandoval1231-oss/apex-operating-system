@@ -74,6 +74,7 @@ describe('operational schema', () => {
 
   it('registers durable Proposal versions in the runtime migrator', () => {
     expect(OPERATIONAL_MIGRATIONS).toContain('0008_proposal_versions.sql');
+    expect(OPERATIONAL_MIGRATIONS).toContain('0032_proposal_workflow.sql');
   });
 
   it('executes every core and authorization migration in PostgreSQL', async () => {

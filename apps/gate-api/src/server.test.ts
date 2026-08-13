@@ -15,6 +15,7 @@ import { SignJWT } from 'jose';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { LocalEvidenceStorage } from '@apex/storage';
 import { createGateApi } from './server.js';
+import { MEASURED_LINE_DEFINITIONS } from '@apex/pricing-engine';
 
 const FIXTURE_QUANTITIES: AuthoritativeQuantity[] = [
   { code: 'pool.water-volume', value: 1, unit: 'gal', calcId: 'fixture.calc' },
@@ -24,6 +25,7 @@ const secretText = 'test-only-secret-that-is-more-than-thirty-two-bytes';
 const secret = new TextEncoder().encode(secretText);
 const ids = {
   lead: createCanonicalId('lead'),
+  proposalLead: createCanonicalId('lead'),
   job: createCanonicalId('job'),
   revision: createCanonicalId('revision'),
   field: createCanonicalId('user'),
@@ -71,8 +73,9 @@ beforeEach(async () => {
   );
   await db.query(
     `insert into leads (lead_id, intake_source, source_record_id, idempotency_key, accepted_payload)
-     values ($1, 'test', 'api-source', 'test:api-source', '{}')`,
-    [ids.lead],
+     values ($1, 'test', 'api-source', 'test:api-source', '{}'),
+            ($2, 'test', 'proposal-source', 'test:proposal-source', '{"customerName":"Proposal Customer","streetAddress":"8 Pool Way"}')`,
+    [ids.lead, ids.proposalLead],
   );
   await db.query(`insert into jobs (job_id, lead_id, signed_proposal_version, status) values ($1, $2, 1, 'active')`, [ids.job, ids.lead]);
   await db.query(
@@ -96,6 +99,55 @@ beforeEach(async () => {
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
   const address = server.address() as AddressInfo;
   baseUrl = `http://127.0.0.1:${address.port}`;
+});
+
+describe('Proposal and Finish estimate API', () => {
+  const proposalFacts: AuthoritativeQuantity[] = [
+    ['pool.water-volume', 15000, 'gal'], ['excavation.bank-volume', 100, 'BCY'],
+    ['excavation.spoil-haul-volume', 110, 'LCY'], ['shell.gunite-ordered-volume', 40, 'cy'],
+    ['shell.reinforcing-steel-weight', 1200, 'lb'], ['shell.forming-perimeter', 100, 'ft'],
+    ['finishes.plaster-net-area', 900, 'sf'], ['finishes.plaster-ordered-area', 920, 'sf'],
+    ['finishes.tile-net-length', 100, 'lf'], ['finishes.tile-ordered-area', 55, 'sf'],
+    ['finishes.coping-ordered-length', 106, 'lf'], ['yard.deck-area', 360, 'sf'],
+    ['plumbing.developed-run-length', 750, 'lf'], ['utilities.bonding-conductor-length', 220, 'lf'],
+  ].map(([code, value, unit]) => ({ code: code as AuthoritativeQuantity['code'], value: value as number,
+    unit: unit as string, calcId: `calc.${String(code).replaceAll('-', '.')}` }));
+  const submission = {
+    engineVersion: 'designer-api-test', quantityModelVersion: 'designer-quantity-v4',
+    jobModel: { designRevision: 9 }, quantities: proposalFacts,
+    calcLedger: proposalFacts.map((fact) => ({ id: fact.calcId, label: fact.code,
+      formula: 'fixture', inputs: [], value: fact.value, unit: fact.unit })),
+    supersedeExisting: false,
+  };
+
+  it('finishes, lists, gets, and idempotently signs one immutable Proposal', async () => {
+    const office = await token(ids.office, 'office');
+    const finish = await call(`/api/opportunities/${ids.proposalLead}/finish-estimate`, office, {
+      method: 'POST', headers: { 'idempotency-key': 'api-finish-estimate-0001' },
+      body: JSON.stringify({ submission, feeRateBps: 3000,
+        measuredLines: MEASURED_LINE_DEFINITIONS.map(([id]) => ({ id, amountCents: 10_000, basis: 'Approved fixture estimate.' })),
+        directLines:
+        ([300, 500, 600, 900, 1100, 1200, 1300] as const).map((code) => ({
+          code, name: `Direct ${code}`, scopeStatus: 'not-applicable', amountCents: null,
+          basis: 'Explicitly excluded.',
+        })) }),
+    });
+    expect(finish.status).toBe(201);
+    const finished = await finish.json() as { proposal: { proposalVersionId: string; status: string; versionNumber: number; draftRevision: number } };
+    expect(finished.proposal.status).toBe('issued');
+    expect((await call(`/api/opportunities/${ids.proposalLead}/proposals`, office)).status).toBe(200);
+    expect((await call(`/api/proposals/${finished.proposal.proposalVersionId}`, office)).status).toBe(200);
+
+    const sign = () => call(`/api/proposals/${finished.proposal.proposalVersionId}/sign`, office, {
+      method: 'POST', headers: { 'idempotency-key': crypto.randomUUID() },
+      body: JSON.stringify({ expectedVersionNumber: finished.proposal.versionNumber,
+        expectedDraftRevision: finished.proposal.draftRevision, customerAcceptanceConfirmed: true }),
+    });
+    expect((await sign()).status).toBe(200);
+    expect((await sign()).status).toBe(200);
+    expect((await db.query('select * from jobs where lead_id = $1', [ids.proposalLead])).rows).toHaveLength(1);
+    expect((await db.query('select p.* from projects p join jobs j on j.job_id = p.job_id where j.lead_id = $1', [ids.proposalLead])).rows).toHaveLength(1);
+  });
 });
 
 afterEach(async () => {
