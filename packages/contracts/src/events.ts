@@ -13,6 +13,7 @@ export const CANONICAL_EVENT_TYPES = [
   'project.created',
   'project.phase_changed',
   'project.superintendent_assigned',
+  'project.target_completion_updated',
   'project.assigned',
   'takeoff_revision.created',
   'takeoff_revision.approved',
@@ -80,6 +81,7 @@ export const ApexEventSchema = z.discriminatedUnion('eventType', [
   jobEvent('project.created', z.strictObject({ initialPhaseKey: ConstructionPhaseKeySchema, superintendentUserId: idSchemas.user.nullable() })),
   /* Nullable: taking somebody off a job is as much a fact as putting them on it. */
   jobEvent('project.superintendent_assigned', z.strictObject({ superintendentUserId: idSchemas.user.nullable(), assignedBy: idSchemas.user })),
+  jobEvent('project.target_completion_updated', z.strictObject({ targetCompletionStart: z.string().date().nullable(), targetCompletionEnd: z.string().date().nullable(), updatedBy: idSchemas.user })),
   /**
    * `reason` is required whenever the move is not one step forward. Backwards and
    * skipped transitions are recorded facts about a real jobsite, not errors — but

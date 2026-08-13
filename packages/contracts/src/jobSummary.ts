@@ -57,7 +57,7 @@ export type JobSummaryGate = z.infer<typeof JobSummaryGateSchema>;
 export const JobSummaryProjectSchema = z.strictObject({
   currentPhaseKey: ConstructionPhaseKeySchema,
   currentPhaseTitle: z.string().min(1).max(200),
-  currentPhaseSequence: z.number().int().min(1).max(9),
+  currentPhaseSequence: z.number().int().min(1).max(11),
   customerMilestone: CustomerMilestoneKeySchema,
   superintendentUserId: idSchemas.user.nullable(),
   superintendentName: z.string().min(1).max(200).nullable(),
@@ -147,6 +147,7 @@ const STREET_KEYS = [
 ] as const;
 const CITY_KEYS = ['city', 'locality', 'town'] as const;
 const REGION_KEYS = ['state', 'region', 'province'] as const;
+const POSTAL_KEYS = ['postalCode', 'postal_code', 'zip', 'zipCode', 'zip_code'] as const;
 
 /**
  * Extract a display name and address from a website lead's accepted payload.
@@ -179,8 +180,10 @@ export const readLeadIdentity = (payload: unknown): {
     ?? firstText(nested, ['line1', 'line_1']);
   const city = firstText(source, CITY_KEYS) ?? firstText(nested, CITY_KEYS);
   const region = firstText(source, REGION_KEYS) ?? firstText(nested, REGION_KEYS);
+  const postal = firstText(source, POSTAL_KEYS) ?? firstText(nested, POSTAL_KEYS);
 
-  const addressParts = [street, [city, region].filter((part): part is string => part !== null).join(', ')]
+  const locality = [city, region].filter((part): part is string => part !== null).join(', ');
+  const addressParts = [street, [locality, postal].filter((part): part is string => part !== null && part.length > 0).join(' ')]
     .filter((part): part is string => part !== null && part.length > 0);
   const addressLine = addressParts.length === 0 ? null : addressParts.join(', ');
 

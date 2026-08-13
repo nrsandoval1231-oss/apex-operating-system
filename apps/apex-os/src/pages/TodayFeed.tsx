@@ -25,7 +25,7 @@ const URGENCY_TAG: Readonly<Record<ActionCard['urgency'], string | null>> = {
 
 const GROUP_EMPTY: Readonly<Record<CardGroup, string>> = {
   'needs-you': 'Nothing is waiting on a decision.',
-  running: 'No work in progress to check.',
+  running: 'No separate running actions. Active project work is tracked in Projects.',
   'this-week': 'Nothing scheduled in the next fortnight.',
 };
 

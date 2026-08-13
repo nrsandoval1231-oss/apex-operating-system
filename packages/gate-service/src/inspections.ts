@@ -163,6 +163,41 @@ export class InspectionService {
     return rows.rows.map((row) => toInspection(jobId, row));
   }
 
+  /** Read every job's inspection snapshot in one query for the Today feed. */
+  async listJobInspectionsForJobs(jobIds: readonly JobId[]): Promise<ReadonlyMap<JobId, readonly JobInspection[]>> {
+    const byJob = new Map<JobId, JobInspection[]>();
+    if (jobIds.length === 0) return byJob;
+    const rows = await this.db.query<InspectionRow & { job_id: string }>(
+      `select selected.job_id as job_id, it.inspection_key, it.sequence, it.title, it.phase_key, it.requested_by,
+              it.requester_trade, it.lead_time_business_days, it.blocks_definition_key,
+              it.request_method, it.authority,
+              gd.title as blocks_gate_title,
+              ji.inspection_id, ji.status, ji.requested_on, ji.scheduled_for,
+              ji.result_on, ji.result_note, ji.corrections, ji.needed_by,
+              (select min(v.starts_on) from scheduled_visits v
+                where v.job_id = selected.job_id and v.phase_key = gd.phase_key
+                  and v.status in ('planned', 'confirmed')) as booked_from,
+              (select count(*) from inspection_results r
+                where r.inspection_id = ji.inspection_id and r.outcome = 'failed')::text as failure_count
+       from unnest($1::text[]) as selected(job_id)
+       join jobs j on j.job_id = selected.job_id
+       cross join inspection_types it
+       left join gate_definitions gd
+         on gd.definition_key = it.blocks_definition_key and gd.active = true
+       left join job_inspections ji
+         on ji.inspection_key = it.inspection_key and ji.job_id = selected.job_id
+       order by selected.job_id, it.sequence`,
+      [jobIds],
+    );
+    for (const row of rows.rows) {
+      const jobId = row.job_id as JobId;
+      const list = byJob.get(jobId) ?? [];
+      list.push(toInspection(jobId, row));
+      byJob.set(jobId, list);
+    }
+    return byJob;
+  }
+
   /** Record that an inspection has been called in. */
   async requestInspection(input: {
     jobId: JobId;

@@ -292,10 +292,7 @@ describe('a gate that the city has not cleared', () => {
     const result = await service.execute(gateId, { type: 'release-gate', actor: owner, at }, {
       idempotencyKey: 'insp-release-0003',
     });
-    // Pre-gunite takes a countersign, so a clean release lands here rather than
-    // at 'released' — the inspection guard is out of the way and the ordinary
-    // Gate rules have taken over.
-    expect(result.state.status).toBe('awaiting-countersign');
+    expect(result.state.status).toBe('released');
   });
 
   it('accepts a waiver in place of a pass', async () => {
@@ -315,7 +312,7 @@ describe('a gate that the city has not cleared', () => {
     const result = await service.execute(gateId, { type: 'release-gate', actor: owner, at }, {
       idempotencyKey: 'insp-release-0004',
     });
-    expect(result.state.status).toBe('awaiting-countersign');
+    expect(result.state.status).toBe('released');
   });
 
   it('refuses an unauthorized release without mentioning inspections at all', async () => {

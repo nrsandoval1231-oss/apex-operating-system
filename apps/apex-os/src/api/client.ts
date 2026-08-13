@@ -131,6 +131,9 @@ export const apiSend = async <T>(
     throw new ApiError(message, response.status);
   }
 
+  if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+    window.dispatchEvent(new Event('apex:data-changed'));
+  }
   const parsed = schema.safeParse(body);
   if (!parsed.success) {
     throw new ApiError('The Apex API returned data this build does not understand.', response.status);

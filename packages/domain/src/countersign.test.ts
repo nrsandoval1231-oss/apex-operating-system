@@ -8,14 +8,7 @@ import {
   type GateState,
 } from './index.js';
 
-/**
- * The two-signature Gate — resolved 2026-07-31.
- *
- * Pre-gunite is the one hold point whose failure cannot be undone: gunite buries
- * the rebar and the plumbing. It takes a superintendent's sign-off and the
- * owner's countersign. Every other Gate, including all four draw-bearing ones,
- * takes one signature from either the owner or a superintendent.
- */
+/** Legacy countersign data remains replayable, but active Gates release once. */
 
 const ids = {
   gate: createCanonicalId('gate'),
@@ -66,70 +59,21 @@ const ready = (options: Parameters<typeof gate>[0] = {}): GateState => {
   });
 };
 
-describe('the pre-gunite countersign', () => {
-  it('does not release on the first signature', () => {
-    const signed = decideGateCommand(ready(), { type: 'release-gate', actor: superintendent, at });
-    expect(signed.map((event) => event.eventType)).toEqual(['gate.signoff_recorded']);
-
-    const state = signed.reduce(evolveGate, ready());
-    expect(state.status).toBe('awaiting-countersign');
-    expect(state.releasedAt).toBeNull();
-    expect(state.signoff).toMatchObject({ userId: ids.superintendent, role: 'superintendent' });
+describe('active single-signature release', () => {
+  it('releases on the first signature', () => {
+    const events = decideGateCommand(ready(), { type: 'release-gate', actor: superintendent, at });
+    expect(events.map((event) => event.eventType)).toEqual(['gate.released', 'customer_update.published']);
+    expect(events.reduce(evolveGate, ready()).status).toBe('released');
   });
 
-  it('releases only once the owner countersigns', () => {
-    const signed = apply(ready(), { type: 'release-gate', actor: superintendent, at });
-    const events = decideGateCommand(signed, { type: 'countersign-gate', actor: owner, at });
-    // Pre-gunite releases work, not money: no draw.eligible.
-    expect(events.map((event) => event.eventType)).toEqual([
-      'gate.countersigned', 'gate.released', 'customer_update.published',
-    ]);
-
-    const released = events.reduce(evolveGate, signed);
-    expect(released.status).toBe('released');
-  });
-
-  it('refuses a countersign by the same person who signed', () => {
-    // An owner who signs first cannot then countersign himself.
-    const signed = apply(ready(), { type: 'release-gate', actor: owner, at });
-    expect(() => decideGateCommand(signed, { type: 'countersign-gate', actor: owner, at }))
-      .toThrow(/different person than the signer/i);
-  });
-
-  it('accepts a countersign from a second owner', () => {
-    const signed = apply(ready(), { type: 'release-gate', actor: owner, at });
-    const events = decideGateCommand(signed, { type: 'countersign-gate', actor: secondOwner, at });
-    expect(events.map((event) => event.eventType)).toContain('gate.released');
-  });
-
-  it('refuses a countersign from a role that does not hold it', () => {
-    const signed = apply(ready(), { type: 'release-gate', actor: superintendent, at });
-    for (const actor of [fieldActor, { kind: 'user' as const, userId: ids.field, role: 'office' as const }]) {
-      expect(() => decideGateCommand(signed, { type: 'countersign-gate', actor, at }))
-        .toThrow(/not authorized/i);
-    }
-  });
-
-  it('refuses a countersign before anyone has signed', () => {
-    expect(() => decideGateCommand(ready(), { type: 'countersign-gate', actor: owner, at }))
-      .toThrow(/must be signed off before/i);
-  });
-
-  it('still enforces evidence and requirements before the first signature', () => {
+  it('still enforces evidence and requirements before release', () => {
     expect(() => decideGateCommand(gate(), { type: 'release-gate', actor: superintendent, at }))
       .toThrow(DomainRuleError);
   });
 
-  it('refuses a second countersign on a released Gate', () => {
-    let state = apply(ready(), { type: 'release-gate', actor: superintendent, at });
-    state = apply(state, { type: 'countersign-gate', actor: owner, at });
-    expect(() => decideGateCommand(state, { type: 'countersign-gate', actor: secondOwner, at }))
-      .toThrow(/immutable/i);
-  });
-
-  it('refuses a definition whose countersign role is its only release role', () => {
-    expect(() => gate({ releaseRoles: ['admin'], countersignRoles: ['admin'] }))
-      .toThrow(/release role that is not also a countersign role/i);
+  it('rejects the retired countersign command', () => {
+    expect(() => decideGateCommand(ready(), { type: 'countersign-gate', actor: owner, at }))
+      .toThrow(/countersign has been removed/i);
   });
 });
 
@@ -157,7 +101,7 @@ describe('the four draw-bearing gates', () => {
   it('reject a countersign attempt, having required none', () => {
     const released = apply(moneyGate(), { type: 'release-gate', actor: superintendent, at });
     expect(() => decideGateCommand(released, { type: 'countersign-gate', actor: owner, at }))
-      .toThrow(/does not require a countersign/i);
+      .toThrow(/countersign has been removed/i);
   });
 
   it('are still closed to the field lead', () => {

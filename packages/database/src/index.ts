@@ -30,6 +30,17 @@ export const OPERATIONAL_MIGRATIONS = [
   '0018_inspections.sql',
   '0019_rls_retired.sql',
   '0020_oidc_subject.sql',
+  '0021_job_closure_reconciliation.sql',
+  '0022_gunite_one_day.sql',
+  '0023_remove_excavation_spoil_soil_requirements.sql',
+  '0024_migrate_existing_excavation_gates.sql',
+  '0025_update_pre_gunite_rough_in_checklist.sql',
+  '0026_pre_gunite_dry_run_single_signature.sql',
+  '0027_repair_open_pre_gunite_dry_runs.sql',
+  '0028_align_pre_gunite_dry_run_status.sql',
+  '0029_clear_obsolete_pre_gunite_signoff.sql',
+  '0030_equipment_automation_cover_gates.sql',
+  '0031_remove_countersign_from_active_gates.sql',
 ] as const;
 
 export const STORAGE_MIGRATION = '0003_evidence_storage.sql';

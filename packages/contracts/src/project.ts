@@ -13,7 +13,7 @@ import { idSchemas } from './ids.js';
  * that decision document or to PRD §8.3.
  */
 
-/** The nine internal construction phases, in build order. */
+/** Eleven internal construction phases, in build order. */
 export const CONSTRUCTION_PHASE_KEYS = [
   'design-permitting',
   'layout-excavation',
@@ -23,6 +23,8 @@ export const CONSTRUCTION_PHASE_KEYS = [
   'tile-coping',
   'decking',
   'equipment-hookup',
+  'automation-programming',
+  'cover-install',
   'plaster-fill',
 ] as const;
 export const ConstructionPhaseKeySchema = z.enum(CONSTRUCTION_PHASE_KEYS);
@@ -58,7 +60,9 @@ export const CONSTRUCTION_PHASES: readonly ConstructionPhase[] = [
   { key: 'tile-coping', sequence: 6, title: 'Waterline Tile & Coping Installation', customerMilestone: 'finishes' },
   { key: 'decking', sequence: 7, title: 'Patio Decking & Hardscaping', customerMilestone: 'finishes' },
   { key: 'equipment-hookup', sequence: 8, title: 'Pool Pad Equipment Hookup', customerMilestone: 'water' },
-  { key: 'plaster-fill', sequence: 9, title: 'Interior Plaster Finish & Water Fill', customerMilestone: 'water' },
+  { key: 'automation-programming', sequence: 9, title: 'Automation Programming', customerMilestone: 'water' },
+  { key: 'cover-install', sequence: 10, title: 'Automatic Cover Installation', customerMilestone: 'water' },
+  { key: 'plaster-fill', sequence: 11, title: 'Interior Plaster Finish & Water Fill', customerMilestone: 'water' },
 ] as const;
 
 export interface CustomerMilestone {

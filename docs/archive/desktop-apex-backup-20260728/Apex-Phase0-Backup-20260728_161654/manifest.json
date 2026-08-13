@@ -1,0 +1,959 @@
+{
+  "backup_version": 1,
+  "source_root": "C:\\Users\\NickSandoval\\Desktop\\Apex",
+  "stamp": "20260728_161654",
+  "excluded_directories": [
+    ".astro",
+    ".cache",
+    ".git",
+    ".venv",
+    ".vite",
+    "__pycache__",
+    "build",
+    "coverage",
+    "dist",
+    "node_modules",
+    "venv"
+  ],
+  "repositories": {
+    "apex-designer": {
+      "path": "Apex Designer",
+      "head": "986bcb7c9b375647e94f5800c7abecdb66e4b19f",
+      "branches": [
+        "master"
+      ],
+      "bundle": "git-bundles/apex-designer.bundle",
+      "status": "git-status/apex-designer.txt",
+      "patch": "working-tree-patches/apex-designer.patch"
+    },
+    "apex-decks": {
+      "path": "apex-decks",
+      "head": "db41634a0fca2197cf97f8a9a747682c0f5fc793",
+      "branches": [
+        "main"
+      ],
+      "bundle": "git-bundles/apex-decks.bundle",
+      "status": "git-status/apex-decks.txt",
+      "patch": "working-tree-patches/apex-decks.patch"
+    },
+    "apex-lead-engine": {
+      "path": "apex-lead-engine/apex-lead-engine",
+      "head": "6436d3d9f6a278e7b3c4eb34bfcf35bec72477b0",
+      "branches": [
+        "main"
+      ],
+      "bundle": "git-bundles/apex-lead-engine.bundle",
+      "status": "git-status/apex-lead-engine.txt",
+      "patch": "working-tree-patches/apex-lead-engine.patch"
+    },
+    "apex-prds": {
+      "path": "apex-prds/apex-prds",
+      "head": "02e21125404041d244903f0831fdc6e79ce25757",
+      "branches": [
+        "main"
+      ],
+      "bundle": "git-bundles/apex-prds.bundle",
+      "status": "git-status/apex-prds.txt",
+      "patch": "working-tree-patches/apex-prds.patch"
+    },
+    "apex-proposal-engine": {
+      "path": "apex-proposal-engine",
+      "head": "c78093a8b54f7854765334de17fb0a3b3520f407",
+      "branches": [
+        "main"
+      ],
+      "bundle": "git-bundles/apex-proposal-engine.bundle",
+      "status": "git-status/apex-proposal-engine.txt",
+      "patch": "working-tree-patches/apex-proposal-engine.patch"
+    },
+    "apex-website": {
+      "path": "apex-website/apex-website",
+      "head": "bba150127becc30b18c7ec85de6955a42204919c",
+      "branches": [
+        "main"
+      ],
+      "bundle": "git-bundles/apex-website.bundle",
+      "status": "git-status/apex-website.txt",
+      "patch": "working-tree-patches/apex-website.patch"
+    }
+  },
+  "source_zip": "Apex-source-working-tree-20260728_161654.zip",
+  "file_count": 175,
+  "files": [
+    {
+      "path": ".claude/launch.json",
+      "bytes": 403,
+      "sha256": "89295bea2844ece046c2cfc148d63bd2f1c62f1ffa923f7c41acd1f142f0e39c"
+    },
+    {
+      "path": ".hermes/plans/2026-07-28_160832-apex-unified-operating-system.md",
+      "bytes": 24082,
+      "sha256": "4e5c3634d04a1eba61163f0a6e8b34735cfa6978e987ad97ad715d9eea304eee"
+    },
+    {
+      "path": "Apex Designer/.claude/launch.json",
+      "bytes": 185,
+      "sha256": "5c3fa3f92df1839282193f98067024ef8889387f6d79dbc8e952aa43463312a1"
+    },
+    {
+      "path": "Apex Designer/.gitignore",
+      "bytes": 46,
+      "sha256": "692b00ba2c5f074a414643d306abae0e8db72702c9621505486d395423c3014e"
+    },
+    {
+      "path": "Apex Designer/index.html",
+      "bytes": 327,
+      "sha256": "e6c1df5ed385c4ba931d78f5de6cb6538419dddaa1661411fbf296134846c1d3"
+    },
+    {
+      "path": "Apex Designer/package-lock.json",
+      "bytes": 77655,
+      "sha256": "13fdd5e8b74d8b29fd868bdd66e1f3675942dce225dcb43c8ac58025ecc98fb4"
+    },
+    {
+      "path": "Apex Designer/package.json",
+      "bytes": 759,
+      "sha256": "bef038bcc22339d15a22f87dc4f3a8da6dcb73fb5711c8cc64d6e7a36f15e350"
+    },
+    {
+      "path": "Apex Designer/prd-pool-spa-plan-takeoff.md",
+      "bytes": 27524,
+      "sha256": "d9ebe54337016bbead0fa6c032162533aea2034ee6d488332584ae6cc998c142"
+    },
+    {
+      "path": "Apex Designer/README.md",
+      "bytes": 9910,
+      "sha256": "a27a501833b16ce238880758ac2e81ae1762d34f11f25c8408205cc02758d530"
+    },
+    {
+      "path": "Apex Designer/src/App.tsx",
+      "bytes": 3173,
+      "sha256": "0cb2031d5890f4ed90369b30b491ad683550ee599a253f82f47240b1e4b17e7b"
+    },
+    {
+      "path": "Apex Designer/src/cli/renderSheet.ts",
+      "bytes": 42645,
+      "sha256": "5ecf38aa64406698c4087d7f6c427f787a7341f371f6d0bff4707715bc6fe017"
+    },
+    {
+      "path": "Apex Designer/src/cli/takeoff.ts",
+      "bytes": 7802,
+      "sha256": "2db8a1741533094daff1a8fc47d8d139a5bddab3f8803ce9a38a6345566c7905"
+    },
+    {
+      "path": "Apex Designer/src/engine/calc.ts",
+      "bytes": 4151,
+      "sha256": "1188168318bb9ffa5480cd9b1e69abaac378702f66ab6bb4e8d02c6ccec44cb5"
+    },
+    {
+      "path": "Apex Designer/src/engine/codeChecks.test.ts",
+      "bytes": 7798,
+      "sha256": "af406aaae8c8067e1fbc1d95ba650973e2d7db5902b5ea3764a18f0ab16d691a"
+    },
+    {
+      "path": "Apex Designer/src/engine/codeChecks.ts",
+      "bytes": 14543,
+      "sha256": "4406cf7d9ac6ef6638c1c7d72d065d28f40510dfee9003606248ad7c89158ce0"
+    },
+    {
+      "path": "Apex Designer/src/engine/cover.ts",
+      "bytes": 9755,
+      "sha256": "4346c77c7b9236717abc19e275dfba612e3276a2aa4da6c8231ba2732f430c6d"
+    },
+    {
+      "path": "Apex Designer/src/engine/equipment.test.ts",
+      "bytes": 14046,
+      "sha256": "011f964e248d386740d248f919a6f772f465487cec6cb8dc0a008e6206b46e69"
+    },
+    {
+      "path": "Apex Designer/src/engine/equipment.ts",
+      "bytes": 21228,
+      "sha256": "e887a809774dd64261026c1569fec85936ffe92eabdf5f8b0fe03d069b530ffd"
+    },
+    {
+      "path": "Apex Designer/src/engine/excavation.test.ts",
+      "bytes": 9277,
+      "sha256": "c283400699bc70a9d7075c4ac7a1276c2e9d0625f249192857752df57323a89b"
+    },
+    {
+      "path": "Apex Designer/src/engine/excavation.ts",
+      "bytes": 13782,
+      "sha256": "4556cb103cb14f81f365913e3f50fa327772391442eb0d9ce4fd4320ff97a6f1"
+    },
+    {
+      "path": "Apex Designer/src/engine/finishes.test.ts",
+      "bytes": 9729,
+      "sha256": "2fffa0d7ca9340ef4a7ceae2fe459265dfeb22922ab84c0dd1a2e119f5c2128a"
+    },
+    {
+      "path": "Apex Designer/src/engine/finishes.ts",
+      "bytes": 5318,
+      "sha256": "08c8de5461315685ec2d756d9bd19cf3aecaa0ea36af56052526f310b62f20be"
+    },
+    {
+      "path": "Apex Designer/src/engine/geometry.test.ts",
+      "bytes": 9071,
+      "sha256": "c5e3bd2019480b9286342f84ce92b06eed79a5043941050baf02283d65226a25"
+    },
+    {
+      "path": "Apex Designer/src/engine/geometry.ts",
+      "bytes": 18153,
+      "sha256": "635c3b4748cbed3117c47a2d24a3c134649062fd530a49bdb99e177feb9c831b"
+    },
+    {
+      "path": "Apex Designer/src/engine/hydraulics.test.ts",
+      "bytes": 24449,
+      "sha256": "7bd4ad4b1bc4378c23f87e4bb066273a55f173c6d67fe48b006d45f5b58e3f81"
+    },
+    {
+      "path": "Apex Designer/src/engine/hydraulics.ts",
+      "bytes": 37656,
+      "sha256": "ddbfe4f6bd9efde8f5f46ba53b0bc5a287ef42d2417f57b751823371f770f89c"
+    },
+    {
+      "path": "Apex Designer/src/engine/index.ts",
+      "bytes": 3357,
+      "sha256": "a312b71ef12bf2d417446b82f8c28409f5a02c305436c43e95fdd6ca73eec07e"
+    },
+    {
+      "path": "Apex Designer/src/engine/jobFile.test.ts",
+      "bytes": 6090,
+      "sha256": "9cae2df071475f4345c4e026e4d0658ac86cfeaf46052f0453cc644364d35a06"
+    },
+    {
+      "path": "Apex Designer/src/engine/jobFile.ts",
+      "bytes": 9404,
+      "sha256": "2eff98d8979cf96b029f1d04b2d0e158c6f76a1db691d67ae1ac47388233d94a"
+    },
+    {
+      "path": "Apex Designer/src/engine/jobs/whitaker.ts",
+      "bytes": 5656,
+      "sha256": "69c3c6423b77e5583aabe9df8fcd5f11ea9e822799236697b648f2e4aa1213af"
+    },
+    {
+      "path": "Apex Designer/src/engine/pipe.ts",
+      "bytes": 3404,
+      "sha256": "bffd6e58abe9e51c840a2fd824cb0190892293cbcefd45da5389a751179a31a6"
+    },
+    {
+      "path": "Apex Designer/src/engine/planView.test.ts",
+      "bytes": 8068,
+      "sha256": "a075ddaabffd03fccd5c84f2f4aa65fd86ef483302c07ce7d9bb7d36dd1f4a53"
+    },
+    {
+      "path": "Apex Designer/src/engine/planView.ts",
+      "bytes": 19870,
+      "sha256": "e68b47523176732fdb3802d77a86d71deff10ec535e917451ac6a09a64a6792d"
+    },
+    {
+      "path": "Apex Designer/src/engine/profile.ts",
+      "bytes": 3028,
+      "sha256": "92bf8fbb6e9bd0baad51ed02e6852109cc68e856b8936969334896503e51940d"
+    },
+    {
+      "path": "Apex Designer/src/engine/pumpCatalog.ts",
+      "bytes": 10611,
+      "sha256": "45167436fccbdccc43a6c04e4dd85301d783e36f3f8f1f6d90297379f0edf1f8"
+    },
+    {
+      "path": "Apex Designer/src/engine/standardDetail.ts",
+      "bytes": 10520,
+      "sha256": "1dca03999d1849c26aa7af7edbf1a2ba8870fdd53e3828b1c5040d212891fd2b"
+    },
+    {
+      "path": "Apex Designer/src/engine/standardModel.ts",
+      "bytes": 14286,
+      "sha256": "e62515e862fb8013d411e821a52e13ff781123bd1e7666b2f27bf70af3537d37"
+    },
+    {
+      "path": "Apex Designer/src/engine/structure.test.ts",
+      "bytes": 15460,
+      "sha256": "efb54546c432228f5592d2a2b76ace77da07df33fe3a172f3fcd1359ad7aa043"
+    },
+    {
+      "path": "Apex Designer/src/engine/structure.ts",
+      "bytes": 21182,
+      "sha256": "f4dbd1be4989c7289d2906786f0c519548339239e59f6f0c635fe92f235bb1c8"
+    },
+    {
+      "path": "Apex Designer/src/engine/types.ts",
+      "bytes": 14666,
+      "sha256": "68f95007b44c35fd8770ccdde953a325353a829ef68909c4fff73e34c79c4387"
+    },
+    {
+      "path": "Apex Designer/src/engine/units.ts",
+      "bytes": 559,
+      "sha256": "17b28e5f3a9a2158c5af4130c30c6410caa6a395fa9c461d52cb88a8a0fabc9c"
+    },
+    {
+      "path": "Apex Designer/src/engine/yard.ts",
+      "bytes": 6489,
+      "sha256": "03b23e34baa452b0559c19857629e4d1bc042b83c90a011ee9fb1e5d6fcd4b59"
+    },
+    {
+      "path": "Apex Designer/src/main.tsx",
+      "bytes": 240,
+      "sha256": "bc4f8d0cf9618181f0e8e72a2a1f0473673215bd332e248030ed4dd7be63e8b6"
+    },
+    {
+      "path": "Apex Designer/src/styles.css",
+      "bytes": 20698,
+      "sha256": "04edfec584ef5cd4fd299b43d0199c9c16d9fb63bfc80fbe053ccf3ff12634e3"
+    },
+    {
+      "path": "Apex Designer/src/ui/CalcTable.tsx",
+      "bytes": 2174,
+      "sha256": "7479e815565ffa8999a902211f651ad6217e23e34802f8c831c102fb93ec2c3a"
+    },
+    {
+      "path": "Apex Designer/src/ui/CodeCheckTable.tsx",
+      "bytes": 1836,
+      "sha256": "1ff90a9398f59b9dd78a4b309817568771c9c5443effcad03fb10b71c92a87c5"
+    },
+    {
+      "path": "Apex Designer/src/ui/EquipmentSection.tsx",
+      "bytes": 5995,
+      "sha256": "6c4b293f2e833cb6d176c22d0df25dbb78a60ed5b5fb4abf9459bca3061b3657"
+    },
+    {
+      "path": "Apex Designer/src/ui/FinishesSection.tsx",
+      "bytes": 4434,
+      "sha256": "c2ff807f1e7b1eeadce92a3affda3dc592d89b4d5c6c1e872a13200f1fee2cf7"
+    },
+    {
+      "path": "Apex Designer/src/ui/format.ts",
+      "bytes": 889,
+      "sha256": "8fe8d6708c38f4fd1c670a43779499f0b9b77be808fd419a4d2220844c7c8a38"
+    },
+    {
+      "path": "Apex Designer/src/ui/HydraulicsSection.tsx",
+      "bytes": 7061,
+      "sha256": "5f0ec96ada97f775af4c31304f6b01936135a6308ce3ef9acce9f46cf5ecf232"
+    },
+    {
+      "path": "Apex Designer/src/ui/JobEditor.tsx",
+      "bytes": 15161,
+      "sha256": "d01d0b31ae582599dc0360072331888a58ddc1c46e064f516bab1c3384f13803"
+    },
+    {
+      "path": "Apex Designer/src/ui/StructureSection.tsx",
+      "bytes": 6093,
+      "sha256": "c77cb88e4a1fd8cb16cf47b1cd50b6cd2465cd97c8b1a2eb32f323161ac3e8a8"
+    },
+    {
+      "path": "Apex Designer/src/ui/TakeoffSheet.tsx",
+      "bytes": 9183,
+      "sha256": "7dd15e46ab59698b4bc1b236a4547f6b1cda9584096c90bfb02684e31bed4d90"
+    },
+    {
+      "path": "Apex Designer/tsconfig.json",
+      "bytes": 646,
+      "sha256": "5a936d4cb640b310aa85096b29d4a9122b8fd46c4bf5a38a49e34c1da1c5624d"
+    },
+    {
+      "path": "Apex Designer/vite.config.ts",
+      "bytes": 214,
+      "sha256": "512e280b6c44d71a10ab0749ee79d9b353fcf0ac70ad2f9994dfa62042f5bfde"
+    },
+    {
+      "path": "Apex ideas.zip",
+      "bytes": 112970,
+      "sha256": "87a4ad67d5e751d49c8d42d29529307d3962558c1c31d28e17fd672c5269e3a2"
+    },
+    {
+      "path": "Apex Lead Engine/Apex-Lead-Engine-01-Intake.json",
+      "bytes": 13007,
+      "sha256": "caa1177385c77de07f3ac337865cd42f5fec791d36a5d57f6cb1d1e5acd85c08"
+    },
+    {
+      "path": "Apex Lead Engine/README.md",
+      "bytes": 3852,
+      "sha256": "171fdd7fbfb55e2b4ca81adb1582d7ad4170d8c54a2af610806b23041e1141bf"
+    },
+    {
+      "path": "apex-decks/.gitignore",
+      "bytes": 33,
+      "sha256": "8f60603e94f09a507a290056f9624d9c6d54f5a9e81dc5ca5a19161cdb9d8c0e"
+    },
+    {
+      "path": "apex-decks/package.json",
+      "bytes": 322,
+      "sha256": "696198939e0a0ed0a655b6e5f8ae3e699fb21903ed6a4be931ead2f3fa6f113a"
+    },
+    {
+      "path": "apex-decks/pitch-deck.js",
+      "bytes": 11782,
+      "sha256": "76ee903a906862120f433830192ffd12068bc929cd99f3724375e8ff6a61bcc1"
+    },
+    {
+      "path": "apex-decks/README.md",
+      "bytes": 3349,
+      "sha256": "b25aa2050818c4fb42a48f94488de1c59ab5fbcb10120e1ecec222b4b82baf05"
+    },
+    {
+      "path": "apex-decks/render.ps1",
+      "bytes": 1271,
+      "sha256": "e367fd506a299721f1d912d28fb327268f61b58f2f46b3621710cfdbeb34a93e"
+    },
+    {
+      "path": "apex-decks/strategy-deck.js",
+      "bytes": 40606,
+      "sha256": "d255ae6b96b2aa5adb86fc86a4c6b88770688163947cd6d62efbd1907122023d"
+    },
+    {
+      "path": "apex-handoff.md",
+      "bytes": 14242,
+      "sha256": "7998d76944eaf28673cffb19bc27673f543c2577d5d497936631cd4826160e8e"
+    },
+    {
+      "path": "apex-lead-engine/apex-lead-engine/.env.example",
+      "bytes": 2628,
+      "sha256": "26948b274dd190e04c77e61b5b526d94a706986b2c366dbcf0cfb4c07ac70d08"
+    },
+    {
+      "path": "apex-lead-engine/apex-lead-engine/.gitignore",
+      "bytes": 190,
+      "sha256": "91909e4a778b2242232bcdb3965f6f86440fdcbda3b4c3675220e35f3d0435c6"
+    },
+    {
+      "path": "apex-lead-engine/apex-lead-engine/CLAUDE.md",
+      "bytes": 4584,
+      "sha256": "9850b8fd3a854646d5146d4ba6086dbac00d230fb6db17acfb0a1f4ee82c3c18"
+    },
+    {
+      "path": "apex-lead-engine/apex-lead-engine/docs/acceptance-criteria.md",
+      "bytes": 3706,
+      "sha256": "d664d73bbd2e69b10a747faac33f3b0cb300133c906da89b4fe4fcaade5e1128"
+    },
+    {
+      "path": "apex-lead-engine/apex-lead-engine/docs/data-contract.md",
+      "bytes": 4358,
+      "sha256": "223ed4a80f6ccef08f64e4402ef8f6c22d383d02db9c93f2236a7502c16513e0"
+    },
+    {
+      "path": "apex-lead-engine/apex-lead-engine/docs/decisions.md",
+      "bytes": 3801,
+      "sha256": "0d0c98f2a368a48c197ce942be03ca3ed4a4a195fed0081c05b34c2b4eb58885"
+    },
+    {
+      "path": "apex-lead-engine/apex-lead-engine/docs/job-status-contract.md",
+      "bytes": 7185,
+      "sha256": "b029c55acaee2bebd1e53122438eb513028b34621f2e501d032157374eef2926"
+    },
+    {
+      "path": "apex-lead-engine/apex-lead-engine/docs/prd.md",
+      "bytes": 5537,
+      "sha256": "0da3c131b8cceb85583932c3b845bd1260fed1ce53264f76c8e6bae0a224da5b"
+    },
+    {
+      "path": "apex-lead-engine/apex-lead-engine/README.md",
+      "bytes": 1582,
+      "sha256": "eb7274911d7fb6d26a6519e11a595c453524682657a574f56fb75f0b9f590122"
+    },
+    {
+      "path": "apex-lead-engine/apex-lead-engine/setup/JobEvents.csv",
+      "bytes": 524,
+      "sha256": "d2c4f3187350baba3cce3a313d00e34daa3ffd5f33581751347180f62887a8b7"
+    },
+    {
+      "path": "apex-lead-engine/apex-lead-engine/workflows/01-intake.ts",
+      "bytes": 13413,
+      "sha256": "72c3745dfc73bed096dbb133ed4b43abd0b40c37247e43a3fad5009090482211"
+    },
+    {
+      "path": "apex-lead-engine/apex-lead-engine/workflows/02-job-status.ts",
+      "bytes": 14604,
+      "sha256": "c369ce27301617abe1f69bc55835e9b7ac0c421d6a2a236d01f9c32e42db3d5f"
+    },
+    {
+      "path": "apex-lead-engine/apex-lead-engine/workflows/fixtures/A-facebook-pool-consent-true.json",
+      "bytes": 654,
+      "sha256": "38c9ffe9b2a8f737956cbbe22b9bfdbfef27540185ad69cf373e028d9c83b208"
+    },
+    {
+      "path": "apex-lead-engine/apex-lead-engine/workflows/fixtures/B-direct-phone-only-consent-true.json",
+      "bytes": 581,
+      "sha256": "897bf085d287c6f185de3040fa68f947d189c39e3976996c3470b6c207b5837a"
+    },
+    {
+      "path": "apex-lead-engine/apex-lead-engine/workflows/fixtures/C-coating-consent-false.json",
+      "bytes": 498,
+      "sha256": "3462ce64b188b7bb0a6beb2ca2562de0193756bfdd592b8d4b6ba8869d01c4eb"
+    },
+    {
+      "path": "apex-lead-engine/apex-lead-engine/workflows/fixtures/D-duplicate-of-A.json",
+      "bytes": 654,
+      "sha256": "b607ac5400c0e3e60f5135784c17c1f5e4295a996c49fb050c4b72f5537f1445"
+    },
+    {
+      "path": "apex-lead-engine/apex-lead-engine/workflows/fixtures/E-malformed-empty-vertical.json",
+      "bytes": 501,
+      "sha256": "999ff8fd6701e1757430de28ecadc7fbfdf41cbddaebb5f3be8602cab93d33e0"
+    },
+    {
+      "path": "apex-lead-engine/apex-lead-engine/workflows/fixtures/F-job-won-with-lead-id.json",
+      "bytes": 564,
+      "sha256": "a5b5e06984ff2cece438360928b123aa3ada7b6c609c582386e62816ae4b35ed"
+    },
+    {
+      "path": "apex-lead-engine/apex-lead-engine/workflows/fixtures/G-job-complete-review-eligible.json",
+      "bytes": 548,
+      "sha256": "b8878ea78dbf06ff8d5c05c27ff4c0fb34371d8768ffbfd823b3820b4eba5e6d"
+    },
+    {
+      "path": "apex-lead-engine/apex-lead-engine/workflows/fixtures/H-job-won-no-lead-id.json",
+      "bytes": 665,
+      "sha256": "fca6d61041bf2e7e488aef6fade413fceed7ec3aca02d4cd92fb3a292591e9ef"
+    },
+    {
+      "path": "apex-lead-engine/apex-lead-engine/workflows/fixtures/I-duplicate-of-G.json",
+      "bytes": 624,
+      "sha256": "ed187954e471c1f3df0a38120fc45504229446c500e58fb75e2d0e6c9468cdd9"
+    },
+    {
+      "path": "apex-lead-engine/apex-lead-engine/workflows/fixtures/J-job-won-zero-value.json",
+      "bytes": 575,
+      "sha256": "e9b739ea7c994ec73deaee1139203ed85cdfa4976d99737dbc597910e811ca19"
+    },
+    {
+      "path": "apex-lead-engine/apex-lead-engine/workflows/README.md",
+      "bytes": 3783,
+      "sha256": "dfdbeb2ce1fecfee235e99dde5fae3bd742029a055810e1f61fd167819a46693"
+    },
+    {
+      "path": "apex-pitch.pptx",
+      "bytes": 147666,
+      "sha256": "1e2d7d4d0772aa9a7aee243b5c858290ce14987d97911e90f19afc57a6d3fa44"
+    },
+    {
+      "path": "apex-prds/apex-prds/00-foundation.md",
+      "bytes": 12653,
+      "sha256": "c8f0eef3a54d3f5853f48783f459e0051f1f5019dc29bd9f5dd302d923826f6b"
+    },
+    {
+      "path": "apex-prds/apex-prds/01-lead-capture-funnels.md",
+      "bytes": 11586,
+      "sha256": "f4993f489a970d1d60ab057ab011583a7359c60a704a8299d53b9b638f0eee2a"
+    },
+    {
+      "path": "apex-prds/apex-prds/02-proposal-takeoff-engine.md",
+      "bytes": 10747,
+      "sha256": "50c328bd3775c76be099f6b4fd27cb60c48aeb16a8cc8b05ae4e5d49ebdeeb52"
+    },
+    {
+      "path": "apex-prds/apex-prds/03-cost-capture-allocation.md",
+      "bytes": 1960,
+      "sha256": "87ace8e50fb7f0c332752da0952882fefcda274df6dcaf4460daaa438a13ea53"
+    },
+    {
+      "path": "apex-prds/apex-prds/04-commission-engine.md",
+      "bytes": 2352,
+      "sha256": "8a1d404d980df03d66d6cd780431a1f39a4733a09f11e38b84333c2c41d7f5ac"
+    },
+    {
+      "path": "apex-prds/apex-prds/05-crm-pipeline-analytics.md",
+      "bytes": 1958,
+      "sha256": "1a66044f0d6d6b5a39aeede6cebe330e8f1243339c77aeaf0c7b61ff80f2af11"
+    },
+    {
+      "path": "apex-prds/apex-prds/06-project-management.md",
+      "bytes": 16916,
+      "sha256": "c0ae551ece7f2d4cf5ab4a410f0657ce1c0f4691f50762d286441c711b47ef8f"
+    },
+    {
+      "path": "apex-prds/apex-prds/decision-register.md",
+      "bytes": 9815,
+      "sha256": "2075cdd39f8f497054a3c3650fe1faee76ddc12e97eb41e70a3dc91bef1f8a46"
+    },
+    {
+      "path": "apex-prds/apex-prds/README.md",
+      "bytes": 4157,
+      "sha256": "ccfc10787e60c201625e9660d81989d9face67611ce8903310e858953729a180"
+    },
+    {
+      "path": "apex-prds/apex-prds/reference/monday-jobs-board-spec.md",
+      "bytes": 7765,
+      "sha256": "b9925afee766b6b75b355cd7e3d3120f7f1d966c68285e9328870a9b0839bc36"
+    },
+    {
+      "path": "apex-prds/apex-prds/reference/whitaker-oasis-quantity-takeoff.md",
+      "bytes": 21025,
+      "sha256": "8a494ba5bed3903e45f29f440933cc9fc0634b71477557989c4412207584817a"
+    },
+    {
+      "path": "apex-proposal-engine/.gitignore",
+      "bytes": 40,
+      "sha256": "e59e0b2e5b7b054d318feb8a23b85e604ac6f9f89c5309e80ea83e08fa5ce264"
+    },
+    {
+      "path": "apex-proposal-engine/backtest.mjs",
+      "bytes": 5352,
+      "sha256": "02554131372b0c97cffd55c25c5fca4dd1d5d8d5915931e1efe9cbca9a5e1cf6"
+    },
+    {
+      "path": "apex-proposal-engine/calibrate.mjs",
+      "bytes": 3774,
+      "sha256": "c56f2cf3718fc8523d59dd8ac52747f3ff1a56fb5613dd0b1e26de196f7a6116"
+    },
+    {
+      "path": "apex-proposal-engine/crew.mjs",
+      "bytes": 5066,
+      "sha256": "4452f5e196d60603fcd8c7922c096b798968c40007dbe0a046b696a7468c3d13"
+    },
+    {
+      "path": "apex-proposal-engine/engine.mjs",
+      "bytes": 61780,
+      "sha256": "74d6d1c7dc417b37f74ee820bddc4b67979e07b3d3d64c7a33bb05e55d61c47b"
+    },
+    {
+      "path": "apex-proposal-engine/engine.test.mjs",
+      "bytes": 15548,
+      "sha256": "4eea57d5261e96765fa2b1aef3799bd4b0fb99f5d4ac443ac6b4336f93dc44a0"
+    },
+    {
+      "path": "apex-proposal-engine/index.html",
+      "bytes": 47000,
+      "sha256": "42e380cba4d13d58bfde8743c863d95cc17b7091c25d522ab7b6fc4603e1f947"
+    },
+    {
+      "path": "apex-proposal-engine/README.md",
+      "bytes": 11991,
+      "sha256": "b7d6ca8794dd14bbc020fc1f5681ba608a92c08a08b71624024fb4ed0d7d5aca"
+    },
+    {
+      "path": "apex-proposal-engine/report.mjs",
+      "bytes": 10802,
+      "sha256": "0778a73e5b889b44cbe2a20d62719a29bacb56382521f3f71e39296ccbb29584"
+    },
+    {
+      "path": "apex-proposal-engine/whitaker-actual.mjs",
+      "bytes": 4536,
+      "sha256": "7ed560eccdcd60d9ecf329a72fe54e503f622a41c1b27bf6f96d9929b7744be1"
+    },
+    {
+      "path": "apex-strategy-deck.pptx",
+      "bytes": 501884,
+      "sha256": "e24235a6b9ceeda064424f8ea22c0dce280ee3782ddaf0c6cf914803ca7045d8"
+    },
+    {
+      "path": "apex-system-diagram.png",
+      "bytes": 47310,
+      "sha256": "37cdfb73edf81ac60f30a3358503bf1bba1cd55b69d60caafb4178fefee7d749"
+    },
+    {
+      "path": "apex-website/apex-website/.env.example",
+      "bytes": 3200,
+      "sha256": "254a7ea1ddea5db00dba47692fda8cdf2577173e70bda3cc66fa400f81d23adf"
+    },
+    {
+      "path": "apex-website/apex-website/.gitignore",
+      "bytes": 486,
+      "sha256": "089492439724f0dc0a4ef76d0b9abe3aa4c0c3c01008a75906ce96f4e15bd3bc"
+    },
+    {
+      "path": "apex-website/apex-website/.hermes/desktop-attachments/gate-v3.jsx",
+      "bytes": 34178,
+      "sha256": "0c3e93ee5063c91add0c97cecf8e6e2623b448d685c24f1751800efb70634dd2"
+    },
+    {
+      "path": "apex-website/apex-website/astro.config.mjs",
+      "bytes": 788,
+      "sha256": "60771acf5306694a9884c47621a14f81ac2010043cf49d0d0038e6df3d39a3b2"
+    },
+    {
+      "path": "apex-website/apex-website/CLAUDE.md",
+      "bytes": 5802,
+      "sha256": "f2661b924ba8332f31046d40bfc057104100965d90efe4b1e4288935f2c713a8"
+    },
+    {
+      "path": "apex-website/apex-website/config/redirects.json",
+      "bytes": 2205,
+      "sha256": "40c6ebccae824c82c73b5d4499172cacd35108a55ead99a86f76e0279496755d"
+    },
+    {
+      "path": "apex-website/apex-website/docs/acceptance-criteria.md",
+      "bytes": 10871,
+      "sha256": "1f4fc992e1be5a7fac2111559db421c0d6bee0001cc776370235334b24b87eb9"
+    },
+    {
+      "path": "apex-website/apex-website/docs/data-contract.md",
+      "bytes": 4156,
+      "sha256": "90920323346d6e7d3d481aca05b6e573b659226a219d021a68e8f51890a70ce9"
+    },
+    {
+      "path": "apex-website/apex-website/docs/decisions.md",
+      "bytes": 5637,
+      "sha256": "2b8fd58ba6cabf848e60b8ba6d3ef230d612130fd1212e1951b509807af8f398"
+    },
+    {
+      "path": "apex-website/apex-website/docs/launch-checklist.md",
+      "bytes": 9449,
+      "sha256": "b859c759ed1ee67b4a8163466f8f29764a813915ed5944497b14aeaf5423534b"
+    },
+    {
+      "path": "apex-website/apex-website/docs/prd.md",
+      "bytes": 4819,
+      "sha256": "4710cb1d25cac0e1f8e0727fc4a921309e4419d0eb2d1a14365d7f6251dc0d96"
+    },
+    {
+      "path": "apex-website/apex-website/docs/redirect-map.md",
+      "bytes": 8123,
+      "sha256": "75f66128a570be95f72cf63bde5d8b1e3c91b75aed8feb06f89609b05c5f806e"
+    },
+    {
+      "path": "apex-website/apex-website/package-lock.json",
+      "bytes": 260965,
+      "sha256": "d5fffd539a58ff468290f194e7a6317b94679dd23997cb0a55d9c8eb9e196cf3"
+    },
+    {
+      "path": "apex-website/apex-website/package.json",
+      "bytes": 1084,
+      "sha256": "45969adf8705dc4a99b9e8a48f55f87b0f4986e6bbfbd97fccc41787d518d418"
+    },
+    {
+      "path": "apex-website/apex-website/public/favicon.svg",
+      "bytes": 563,
+      "sha256": "645d2ef46581393a4675508e35ee81ea237b8ce43f71029a345a185790d5c5d7"
+    },
+    {
+      "path": "apex-website/apex-website/README.md",
+      "bytes": 1469,
+      "sha256": "d52f7aee69569872989af81bc06ba067554a886df7567eb5c94a4c0e14a82fe1"
+    },
+    {
+      "path": "apex-website/apex-website/reference/apex-mockup.html",
+      "bytes": 37305,
+      "sha256": "802e40205f7103608534cc06a5390fa69a0fea9270d40e9b4f22b09a33e5cfb5"
+    },
+    {
+      "path": "apex-website/apex-website/scripts/check-images.mjs",
+      "bytes": 1978,
+      "sha256": "426810596d71f38751f22d103a260cb46fd4b3f5614dd458c1d8fbc3836d0e80"
+    },
+    {
+      "path": "apex-website/apex-website/scripts/generate-redirects.mjs",
+      "bytes": 7591,
+      "sha256": "e0c605ffb4f9653813505b672d300222a2293b26f4b8b9019c27b3067bbadf02"
+    },
+    {
+      "path": "apex-website/apex-website/scripts/preflight.mjs",
+      "bytes": 9818,
+      "sha256": "d0d24b4c5c3add3c1338c1474a789e525966601a23de989347442aeb16a45a6b"
+    },
+    {
+      "path": "apex-website/apex-website/scripts/verify-redirects.mjs",
+      "bytes": 7268,
+      "sha256": "78f622ebd4f56809f3a6a081dd186a75fe7a90e4f645c1d951f81311b4fd9bc9"
+    },
+    {
+      "path": "apex-website/apex-website/src/components/Analytics.astro",
+      "bytes": 2974,
+      "sha256": "3b1c4c14957ecb4066235710a90751a8331847522fbaf430d048154778ef2952"
+    },
+    {
+      "path": "apex-website/apex-website/src/components/AnalyticsNoscript.astro",
+      "bytes": 676,
+      "sha256": "bd635e275eef7cdfc9ef68826f2ac18ff4afbc2c50cd15a9cc66346ae8ceb6d3"
+    },
+    {
+      "path": "apex-website/apex-website/src/components/Faq.astro",
+      "bytes": 3325,
+      "sha256": "d08a7c9d65f98ab99e1cf2e043460600ef263a0a1099c38694b125498354e1bf"
+    },
+    {
+      "path": "apex-website/apex-website/src/components/Footer.astro",
+      "bytes": 2151,
+      "sha256": "8d49b67f311def72711de2845f0a75392cbd0e1325b5fe87d3655e59c6084235"
+    },
+    {
+      "path": "apex-website/apex-website/src/components/GuaranteeBand.astro",
+      "bytes": 371,
+      "sha256": "c0a2e2c0422d2f0f780763cffd183697f5b25226087f01d9c2b534ebe225ca0d"
+    },
+    {
+      "path": "apex-website/apex-website/src/components/Header.astro",
+      "bytes": 1045,
+      "sha256": "b7a607e3773bd87e6e45feb378c6152a7ed8727f4667111fd555449ca4dea1c0"
+    },
+    {
+      "path": "apex-website/apex-website/src/components/Hero.astro",
+      "bytes": 2730,
+      "sha256": "3bb3d3633c0f7758e082801bd039053d519bc98642ddf21f6138aedd091d7458"
+    },
+    {
+      "path": "apex-website/apex-website/src/components/ImageSlot.astro",
+      "bytes": 1978,
+      "sha256": "757440b6436fe2b242d14631dd75455638697f97576cb817a415bd2d403e4038"
+    },
+    {
+      "path": "apex-website/apex-website/src/components/LionMark.astro",
+      "bytes": 984,
+      "sha256": "988234348d9ce0605571cb3c9caa21eeb162963c94c55f4f4efa38d50aa60e10"
+    },
+    {
+      "path": "apex-website/apex-website/src/components/MoreVerticals.astro",
+      "bytes": 2597,
+      "sha256": "812f5e4ae2e71b2859f8cde0b14eb17c5107423eb6297cfc45ca4819f7c4537e"
+    },
+    {
+      "path": "apex-website/apex-website/src/components/Owner.astro",
+      "bytes": 769,
+      "sha256": "bec393d84cba182cd9763b1713f5f873e1c30964e1b44014ef25ab0fcdace652"
+    },
+    {
+      "path": "apex-website/apex-website/src/components/PoolsSection.astro",
+      "bytes": 2332,
+      "sha256": "1262ff8e7772db0baf1908a13354d9fa61cd3b69db97b57404db87d0e8619881"
+    },
+    {
+      "path": "apex-website/apex-website/src/components/QuoteForm.tsx",
+      "bytes": 9401,
+      "sha256": "8619dfcf3ec148cfa826517223ba0cbb38cf83be7b5e427bb9aabef3db15798c"
+    },
+    {
+      "path": "apex-website/apex-website/src/components/QuoteSection.astro",
+      "bytes": 3591,
+      "sha256": "a87a29f09d17186aacfae528bba0b82381b71717638574ab218079924a8e5728"
+    },
+    {
+      "path": "apex-website/apex-website/src/components/Testimonials.astro",
+      "bytes": 747,
+      "sha256": "b0a2cb4cc1e673e5d881965ddbd20515cbb31262d32ed1fb7889a738248d4187"
+    },
+    {
+      "path": "apex-website/apex-website/src/components/VerticalHero.astro",
+      "bytes": 3308,
+      "sha256": "c170a0a00069fbe2a6c78d19f672e0e62d22d159cb66fe5de8ac031bf6976e59"
+    },
+    {
+      "path": "apex-website/apex-website/src/content/images.ts",
+      "bytes": 4803,
+      "sha256": "8e70a3fd0b7e57a677e8fc7442f4436701c527618f9d917acd900656b3c82f84"
+    },
+    {
+      "path": "apex-website/apex-website/src/content/owner.ts",
+      "bytes": 690,
+      "sha256": "19a1024020c9a9d0a14ff473dc1b8e690974e69694d01a0c40fa9022ab0fb0bf"
+    },
+    {
+      "path": "apex-website/apex-website/src/content/pools.ts",
+      "bytes": 1915,
+      "sha256": "bb798be990215c3281e02d30c5421eed7d30bf042c084b963320b483457a8e9f"
+    },
+    {
+      "path": "apex-website/apex-website/src/content/router-tiles.ts",
+      "bytes": 2055,
+      "sha256": "a1b23fa7d919c3120984ec206ab6b77aed0ad1c8555f1cf098f16a2ddb683e8e"
+    },
+    {
+      "path": "apex-website/apex-website/src/content/service-cards.ts",
+      "bytes": 2190,
+      "sha256": "57431ec1c57a46fe77c4a014d2e3c99dd378493f2e3f52f0325bc0096198cc3c"
+    },
+    {
+      "path": "apex-website/apex-website/src/content/site-copy.ts",
+      "bytes": 2581,
+      "sha256": "099c2bd1243caf3b9fca323c069b154336bade02a194ad1dec47279d7a5980d8"
+    },
+    {
+      "path": "apex-website/apex-website/src/content/testimonials.ts",
+      "bytes": 1807,
+      "sha256": "8b956b11742072df909277b10d5b390a0837fe7774f04d7c223329c3355dc36b"
+    },
+    {
+      "path": "apex-website/apex-website/src/content/vertical-pages.ts",
+      "bytes": 11502,
+      "sha256": "0117ce8581c7a277de4120bcb6b2b2ea6d1fa36c42014999c231bdb1cbe8a7eb"
+    },
+    {
+      "path": "apex-website/apex-website/src/content/verticals.ts",
+      "bytes": 4388,
+      "sha256": "adde7896b2e7c901f787932dd30fa74691cc9b1c6afd4fe3f4acca4b41d85f13"
+    },
+    {
+      "path": "apex-website/apex-website/src/env.d.ts",
+      "bytes": 45,
+      "sha256": "cc719d1ef0609cd73ab9d19df5df62df8a3f84bed76b9e6b0ae1f669c67a1ff8"
+    },
+    {
+      "path": "apex-website/apex-website/src/layouts/BaseLayout.astro",
+      "bytes": 4723,
+      "sha256": "3c65d49d8f6a0fef0bb1a0610b65ea54d1ec2d4ea53fa4b22ba91f26d949ae34"
+    },
+    {
+      "path": "apex-website/apex-website/src/lib/analytics.ts",
+      "bytes": 3000,
+      "sha256": "c9404614d3165f551c1176a4b1922a19a7779b54789ea74a4f69c29b9d0f48a9"
+    },
+    {
+      "path": "apex-website/apex-website/src/lib/attribution.ts",
+      "bytes": 5723,
+      "sha256": "cae2509d1c0d720b75d994a7f06d2ace431d86aa09ba8ddca5d8d0fe4c00b340"
+    },
+    {
+      "path": "apex-website/apex-website/src/lib/lead-id.ts",
+      "bytes": 1830,
+      "sha256": "f39aee258a5df8193a9c58377c5ec79161a9a978f24b75817f9c49904fd3af77"
+    },
+    {
+      "path": "apex-website/apex-website/src/lib/lead.ts",
+      "bytes": 5306,
+      "sha256": "2035dc371844bb61c269873f7a2a6a54513e53dd8734ede5b95f1c02dd960780"
+    },
+    {
+      "path": "apex-website/apex-website/src/lib/seo.ts",
+      "bytes": 6431,
+      "sha256": "510663b3bbedefd826c5ad7abd081c2b3ed68ef5ccb8a7a0e466180592fa4e79"
+    },
+    {
+      "path": "apex-website/apex-website/src/lib/site.ts",
+      "bytes": 3841,
+      "sha256": "35972bc7bb5af1c50f40610e5f8c03dfe6ddefaba9a69dfb62e052800d88a30c"
+    },
+    {
+      "path": "apex-website/apex-website/src/pages/[vertical].astro",
+      "bytes": 5011,
+      "sha256": "da3bcf0837edf42b985874065f5816aee7f0d122981d4896ca67ceab4f531169"
+    },
+    {
+      "path": "apex-website/apex-website/src/pages/index.astro",
+      "bytes": 2116,
+      "sha256": "8ce31bfa3e39cc0e11cecf0f049567fb485cee0060139a5d06617f8871727ce7"
+    },
+    {
+      "path": "apex-website/apex-website/src/pages/robots.txt.ts",
+      "bytes": 1282,
+      "sha256": "f524fc7dcf6a8d2f1ed06c1ec8fc0b4797c075f95e90ae4690ad7e077a61e566"
+    },
+    {
+      "path": "apex-website/apex-website/src/pages/sitemap.xml.ts",
+      "bytes": 1992,
+      "sha256": "39c50f4182737716b6e7901a18d457becce59a3c89575e3e8ea4903eaa2e65ea"
+    },
+    {
+      "path": "apex-website/apex-website/src/styles/global.css",
+      "bytes": 20806,
+      "sha256": "51ab18ade8969110fee03284a1ce97851fe2124a0828e8f8359d161120423645"
+    },
+    {
+      "path": "apex-website/apex-website/tsconfig.json",
+      "bytes": 351,
+      "sha256": "a27717350f6b12b64a6ddaa84a62f4ddcf28cdd8e1332cdca854d519c8c108a6"
+    },
+    {
+      "path": "gate-v3.jsx",
+      "bytes": 34178,
+      "sha256": "0c3e93ee5063c91add0c97cecf8e6e2623b448d685c24f1751800efb70634dd2"
+    },
+    {
+      "path": "README.md",
+      "bytes": 3458,
+      "sha256": "91d54c9efec3caddb67c6b743474b4e44d1efed29c96ec93723d3ffe4ff23cb8"
+    },
+    {
+      "path": "SESSION-HANDOFF.md",
+      "bytes": 12458,
+      "sha256": "7436c85cdf9d2ad88d37af22baa2cac0b792e37c668bc1113a8c4bdf14f65f09"
+    }
+  ]
+}

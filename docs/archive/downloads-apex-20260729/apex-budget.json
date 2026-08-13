@@ -1,0 +1,209 @@
+{
+  "budgetByCode": [
+    {
+      "code": 200,
+      "name": "Excavation",
+      "extended": 6737,
+      "crewHours": 33.4
+    },
+    {
+      "code": 300,
+      "name": "Pool Equipment",
+      "extended": 9997,
+      "crewHours": 0
+    },
+    {
+      "code": 400,
+      "name": "Pool Shell Construction",
+      "extended": 17250,
+      "crewHours": 58.400000000000006
+    },
+    {
+      "code": 500,
+      "name": "Utilities",
+      "extended": 5252,
+      "crewHours": 0
+    },
+    {
+      "code": 600,
+      "name": "Lights",
+      "extended": 2000,
+      "crewHours": 0
+    },
+    {
+      "code": 700,
+      "name": "Pool Plumbing",
+      "extended": 8713,
+      "crewHours": 0
+    },
+    {
+      "code": 800,
+      "name": "Pool Finishes",
+      "extended": 20879,
+      "crewHours": 27
+    },
+    {
+      "code": 900,
+      "name": "Cover",
+      "extended": 15000,
+      "crewHours": 0
+    },
+    {
+      "code": 1000,
+      "name": "Pool Deck",
+      "extended": 5450,
+      "crewHours": 18
+    },
+    {
+      "code": 1100,
+      "name": "Water Features",
+      "extended": 1000,
+      "crewHours": 0
+    },
+    {
+      "code": 1200,
+      "name": "Automation",
+      "extended": 0,
+      "crewHours": 0
+    },
+    {
+      "code": 1300,
+      "name": "Additional Upgrades",
+      "extended": 0,
+      "crewHours": 0
+    }
+  ],
+  "jobCost": 104278,
+  "pricing": {
+    "cost": 104278,
+    "feeRate": 0.3,
+    "fee": 31283.4,
+    "revenue": 135561.4,
+    "grossProfit": 31283.4,
+    "trueMargin": 0.23076923076923078,
+    "trueMarginPct": 23.08
+  },
+  "hours": {
+    "crewHours": 136.8,
+    "supervisionHours": 33.8,
+    "totalHours": 170.6,
+    "buildWeeks": 7.5
+  },
+  "schedule": {
+    "phases": [
+      {
+        "name": "Layout & permit",
+        "days": 1,
+        "crewDays": 0.5,
+        "resource": "crew",
+        "lag": 7,
+        "lagWhy": "permit issuance"
+      },
+      {
+        "name": "Excavation",
+        "days": 2.12,
+        "crewDays": 0.25,
+        "resource": "sub",
+        "lag": 0
+      },
+      {
+        "name": "Steel",
+        "days": 0,
+        "resource": "crew",
+        "lag": 0,
+        "crewDays": 0
+      },
+      {
+        "name": "Plumbing rough",
+        "days": 2,
+        "resource": "crew",
+        "lag": 2,
+        "lagWhy": "pre-gunite inspection",
+        "crewDays": 2
+      },
+      {
+        "name": "Gunite",
+        "days": 1,
+        "crewDays": 0.5,
+        "resource": "sub",
+        "lag": 10,
+        "lagWhy": "shell cure (wet-down window)"
+      },
+      {
+        "name": "Tile & coping",
+        "days": 2.68,
+        "resource": "crew",
+        "lag": 0,
+        "crewDays": 2.68
+      },
+      {
+        "name": "Deck",
+        "days": 1.15,
+        "crewDays": 0.25,
+        "resource": "sub",
+        "lag": 5,
+        "lagWhy": "deck cure"
+      },
+      {
+        "name": "Equipment & electrical",
+        "days": 3,
+        "crewDays": 2,
+        "resource": "split",
+        "lag": 0
+      },
+      {
+        "name": "Plaster",
+        "days": 1,
+        "resource": "crew",
+        "lag": 0,
+        "crewDays": 1
+      },
+      {
+        "name": "Fill & startup",
+        "days": 5.5,
+        "crewDays": 1.5,
+        "resource": "crew",
+        "lag": 0
+      },
+      {
+        "name": "Punch & handover",
+        "days": 1,
+        "resource": "crew",
+        "lag": 0,
+        "crewDays": 1
+      }
+    ],
+    "workingDays": 20.5,
+    "lagDays": 24,
+    "crewDays": 11.7,
+    "subDays": 4.3,
+    "calendarDays": 52.6,
+    "buildWeeks": 7.5,
+    "note": "Derived from quantities + fixed cure/inspection lags. Excludes the Lubbock freeze season — gunite cannot be shot in freezing weather (ref §0/§5.5), which closes the calendar seasonally."
+  },
+  "coverage": {
+    "basis": "modelled job cost",
+    "denominator": 104278,
+    "parametric": 59281,
+    "direct": 32997,
+    "allowance": 12000,
+    "residual": 0,
+    "unmodelled": 0,
+    "parametricPct": 56.8,
+    "directPct": 31.6,
+    "allowancePct": 11.5,
+    "residualPct": 0,
+    "unmodelledPct": 0,
+    "unsubstantiatedPct": 11.5,
+    "unpricedDirectLines": [
+      "Automation",
+      "Additional Upgrades"
+    ]
+  },
+  "leverB": {
+    "gated": true,
+    "billableTotal": 10681,
+    "revenueUplift": 13885
+  },
+  "generated": "apex-proposal-engine"
+}

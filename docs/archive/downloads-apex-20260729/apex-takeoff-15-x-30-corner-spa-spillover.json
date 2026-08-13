@@ -1,0 +1,942 @@
+{
+  "engineVersion": "designer-0.1.0",
+  "quantityModelVersion": "designer-quantity-v4",
+  "jobModel": {
+    "name": "15 x 30 — corner spa, spillover",
+    "jurisdiction": "Lubbock, TX",
+    "pool": {
+      "lengthFt": 30,
+      "widthFt": 15,
+      "profile": {
+        "shallowRun": 10,
+        "transitionRun": 14,
+        "deepRun": 6,
+        "shallowDepth": 3.5,
+        "deepDepth": 6
+      },
+      "steps": [
+        {
+          "id": "S1",
+          "treadCount": 4,
+          "treadRunIn": 12,
+          "treadWidthIn": 72,
+          "riserHeightsIn": [
+            8,
+            10,
+            10,
+            10,
+            10
+          ],
+          "floorDepthFt": 3.5,
+          "isRequiredEntryExit": true,
+          "placement": {
+            "wall": "shallow",
+            "alongFt": 6
+          }
+        }
+      ],
+      "seats": [
+        {
+          "id": "B1",
+          "kind": "bench",
+          "depthBelowWaterlineIn": 18,
+          "surfaceDepthIn": 16,
+          "surfaceWidthIn": 96,
+          "leadingEdgeLengthFt": 8,
+          "floorDepthFt": 4.5,
+          "isRequiredEntryExit": false,
+          "placement": {
+            "wall": "bottom",
+            "alongFt": 16.5
+          }
+        }
+      ]
+    },
+    "spa": {
+      "lengthFt": 6,
+      "widthFt": 6,
+      "depthFt": 3.5,
+      "damWallHeightFt": 1.5,
+      "damWallThicknessIn": 6,
+      "attachedToPool": true,
+      "insetIntoPool": true,
+      "jetCount": 6
+    },
+    "site": {
+      "distanceToFoundationFt": 8,
+      "foundationDescription": "house slab foundation"
+    },
+    "excavation": {
+      "shellThicknessFt": 0.5,
+      "bondBeamFormOffsetFt": 1,
+      "bondBeamDepthFt": 1,
+      "freeboardFt": 0.5,
+      "truckCapacityLcy": 12,
+      "soilLayers": [
+        {
+          "name": "Lubbock profile — loam over caliche",
+          "topDepthFt": 0,
+          "thicknessFt": null,
+          "swellFactor": 0.25,
+          "compactionYield": 0.87,
+          "source": "Swell 25%: builder's field figure for Lubbock. Compaction yield 0.87 is assumed and has not been measured."
+        }
+      ]
+    },
+    "hydraulics": {
+      "turnoverHours": 8,
+      "mainDrains": {
+        "count": 2,
+        "separationFt": 3,
+        "onDifferentSurfaces": false
+      },
+      "runs": [
+        {
+          "id": "MD-A",
+          "label": "Main drain branch A",
+          "role": "suction-branch",
+          "lengthFt": 12,
+          "fittings": [
+            {
+              "kind": "90-ell",
+              "count": 2
+            }
+          ],
+          "flowBasis": {
+            "dividedBy": 2
+          }
+        },
+        {
+          "id": "MD-B",
+          "label": "Main drain branch B",
+          "role": "suction-branch",
+          "lengthFt": 14,
+          "fittings": [
+            {
+              "kind": "90-ell",
+              "count": 2
+            }
+          ],
+          "flowBasis": {
+            "dividedBy": 2
+          }
+        },
+        {
+          "id": "MD-TRUNK",
+          "label": "Main drain trunk to pad",
+          "role": "suction-trunk",
+          "lengthFt": 40,
+          "fittings": [
+            {
+              "kind": "90-ell",
+              "count": 3
+            },
+            {
+              "kind": "ball-valve",
+              "count": 1
+            }
+          ],
+          "flowBasis": "full-system"
+        },
+        {
+          "id": "SKIM-1",
+          "label": "Skimmer 1",
+          "role": "skimmer",
+          "lengthFt": 45,
+          "fittings": [
+            {
+              "kind": "90-ell",
+              "count": 3
+            },
+            {
+              "kind": "ball-valve",
+              "count": 1
+            }
+          ],
+          "flowBasis": {
+            "dividedBy": 2
+          }
+        },
+        {
+          "id": "SKIM-2",
+          "label": "Skimmer 2",
+          "role": "skimmer",
+          "lengthFt": 52,
+          "fittings": [
+            {
+              "kind": "90-ell",
+              "count": 4
+            },
+            {
+              "kind": "ball-valve",
+              "count": 1
+            }
+          ],
+          "flowBasis": {
+            "dividedBy": 2
+          }
+        },
+        {
+          "id": "RET-TRUNK",
+          "label": "Return trunk from pad",
+          "role": "return-trunk",
+          "lengthFt": 35,
+          "fittings": [
+            {
+              "kind": "90-ell",
+              "count": 2
+            },
+            {
+              "kind": "check-valve",
+              "count": 1
+            }
+          ],
+          "flowBasis": "full-system"
+        },
+        {
+          "id": "RET-1",
+          "label": "Return branch 1",
+          "role": "return-branch",
+          "lengthFt": 18,
+          "fittings": [
+            {
+              "kind": "90-ell",
+              "count": 2
+            }
+          ],
+          "flowBasis": {
+            "dividedBy": 4
+          }
+        },
+        {
+          "id": "RET-2",
+          "label": "Return branch 2",
+          "role": "return-branch",
+          "lengthFt": 24,
+          "fittings": [
+            {
+              "kind": "90-ell",
+              "count": 2
+            }
+          ],
+          "flowBasis": {
+            "dividedBy": 4
+          }
+        },
+        {
+          "id": "RET-3",
+          "label": "Return branch 3",
+          "role": "return-branch",
+          "lengthFt": 30,
+          "fittings": [
+            {
+              "kind": "90-ell",
+              "count": 3
+            }
+          ],
+          "flowBasis": {
+            "dividedBy": 4
+          }
+        },
+        {
+          "id": "RET-4",
+          "label": "Return branch 4",
+          "role": "return-branch",
+          "lengthFt": 26,
+          "fittings": [
+            {
+              "kind": "90-ell",
+              "count": 2
+            }
+          ],
+          "flowBasis": {
+            "dividedBy": 4
+          }
+        },
+        {
+          "id": "SPA-JETS",
+          "label": "Spa jet supply",
+          "role": "spa-jet",
+          "lengthFt": 30,
+          "fittings": [
+            {
+              "kind": "90-ell",
+              "count": 4
+            }
+          ],
+          "flowBasis": "full-system"
+        },
+        {
+          "id": "SPA-SUCTION",
+          "label": "Spa suction",
+          "role": "suction-branch",
+          "lengthFt": 22,
+          "fittings": [
+            {
+              "kind": "90-ell",
+              "count": 3
+            }
+          ],
+          "flowBasis": {
+            "dividedBy": 2
+          }
+        },
+        {
+          "id": "SPA-RETURN",
+          "label": "Spa return",
+          "role": "return-branch",
+          "lengthFt": 20,
+          "fittings": [
+            {
+              "kind": "90-ell",
+              "count": 2
+            }
+          ],
+          "flowBasis": {
+            "dividedBy": 4
+          }
+        }
+      ],
+      "equipmentLosses": [
+        {
+          "label": "Filter",
+          "headFt": 8,
+          "atGpm": 60,
+          "source": "PLACEHOLDER — not read from a product curve"
+        },
+        {
+          "label": "Heater",
+          "headFt": 4,
+          "atGpm": 60,
+          "source": "PLACEHOLDER — not read from a product curve"
+        },
+        {
+          "label": "Valves and pad fittings",
+          "headFt": 3,
+          "atGpm": 60,
+          "source": "PLACEHOLDER — not read from a product curve"
+        }
+      ],
+      "staticLiftFt": 2,
+      "hydrostaticReliefValves": 1
+    },
+    "finishes": {
+      "waterlineBandHeightIn": 6,
+      "copingUnitLengthIn": 12,
+      "copingWidthIn": 12,
+      "contrastStripeHeightIn": 1,
+      "tileWaste": 0.1,
+      "copingWaste": 0.05,
+      "plasterWaste": 0.05
+    },
+    "deck": {
+      "outline": {
+        "xFt": -4,
+        "yFt": -4,
+        "widthFt": 38,
+        "heightFt": 23
+      },
+      "slopeInPerFt": 0.25,
+      "tableMinimumSlopeInPerFt": 0.25,
+      "deckMaterial": "broom-finish concrete",
+      "usesPerformancePath": false,
+      "deckDrainLengthFt": 45,
+      "gradeTransitions": 2
+    },
+    "equipment": {
+      "distanceFromPoolFt": 30,
+      "padItems": [
+        {
+          "label": "Pump",
+          "widthFt": 2,
+          "depthFt": 1.5,
+          "clearanceFt": 1
+        },
+        {
+          "label": "Filter",
+          "widthFt": 2,
+          "depthFt": 2,
+          "clearanceFt": 1
+        },
+        {
+          "label": "Heater",
+          "widthFt": 2.5,
+          "depthFt": 2.5,
+          "clearanceFt": 1.5
+        },
+        {
+          "label": "Automation panel",
+          "widthFt": 1.5,
+          "depthFt": 0.75,
+          "clearanceFt": 1
+        }
+      ],
+      "actuatedValves": 3,
+      "manualValves": 6
+    }
+  },
+  "quantities": [
+    {
+      "code": "pool.water-volume",
+      "value": 14775.496387857143,
+      "unit": "gal",
+      "calcId": "geom.total.volumeGal"
+    },
+    {
+      "code": "pool.wetted-area",
+      "value": 978.1552731332519,
+      "unit": "sf",
+      "calcId": "geom.total.wettedArea"
+    },
+    {
+      "code": "pool.waterline-perimeter",
+      "value": 114,
+      "unit": "ft",
+      "calcId": "geom.total.waterlinePerimeter"
+    },
+    {
+      "code": "excavation.bank-volume",
+      "value": 104.44444444444444,
+      "unit": "BCY",
+      "calcId": "exc.totalBank"
+    },
+    {
+      "code": "excavation.loose-volume",
+      "value": 130.55555555555554,
+      "unit": "LCY",
+      "calcId": "exc.totalLoose"
+    },
+    {
+      "code": "excavation.spoil-haul-volume",
+      "value": 111.6259081065376,
+      "unit": "LCY",
+      "calcId": "exc.spoilHaul"
+    },
+    {
+      "code": "shell.gunite-ordered-volume",
+      "value": 21.132782051294562,
+      "unit": "cy",
+      "calcId": "str.gunite.cy"
+    },
+    {
+      "code": "shell.reinforcing-steel-weight",
+      "value": 1081.962859237723,
+      "unit": "lb",
+      "calcId": "str.bar.weight"
+    },
+    {
+      "code": "shell.forming-perimeter",
+      "value": 98,
+      "unit": "ft",
+      "calcId": "exc.bondBeam.formPerimeter"
+    },
+    {
+      "code": "utilities.bonding-conductor-length",
+      "value": 238,
+      "unit": "lf",
+      "calcId": "electrical.bonding.conductorLength"
+    },
+    {
+      "code": "finishes.plaster-net-area",
+      "value": 978.1552731332519,
+      "unit": "sf",
+      "calcId": "fin.plaster.net"
+    },
+    {
+      "code": "finishes.plaster-ordered-area",
+      "value": 1027.0630367899143,
+      "unit": "sf",
+      "calcId": "fin.plaster.ordered"
+    },
+    {
+      "code": "finishes.tile-net-length",
+      "value": 114,
+      "unit": "lf",
+      "calcId": "fin.tile.net"
+    },
+    {
+      "code": "finishes.tile-ordered-area",
+      "value": 62.70000000000001,
+      "unit": "sf",
+      "calcId": "fin.tile.sf"
+    },
+    {
+      "code": "finishes.coping-ordered-length",
+      "value": 119.7,
+      "unit": "lf",
+      "calcId": "fin.coping.ordered"
+    },
+    {
+      "code": "yard.deck-area",
+      "value": 424,
+      "unit": "sf",
+      "calcId": "yard.deckArea"
+    },
+    {
+      "code": "plumbing.developed-run-length",
+      "value": 368,
+      "unit": "lf",
+      "calcId": "hyd.runs.developedLength"
+    }
+  ],
+  "calcLedger": [
+    {
+      "id": "geom.total.volumeGal",
+      "label": "Total water volume",
+      "formula": "V_gal = V_cf x 7.48052",
+      "inputs": [
+        {
+          "symbol": "V_cf",
+          "label": "Total water volume",
+          "value": 1975.1964285714287,
+          "unit": "cf"
+        },
+        {
+          "symbol": "k",
+          "label": "US gallons per cubic foot",
+          "value": 7.48052,
+          "unit": "gal/cf"
+        }
+      ],
+      "value": 14775.496387857143,
+      "unit": "gal",
+      "notes": [
+        "Root input for every hydraulic calculation downstream."
+      ]
+    },
+    {
+      "id": "geom.total.wettedArea",
+      "label": "Total wetted surface area (plaster basis)",
+      "formula": "A = A_pool + A_spa",
+      "inputs": [
+        {
+          "symbol": "A_pool",
+          "label": "Pool wetted surface area",
+          "value": 858.1552731332519,
+          "unit": "sf"
+        },
+        {
+          "symbol": "A_spa",
+          "label": "Spa wetted surface area",
+          "value": 120,
+          "unit": "sf"
+        }
+      ],
+      "value": 978.1552731332519,
+      "unit": "sf"
+    },
+    {
+      "id": "geom.total.waterlinePerimeter",
+      "label": "Waterline perimeter (tile basis)",
+      "formula": "P_wl = P_pool + P_spa",
+      "inputs": [
+        {
+          "symbol": "P_pool",
+          "label": "Pool perimeter",
+          "value": 90,
+          "unit": "ft"
+        },
+        {
+          "symbol": "P_spa",
+          "label": "Spa perimeter",
+          "value": 24,
+          "unit": "ft"
+        }
+      ],
+      "value": 114,
+      "unit": "ft",
+      "notes": [
+        "Spa is attached to the pool; the shared dam wall is counted on both bodies and must be deducted once in the finishes takeoff."
+      ]
+    },
+    {
+      "id": "exc.totalBank",
+      "label": "Total bank volume, all layers",
+      "formula": "BCY_tot = SUM(BCY_layer)",
+      "inputs": [
+        {
+          "symbol": "BCY_1",
+          "label": "Lubbock profile — loam over caliche",
+          "value": 104.44444444444444,
+          "unit": "BCY"
+        }
+      ],
+      "value": 104.44444444444444,
+      "unit": "BCY",
+      "notes": [
+        "Every layer includes the 6 in full-depth shell excavation plus the 12 in bond-beam-only offset within the top bond-beam depth."
+      ]
+    },
+    {
+      "id": "exc.totalLoose",
+      "label": "Total loose volume, all layers",
+      "formula": "LCY_tot = SUM(LCY_layer)",
+      "inputs": [
+        {
+          "symbol": "LCY_1",
+          "label": "Lubbock profile — loam over caliche",
+          "value": 130.55555555555554,
+          "unit": "LCY"
+        }
+      ],
+      "value": 130.55555555555554,
+      "unit": "LCY",
+      "notes": [
+        "Loose totals are additive only because each layer was swelled with its own factor first."
+      ]
+    },
+    {
+      "id": "exc.spoilHaul",
+      "label": "Spoil to haul off",
+      "formula": "LCY_haul = LCY_tot - LCY_bf",
+      "inputs": [
+        {
+          "symbol": "LCY_tot",
+          "label": "Total loose volume, all layers",
+          "value": 130.55555555555554,
+          "unit": "LCY"
+        },
+        {
+          "symbol": "LCY_bf",
+          "label": "Loose volume consumed as backfill",
+          "value": 18.929647449017956,
+          "unit": "LCY"
+        }
+      ],
+      "value": 111.6259081065376,
+      "unit": "LCY",
+      "notes": [
+        "Backfill balance is figured in compacted volume; haul is figured in loose volume."
+      ]
+    },
+    {
+      "id": "str.gunite.cy",
+      "label": "Gunite order quantity",
+      "formula": "CY = V_ord / 27",
+      "inputs": [
+        {
+          "symbol": "V_ord",
+          "label": "Gunite, net in place (4000 psi) — order quantity",
+          "value": 570.5851153849532,
+          "unit": "cf"
+        },
+        {
+          "symbol": "k",
+          "label": "Cubic feet per cubic yard",
+          "value": 27,
+          "unit": "cf/cy"
+        }
+      ],
+      "value": 21.132782051294562,
+      "unit": "cy",
+      "notes": [
+        "Rebound and overspray are the waste line above, never folded into the net volume."
+      ]
+    },
+    {
+      "id": "str.bar.weight",
+      "label": "Reinforcement weight",
+      "formula": "w = (LF_shell x w_shell) + (LF_bb x w_bb)",
+      "inputs": [
+        {
+          "symbol": "LF_shell",
+          "label": "Shell reinforcement #3 at 12 in o.c. each way",
+          "value": 2237.986327759902,
+          "unit": "lf"
+        },
+        {
+          "symbol": "w_shell",
+          "label": "#3 unit weight",
+          "value": 0.376,
+          "unit": "lb/ft"
+        },
+        {
+          "symbol": "LF_bb",
+          "label": "Bond beam continuous #4",
+          "value": 360,
+          "unit": "lf"
+        },
+        {
+          "symbol": "w_bb",
+          "label": "#4 unit weight",
+          "value": 0.668,
+          "unit": "lb/ft"
+        }
+      ],
+      "value": 1081.962859237723,
+      "unit": "lb",
+      "notes": [
+        "Shell is #3 and the bond beam is #4, so each is weighed on its own unit weight."
+      ]
+    },
+    {
+      "id": "exc.bondBeam.formPerimeter",
+      "label": "Bond-beam form perimeter",
+      "formula": "P_form = P_exc,bond-beam",
+      "inputs": [
+        {
+          "symbol": "L",
+          "label": "Finished pool length",
+          "value": 30,
+          "unit": "ft"
+        },
+        {
+          "symbol": "W",
+          "label": "Finished pool width",
+          "value": 15,
+          "unit": "ft"
+        },
+        {
+          "symbol": "o_bb",
+          "label": "Bond-beam form offset from finished waterline",
+          "value": 1,
+          "unit": "ft"
+        }
+      ],
+      "value": 98,
+      "unit": "ft",
+      "notes": [
+        "Measures the outer form line at the 12 in bond-beam offset. An externally attached spa adds its two outward side runs; the shared wall and far wall replace equal lengths."
+      ]
+    },
+    {
+      "id": "electrical.bonding.conductorLength",
+      "label": "Bonding conductor developed length",
+      "formula": "LF = P_waterline + LF_offset + LF_jumpers",
+      "inputs": [
+        {
+          "symbol": "P_waterline",
+          "label": "Waterline perimeter",
+          "value": 114,
+          "unit": "lf"
+        },
+        {
+          "symbol": "LF_offset",
+          "label": "Perimeter-offset allowance",
+          "value": 24,
+          "unit": "lf"
+        },
+        {
+          "symbol": "LF_jumpers",
+          "label": "Equipment and component jumpers",
+          "value": 100,
+          "unit": "lf"
+        }
+      ],
+      "value": 238,
+      "unit": "lf",
+      "source": "NEC 680.26 bonding layout basis"
+    },
+    {
+      "id": "fin.plaster.net",
+      "label": "Plaster, net",
+      "formula": "SF = A_wet",
+      "inputs": [
+        {
+          "symbol": "A_wet",
+          "label": "Total wetted surface area (plaster basis)",
+          "value": 978.1552731332519,
+          "unit": "sf"
+        }
+      ],
+      "value": 978.1552731332519,
+      "unit": "sf",
+      "notes": [
+        "Wetted surface area from the geometry module, floor measured on the slope."
+      ]
+    },
+    {
+      "id": "fin.plaster.ordered",
+      "label": "Plaster, net — order quantity",
+      "formula": "Q_ord = Q_net + W",
+      "inputs": [
+        {
+          "symbol": "Q_net",
+          "label": "Plaster, net",
+          "value": 978.1552731332519,
+          "unit": "sf"
+        },
+        {
+          "symbol": "W",
+          "label": "Plaster, net — waste allowance",
+          "value": 48.907763656662596,
+          "unit": "sf"
+        }
+      ],
+      "value": 1027.0630367899143,
+      "unit": "sf"
+    },
+    {
+      "id": "fin.tile.net",
+      "label": "Waterline tile, net",
+      "formula": "LF = P_wl",
+      "inputs": [
+        {
+          "symbol": "P_wl",
+          "label": "Waterline perimeter (tile basis)",
+          "value": 114,
+          "unit": "ft"
+        }
+      ],
+      "value": 114,
+      "unit": "lf"
+    },
+    {
+      "id": "fin.tile.sf",
+      "label": "Waterline tile area, order quantity",
+      "formula": "SF = LF_ord x h / 12",
+      "inputs": [
+        {
+          "symbol": "LF_ord",
+          "label": "Waterline tile, net — order quantity",
+          "value": 125.4,
+          "unit": "lf"
+        },
+        {
+          "symbol": "h",
+          "label": "Waterline band height",
+          "value": 6,
+          "unit": "in"
+        }
+      ],
+      "value": 62.70000000000001,
+      "unit": "sf"
+    },
+    {
+      "id": "fin.coping.ordered",
+      "label": "Coping, net — order quantity",
+      "formula": "Q_ord = Q_net + W",
+      "inputs": [
+        {
+          "symbol": "Q_net",
+          "label": "Coping, net",
+          "value": 114,
+          "unit": "lf"
+        },
+        {
+          "symbol": "W",
+          "label": "Coping, net — waste allowance",
+          "value": 5.7,
+          "unit": "lf"
+        }
+      ],
+      "value": 119.7,
+      "unit": "lf"
+    },
+    {
+      "id": "yard.deckArea",
+      "label": "Deck area",
+      "formula": "A_deck = A_slab - A_standing-in-it",
+      "inputs": [
+        {
+          "symbol": "A_slab",
+          "label": "Slab as drawn",
+          "value": 874,
+          "unit": "sf"
+        },
+        {
+          "symbol": "A_standing-in-it",
+          "label": "Water and attached spa inside the slab",
+          "value": 450,
+          "unit": "sf"
+        }
+      ],
+      "value": 424,
+      "unit": "sf",
+      "notes": [
+        "The slab as drawn, less everything standing in it. Each obstruction is clipped to the slab first, so a spa that overhangs the concrete only removes the part actually inside it.",
+        "Patios, walks and pad slabs outside this outline are separate takeoffs."
+      ]
+    },
+    {
+      "id": "hyd.runs.developedLength",
+      "label": "Developed plumbing run length",
+      "formula": "LF = SUM(run layout lengths)",
+      "inputs": [
+        {
+          "symbol": "MD-A",
+          "label": "Main drain branch A",
+          "value": 12,
+          "unit": "lf"
+        },
+        {
+          "symbol": "MD-B",
+          "label": "Main drain branch B",
+          "value": 14,
+          "unit": "lf"
+        },
+        {
+          "symbol": "MD-TRUNK",
+          "label": "Main drain trunk to pad",
+          "value": 40,
+          "unit": "lf"
+        },
+        {
+          "symbol": "SKIM-1",
+          "label": "Skimmer 1",
+          "value": 45,
+          "unit": "lf"
+        },
+        {
+          "symbol": "SKIM-2",
+          "label": "Skimmer 2",
+          "value": 52,
+          "unit": "lf"
+        },
+        {
+          "symbol": "RET-TRUNK",
+          "label": "Return trunk from pad",
+          "value": 35,
+          "unit": "lf"
+        },
+        {
+          "symbol": "RET-1",
+          "label": "Return branch 1",
+          "value": 18,
+          "unit": "lf"
+        },
+        {
+          "symbol": "RET-2",
+          "label": "Return branch 2",
+          "value": 24,
+          "unit": "lf"
+        },
+        {
+          "symbol": "RET-3",
+          "label": "Return branch 3",
+          "value": 30,
+          "unit": "lf"
+        },
+        {
+          "symbol": "RET-4",
+          "label": "Return branch 4",
+          "value": 26,
+          "unit": "lf"
+        },
+        {
+          "symbol": "SPA-JETS",
+          "label": "Spa jet supply",
+          "value": 30,
+          "unit": "lf"
+        },
+        {
+          "symbol": "SPA-SUCTION",
+          "label": "Spa suction",
+          "value": 22,
+          "unit": "lf"
+        },
+        {
+          "symbol": "SPA-RETURN",
+          "label": "Spa return",
+          "value": 20,
+          "unit": "lf"
+        }
+      ],
+      "value": 368,
+      "unit": "lf",
+      "notes": [
+        "Physical layout lengths only. Hydraulic fitting equivalent length is not purchasing footage."
+      ]
+    }
+  ]
+}

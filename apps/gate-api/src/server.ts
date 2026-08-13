@@ -122,6 +122,11 @@ const MoveVisitSchema = z.strictObject({
   reason: z.string().min(1).max(2000).optional(),
 });
 
+const UpdateTargetSchema = z.strictObject({
+  targetCompletionStart: DaySchema.nullable(),
+  targetCompletionEnd: DaySchema.nullable(),
+});
+
 /** Confirming an invoice records what a human did in the accounting system. */
 /** Null clears the assignment: taking somebody off a job is a real intention. */
 const AssignSuperintendentSchema = z.strictObject({
@@ -174,6 +179,18 @@ const RaiseDecisionSchema = z.strictObject({
   neededBy: DaySchema.optional(),
 });
 
+const ManualProjectIntakeSchema = z.strictObject({
+  customerName: z.string().trim().min(1).max(200),
+  streetAddress: z.string().trim().min(1).max(240),
+  city: z.string().trim().min(1).max(100),
+  state: z.string().trim().length(2).transform((value) => value.toUpperCase()),
+  postalCode: z.string().trim().min(5).max(20),
+  phone: z.string().trim().max(40).optional(),
+  email: z.string().trim().email().max(240).optional(),
+  referralSource: z.string().trim().max(200).optional(),
+  notes: z.string().trim().max(2000).optional(),
+});
+
 const ResolveDecisionSchema = z.strictObject({
   status: z.enum(['answered', 'withdrawn']),
   answerNote: z.string().min(1).max(2000).optional(),
@@ -203,7 +220,7 @@ const CUSTOMER_HEADERS = {
   'content-security-policy': "default-src 'none'; style-src 'self'; img-src 'self'; "
     + "base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
 } as const;
-const publicDirectory = resolve(dirname(fileURLToPath(import.meta.url)), '../public');
+
 
 const matchesDeclaredMimeType = (content: Buffer, mimeType: string) => {
   switch (mimeType) {
@@ -291,7 +308,13 @@ interface GateApiOptions {
 
 const sendJson = (response: ServerResponse, status: number, value: unknown) => {
   const body = JSON.stringify(value);
-  response.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'content-length': Buffer.byteLength(body) });
+  response.writeHead(status, {
+    'access-control-allow-origin': 'http://localhost:5173',
+    'access-control-allow-methods': 'GET,POST,OPTIONS',
+    'access-control-allow-headers': 'authorization,content-type,idempotency-key',
+    'content-type': 'application/json; charset=utf-8',
+    'content-length': Buffer.byteLength(body),
+  });
   response.end(body);
 };
 
@@ -574,6 +597,14 @@ export function createGateApi(options: GateApiOptions) {
        * a platform restarting the container because the database blipped would
        * turn a recoverable outage into a crash loop.
        */
+      if (request.method === 'OPTIONS') {
+        response.writeHead(204, {
+          'access-control-allow-origin': 'http://localhost:5173',
+          'access-control-allow-methods': 'GET,POST,OPTIONS',
+          'access-control-allow-headers': 'authorization,content-type,idempotency-key',
+        });
+        return response.end();
+      }
       if (request.method === 'GET' && url.pathname === '/health') {
         return sendJson(response, 200, { status: 'ok' });
       }
@@ -692,20 +723,7 @@ export function createGateApi(options: GateApiOptions) {
         return response.end(body);
       }
 
-      if (request.method === 'GET' && ['/', '/gate-console.css', '/gate-console.js', '/favicon.svg', '/customer.css'].includes(url.pathname)) {
-        const fileName = url.pathname === '/' ? 'index.html' : url.pathname.slice(1);
-        const content = await readFile(resolve(publicDirectory, fileName));
-        const contentType = appContentType(fileName);
-        response.writeHead(200, {
-          'content-type': contentType,
-          'content-length': content.length,
-          'content-security-policy': "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' blob: data:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'",
-          'referrer-policy': 'no-referrer',
-          'x-content-type-options': 'nosniff',
-          'cache-control': fileName === 'index.html' ? 'no-store' : 'public, max-age=300',
-        });
-        return response.end(content);
-      }
+
       /*
        * How the staff app should sign a person in — unauthenticated by
        * necessity, since it is what a signed-out browser asks for first.
@@ -732,6 +750,51 @@ export function createGateApi(options: GateApiOptions) {
 
       const actor = await authenticate(request);
 
+      if (request.method === 'POST' && url.pathname === '/api/projects/intake') {
+        requireStaff(actor);
+        if (actor.kind !== 'user' || !['admin', 'office'].includes(actor.role)) throw new AuthError('Office access is required to create a design project.');
+        const body = ManualProjectIntakeSchema.parse(await readJson(request, 100_000));
+        const key = idempotency(request);
+        const existing = await options.db.query<{ job_id: string }>(
+          `select j.job_id from jobs j join leads l on l.lead_id = j.lead_id where l.idempotency_key = $1`,
+          [key],
+        );
+        if (existing.rows[0]) {
+          const summary = await service.getJob(idSchemas.job.parse(existing.rows[0].job_id));
+          if (!summary) throw new Error('The existing intake record could not be read.');
+          return sendJson(response, 200, summary);
+        }
+        const leadId = createCanonicalId('lead');
+        const jobId = createCanonicalId('job');
+        const address = `${body.streetAddress}, ${body.city}, ${body.state} ${body.postalCode}`;
+        const acceptedPayload = {
+          customerName: body.customerName,
+          streetAddress: body.streetAddress,
+          city: body.city,
+          state: body.state,
+          postalCode: body.postalCode,
+          ...(body.phone ? { phone: body.phone } : {}),
+          ...(body.email ? { email: body.email } : {}),
+          ...(body.referralSource ? { referralSource: body.referralSource } : {}),
+          ...(body.notes ? { notes: body.notes } : {}),
+        };
+        await options.db.transaction(async (tx) => {
+          await tx.query(
+            `insert into leads (lead_id, intake_source, source_record_id, idempotency_key, accepted_payload)
+             values ($1, 'manual-referral', $2, $3, $4::jsonb)`,
+            [leadId, `manual:${key}`, key, JSON.stringify(acceptedPayload)],
+          );
+          await tx.query(
+            `insert into jobs (job_id, lead_id, signed_proposal_version, status) values ($1, $2, 1, 'active')`,
+            [jobId, leadId],
+          );
+        });
+        await service.openProject({ jobId, actor, idempotencyKey: `${key}:open-project` });
+        const summary = await service.getJob(jobId);
+        if (!summary) throw new Error(`Created intake project ${address}, but it could not be read back.`);
+        return sendJson(response, 201, summary);
+      }
+
       if (request.method === 'GET' && url.pathname === '/api/today') {
         requireStaff(actor);
         // The caller may pin the day for a reproducible feed; otherwise the
@@ -753,7 +816,11 @@ export function createGateApi(options: GateApiOptions) {
 
       if (request.method === 'GET' && url.pathname === '/api/jobs') {
         requireStaff(actor);
-        return sendJson(response, 200, await service.listJobs());
+        const requestedView = url.searchParams.get('view') ?? 'all';
+        if (requestedView !== 'all' && requestedView !== 'active' && requestedView !== 'historical') {
+          throw new InputError('Job view must be all, active, or historical.');
+        }
+        return sendJson(response, 200, await service.listJobs(requestedView));
       }
 
       const jobMatch = url.pathname.match(/^\/api\/jobs\/(job_[0-9A-HJKMNP-TV-Z]{26})$/);
@@ -889,6 +956,15 @@ export function createGateApi(options: GateApiOptions) {
         return sendJson(response, 200, project);
       }
 
+      const targetMatch = url.pathname.match(/^\/api\/jobs\/(job_[0-9A-HJKMNP-TV-Z]{26})\/project\/target$/);
+      if (request.method === 'POST' && targetMatch) {
+        requireStaff(actor);
+        const body = UpdateTargetSchema.parse(await readJson(request));
+        return sendJson(response, 200, await service.updateProjectTarget(
+          idSchemas.job.parse(targetMatch[1]), body, { actor, idempotencyKey: idempotency(request) },
+        ));
+      }
+
       const historyMatch = url.pathname.match(/^\/api\/jobs\/(job_[0-9A-HJKMNP-TV-Z]{26})\/project\/history$/);
       if (request.method === 'GET' && historyMatch) {
         requireStaff(actor);
@@ -898,6 +974,11 @@ export function createGateApi(options: GateApiOptions) {
       if (request.method === 'GET' && url.pathname === '/api/subcontractors') {
         requireStaff(actor);
         return sendJson(response, 200, await service.listSubcontractors());
+      }
+
+      if (request.method === 'GET' && url.pathname === '/api/calendar') {
+        requireStaff(actor);
+        return sendJson(response, 200, await service.listCalendarEntries());
       }
 
       const visitsMatch = url.pathname.match(/^\/api\/jobs\/(job_[0-9A-HJKMNP-TV-Z]{26})\/visits$/);
@@ -963,6 +1044,16 @@ export function createGateApi(options: GateApiOptions) {
           invoiceReference: body.invoiceReference,
           actor,
           ...(body.dueDate ? { dueDate: body.dueDate } : {}),
+        }));
+      }
+
+      const closeJobMatch = url.pathname.match(/^\/api\/jobs\/(job_[0-9A-HJKMNP-TV-Z]{26})\/close$/);
+      if (request.method === 'POST' && closeJobMatch) {
+        requireStaff(actor);
+        return sendJson(response, 200, await service.closeJob({
+          jobId: idSchemas.job.parse(closeJobMatch[1]),
+          actor,
+          idempotencyKey: idempotency(request),
         }));
       }
 
@@ -1072,11 +1163,7 @@ export function createGateApi(options: GateApiOptions) {
       const countersignMatch = url.pathname.match(/^\/api\/gates\/(gate_[0-9A-HJKMNP-TV-Z]{26})\/countersign$/);
       if (request.method === 'POST' && countersignMatch) {
         requireStaff(actor);
-        const gateId = idSchemas.gate.parse(countersignMatch[1]);
-        const result = await service.execute(gateId, {
-          type: 'countersign-gate', actor, at: new Date().toISOString(),
-        }, { idempotencyKey: idempotency(request) });
-        return sendJson(response, 200, { ...result, state: serializeGate(result.state) });
+        return sendJson(response, 410, { error: 'Countersign has been removed. Release Gates with one signature.' });
       }
 
 

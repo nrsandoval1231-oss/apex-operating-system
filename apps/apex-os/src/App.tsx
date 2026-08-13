@@ -1,7 +1,9 @@
 import { Routes, Route, Navigate } from 'react-router';
 import Layout from './components/Layout';
+import Calendar from './pages/Calendar';
 import TodayFeed from './pages/TodayFeed';
 import Projects from './pages/Projects';
+import HistoricalProjects from './pages/HistoricalProjects';
 import ProjectDetail from './pages/ProjectDetail';
 import OwnerBrief from './pages/OwnerBrief';
 import CustomerPage from './pages/CustomerPage';
@@ -24,7 +26,9 @@ export default function App() {
       <Route path="/" element={<Layout />}>
         <Route index element={<Navigate to="/today" replace />} />
         <Route path="today" element={<TodayFeed />} />
+        <Route path="calendar" element={<Calendar />} />
         <Route path="projects" element={<Projects />} />
+        <Route path="historical" element={<HistoricalProjects />} />
         <Route path="projects/:id" element={<ProjectDetail />} />
         <Route path="projects/:id/customer" element={<CustomerPage />} />
         <Route path="brief" element={<OwnerBrief />} />

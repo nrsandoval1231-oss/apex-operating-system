@@ -53,6 +53,10 @@ describe('readLeadIdentity', () => {
       customerName: null, addressLine: null,
     });
   });
+  it('reads postal codes as part of a lead address', () => {
+    expect(readLeadIdentity({ customerName: 'Jamie', streetAddress: '1 Main', city: 'Lubbock', state: 'TX', postalCode: '79401' }).addressLine)
+      .toBe('1 Main, Lubbock, TX 79401');
+  });
 });
 
 describe('JobSummarySchema', () => {

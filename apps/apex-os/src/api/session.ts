@@ -8,7 +8,7 @@
  * overruled: a tab-scoped token disappears when the browser closes, which
  * protects a shared machine in an office. What it also did was end the session
  * on every closed tab, with no refresh tokens behind it, so staff re-authenticated
- * constantly and the Gate field console — which shares this key — could not see a
+ * constantly and the Project workspace — which shares this key — could not see a
  * session established in another tab at all. That pushed the field onto a
  * hand-pasted JWT, which is a worse credential practice than the one the
  * tab-scoping was protecting.

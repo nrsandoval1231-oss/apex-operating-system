@@ -1,0 +1,463 @@
+{
+  "created_utc": "2026-08-11T22:07:07.266795+00:00",
+  "canonical": "C:\\Users\\NickSandoval\\Nick OS\\02_Projects\\Apex",
+  "sources": [
+    "C:\\Users\\NickSandoval\\Desktop\\Apex-to_delete-archived-20260805",
+    "C:\\Users\\NickSandoval\\Desktop\\_archive\\Apex",
+    "C:\\Users\\NickSandoval\\Downloads"
+  ],
+  "excluded_secret_names": [
+    "apex-proposal-ci",
+    "apex-proposal-ci.pub"
+  ],
+  "records": [
+    {
+      "source": "C:\\Users\\NickSandoval\\Desktop\\Apex-to_delete-archived-20260805\\Apex ideas.zip",
+      "destination": "C:\\Users\\NickSandoval\\Nick OS\\02_Projects\\Apex\\docs\\archive\\desktop-apex-20260805\\Apex ideas.zip",
+      "bytes": 112970,
+      "sha256": "87a4ad67d5e751d49c8d42d29529307d3962558c1c31d28e17fd672c5269e3a2",
+      "destination_sha256": "87a4ad67d5e751d49c8d42d29529307d3962558c1c31d28e17fd672c5269e3a2",
+      "action": "copied"
+    },
+    {
+      "source": "C:\\Users\\NickSandoval\\Desktop\\Apex-to_delete-archived-20260805\\apex-pitch.pptx",
+      "destination": "C:\\Users\\NickSandoval\\Nick OS\\02_Projects\\Apex\\docs\\archive\\desktop-apex-20260805\\apex-pitch.pptx",
+      "bytes": 154438,
+      "sha256": "56701353ae83dfc3108b6010475e3b9de4d0449c121421033d4579fe365f1050",
+      "destination_sha256": "56701353ae83dfc3108b6010475e3b9de4d0449c121421033d4579fe365f1050",
+      "action": "copied"
+    },
+    {
+      "source": "C:\\Users\\NickSandoval\\Desktop\\Apex-to_delete-archived-20260805\\apex-strategy-deck.pptx",
+      "destination": "C:\\Users\\NickSandoval\\Nick OS\\02_Projects\\Apex\\docs\\archive\\desktop-apex-20260805\\apex-strategy-deck.pptx",
+      "bytes": 508597,
+      "sha256": "94025245a3f879601c58b26a92bd31d4435bb5c75c2505b95d27fe4a59e2fafb",
+      "destination_sha256": "94025245a3f879601c58b26a92bd31d4435bb5c75c2505b95d27fe4a59e2fafb",
+      "action": "copied"
+    },
+    {
+      "source": "C:\\Users\\NickSandoval\\Desktop\\Apex-to_delete-archived-20260805\\apex-system-diagram.png",
+      "destination": "C:\\Users\\NickSandoval\\Nick OS\\02_Projects\\Apex\\docs\\archive\\desktop-apex-20260805\\apex-system-diagram.png",
+      "bytes": 47310,
+      "sha256": "37cdfb73edf81ac60f30a3358503bf1bba1cd55b69d60caafb4178fefee7d749",
+      "destination_sha256": "37cdfb73edf81ac60f30a3358503bf1bba1cd55b69d60caafb4178fefee7d749",
+      "action": "copied"
+    },
+    {
+      "source": "C:\\Users\\NickSandoval\\Desktop\\Apex-to_delete-archived-20260805\\website-stray-gate-v3.jsx",
+      "destination": "C:\\Users\\NickSandoval\\Nick OS\\02_Projects\\Apex\\docs\\archive\\desktop-apex-20260805\\website-stray-gate-v3.jsx",
+      "bytes": 34178,
+      "sha256": "0c3e93ee5063c91add0c97cecf8e6e2623b448d685c24f1751800efb70634dd2",
+      "destination_sha256": "0c3e93ee5063c91add0c97cecf8e6e2623b448d685c24f1751800efb70634dd2",
+      "action": "copied"
+    },
+    {
+      "source": "C:\\Users\\NickSandoval\\Desktop\\Apex-to_delete-archived-20260805\\Apex Lead Engine\\Apex-Lead-Engine-01-Intake.json",
+      "destination": "C:\\Users\\NickSandoval\\Nick OS\\02_Projects\\Apex\\docs\\archive\\desktop-apex-20260805\\Apex Lead Engine\\Apex-Lead-Engine-01-Intake.json",
+      "bytes": 13007,
+      "sha256": "caa1177385c77de07f3ac337865cd42f5fec791d36a5d57f6cb1d1e5acd85c08",
+      "destination_sha256": "caa1177385c77de07f3ac337865cd42f5fec791d36a5d57f6cb1d1e5acd85c08",
+      "action": "copied"
+    },
+    {
+      "source": "C:\\Users\\NickSandoval\\Desktop\\Apex-to_delete-archived-20260805\\Apex Lead Engine\\README.md",
+      "destination": "C:\\Users\\NickSandoval\\Nick OS\\02_Projects\\Apex\\docs\\archive\\desktop-apex-20260805\\Apex Lead Engine\\README.md",
+      "bytes": 3852,
+      "sha256": "171fdd7fbfb55e2b4ca81adb1582d7ad4170d8c54a2af610806b23041e1141bf",
+      "destination_sha256": "171fdd7fbfb55e2b4ca81adb1582d7ad4170d8c54a2af610806b23041e1141bf",
+      "action": "copied"
+    },
+    {
+      "source": "C:\\Users\\NickSandoval\\Desktop\\Apex-to_delete-archived-20260805\\hermes-desktop-attachments\\Apex_OS_PRD_v1.md",
+      "destination": "C:\\Users\\NickSandoval\\Nick OS\\02_Projects\\Apex\\docs\\archive\\desktop-apex-20260805\\hermes-desktop-attachments\\Apex_OS_PRD_v1.md",
+      "bytes": 31407,
+      "sha256": "af57f18cc5b89b33e195663533a04e409a4592a195d1386b591224ffaeab6acc",
+      "destination_sha256": "af57f18cc5b89b33e195663533a04e409a4592a195d1386b591224ffaeab6acc",
+      "action": "copied"
+    },
+    {
+      "source": "C:\\Users\\NickSandoval\\Desktop\\Apex-to_delete-archived-20260805\\hermes-desktop-attachments\\FILE_8437.pdf",
+      "destination": "C:\\Users\\NickSandoval\\Nick OS\\02_Projects\\Apex\\docs\\archive\\desktop-apex-20260805\\hermes-desktop-attachments\\FILE_8437.pdf",
+      "bytes": 81624,
+      "sha256": "e4350228a19f32a75a977187bad0f08621a756e36b9088bfecfec9663ae9140a",
+      "destination_sha256": "e4350228a19f32a75a977187bad0f08621a756e36b9088bfecfec9663ae9140a",
+      "action": "copied"
+    },
+    {
+      "source": "C:\\Users\\NickSandoval\\Desktop\\Apex-to_delete-archived-20260805\\hermes-desktop-attachments\\Whitaker Final 7.21.26 (1) (1).pdf",
+      "destination": "C:\\Users\\NickSandoval\\Nick OS\\02_Projects\\Apex\\docs\\archive\\desktop-apex-20260805\\hermes-desktop-attachments\\Whitaker Final 7.21.26 (1) (1).pdf",
+      "bytes": 59938,
+      "sha256": "be4bb9c8b1fc77e7350ddc812467f8bb9a08b30f915c05538f2dc34c7d5988d4",
+      "destination_sha256": "be4bb9c8b1fc77e7350ddc812467f8bb9a08b30f915c05538f2dc34c7d5988d4",
+      "action": "copied"
+    },
+    {
+      "source": "C:\\Users\\NickSandoval\\Desktop\\Apex-to_delete-archived-20260805\\tmp\\build_dev.py",
+      "destination": "C:\\Users\\NickSandoval\\Nick OS\\02_Projects\\Apex\\docs\\archive\\desktop-apex-20260805\\tmp\\build_dev.py",
+      "bytes": 14708,
+      "sha256": "0448b550ba7ec2305f4fc83b0b1e2d6118cd7bc85f0718839c0fd18e906f8cdd",
+      "destination_sha256": "0448b550ba7ec2305f4fc83b0b1e2d6118cd7bc85f0718839c0fd18e906f8cdd",
+      "action": "copied"
+    },
+    {
+      "source": "C:\\Users\\NickSandoval\\Desktop\\Apex-to_delete-archived-20260805\\tmp\\build_dev_confirm_sent.py",
+      "destination": "C:\\Users\\NickSandoval\\Nick OS\\02_Projects\\Apex\\docs\\archive\\desktop-apex-20260805\\tmp\\build_dev_confirm_sent.py",
+      "bytes": 14459,
+      "sha256": "ad7a59e29d21bd71b6e730cca42cdea9769b93e542817696d74ba8c3220ec013",
+      "destination_sha256": "ad7a59e29d21bd71b6e730cca42cdea9769b93e542817696d74ba8c3220ec013",
+      "action": "copied"
+    },
+    {
+      "source": "C:\\Users\\NickSandoval\\Desktop\\Apex-to_delete-archived-20260805\\tmp\\build_dev_confirm_sent.txt",
+      "destination": "C:\\Users\\NickSandoval\\Nick OS\\02_Projects\\Apex\\docs\\archive\\desktop-apex-20260805\\tmp\\build_dev_confirm_sent.txt",
+      "bytes": 11,
+      "sha256": "4097889236a2af26c293033feb964c4cf118c0224e0d063fec0a89e9d0569ef2",
+      "destination_sha256": "4097889236a2af26c293033feb964c4cf118c0224e0d063fec0a89e9d0569ef2",
+      "action": "copied"
+    },
+    {
+      "source": "C:\\Users\\NickSandoval\\Desktop\\Apex-to_delete-archived-20260805\\tmp\\current_workflow.json",
+      "destination": "C:\\Users\\NickSandoval\\Nick OS\\02_Projects\\Apex\\docs\\archive\\desktop-apex-20260805\\tmp\\current_workflow.json",
+      "bytes": 16164,
+      "sha256": "5db83706f05138e87f92e4f1ee39fbcade701efff45298b5ab7edb2d255c2180",
+      "destination_sha256": "5db83706f05138e87f92e4f1ee39fbcade701efff45298b5ab7edb2d255c2180",
+      "action": "copied"
+    },
+    {
+      "source": "C:\\Users\\NickSandoval\\Desktop\\Apex-to_delete-archived-20260805\\tmp\\dev_confirm_sent.json",
+      "destination": "C:\\Users\\NickSandoval\\Nick OS\\02_Projects\\Apex\\docs\\archive\\desktop-apex-20260805\\tmp\\dev_confirm_sent.json",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "destination_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "action": "copied"
+    },
+    {
+      "source": "C:\\Users\\NickSandoval\\Desktop\\Apex-to_delete-archived-20260805\\tmp\\dev_confirm_sent_clean.json",
+      "destination": "C:\\Users\\NickSandoval\\Nick OS\\02_Projects\\Apex\\docs\\archive\\desktop-apex-20260805\\tmp\\dev_confirm_sent_clean.json",
+      "bytes": 23518,
+      "sha256": "99ac55cc50c303bc6430e30617e5f1e3732703e825c409daadca8e2979e5bb8c",
+      "destination_sha256": "99ac55cc50c303bc6430e30617e5f1e3732703e825c409daadca8e2979e5bb8c",
+      "action": "copied"
+    },
+    {
+      "source": "C:\\Users\\NickSandoval\\Desktop\\Apex-to_delete-archived-20260805\\tmp\\dev_confirm_sent_draft.json",
+      "destination": "C:\\Users\\NickSandoval\\Nick OS\\02_Projects\\Apex\\docs\\archive\\desktop-apex-20260805\\tmp\\dev_confirm_sent_draft.json",
+      "bytes": 1474,
+      "sha256": "8a50798bb0a61465bf9a40decded3fdf9a193f1fce1b789e5e0989be5cde9074",
+      "destination_sha256": "8a50798bb0a61465bf9a40decded3fdf9a193f1fce1b789e5e0989be5cde9074",
+      "action": "copied"
+    },
+    {
+      "source": "C:\\Users\\NickSandoval\\Desktop\\Apex-to_delete-archived-20260805\\tmp\\dev_confirm_sent_fix.json",
+      "destination": "C:\\Users\\NickSandoval\\Nick OS\\02_Projects\\Apex\\docs\\archive\\desktop-apex-20260805\\tmp\\dev_confirm_sent_fix.json",
+      "bytes": 23524,
+      "sha256": "93d3c454d8df2f933a577e5777767a7101f0b964e6177b9ab5378c520c5f30df",
+      "destination_sha256": "93d3c454d8df2f933a577e5777767a7101f0b964e6177b9ab5378c520c5f30df",
+      "action": "copied"
+    },
+    {
+      "source": "C:\\Users\\NickSandoval\\Desktop\\Apex-to_delete-archived-20260805\\tmp\\final_verified_workflow.json",
+      "destination": "C:\\Users\\NickSandoval\\Nick OS\\02_Projects\\Apex\\docs\\archive\\desktop-apex-20260805\\tmp\\final_verified_workflow.json",
+      "bytes": 15487,
+      "sha256": "a63200bd9688749e1d2bf1142b49c0d22e0ccaa7c2f2019b52c2647fc5074845",
+      "destination_sha256": "a63200bd9688749e1d2bf1142b49c0d22e0ccaa7c2f2019b52c2647fc5074845",
+      "action": "copied"
+    },
+    {
+      "source": "C:\\Users\\NickSandoval\\Desktop\\Apex-to_delete-archived-20260805\\tmp\\orig_confirm_sent.json",
+      "destination": "C:\\Users\\NickSandoval\\Nick OS\\02_Projects\\Apex\\docs\\archive\\desktop-apex-20260805\\tmp\\orig_confirm_sent.json",
+      "bytes": 16862,
+      "sha256": "e9fa6ba528b6761daaaab374173d64112bdc7e6db2dffce5828bda9021f69e1b",
+      "destination_sha256": "e9fa6ba528b6761daaaab374173d64112bdc7e6db2dffce5828bda9021f69e1b",
+      "action": "copied"
+    },
+    {
+      "source": "C:\\Users\\NickSandoval\\Desktop\\Apex-to_delete-archived-20260805\\tmp\\probe_confirm_sent.py",
+      "destination": "C:\\Users\\NickSandoval\\Nick OS\\02_Projects\\Apex\\docs\\archive\\desktop-apex-20260805\\tmp\\probe_confirm_sent.py",
+      "bytes": 1663,
+      "sha256": "e604a4d6f5318ec5a3bd5450bbf628cf1c71c3ea8e986a8dedf09b349a7bae38",
+      "destination_sha256": "e604a4d6f5318ec5a3bd5450bbf628cf1c71c3ea8e986a8dedf09b349a7bae38",
+      "action": "copied"
+    },
+    {
+      "source": "C:\\Users\\NickSandoval\\Desktop\\Apex-to_delete-archived-20260805\\tmp\\put_response.json",
+      "destination": "C:\\Users\\NickSandoval\\Nick OS\\02_Projects\\Apex\\docs\\archive\\desktop-apex-20260805\\tmp\\put_response.json",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "destination_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "action": "copied"
+    },
+    {
+      "source": "C:\\Users\\NickSandoval\\Desktop\\Apex-to_delete-archived-20260805\\tmp\\upload_dev_confirm_sent_v2.py",
+      "destination": "C:\\Users\\NickSandoval\\Nick OS\\02_Projects\\Apex\\docs\\archive\\desktop-apex-20260805\\tmp\\upload_dev_confirm_sent_v2.py",
+      "bytes": 18882,
+      "sha256": "0810043069d0c08bee16d9b73704272ad1b444fc9c9590ea3a9eba2ccb9a2a80",
+      "destination_sha256": "0810043069d0c08bee16d9b73704272ad1b444fc9c9590ea3a9eba2ccb9a2a80",
+      "action": "copied"
+    },
+    {
+      "source": "C:\\Users\\NickSandoval\\Desktop\\Apex-to_delete-archived-20260805\\tmp\\verified_workflow.json",
+      "destination": "C:\\Users\\NickSandoval\\Nick OS\\02_Projects\\Apex\\docs\\archive\\desktop-apex-20260805\\tmp\\verified_workflow.json",
+      "bytes": 16070,
+      "sha256": "ca4bcc688f7de62a587370f3a18c6eff044d85d567e61084c42e43c66366c3c7",
+      "destination_sha256": "ca4bcc688f7de62a587370f3a18c6eff044d85d567e61084c42e43c66366c3c7",
+      "action": "copied"
+    },
+    {
+      "source": "C:\\Users\\NickSandoval\\Desktop\\Apex-to_delete-archived-20260805\\_inbox\\Downloads-2026-07-29\\apex-budget.json",
+      "destination": "C:\\Users\\NickSandoval\\Nick OS\\02_Projects\\Apex\\docs\\archive\\desktop-apex-20260805\\_inbox\\Downloads-2026-07-29\\apex-budget.json",
+      "bytes": 4382,
+      "sha256": "7138239e5d49e0718abe756eac4b6661799f9f9f841046d687be29175b175e76",
+      "destination_sha256": "7138239e5d49e0718abe756eac4b6661799f9f9f841046d687be29175b175e76",
+      "action": "copied"
+    },
+    {
+      "source": "C:\\Users\\NickSandoval\\Desktop\\Apex-to_delete-archived-20260805\\_inbox\\Downloads-2026-07-29\\apex-pitch-v2-narrative.md",
+      "destination": "C:\\Users\\NickSandoval\\Nick OS\\02_Projects\\Apex\\docs\\archive\\desktop-apex-20260805\\_inbox\\Downloads-2026-07-29\\apex-pitch-v2-narrative.md",
+      "bytes": 8049,
+      "sha256": "7d2abe87d8d56d69e62a7bfff5217ba2fd93be1f9e97989a9930a7a7431538f2",
+      "destination_sha256": "7d2abe87d8d56d69e62a7bfff5217ba2fd93be1f9e97989a9930a7a7431538f2",
+      "action": "copied"
+    },
+    {
+      "source": "C:\\Users\\NickSandoval\\Desktop\\Apex-to_delete-archived-20260805\\_inbox\\Downloads-2026-07-29\\Apex-Site-Logo-2x.png",
+      "destination": "C:\\Users\\NickSandoval\\Nick OS\\02_Projects\\Apex\\docs\\archive\\desktop-apex-20260805\\_inbox\\Downloads-2026-07-29\\Apex-Site-Logo-2x.png",
+      "bytes": 10987,
+      "sha256": "421e7a063b78adb7f47c69fce6d17e5c9f5186360060cf04e0c3fbdefb1688bb",
+      "destination_sha256": "421e7a063b78adb7f47c69fce6d17e5c9f5186360060cf04e0c3fbdefb1688bb",
+      "action": "copied"
+    },
+    {
+      "source": "C:\\Users\\NickSandoval\\Desktop\\Apex-to_delete-archived-20260805\\_inbox\\Downloads-2026-07-29\\apex-strategy-deck.pptx",
+      "destination": "C:\\Users\\NickSandoval\\Nick OS\\02_Projects\\Apex\\docs\\archive\\desktop-apex-20260805\\_inbox\\Downloads-2026-07-29\\apex-strategy-deck.pptx",
+      "bytes": 305475,
+      "sha256": "76491b0ac9b107a8c6ffca5d035acdee27bbb7e7c813234c88157499941da73e",
+      "destination_sha256": "76491b0ac9b107a8c6ffca5d035acdee27bbb7e7c813234c88157499941da73e",
+      "action": "copied"
+    },
+    {
+      "source": "C:\\Users\\NickSandoval\\Desktop\\Apex-to_delete-archived-20260805\\_inbox\\Downloads-2026-07-29\\apex-takeoff.csv",
+      "destination": "C:\\Users\\NickSandoval\\Nick OS\\02_Projects\\Apex\\docs\\archive\\desktop-apex-20260805\\_inbox\\Downloads-2026-07-29\\apex-takeoff.csv",
+      "bytes": 2133,
+      "sha256": "e8ab4b229c1a4f7cccd5008ee0dae27518b8821dfa4cb37b22833d779590c620",
+      "destination_sha256": "e8ab4b229c1a4f7cccd5008ee0dae27518b8821dfa4cb37b22833d779590c620",
+      "action": "copied"
+    },
+    {
+      "source": "C:\\Users\\NickSandoval\\Desktop\\_archive\\Apex\\Apex-Phase0-Backup-20260728_161654\\Apex-source-working-tree-20260728_161654.zip",
+      "destination": "C:\\Users\\NickSandoval\\Nick OS\\02_Projects\\Apex\\docs\\archive\\desktop-apex-backup-20260728\\Apex-Phase0-Backup-20260728_161654\\Apex-source-working-tree-20260728_161654.zip",
+      "bytes": 761579,
+      "sha256": "5aa202ea45cfaa32cb2cc7a29304267e9d7301fe9734a0f97ec3f3f408a9f97e",
+      "destination_sha256": "5aa202ea45cfaa32cb2cc7a29304267e9d7301fe9734a0f97ec3f3f408a9f97e",
+      "action": "copied"
+    },
+    {
+      "source": "C:\\Users\\NickSandoval\\Desktop\\_archive\\Apex\\Apex-Phase0-Backup-20260728_161654\\artifact-checksums.sha256",
+      "destination": "C:\\Users\\NickSandoval\\Nick OS\\02_Projects\\Apex\\docs\\archive\\desktop-apex-backup-20260728\\Apex-Phase0-Backup-20260728_161654\\artifact-checksums.sha256",
+      "bytes": 2101,
+      "sha256": "fe2a4f04dedbaf25705bf7d9d919047f134230178d0deaace2def7045fe30578",
+      "destination_sha256": "fe2a4f04dedbaf25705bf7d9d919047f134230178d0deaace2def7045fe30578",
+      "action": "copied"
+    },
+    {
+      "source": "C:\\Users\\NickSandoval\\Desktop\\_archive\\Apex\\Apex-Phase0-Backup-20260728_161654\\manifest.json",
+      "destination": "C:\\Users\\NickSandoval\\Nick OS\\02_Projects\\Apex\\docs\\archive\\desktop-apex-backup-20260728\\Apex-Phase0-Backup-20260728_161654\\manifest.json",
+      "bytes": 34561,
+      "sha256": "137b1b7c3acbb4f6765eaae8197d538de612cd16d40b1588d2c6d3ba436ff1ab",
+      "destination_sha256": "137b1b7c3acbb4f6765eaae8197d538de612cd16d40b1588d2c6d3ba436ff1ab",
+      "action": "copied"
+    },
+    {
+      "source": "C:\\Users\\NickSandoval\\Desktop\\_archive\\Apex\\Apex-Phase0-Backup-20260728_161654\\README.txt",
+      "destination": "C:\\Users\\NickSandoval\\Nick OS\\02_Projects\\Apex\\docs\\archive\\desktop-apex-backup-20260728\\Apex-Phase0-Backup-20260728_161654\\README.txt",
+      "bytes": 892,
+      "sha256": "80c5db31ceaf8eb7f6280cea2fe44c2781597f08e1d076e7e54582a8cc910ade",
+      "destination_sha256": "80c5db31ceaf8eb7f6280cea2fe44c2781597f08e1d076e7e54582a8cc910ade",
+      "action": "copied"
+    },
+    {
+      "source": "C:\\Users\\NickSandoval\\Desktop\\_archive\\Apex\\Apex-Phase0-Backup-20260728_161654\\git-bundles\\apex-decks.bundle",
+      "destination": "C:\\Users\\NickSandoval\\Nick OS\\02_Projects\\Apex\\docs\\archive\\desktop-apex-backup-20260728\\Apex-Phase0-Backup-20260728_161654\\git-bundles\\apex-decks.bundle",
+      "bytes": 18329,
+      "sha256": "d7653be2526b7fc9fada1c0069d04804015c92a1102bad5868d105dd86c744af",
+      "destination_sha256": "d7653be2526b7fc9fada1c0069d04804015c92a1102bad5868d105dd86c744af",
+      "action": "copied"
+    },
+    {
+      "source": "C:\\Users\\NickSandoval\\Desktop\\_archive\\Apex\\Apex-Phase0-Backup-20260728_161654\\git-bundles\\apex-designer.bundle",
+      "destination": "C:\\Users\\NickSandoval\\Nick OS\\02_Projects\\Apex\\docs\\archive\\desktop-apex-backup-20260728\\Apex-Phase0-Backup-20260728_161654\\git-bundles\\apex-designer.bundle",
+      "bytes": 180720,
+      "sha256": "ba55e720fa26043cfeef9be3d545bb50a412051d7ab12e60aeeaeeda1fd38164",
+      "destination_sha256": "ba55e720fa26043cfeef9be3d545bb50a412051d7ab12e60aeeaeeda1fd38164",
+      "action": "copied"
+    },
+    {
+      "source": "C:\\Users\\NickSandoval\\Desktop\\_archive\\Apex\\Apex-Phase0-Backup-20260728_161654\\git-bundles\\apex-lead-engine.bundle",
+      "destination": "C:\\Users\\NickSandoval\\Nick OS\\02_Projects\\Apex\\docs\\archive\\desktop-apex-backup-20260728\\Apex-Phase0-Backup-20260728_161654\\git-bundles\\apex-lead-engine.bundle",
+      "bytes": 32645,
+      "sha256": "a053ffb4d1e8a6ba4c3dd559d66d82e3fa5b2b033e98c8a940c26934539092b6",
+      "destination_sha256": "a053ffb4d1e8a6ba4c3dd559d66d82e3fa5b2b033e98c8a940c26934539092b6",
+      "action": "copied"
+    },
+    {
+      "source": "C:\\Users\\NickSandoval\\Desktop\\_archive\\Apex\\Apex-Phase0-Backup-20260728_161654\\git-bundles\\apex-prds.bundle",
+      "destination": "C:\\Users\\NickSandoval\\Nick OS\\02_Projects\\Apex\\docs\\archive\\desktop-apex-backup-20260728\\Apex-Phase0-Backup-20260728_161654\\git-bundles\\apex-prds.bundle",
+      "bytes": 52227,
+      "sha256": "5d096a68f485596778cc0e20992f637a1fbb311d62fa723d252a33040b2acd00",
+      "destination_sha256": "5d096a68f485596778cc0e20992f637a1fbb311d62fa723d252a33040b2acd00",
+      "action": "copied"
+    },
+    {
+      "source": "C:\\Users\\NickSandoval\\Desktop\\_archive\\Apex\\Apex-Phase0-Backup-20260728_161654\\git-bundles\\apex-proposal-engine.bundle",
+      "destination": "C:\\Users\\NickSandoval\\Nick OS\\02_Projects\\Apex\\docs\\archive\\desktop-apex-backup-20260728\\Apex-Phase0-Backup-20260728_161654\\git-bundles\\apex-proposal-engine.bundle",
+      "bytes": 74380,
+      "sha256": "cc329a47e19934a7897de371811ec4d3d60da970e0abb75263b00bf0fa940944",
+      "destination_sha256": "cc329a47e19934a7897de371811ec4d3d60da970e0abb75263b00bf0fa940944",
+      "action": "copied"
+    },
+    {
+      "source": "C:\\Users\\NickSandoval\\Desktop\\_archive\\Apex\\Apex-Phase0-Backup-20260728_161654\\git-bundles\\apex-website.bundle",
+      "destination": "C:\\Users\\NickSandoval\\Nick OS\\02_Projects\\Apex\\docs\\archive\\desktop-apex-backup-20260728\\Apex-Phase0-Backup-20260728_161654\\git-bundles\\apex-website.bundle",
+      "bytes": 181673,
+      "sha256": "220a5fa1b418c70bcca5eba2d3c3fc133327e4eae6c262a24cba3e20ff5e12ae",
+      "destination_sha256": "220a5fa1b418c70bcca5eba2d3c3fc133327e4eae6c262a24cba3e20ff5e12ae",
+      "action": "copied"
+    },
+    {
+      "source": "C:\\Users\\NickSandoval\\Desktop\\_archive\\Apex\\Apex-Phase0-Backup-20260728_161654\\git-status\\apex-decks.txt",
+      "destination": "C:\\Users\\NickSandoval\\Nick OS\\02_Projects\\Apex\\docs\\archive\\desktop-apex-backup-20260728\\Apex-Phase0-Backup-20260728_161654\\git-status\\apex-decks.txt",
+      "bytes": 9,
+      "sha256": "75b66887a5bf1dc7550244acc369f9960e98a921a1dcf8cc294082e365702803",
+      "destination_sha256": "75b66887a5bf1dc7550244acc369f9960e98a921a1dcf8cc294082e365702803",
+      "action": "copied"
+    },
+    {
+      "source": "C:\\Users\\NickSandoval\\Desktop\\_archive\\Apex\\Apex-Phase0-Backup-20260728_161654\\git-status\\apex-designer.txt",
+      "destination": "C:\\Users\\NickSandoval\\Nick OS\\02_Projects\\Apex\\docs\\archive\\desktop-apex-backup-20260728\\Apex-Phase0-Backup-20260728_161654\\git-status\\apex-designer.txt",
+      "bytes": 11,
+      "sha256": "e78649c1946f419981ac2b777e4656698c0992cf24ecb5e27ad102fec89c56d6",
+      "destination_sha256": "e78649c1946f419981ac2b777e4656698c0992cf24ecb5e27ad102fec89c56d6",
+      "action": "copied"
+    },
+    {
+      "source": "C:\\Users\\NickSandoval\\Desktop\\_archive\\Apex\\Apex-Phase0-Backup-20260728_161654\\git-status\\apex-lead-engine.txt",
+      "destination": "C:\\Users\\NickSandoval\\Nick OS\\02_Projects\\Apex\\docs\\archive\\desktop-apex-backup-20260728\\Apex-Phase0-Backup-20260728_161654\\git-status\\apex-lead-engine.txt",
+      "bytes": 9,
+      "sha256": "75b66887a5bf1dc7550244acc369f9960e98a921a1dcf8cc294082e365702803",
+      "destination_sha256": "75b66887a5bf1dc7550244acc369f9960e98a921a1dcf8cc294082e365702803",
+      "action": "copied"
+    },
+    {
+      "source": "C:\\Users\\NickSandoval\\Desktop\\_archive\\Apex\\Apex-Phase0-Backup-20260728_161654\\git-status\\apex-prds.txt",
+      "destination": "C:\\Users\\NickSandoval\\Nick OS\\02_Projects\\Apex\\docs\\archive\\desktop-apex-backup-20260728\\Apex-Phase0-Backup-20260728_161654\\git-status\\apex-prds.txt",
+      "bytes": 9,
+      "sha256": "75b66887a5bf1dc7550244acc369f9960e98a921a1dcf8cc294082e365702803",
+      "destination_sha256": "75b66887a5bf1dc7550244acc369f9960e98a921a1dcf8cc294082e365702803",
+      "action": "copied"
+    },
+    {
+      "source": "C:\\Users\\NickSandoval\\Desktop\\_archive\\Apex\\Apex-Phase0-Backup-20260728_161654\\git-status\\apex-proposal-engine.txt",
+      "destination": "C:\\Users\\NickSandoval\\Nick OS\\02_Projects\\Apex\\docs\\archive\\desktop-apex-backup-20260728\\Apex-Phase0-Backup-20260728_161654\\git-status\\apex-proposal-engine.txt",
+      "bytes": 24,
+      "sha256": "6b31f8b314fd9d0522f9750bad53cf7d4f4d083f4582981978ac264a5867d57a",
+      "destination_sha256": "6b31f8b314fd9d0522f9750bad53cf7d4f4d083f4582981978ac264a5867d57a",
+      "action": "copied"
+    },
+    {
+      "source": "C:\\Users\\NickSandoval\\Desktop\\_archive\\Apex\\Apex-Phase0-Backup-20260728_161654\\git-status\\apex-website.txt",
+      "destination": "C:\\Users\\NickSandoval\\Nick OS\\02_Projects\\Apex\\docs\\archive\\desktop-apex-backup-20260728\\Apex-Phase0-Backup-20260728_161654\\git-status\\apex-website.txt",
+      "bytes": 53,
+      "sha256": "2f9b4a0ffad14fde7e571589e5b0b62b44a02372af0aaa5c38902704f0e0dc2b",
+      "destination_sha256": "2f9b4a0ffad14fde7e571589e5b0b62b44a02372af0aaa5c38902704f0e0dc2b",
+      "action": "copied"
+    },
+    {
+      "source": "C:\\Users\\NickSandoval\\Desktop\\_archive\\Apex\\Apex-Phase0-Backup-20260728_161654\\working-tree-patches\\apex-decks.patch",
+      "destination": "C:\\Users\\NickSandoval\\Nick OS\\02_Projects\\Apex\\docs\\archive\\desktop-apex-backup-20260728\\Apex-Phase0-Backup-20260728_161654\\working-tree-patches\\apex-decks.patch",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "destination_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "action": "copied"
+    },
+    {
+      "source": "C:\\Users\\NickSandoval\\Desktop\\_archive\\Apex\\Apex-Phase0-Backup-20260728_161654\\working-tree-patches\\apex-designer.patch",
+      "destination": "C:\\Users\\NickSandoval\\Nick OS\\02_Projects\\Apex\\docs\\archive\\desktop-apex-backup-20260728\\Apex-Phase0-Backup-20260728_161654\\working-tree-patches\\apex-designer.patch",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "destination_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "action": "copied"
+    },
+    {
+      "source": "C:\\Users\\NickSandoval\\Desktop\\_archive\\Apex\\Apex-Phase0-Backup-20260728_161654\\working-tree-patches\\apex-lead-engine.patch",
+      "destination": "C:\\Users\\NickSandoval\\Nick OS\\02_Projects\\Apex\\docs\\archive\\desktop-apex-backup-20260728\\Apex-Phase0-Backup-20260728_161654\\working-tree-patches\\apex-lead-engine.patch",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "destination_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "action": "copied"
+    },
+    {
+      "source": "C:\\Users\\NickSandoval\\Desktop\\_archive\\Apex\\Apex-Phase0-Backup-20260728_161654\\working-tree-patches\\apex-prds.patch",
+      "destination": "C:\\Users\\NickSandoval\\Nick OS\\02_Projects\\Apex\\docs\\archive\\desktop-apex-backup-20260728\\Apex-Phase0-Backup-20260728_161654\\working-tree-patches\\apex-prds.patch",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "destination_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "action": "copied"
+    },
+    {
+      "source": "C:\\Users\\NickSandoval\\Desktop\\_archive\\Apex\\Apex-Phase0-Backup-20260728_161654\\working-tree-patches\\apex-proposal-engine.patch",
+      "destination": "C:\\Users\\NickSandoval\\Nick OS\\02_Projects\\Apex\\docs\\archive\\desktop-apex-backup-20260728\\Apex-Phase0-Backup-20260728_161654\\working-tree-patches\\apex-proposal-engine.patch",
+      "bytes": 11393,
+      "sha256": "daa17af0f0ddf8ad4443da96bd914f79c6b7a398fa221751229000d10de8ddd4",
+      "destination_sha256": "daa17af0f0ddf8ad4443da96bd914f79c6b7a398fa221751229000d10de8ddd4",
+      "action": "copied"
+    },
+    {
+      "source": "C:\\Users\\NickSandoval\\Desktop\\_archive\\Apex\\Apex-Phase0-Backup-20260728_161654\\working-tree-patches\\apex-website.patch",
+      "destination": "C:\\Users\\NickSandoval\\Nick OS\\02_Projects\\Apex\\docs\\archive\\desktop-apex-backup-20260728\\Apex-Phase0-Backup-20260728_161654\\working-tree-patches\\apex-website.patch",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "destination_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "action": "copied"
+    },
+    {
+      "source": "C:\\Users\\NickSandoval\\Downloads\\apex-budget.json",
+      "destination": "C:\\Users\\NickSandoval\\Nick OS\\02_Projects\\Apex\\docs\\archive\\downloads-apex-20260729\\apex-budget.json",
+      "bytes": 4292,
+      "sha256": "a89f5e2acc56ae3a4b57798e0a2989f32765ae76d9f6bd9f7066d6accf9e9f7f",
+      "destination_sha256": "a89f5e2acc56ae3a4b57798e0a2989f32765ae76d9f6bd9f7066d6accf9e9f7f",
+      "action": "copied"
+    },
+    {
+      "source": "C:\\Users\\NickSandoval\\Downloads\\apex-takeoff-12-x-24-corner-spa-spillover (1).json",
+      "destination": "C:\\Users\\NickSandoval\\Nick OS\\02_Projects\\Apex\\docs\\archive\\downloads-apex-20260729\\apex-takeoff-12-x-24-corner-spa-spillover (1).json",
+      "bytes": 23088,
+      "sha256": "1c974d0efc8ea3aece50ad8860dd4763d0eddeccf88236724a971cc646005ae4",
+      "destination_sha256": "1c974d0efc8ea3aece50ad8860dd4763d0eddeccf88236724a971cc646005ae4",
+      "action": "copied"
+    },
+    {
+      "source": "C:\\Users\\NickSandoval\\Downloads\\apex-takeoff-12-x-24-corner-spa-spillover.json",
+      "destination": "C:\\Users\\NickSandoval\\Nick OS\\02_Projects\\Apex\\docs\\archive\\downloads-apex-20260729\\apex-takeoff-12-x-24-corner-spa-spillover.json",
+      "bytes": 23088,
+      "sha256": "1c974d0efc8ea3aece50ad8860dd4763d0eddeccf88236724a971cc646005ae4",
+      "destination_sha256": "1c974d0efc8ea3aece50ad8860dd4763d0eddeccf88236724a971cc646005ae4",
+      "action": "copied"
+    },
+    {
+      "source": "C:\\Users\\NickSandoval\\Downloads\\apex-takeoff-15-x-30-corner-spa-spillover.json",
+      "destination": "C:\\Users\\NickSandoval\\Nick OS\\02_Projects\\Apex\\docs\\archive\\downloads-apex-20260729\\apex-takeoff-15-x-30-corner-spa-spillover.json",
+      "bytes": 23078,
+      "sha256": "18f522023a60d3a366bc75837a67ae1254962c9ac286f2f0701a8f4089ebb230",
+      "destination_sha256": "18f522023a60d3a366bc75837a67ae1254962c9ac286f2f0701a8f4089ebb230",
+      "action": "copied"
+    },
+    {
+      "source": "C:\\Users\\NickSandoval\\Downloads\\apex-takeoff.csv",
+      "destination": "C:\\Users\\NickSandoval\\Nick OS\\02_Projects\\Apex\\docs\\archive\\downloads-apex-20260729\\apex-takeoff.csv",
+      "bytes": 2130,
+      "sha256": "7ad79d766a968948cc460309627742e152ad719e301aae94b770f002374fb43d",
+      "destination_sha256": "7ad79d766a968948cc460309627742e152ad719e301aae94b770f002374fb43d",
+      "action": "copied"
+    }
+  ]
+}

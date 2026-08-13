@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import { z } from 'zod';
 import {
+  CalendarEntryListSchema,
   ActionCardListSchema,
   CustomerLinkStatusSchema,
   DailyBriefSchema,
@@ -61,6 +62,8 @@ const useResource = <T>(
     }
     const controller = new AbortController();
     let active = true;
+    const refresh = () => setAttempt((value) => value + 1);
+    window.addEventListener('apex:data-changed', refresh);
     setState((previous) => ({ ...previous, loading: true }));
     load(path, controller.signal)
       .then((data) => {
@@ -73,6 +76,7 @@ const useResource = <T>(
       });
     return () => {
       active = false;
+      window.removeEventListener('apex:data-changed', refresh);
       controller.abort();
     };
   }, [path, token, attempt, load]);
@@ -87,7 +91,8 @@ const loadJob = (path: string, signal: AbortSignal): Promise<JobSummary> =>
   apiGet(path, JobSummarySchema, signal);
 
 /** Every job the current user may see, newest first. */
-export const useJobs = (): Query<readonly JobSummary[]> => useResource('/api/jobs', loadJobs);
+export const useJobs = (view: 'all' | 'active' | 'historical' = 'all'): Query<readonly JobSummary[]> =>
+  useResource(view === 'all' ? '/api/jobs' : `/api/jobs?view=${view}`, loadJobs);
 
 /** One job summary. Pass undefined while the route parameter is unresolved. */
 export const useJob = (jobId: string | undefined): Query<JobSummary> =>
@@ -112,6 +117,10 @@ const loadSchedule = (path: string, signal: AbortSignal): Promise<JobSchedule> =
 /** A job's booked visits and any conflict detected against them. */
 export const useJobSchedule = (jobId: string | undefined): Query<JobSchedule> =>
   useResource(jobId === undefined ? null : `/api/jobs/${jobId}/visits`, loadSchedule);
+
+const loadCalendar = (path: string, signal: AbortSignal) => apiGet(path, CalendarEntryListSchema, signal);
+export const useCalendar = (): Query<readonly z.infer<typeof CalendarEntryListSchema>[number][]> =>
+  useResource('/api/calendar', loadCalendar);
 
 const loadBrief = (path: string, signal: AbortSignal): Promise<DailyBrief> =>
   apiGet(path, DailyBriefSchema, signal);

@@ -181,27 +181,9 @@ export function deriveJobCards(job: CardJobSnapshot, today: string): readonly Ac
 
   // --- Gates ---------------------------------------------------------------
 
+  // Legacy countersign states are retained only for historical replay. Active
+  // Gate definitions cannot produce this state, so no action card is emitted.
   for (const gate of job.gates) {
-    if (gate.status === 'awaiting-countersign') {
-      const since = gate.signedAt === null ? null : daysBetween(asDay(gate.signedAt), today);
-      cards.push(build(job, {
-        kind: 'gate.countersign',
-        group: 'needs-you',
-        // Nothing else in the feed is holding a crew still. This outranks money.
-        urgency: 'urgent',
-        subject: gate.definitionKey,
-        title: `Countersign ${gate.title}`,
-        reason: `${gate.signedByName ?? 'A superintendent'} signed this off and the work stays held until you countersign. `
-          + `This is the hold point that cannot be undone once concrete goes down.`,
-        dueLabel: since === null || Number.isNaN(since)
-          ? 'Waiting on you'
-          : dayCountLabel(since, 'Held', 'Held', 'Held since today'),
-        actionLabel: 'Review and countersign',
-        actionHref: detail,
-      }));
-      continue;
-    }
-
     if (gate.status === 'blocked') {
       cards.push(build(job, {
         kind: 'gate.blocked',
@@ -222,11 +204,9 @@ export function deriveJobCards(job: CardJobSnapshot, today: string): readonly Ac
         && gate.requirementsPassed === gate.requirementsTotal
         && gate.evidenceComplete;
       if (ready) {
-        const consequence = gate.requiresCountersign
-          ? 'Signing off starts the countersign; the Gate does not release until an owner countersigns.'
-          : gate.drawCode === null
-            ? 'Releasing it authorizes the next phase of work.'
-            : `Releasing it makes ${gate.drawCode.replace('draw-', 'Draw ')} eligible to bill.`;
+        const consequence = gate.drawCode === null
+          ? 'Releasing it authorizes the next phase of work.'
+          : `Releasing it makes ${gate.drawCode.replace('draw-', 'Draw ')} eligible to bill.`;
         cards.push(build(job, {
           kind: 'gate.ready',
           group: 'needs-you',
@@ -236,7 +216,7 @@ export function deriveJobCards(job: CardJobSnapshot, today: string): readonly Ac
           reason: `All ${gate.requirementsTotal} requirements passed with evidence attached. ${consequence}`,
           dueLabel: 'Ready now',
           actionLabel: 'Review and sign',
-          actionHref: detail,
+          actionHref: `${detail}?gate=${encodeURIComponent(gate.definitionKey)}`,
         }));
       } else {
         cards.push(build(job, {
@@ -246,11 +226,11 @@ export function deriveJobCards(job: CardJobSnapshot, today: string): readonly Ac
           subject: gate.definitionKey,
           title: `${gate.title}: ${gate.requirementsPassed} of ${gate.requirementsTotal} clear`,
           reason: gate.evidenceComplete
-            ? 'Evidence is attached; the remaining requirements still need evaluating.'
-            : 'Requirements are still outstanding or missing their required evidence.',
+            ? 'The remaining requirements still need evaluating.'
+            : 'Requirements are still outstanding. Photos and other evidence are optional documentation.',
           dueLabel: null,
           actionLabel: 'Open the Gate',
-          actionHref: detail,
+          actionHref: `${detail}?gate=${encodeURIComponent(gate.definitionKey)}`,
         }));
       }
       continue;
@@ -280,7 +260,7 @@ export function deriveJobCards(job: CardJobSnapshot, today: string): readonly Ac
             + 'so no evidence is being collected against it.',
           dueLabel: null,
           actionLabel: 'Open the Gate',
-          actionHref: detail,
+          actionHref: `${detail}?gate=${encodeURIComponent(gate.definitionKey)}`,
         }));
       } else if (gatePhase === currentPhase + 1) {
         cards.push(build(job, {
@@ -294,7 +274,7 @@ export function deriveJobCards(job: CardJobSnapshot, today: string): readonly Ac
             : `The next Gate on this job, and it releases ${gate.drawCode.replace('draw-', 'Draw ')}.`,
           dueLabel: null,
           actionLabel: 'View project',
-          actionHref: detail,
+          actionHref: `${detail}?gate=${encodeURIComponent(gate.definitionKey)}`,
         }));
       }
     }
@@ -429,8 +409,8 @@ export function deriveJobCards(job: CardJobSnapshot, today: string): readonly Ac
       dueLabel: inspection.lastSafeRequestOn === null
         ? null
         : `Request by ${readableDay(inspection.lastSafeRequestOn)}`,
-      actionLabel: 'Open project',
-      actionHref: detail,
+      actionLabel: 'Open inspection',
+      actionHref: `${detail}?focus=inspections`,
     }));
   }
 
@@ -504,7 +484,7 @@ export function deriveJobCards(job: CardJobSnapshot, today: string): readonly Ac
           urgency: 'urgent',
           subject: 'target',
           title: 'Target completion has passed',
-          reason: `The target window ended and the job is still in ${phase.title} (phase ${phase.sequence} of 9). `
+          reason: `The target window ended and the job is still in ${phase.title} (phase ${phase.sequence} of 11). `
             + 'The customer is working from the old date until someone tells them otherwise.',
           dueLabel: dayCountLabel(days, 'Overdue by', 'Overdue by', 'Due today'),
           actionLabel: 'View project',
@@ -517,7 +497,7 @@ export function deriveJobCards(job: CardJobSnapshot, today: string): readonly Ac
           urgency: 'routine',
           subject: 'target',
           title: `Target completion ${readableDay(project.targetCompletionEnd)}`,
-          reason: `Currently in ${phase.title}, phase ${phase.sequence} of 9.`,
+          reason: `Currently in ${phase.title}, phase ${phase.sequence} of 11.`,
           dueLabel: dayCountLabel(days, 'In', 'In', 'Due today'),
           actionLabel: 'View project',
           actionHref: detail,

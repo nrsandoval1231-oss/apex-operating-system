@@ -5,7 +5,7 @@
   "type": "module",
   "packageManager": "pnpm@11.18.0",
   "scripts": {
-    "test": "vitest run --maxWorkers=1 && vitest run --config integration-tests/vitest.config.ts --maxWorkers=1",
+    "test": "vitest run --maxWorkers=1 --no-file-parallelism && vitest run --config integration-tests/vitest.config.ts --maxWorkers=1 --no-file-parallelism",
     "test:watch": "vitest",
     "typecheck": "tsc -b && tsc --noEmit -p apps/apex-os/tsconfig.json",
     "build": "pnpm typecheck",
