@@ -103,6 +103,16 @@ const PHASE_COPY: Readonly<Record<ConstructionPhaseKey, PhaseCopy>> = {
       + 'This is what makes the pool run rather than what it looks like.',
     preview: 'pumps, filtration, and controls installed',
   },
+  'automation-programming': {
+    headline: 'Automation programming',
+    now: 'The pool controls are being programmed and tested against the installed equipment and configured features.',
+    preview: 'automation programmed and tested',
+  },
+  'cover-install': {
+    headline: 'Automatic cover installation',
+    now: 'The automatic cover, guides, box, and safety controls are being installed and tested.',
+    preview: 'the automatic cover installed and tested',
+  },
   'plaster-fill': {
     headline: 'Plaster and fill',
     now: 'The interior finish is being applied and the pool is being filled. '

@@ -90,7 +90,7 @@ describe('every card is well formed', () => {
 });
 
 describe('gate cards', () => {
-  it('puts a countersign at the top as urgent', () => {
+  it('does not create a countersign action card for legacy state', () => {
     const cards = deriveJobCards(job({
       gates: [gate({
         definitionKey: 'pre-gunite', title: 'Pre-gunite hold point', drawCode: null,
@@ -98,10 +98,7 @@ describe('gate cards', () => {
         signedByName: 'Site Super', signedAt: '2026-07-29T12:00:00.000Z',
       })],
     }), TODAY);
-    const card = find(cards, 'gate.countersign');
-    expect(card).toMatchObject({ group: 'needs-you', urgency: 'urgent' });
-    expect(card?.reason).toContain('Site Super');
-    expect(card?.dueLabel).toBe('Held 2 days');
+    expect(find(cards, 'gate.countersign')).toBeUndefined();
   });
 
   it('treats a blocked gate as urgent and says what it stops', () => {
@@ -122,7 +119,7 @@ describe('gate cards', () => {
     const card = find(deriveJobCards(job({
       gates: [gate({ requiresCountersign: true, drawCode: null, requirementsPassed: 3, evidenceComplete: true })],
     }), TODAY), 'gate.ready');
-    expect(card?.reason).toMatch(/does not release until an owner countersigns/i);
+    expect(card?.reason).toMatch(/releasing it authorizes the next phase/i);
   });
 
   it('reports progress rather than an action while requirements are outstanding', () => {
@@ -141,7 +138,7 @@ describe('gate cards', () => {
     const withoutEvidence = find(deriveJobCards(job({
       gates: [gate({ requirementsPassed: 2, evidenceComplete: false })],
     }), TODAY), 'gate.in-progress');
-    expect(withoutEvidence?.reason).toMatch(/missing their required evidence/i);
+    expect(withoutEvidence?.reason).toMatch(/photos and other evidence are optional/i);
   });
 
   it('asks to open the gate for the phase the job is actually in', () => {

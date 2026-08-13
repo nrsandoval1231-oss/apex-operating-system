@@ -160,8 +160,8 @@ describe('the feed reads gate progress from the database', () => {
   it('counts evidence and evaluations separately', async () => {
     await runGate('excavation', 'started');
     const started = byKind(await cards(), 'gate.in-progress');
-    expect(started?.title).toBe('Excavation: 0 of 6 clear');
-    expect(started?.reason).toMatch(/missing their required evidence/i);
+    expect(started?.title).toBe('Excavation: 0 of 4 clear');
+    expect(started?.reason).toMatch(/still need evaluating/i);
 
     await runGate('excavation', 'evidence');
     const withEvidence = byKind(await cards(), 'gate.in-progress');
@@ -193,19 +193,15 @@ describe('the feed reads gate progress from the database', () => {
   });
 });
 
-describe('the countersign card', () => {
-  it('names the signer and how long the work has been held', async () => {
+describe('legacy countersign state', () => {
+  it('does not create a countersign action card', async () => {
     await addApprovedTakeoff();
     await openProject('gunite');
     await runGate('pre-gunite', 'signed');
 
     const feed = await cards();
     const card = byKind(feed, 'gate.countersign');
-    expect(card).toMatchObject({ group: 'needs-you', urgency: 'urgent' });
-    expect(card?.reason).toContain('Site Super');
-    expect(card?.dueLabel).toBe('Held 2 days');
-    // It is the most urgent thing on the feed, so it sorts first.
-    expect(feed[0]?.kind).toBe('gate.countersign');
+    expect(card).toBeUndefined();
   });
 });
 

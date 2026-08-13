@@ -60,8 +60,8 @@ construction-management suite. QuickBooks stays the financial authority.
 - Draw schedule fixed by Apex's contract: 10 / 30 / 30 / 20 / 10.
 - Six customer-facing milestones collapse the nine internal phases.
 - Evidence is photos taken on a phone at a jobsite, hashed and stored privately.
-- The separate Gate field console at `/` on the API host is where evidence
-  capture and gate sign-off happen.
+- Evidence capture and Gate release happen inside the Project workspace; there is
+  no separate Gate staff console.
 - Authority for all of the above: `docs/decisions/construction-model.md`,
   confirmed 2026-07-31.
 

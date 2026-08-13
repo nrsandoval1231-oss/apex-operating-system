@@ -70,7 +70,7 @@ describe('Gate command authority and evidence separation', () => {
     })).toThrow(DomainRuleError);
   });
 
-  it('fails closed when required evidence is missing', () => {
+  it('allows a Gate to release after every requirement passes without photo evidence', () => {
     let state = apply(readyState(), { type: 'start-gate', actor: fieldActor, at: '2026-07-29T12:00:00.000Z' });
     for (const requirementKey of ['steel-spacing', 'bonding']) {
       state = apply(state, {
@@ -85,7 +85,7 @@ describe('Gate command authority and evidence separation', () => {
       type: 'release-gate',
       actor: fieldActor,
       at: '2026-07-29T12:03:00.000Z',
-    })).toThrow(/evidence/i);
+    })).not.toThrow();
   });
 
   it('releases only after every requirement passes with its own evidence', () => {

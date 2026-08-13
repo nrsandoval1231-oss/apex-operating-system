@@ -196,12 +196,33 @@ describe('the job summary read model', () => {
   });
 });
 
+describe('closing a completed job', () => {
+  it('closes a completed job only after reconciliation and is idempotent', async () => {
+    await expect(service.closeJob({ jobId: ids.job, actor: owner, idempotencyKey: 'close-before-complete' }))
+      .rejects.toThrow(/marked complete/i);
+    await db.query(`update jobs set status = 'complete' where job_id = $1`, [ids.job]);
+    const closed = await service.closeJob({ jobId: ids.job, actor: owner, idempotencyKey: 'close-job-key' });
+    expect(closed.status).toBe('closed');
+    expect((await db.query(`select status, closed_by, reconciliation_complete from jobs where job_id = $1`, [ids.job])).rows[0])
+      .toMatchObject({ status: 'closed', closed_by: ids.owner, reconciliation_complete: true });
+    expect((await db.query(`select event_type from events where job_id = $1 and event_type = 'job.closed'`, [ids.job])).rows)
+      .toHaveLength(1);
+    expect((await service.closeJob({ jobId: ids.job, actor: owner, idempotencyKey: 'different-key' })).status).toBe('closed');
+  });
+
+  it('refuses field closure', async () => {
+    await db.query(`update jobs set status = 'complete' where job_id = $1`, [ids.job]);
+    await expect(service.closeJob({ jobId: ids.job, actor: fieldActor, idempotencyKey: 'field-close' }))
+      .rejects.toThrow(/may not close/i);
+  });
+});
+
 describe('the fixed construction model', () => {
-  it('holds exactly the nine confirmed phases and six milestones', async () => {
+  it('holds exactly the eleven confirmed phases and six milestones', async () => {
     const phases = await db.query<{ phase_key: string }>('select phase_key from construction_phases order by sequence');
     expect(phases.rows.map((row) => row.phase_key)).toEqual([
       'design-permitting', 'layout-excavation', 'steel-reinforcement', 'rough-in', 'gunite',
-      'tile-coping', 'decking', 'equipment-hookup', 'plaster-fill',
+      'tile-coping', 'decking', 'equipment-hookup', 'automation-programming', 'cover-install', 'plaster-fill',
     ]);
     const milestones = await db.query('select milestone_key from customer_milestones');
     expect(milestones.rows).toHaveLength(6);

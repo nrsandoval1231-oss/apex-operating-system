@@ -69,7 +69,7 @@ export const milestoneTitle = (key: CustomerMilestoneKey): string =>
 
 export const PHASE_COUNT = CONSTRUCTION_PHASES.length;
 
-/** "Phase 5 of 9 · Gunite/Shotcrete Concrete Pour", or the absence of a project. */
+/** "Phase 5 of 11 · Gunite/Shotcrete Concrete Pour", or the absence of a project. */
 export const phaseLine = (project: JobSummaryProject | null): string =>
   project === null
     ? 'Not opened as a construction project'

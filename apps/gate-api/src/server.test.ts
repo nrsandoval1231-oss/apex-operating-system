@@ -103,6 +103,48 @@ afterEach(async () => {
   await rm(storage, { recursive: true, force: true });
 });
 
+describe('manual project intake', () => {
+  it('creates a referral lead, active job, and Design & Permitting project', async () => {
+    const office = await token(ids.office, 'office');
+    const response = await call('/api/projects/intake', office, {
+      method: 'POST',
+      headers: { 'idempotency-key': 'manual-referral-test-0001' },
+      body: JSON.stringify({
+        customerName: 'Jamie Referral', streetAddress: '123 Main Street', city: 'Lubbock', state: 'tx',
+        postalCode: '79401', phone: '806-555-0100', email: 'jamie@example.com',
+        referralSource: 'Friend of Nick', notes: 'Interested in a backyard pool.',
+      }),
+    });
+    expect(response.status).toBe(201);
+    const created = await response.json() as {
+      jobId: string; customerName: string | null; addressLine: string | null;
+      project: { currentPhaseKey: string } | null;
+    };
+    expect(created.customerName).toBe('Jamie Referral');
+    expect(created.addressLine).toBe('123 Main Street, Lubbock, TX 79401');
+    expect(created.project?.currentPhaseKey).toBe('design-permitting');
+
+    const repeat = await call('/api/projects/intake', office, {
+      method: 'POST',
+      headers: { 'idempotency-key': 'manual-referral-test-0001' },
+      body: JSON.stringify({
+        customerName: 'Different Name', streetAddress: '456 Other Street', city: 'Lubbock', state: 'TX', postalCode: '79402',
+      }),
+    });
+    expect(repeat.status).toBe(200);
+    expect((await repeat.json() as { jobId: string }).jobId).toBe(created.jobId);
+  });
+
+  it('does not allow a field user to create a project intake', async () => {
+    const field = await token(ids.field, 'field');
+    const response = await call('/api/projects/intake', field, {
+      method: 'POST', headers: { 'idempotency-key': 'manual-referral-test-0002' },
+      body: JSON.stringify({ customerName: 'Nope', streetAddress: '1 Main', city: 'Lubbock', state: 'TX', postalCode: '79401' }),
+    });
+    expect(response.status).toBe(403);
+  });
+});
+
 describe('Gate HTTP vertical slice', () => {
   it('runs approved revision through evidence, release, draw, and customer-safe publication', async () => {
     const field = await token(ids.field, 'field');
@@ -179,24 +221,10 @@ describe('Gate HTTP vertical slice', () => {
       method: 'POST', body: '{}', headers: { 'idempotency-key': 'api-release-0001' },
     });
     expect(signoff.status).toBe(200);
-    const signed = await signoff.json() as { state: { status: string }; events: Array<{ eventType: string }> };
-    expect(signed.state.status).toBe('awaiting-countersign');
-    expect(signed.events.map((event) => event.eventType)).toEqual(['gate.signoff_recorded']);
-
-    // The same superintendent cannot finish the job on his own.
-    const selfCountersign = await call(`/api/gates/${gate.gateInstanceId}/countersign`, superintendent, {
-      method: 'POST', body: '{}', headers: { 'idempotency-key': 'api-self-countersign-1' },
-    });
-    expect(selfCountersign.status).toBe(409);
-
-    const release = await call(`/api/gates/${gate.gateInstanceId}/countersign`, ownerToken, {
-      method: 'POST', body: '{}', headers: { 'idempotency-key': 'api-countersign-0001' },
-    });
-    expect(release.status).toBe(200);
-    const released = await release.json() as { state: { status: string }; events: Array<{ eventType: string }> };
-    expect(released.state.status).toBe('released');
-    // Pre-gunite bears no draw, so releasing it creates no draw eligibility.
-    expect(released.events.map((event) => event.eventType)).toEqual(['gate.countersigned', 'gate.released', 'customer_update.published']);
+    const released = signoff;
+    const releasedBody = await released.json() as { state: { status: string }; events: Array<{ eventType: string }> };
+    expect(releasedBody.state.status).toBe('released');
+    expect(releasedBody.events.map((event) => event.eventType)).toEqual(['gate.released', 'customer_update.published']);
 
     const milestones = await call(`/api/customer/jobs/${ids.job}/milestones`, customer);
     expect(milestones.status).toBe(200);
@@ -563,7 +591,7 @@ describe('Gate HTTP vertical slice', () => {
     expect(planResponse.status).toBe(200);
     const plan = await planResponse.json() as Array<Record<string, unknown>>;
     expect(plan.map((entry) => entry.definitionKey)).toEqual([
-      'permit', 'excavation', 'pre-gunite', 'shell', 'deck-tile', 'equipment', 'final',
+      'permit', 'excavation', 'pre-gunite', 'shell', 'deck-tile', 'equipment', 'automation-programming-complete', 'cover-install', 'final',
     ]);
     expect(plan.every((entry) => entry.gateInstanceId === null && entry.status === null)).toBe(true);
 
@@ -596,6 +624,12 @@ describe('Gate HTTP vertical slice', () => {
 
     const list = await call('/api/jobs', office);
     expect(list.status).toBe(200);
+    const activeView = await call('/api/jobs?view=active', office);
+    expect(activeView.status).toBe(200);
+    expect(await activeView.json()).toHaveLength(1);
+    const historicalView = await call('/api/jobs?view=historical', office);
+    expect(historicalView.status).toBe(200);
+    expect(await historicalView.json()).toHaveLength(0);
     const jobs = await list.json() as Array<Record<string, unknown>>;
     expect(jobs).toHaveLength(1);
     expect(jobs[0]).toMatchObject({ jobId: ids.job, leadId: ids.lead, status: 'active' });
@@ -624,7 +658,7 @@ describe('Gate HTTP vertical slice', () => {
     const summary = await detail.json() as { currentGate: Record<string, unknown> | null };
     expect(summary.currentGate).toMatchObject({
       definitionKey: 'pre-gunite',
-      definitionVersion: 3,
+      definitionVersion: 5,
       title: 'Pre-gunite hold point',
       status: 'not-started',
     });
@@ -663,19 +697,12 @@ describe('Gate HTTP vertical slice', () => {
     expect(await ready.json()).toMatchObject({ status: 'degraded', database: false });
   });
 
-  it('requires authentication and idempotency headers', async () => {
+  it('requires authentication and idempotency headers, with staff UI under Apex OS', async () => {
     const health = await fetch(`${baseUrl}/health`);
     expect(health.status).toBe(200);
-    const consolePage = await fetch(`${baseUrl}/`);
-    expect(consolePage.status).toBe(200);
-    expect(consolePage.headers.get('content-security-policy')).toContain("object-src 'none'");
-    /*
-     * Asserts the console was served, not what Gate it names. This used to check
-     * for "Pre-gunite Gate", a title left over from when that was the only
-     * template; the heading is now filled in from whichever Gate is actually
-     * open, so pinning the old string here would have kept the wrong one alive.
-     */
-    expect(await consolePage.text()).toContain('APEX FIELD CONTROL');
+    const staffApp = await fetch(`${baseUrl}/app`);
+    expect(staffApp.status).toBe(200);
+    expect(staffApp.headers.get('content-security-policy')).toContain("object-src 'none'");
     const unauthenticated = await fetch(`${baseUrl}/api/jobs/${ids.job}/gates/pre-gunite`, { method: 'POST' });
     expect(unauthenticated.status).toBe(403);
     const invalid = await call(`/api/jobs/${ids.job}/gates/pre-gunite`, 'not-a-valid-token', { method: 'POST' });

@@ -27,17 +27,26 @@ export default function Layout() {
         {/* The bar spans the screen so its rule does; the links inside stay in
             the same column as the content, or nothing on the page lines up. */}
         <div className="sheet nav-inner">
+          <a className="workspace-brand" href="/app/today" aria-label="Apex workspace home">APEX <span>OS</span></a>
           <NavLink to="/today">
             <span>Today</span>
             {/* The count is the reason to look. It only appears when it is not zero. */}
             {needsYou > 0 && <span className="badge">{needsYou}</span>}
           </NavLink>
+          <NavLink to="/calendar">
+            <span>Calendar</span>
+          </NavLink>
+          <a href="http://localhost:5173/" className="workspace-link">Designer</a>
           <NavLink to="/projects">
             <span>Projects</span>
+          </NavLink>
+          <NavLink to="/historical">
+            <span>History</span>
           </NavLink>
           <NavLink to="/brief">
             <span>Brief</span>
           </NavLink>
+
         </div>
       </nav>
 

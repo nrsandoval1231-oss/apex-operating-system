@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
  *
  * This moved from `sessionStorage` to `localStorage` on 2026-08-07, which is a
  * deliberate loosening: the session now outlives the tab so that staff stop
- * re-authenticating all day and the Gate field console can see a sign-in that
+ * re-authenticating all day and the Project workspace can see a sign-in that
  * happened in Apex OS. The parts worth testing are the ones that fail quietly —
  * a migration that drops the existing session would sign the company out
  * mid-shift, and a cross-tab listener that does not fire would leave a signed-out

@@ -115,11 +115,11 @@ const runToSignature = async (definitionKey: string, actor: EventActor = superin
   return { gateInstanceId, result };
 };
 
-describe('the seven templates', () => {
+describe('the eleven templates', () => {
   it('are all active and ordered through the build', async () => {
     const plan = await service.listJobGates(ids.job);
     expect(plan.map((entry) => entry.definitionKey)).toEqual([
-      'permit', 'excavation', 'pre-gunite', 'shell', 'deck-tile', 'equipment', 'final',
+      'permit', 'excavation', 'pre-gunite', 'shell', 'deck-tile', 'equipment', 'automation-programming-complete', 'cover-install', 'final',
     ]);
     // No Gate has been opened, and the plan says so rather than implying skips.
     expect(plan.every((entry) => entry.gateInstanceId === null && entry.status === null)).toBe(true);
@@ -136,17 +136,17 @@ describe('the seven templates', () => {
       ]);
   });
 
-  it('require a countersign on pre-gunite alone', async () => {
+  it('does not require a countersign on pre-gunite for the dry run', async () => {
     const plan = await service.listJobGates(ids.job);
     expect(plan.filter((entry) => entry.requiresCountersign).map((entry) => entry.definitionKey))
-      .toEqual(['pre-gunite']);
+      .toEqual([]);
   });
 
   it('each sit on a confirmed construction phase', async () => {
     const plan = await service.listJobGates(ids.job);
     expect(plan.map((entry) => entry.phaseKey)).toEqual([
       'design-permitting', 'layout-excavation', 'gunite', 'gunite',
-      'decking', 'equipment-hookup', 'plaster-fill',
+      'decking', 'equipment-hookup', 'equipment-hookup', 'cover-install', 'plaster-fill',
     ]);
   });
 });
@@ -185,28 +185,35 @@ describe('running three Gate types on one job', () => {
     expect(released).toEqual(['permit', 'excavation', 'shell']);
   });
 
-  it('holds pre-gunite open on one signature while the others release', async () => {
+  it('releases pre-gunite after one signature during the dry run', async () => {
     const preGunite = await runToSignature('pre-gunite');
-    expect(preGunite.result.state.status).toBe('awaiting-countersign');
-
-    const countersigned = await service.execute(preGunite.gateInstanceId, {
-      type: 'countersign-gate', actor: owner, at,
-    }, { idempotencyKey: 'countersign-pre-gunite' });
-    expect(countersigned.state.status).toBe('released');
-    expect(countersigned.events.map((e) => e.eventType))
-      .toEqual(['gate.countersigned', 'gate.released', 'customer_update.published']);
+    expect(preGunite.result.state.status).toBe('released');
+    expect(preGunite.result.events.map((e) => e.eventType))
+      .toEqual(['gate.released', 'customer_update.published']);
   });
 
-  it('carries the PRD §9.4 baseline on pre-gunite, plus anti-entrapment', async () => {
+  it('carries the rough-in checklist on pre-gunite', async () => {
     const gateInstanceId = createCanonicalId('gate');
     const gate = await service.createGate({ gateInstanceId, jobId: ids.job, definitionKey: 'pre-gunite' });
-    // v3 adds the suction-outlet check to the eleven-item §9.4 baseline. It has
-    // to happen here because the shell buries the plumbing.
-    expect(gate.definitionVersion).toBe(3);
+    expect(gate.definitionVersion).toBe(5);
     expect(gate.requirements.size).toBe(12);
-    expect([...gate.requirements.keys()]).toContain('plumbing-pressure-test');
-    expect([...gate.requirements.keys()]).toContain('anti-entrapment-installed');
-    expect([...gate.requirements.values()].every((r) => r.evidenceRequired)).toBe(true);
+    expect([...gate.requirements.keys()]).not.toContain('hydrostatic-relief-installed');
+    expect([...gate.requirements.keys()]).not.toContain('substrate-condition');
+    expect([...gate.requirements.keys()]).not.toContain('crew-qualification-confirmed');
+    expect([...gate.requirements.keys()]).not.toContain('mix-design-confirmed');
+    expect([...gate.requirements.keys()]).not.toContain('anti-entrapment-installed');
+    expect([...gate.requirements.keys()]).toContain('cover-box-checked');
+    expect([...gate.requirements.keys()]).toContain('returns-checked');
+    expect([...gate.requirements.keys()]).toContain('drains-checked');
+    expect([...gate.requirements.keys()]).toContain('skimmers-checked');
+    expect([...gate.requirements.keys()]).toContain('cover-box-electrical-conduit-checked');
+    expect([...gate.requirements.keys()]).toEqual(expect.arrayContaining([
+      'cover-box-checked',
+      'returns-checked',
+      'drains-checked',
+      'skimmers-checked',
+      'cover-box-electrical-conduit-checked',
+    ]));
   });
 });
 
@@ -224,18 +231,18 @@ describe('opening Gates', () => {
   });
 
   it('refuses a superseded definition version', async () => {
-    // v1 and v2 are inactive; asking for pre-gunite resolves to the live v3.
+    // v1, v2, and v3 are inactive; asking for pre-gunite resolves to the live v4.
     const gate = await service.createGate({
       gateInstanceId: createCanonicalId('gate'), jobId: ids.job, definitionKey: 'pre-gunite',
     });
-    expect(gate.definitionVersion).toBe(3);
+    expect(gate.definitionVersion).toBe(5);
     const retired = await db.query<{ count: string }>(
       `select count(*)::text as count from gate_definitions
        where definition_key = 'pre-gunite' and active = false`,
     );
     // Retired, never deleted: a Gate already running against an older checklist
     // keeps the one its field lead was actually asked for.
-    expect(Number(retired.rows[0]?.count)).toBe(2);
+    expect(Number(retired.rows[0]?.count)).toBe(4);
   });
 
   it('does not force Gates into sequence, so a job imported mid-build can open Shell first', async () => {

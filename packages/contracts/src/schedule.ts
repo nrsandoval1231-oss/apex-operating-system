@@ -41,6 +41,32 @@ export type ScheduledVisit = z.infer<typeof ScheduledVisitSchema>;
 
 export const ScheduledVisitListSchema = z.array(ScheduledVisitSchema);
 
+export const CalendarTaskTypeSchema = z.enum(['visit', 'gate', 'inspection']);
+export type CalendarTaskType = z.infer<typeof CalendarTaskTypeSchema>;
+
+/** Every dated or date-derived operational task, not only crew visits. */
+export const CalendarEntrySchema = z.strictObject({
+  taskId: z.string().min(1).max(200),
+  taskType: CalendarTaskTypeSchema,
+  title: z.string().min(1).max(200),
+  visitId: idSchemas.visit.nullable(),
+  gateInstanceId: idSchemas.gate.nullable(),
+  inspectionKey: z.string().min(1).max(120).nullable(),
+  jobId: idSchemas.job,
+  customerName: z.string().min(1).max(200),
+  address: z.string().min(1).max(500),
+  subcontractorName: z.string().min(1).max(200).nullable(),
+  trade: z.string().min(1).max(120).nullable(),
+  phaseKey: ConstructionPhaseKeySchema.nullable(),
+  startsOn: z.string().date().nullable(),
+  endsOn: z.string().date().nullable(),
+  status: z.string().min(1).max(60),
+  conflict: z.boolean(),
+  movable: z.boolean(),
+});
+export type CalendarEntry = z.infer<typeof CalendarEntrySchema>;
+export const CalendarEntryListSchema = z.array(CalendarEntrySchema);
+
 /**
  * The two things the system can prove are wrong.
  *

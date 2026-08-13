@@ -98,7 +98,7 @@ const evidence = (requirementKey: string, kind: EvidenceKind = 'photo') => ({
 });
 
 describe('persistent pre-gunite Gate', () => {
-  it('persists the evidence-to-release path and emits draw/customer projections atomically', async () => {
+  it('releases pre-gunite with one signature and no countersign', async () => {
     await service.execute(ids.gate, {
       type: 'start-gate', actor: fieldActor, at: '2026-07-29T14:00:00.000Z',
     }, context('start-gate-1'));
@@ -125,16 +125,8 @@ describe('persistent pre-gunite Gate', () => {
     const signoff = await service.execute(ids.gate, {
       type: 'release-gate', actor: superintendentActor, at: '2026-07-29T14:10:00.000Z',
     }, context('release-gate-1'));
-    expect(signoff.events.map((event) => event.eventType)).toEqual(['gate.signoff_recorded']);
-    expect(signoff.state.status).toBe('awaiting-countersign');
-
-    const release = await service.execute(ids.gate, {
-      type: 'countersign-gate', actor: ownerActor, at: '2026-07-29T14:20:00.000Z',
-    }, context('countersign-gate-1'));
-    // Pre-gunite releases work, not money — it bears no draw.
-    expect(release.events.map((event) => event.eventType)).toEqual([
-      'gate.countersigned', 'gate.released', 'customer_update.published',
-    ]);
+    expect(signoff.events.map((event) => event.eventType)).toEqual(['gate.released', 'customer_update.published']);
+    expect(signoff.state.status).toBe('released');
 
     const reloaded = await new GateService(db).getGate(ids.gate);
     expect(reloaded.status).toBe('released');
@@ -245,7 +237,7 @@ describe('job summary read model', () => {
       gateInstanceId: ids.gate,
       definitionKey: 'pre-gunite',
       // A new Gate pins the active version, which is 2 since the PRD §9.4 baseline landed.
-      definitionVersion: 3,
+      definitionVersion: 5,
       status: 'not-started',
     });
     expect(withGate?.approvedTakeoffRevisionId).toBe(ids.revision);
@@ -341,12 +333,10 @@ describe('a released Gate carries the construction phase with it', () => {
       }, context(`phase-pass-${requirement.key}`));
     }
     await clearInspections('pre-gunite');
-    await service.execute(ids.gate, {
-      type: 'release-gate', actor: superintendentActor, at: '2026-07-29T14:10:00.000Z',
-    }, context('phase-signoff'));
-    return service.execute(ids.gate, {
-      type: 'countersign-gate', actor: ownerActor, at: '2026-07-29T14:20:00.000Z',
-    }, context('phase-countersign'));
+    const release = await service.execute(ids.gate, {
+          type: 'release-gate', actor: superintendentActor, at: '2026-07-29T14:10:00.000Z',
+        }, context('phase-release'));
+        return release;
   };
 
   it('moves the project to the phase the Gate belongs to', async () => {

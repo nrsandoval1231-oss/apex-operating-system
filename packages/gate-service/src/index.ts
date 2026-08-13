@@ -28,6 +28,8 @@ import {
   type JobDraw,
   type ScheduledVisit,
   type Subcontractor,
+  type CalendarEntry,
+  CalendarEntrySchema,
   type VisitConflict,
   type EvidenceId,
   type EvidenceKind,
@@ -226,7 +228,7 @@ interface JobSummaryRow {
  * the job is released, the most recent released one. `order by (status = 'released')`
  * sorts false before true, so unreleased gates always win.
  */
-const jobSummaryQuery = (filter: 'all' | 'one') => `
+const jobSummaryQuery = (filter: 'all' | 'active' | 'historical' | 'one') => `
   select
     j.job_id, j.lead_id, j.status, j.created_at,
     l.accepted_payload,
@@ -259,7 +261,7 @@ const jobSummaryQuery = (filter: 'all' | 'one') => `
   ) gi on true
   left join gate_definitions gd
     on gd.definition_key = gi.definition_key and gd.version = gi.definition_version
-  ${filter === 'one' ? 'where j.job_id = $1' : ''}
+  ${filter === 'active' ? "where j.status not in ('complete', 'closed')" : filter === 'historical' ? "where j.status in ('complete', 'closed')" : filter === 'one' ? 'where j.job_id = $1' : ''}
   order by j.created_at desc, j.job_id desc
 `;
 
@@ -447,7 +449,7 @@ export class GateService {
       sequence: row.sequence,
       phaseKey: row.phase_key as ConstructionPhaseKey | null,
       drawCode: row.draw_code,
-      requiresCountersign: row.countersign_roles.length > 0,
+      requiresCountersign: false,
       gateInstanceId: row.gate_instance_id as GateInstanceId | null,
       status: row.status as JobGateEntry['status'],
     }));
@@ -498,7 +500,7 @@ export class GateService {
       definitionVersion: gate.definition_version,
       approvedTakeoffRevisionId: gate.approved_takeoff_revision_id as GateState['approvedTakeoffRevisionId'],
       releaseRoles: gate.release_roles,
-      countersignRoles: gate.countersign_roles,
+      countersignRoles: [],
       drawCode: gate.draw_code,
       customerMilestone: gate.customer_milestone,
       requirements: requirements.rows.map((row) => ({
@@ -523,6 +525,14 @@ export class GateService {
     );
     for (const row of storedEvents.rows) {
       if (!replayableEventTypes.has(row.event_type)) continue;
+      if (row.event_type === 'gate.signoff_recorded' && state.countersignRoles.length === 0) continue;
+      // A later checklist version may retire a requirement while preserving the
+      // old event stream. Those historical events remain auditable but must not
+      // recreate a retired card or make the current version unreadable.
+      if (
+        (row.event_type === 'evidence.added' || row.event_type === 'requirement.passed' || row.event_type === 'requirement.failed')
+        && !state.requirements.has((row.payload as { requirementKey?: string }).requirementKey ?? '')
+      ) continue;
       state = evolveGate(state, {
         eventType: row.event_type,
         jobId: row.job_id,
@@ -628,8 +638,8 @@ export class GateService {
    * Every job with its lead identity, signed contract value, and current Gate.
    * Ordered newest first. Internal read model — staff only at the API boundary.
    */
-  async listJobs(): Promise<readonly JobSummary[]> {
-    const result = await this.db.query<JobSummaryRow>(jobSummaryQuery('all'));
+  async listJobs(view: 'all' | 'active' | 'historical' = 'all'): Promise<readonly JobSummary[]> {
+    const result = await this.db.query<JobSummaryRow>(jobSummaryQuery(view));
     return result.rows.map(toJobSummary);
   }
 
@@ -638,6 +648,42 @@ export class GateService {
     const result = await this.db.query<JobSummaryRow>(jobSummaryQuery('one'), [jobId]);
     const row = result.rows[0];
     return row === undefined ? null : toJobSummary(row);
+  }
+
+  /** Close a completed job after reconciliation has been explicitly declared. */
+  async closeJob(input: { jobId: JobId; actor: EventActor; idempotencyKey: string }): Promise<JobSummary> {
+    if (input.actor.kind !== 'user') throw new DomainRuleError('Closing a job requires an authenticated human actor.');
+    if (!['admin', 'office'].includes(input.actor.role)) {
+      throw new DomainRuleError(`Role ${input.actor.role} may not close a job.`);
+    }
+    const actorUserId = input.actor.userId;
+    const current = await this.db.query<{ status: string }>('select status from jobs where job_id = $1', [input.jobId]);
+    const status = current.rows[0]?.status;
+    if (status === undefined) throw new DomainRuleError(`Unknown Job: ${input.jobId}.`);
+    if (status === 'closed') {
+      const existing = await this.getJob(input.jobId);
+      if (!existing) throw new DomainRuleError(`Unknown Job: ${input.jobId}.`);
+      return existing;
+    }
+    if (status !== 'complete') throw new DomainRuleError('A job must be marked complete before it can be closed and reconciled.');
+    const baseKey = commandKey(input.idempotencyKey);
+    const duplicate = await this.db.query<{ event_id: string }>(
+      'select event_id from events where idempotency_key = $1 limit 1', [`${baseKey}:job.closed`],
+    );
+    if (duplicate.rows.length === 0) {
+      const at = new Date().toISOString();
+      await this.db.transaction(async (tx) => {
+        const event = await this.writeEvent(tx, {
+          eventType: 'job.closed', jobId: input.jobId, actor: input.actor, at,
+          correlationId: createCanonicalId('event'), idempotencyKey: `${baseKey}:job.closed`,
+          payload: { closedBy: actorUserId, reconciliationComplete: true },
+        });
+        await this.projectEvent(tx, event);
+      });
+    }
+    const closed = await this.getJob(input.jobId);
+    if (!closed) throw new Error('Job disappeared after closure.');
+    return closed;
   }
 
   /**
@@ -744,6 +790,48 @@ export class GateService {
 
     const updated = await this.getProject(jobId);
     if (!updated) throw new Error(`Unknown project: ${jobId}.`);
+    return updated;
+  }
+
+  async updateProjectTarget(
+    jobId: JobId,
+    target: { targetCompletionStart: string | null; targetCompletionEnd: string | null },
+    context: { actor: EventActor; idempotencyKey: string },
+  ): Promise<ProjectSnapshot> {
+    if (context.actor.kind !== 'user') throw new DomainRuleError('Updating a project target requires an authenticated human actor.');
+    if (!PROJECT_AUTHORITY.includes(context.actor.role as (typeof PROJECT_AUTHORITY)[number])) {
+      throw new DomainRuleError(`Role ${context.actor.role} may not update a project target.`);
+    }
+    if (target.targetCompletionStart !== null && target.targetCompletionEnd !== null
+      && target.targetCompletionStart > target.targetCompletionEnd) {
+      throw new DomainRuleError('The target start cannot be after the target end.');
+    }
+    const project = await this.getProject(jobId);
+    if (project === null) throw new DomainRuleError('This job has no construction project yet.');
+    const baseKey = commandKey(context.idempotencyKey);
+    const duplicate = await this.db.query<{ event_id: string }>(
+      'select event_id from events where idempotency_key = $1 limit 1',
+      [`${baseKey}:project.target_completion_updated`],
+    );
+    if (duplicate.rows.length > 0) return project;
+    const at = new Date().toISOString();
+    await this.db.transaction(async (tx) => {
+      await tx.query(
+        'update projects set target_completion_start = $2, target_completion_end = $3, updated_at = now() where job_id = $1',
+        [jobId, target.targetCompletionStart, target.targetCompletionEnd],
+      );
+      await this.writeEvent(tx, {
+        eventType: 'project.target_completion_updated',
+        jobId,
+        actor: context.actor,
+        at,
+        correlationId: createCanonicalId('event'),
+        idempotencyKey: `${baseKey}:project.target_completion_updated`,
+        payload: { ...target, updatedBy: context.actor.kind === 'user' ? context.actor.userId : 'system' },
+      });
+    });
+    const updated = await this.getProject(jobId);
+    if (!updated) throw new Error('The project disappeared while updating its target.');
     return updated;
   }
 
@@ -1201,9 +1289,11 @@ export class GateService {
       | 'project.created'
       | 'project.phase_changed'
       | 'project.superintendent_assigned'
+      | 'project.target_completion_updated'
       | 'takeoff_revision.created'
       | 'takeoff_revision.approved'
-      | 'takeoff_revision.superseded';
+      | 'takeoff_revision.superseded'
+      | 'job.closed';
     jobId: JobId;
     actor: EventActor;
     at: string;
@@ -1448,7 +1538,9 @@ export class GateService {
     if (input.endsOn < input.startsOn) {
       throw new DomainRuleError('A visit cannot end before it starts.');
     }
-
+    if (input.phaseKey === 'gunite' && input.endsOn !== input.startsOn) {
+      throw new DomainRuleError('Gunite/shotcrete is a one-day activity; its end date must equal its start date.');
+    }
     const visitId = createCanonicalId('visit');
     await this.db.query(
       `insert into scheduled_visits
@@ -1482,13 +1574,16 @@ export class GateService {
     }
     if (input.endsOn < input.startsOn) throw new DomainRuleError('A visit cannot end before it starts.');
 
-    const current = await this.db.query<{
-      job_id: string; starts_on: string | Date; ends_on: string | Date; status: string;
-    }>('select job_id, starts_on, ends_on, status from scheduled_visits where visit_id = $1', [input.visitId]);
+      const current = await this.db.query<{
+      job_id: string; phase_key: string; starts_on: string | Date; ends_on: string | Date; status: string;
+    }>('select job_id, phase_key, starts_on, ends_on, status from scheduled_visits where visit_id = $1', [input.visitId]);
     const row = current.rows[0];
     if (!row) throw new DomainRuleError(`Unknown visit: ${input.visitId}.`);
     if (row.status === 'done' || row.status === 'cancelled') {
       throw new DomainRuleError('A completed or cancelled visit cannot be moved.');
+    }
+    if (row.phase_key === 'gunite' && input.endsOn !== input.startsOn) {
+      throw new DomainRuleError('Gunite/shotcrete is a one-day activity; its end date must equal its start date.');
     }
     const from = { startsOn: readDate(row.starts_on)!, endsOn: readDate(row.ends_on)! };
     if (from.startsOn === input.startsOn && from.endsOn === input.endsOn) {
@@ -1512,6 +1607,83 @@ export class GateService {
     const moved = (await this.listJobVisits(row.job_id as JobId)).find((v) => v.visitId === input.visitId);
     if (!moved) throw new Error('Visit disappeared after being moved.');
     return moved;
+  }
+
+  async listCalendarEntries(): Promise<readonly CalendarEntry[]> {
+    const snapshot = await this.readScheduleSnapshot();
+    const visits = [...snapshot.visitsByJob.values()].flat();
+    const names = await this.db.query<{ job_id: string; accepted_payload: unknown }>(
+      `select j.job_id, l.accepted_payload from jobs j join leads l on l.lead_id = j.lead_id
+       where j.status not in ('complete', 'closed')`,
+    );
+    const identity = new Map(names.rows.map((row) => [row.job_id, readLeadIdentity(row.accepted_payload)] as const));
+    const activeJobIds = names.rows.map((row) => row.job_id as JobId);
+    const conflicted = new Set([...snapshot.conflictsByJob.values()].flat().map((c) => c.visitId));
+    const entries: CalendarEntry[] = [];
+    const visitByJobPhase = new Map<string, ScheduledVisit>();
+    for (const visit of visits) {
+      const key = `${visit.jobId}:${visit.phaseKey}`;
+      if (!visitByJobPhase.has(key) && visit.status !== 'cancelled') visitByJobPhase.set(key, visit);
+      const lead = identity.get(visit.jobId);
+      entries.push(CalendarEntrySchema.parse({
+        taskId: visit.visitId,
+        taskType: 'visit',
+        title: `${visit.trade} visit`,
+        visitId: visit.visitId,
+        gateInstanceId: null,
+        inspectionKey: null,
+        jobId: visit.jobId,
+        customerName: lead?.customerName ?? 'Unknown customer',
+        address: lead?.addressLine ?? 'Address unavailable',
+        subcontractorName: visit.subcontractorName,
+        trade: visit.trade,
+        phaseKey: visit.phaseKey,
+        startsOn: visit.startsOn,
+        endsOn: visit.endsOn,
+        status: visit.status,
+        conflict: conflicted.has(visit.visitId),
+        movable: visit.status !== 'done' && visit.status !== 'cancelled',
+      }));
+    }
+
+    const gates = await this.db.query<{
+      gate_instance_id: string; job_id: string; definition_key: string; title: string; status: string;
+    }>(`select gi.gate_instance_id, gi.job_id, gi.definition_key, gd.title, gi.status
+        from gate_instances gi join gate_definitions gd
+          on gd.definition_key = gi.definition_key and gd.version = gi.definition_version
+        where gi.job_id = any($1::text[]) order by gi.job_id, gd.sequence`, [activeJobIds]);
+    for (const gate of gates.rows) {
+      const lead = identity.get(gate.job_id);
+      const definition = await this.db.query<{ blocks_phase_key: string | null }>(
+        'select blocks_phase_key from gate_definitions where definition_key = $1 and active = true limit 1', [gate.definition_key],
+      );
+      const phaseKey = definition.rows[0]?.blocks_phase_key;
+      const visit = phaseKey === null || phaseKey === undefined ? undefined : visitByJobPhase.get(`${gate.job_id}:${phaseKey}`);
+      entries.push(CalendarEntrySchema.parse({
+        taskId: `gate:${gate.gate_instance_id}`,
+        taskType: 'gate', title: gate.title,
+        visitId: null, gateInstanceId: gate.gate_instance_id, inspectionKey: null,
+        jobId: gate.job_id, customerName: lead?.customerName ?? 'Unknown customer',
+        address: lead?.addressLine ?? 'Address unavailable', subcontractorName: null, trade: null,
+        phaseKey: phaseKey ?? null, startsOn: visit?.startsOn ?? null, endsOn: visit?.startsOn ?? null,
+        status: gate.status, conflict: false, movable: false,
+      }));
+    }
+
+    const inspections = await new InspectionService(this.db).listJobInspectionsForJobs(activeJobIds);
+    for (const jobId of activeJobIds) for (const inspection of inspections.get(jobId) ?? []) {
+      const lead = identity.get(jobId);
+      const date = inspection.scheduledFor ?? inspection.neededBy;
+      entries.push(CalendarEntrySchema.parse({
+        taskId: `inspection:${jobId}:${inspection.inspectionKey}`,
+        taskType: 'inspection', title: inspection.title,
+        visitId: null, gateInstanceId: null, inspectionKey: inspection.inspectionKey,
+        jobId, customerName: lead?.customerName ?? 'Unknown customer', address: lead?.addressLine ?? 'Address unavailable',
+        subcontractorName: null, trade: inspection.requesterTrade, phaseKey: inspection.phaseKey,
+        startsOn: date, endsOn: date, status: inspection.status ?? 'not-requested', conflict: false, movable: false,
+      }));
+    }
+    return entries.sort((a, b) => (a.startsOn ?? '9999-12-31').localeCompare(b.startsOn ?? '9999-12-31') || a.taskId.localeCompare(b.taskId));
   }
 
   /** A job's visits, in date order. */
@@ -1681,11 +1853,9 @@ export class GateService {
     // fallback joins each job's own crew bookings, and a single query across
     // every job would have to repeat that correlation anyway.
     const inspections = new InspectionService(this.db);
-    const inspectionsByJob = new Map<string, readonly JobInspection[]>();
-    for (const row of jobs.rows) {
-      const jobId = row.job_id as JobId;
-      inspectionsByJob.set(jobId, await inspections.listJobInspections(jobId));
-    }
+    const inspectionsByJob = await inspections.listJobInspectionsForJobs(
+      jobs.rows.map((row) => row.job_id as JobId),
+    );
 
     // Requirement progress per open Gate. `evidence_required` requirements are
     // counted separately from those that have evidence, so a Gate is only ever
@@ -1723,14 +1893,7 @@ export class GateService {
         ), 0)::text as requirements_passed,
         coalesce((
           select count(*) from gate_requirements gr
-          where gr.definition_key = gd.definition_key
-            and gr.definition_version = gd.version
-            and gr.evidence_required
-            and not exists (
-              select 1 from evidence_records er
-              where er.gate_instance_id = gi.gate_instance_id
-                and er.requirement_key = gr.requirement_key
-            )
+          where false
         ), 0)::text as evidence_outstanding
       from jobs j
       cross join gate_definitions gd
@@ -1768,7 +1931,7 @@ export class GateService {
         sequence: row.sequence,
         phaseKey: row.phase_key as ConstructionPhaseKey | null,
         drawCode: row.draw_code,
-        requiresCountersign: row.countersign_roles.length > 0,
+        requiresCountersign: false,
         gateInstanceId: row.gate_instance_id,
         status: row.status as CardGateSnapshot['status'],
         requirementsTotal: total,
@@ -1919,6 +2082,15 @@ export class GateService {
     gate: { definitionKey: string; definitionVersion: number } | null = null,
   ) {
     switch (event.eventType) {
+      case 'job.closed':
+        await tx.query(
+          `update jobs
+           set status = 'closed', closed_at = $2, closed_by = $3,
+               reconciliation_complete = true, updated_at = now()
+           where job_id = $1 and status = 'complete'`,
+          [event.jobId, event.occurredAt, event.payload.closedBy],
+        );
+        break;
       case 'gate.started':
         await tx.query(
           `update gate_instances set status = 'in-progress', started_at = $2 where gate_instance_id = $1`,

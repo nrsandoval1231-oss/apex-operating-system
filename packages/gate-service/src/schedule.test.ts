@@ -164,8 +164,15 @@ describe('work booked before its gate', () => {
 });
 
 describe('moving a visit', () => {
-  it('keeps the move rather than overwriting the dates', async () => {
+  it('refuses to move gunite across multiple days', async () => {
     const visit = await book(ids.jobA);
+    await expect(service.rescheduleVisit({
+      visitId: visit.visitId, startsOn: '2026-08-17', endsOn: '2026-08-18', actor: owner,
+    })).rejects.toThrow(/one-day activity/i);
+  });
+
+  it('keeps the move rather than overwriting the dates', async () => {
+    const visit = await book(ids.jobA, { phaseKey: 'design-permitting' });
     const moved = await service.rescheduleVisit({
       visitId: visit.visitId, startsOn: '2026-08-17', endsOn: '2026-08-18',
       actor: owner, reason: 'Rain.',

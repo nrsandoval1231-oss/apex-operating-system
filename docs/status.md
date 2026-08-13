@@ -4,7 +4,7 @@
 
 **Program phase:** Phase 1 — Shared operational spine and controlled Gate vertical slice (Phase 0 preservation complete). **Apex OS build plan Steps 1–8 are complete, every MVP item in PRD §19 is built, and all content is approved.** Travis Sandoval approved the inspection list and lead times, the twelve added gate checklist items, and the nine customer-facing phase descriptions as written on 2026-08-03 (`docs/inspections-and-gate-checklists-2026-08-03.md`). Nothing is blocked on code and nothing is awaiting sign-off.
 
-**The whole chain has now been run by a person.** As of 2026-08-07, `apex-os` is live at `https://apex-os-nqlx.onrender.com`, and **Gamble went from a drawn pool to $120,000 of earned draws through seven released Gates without a script in the operating path** — see "A job ran the whole chain" below. The three pilot jobs Travis named — **Gamble, Zephyr and Hoitz** — are all in the deployed database with approved takeoffs; Hoitz carries the first takeoff a person actually drew. What remains before a real pilot is now a mix of the people-dependent (final hostname, real designs and contract values, the contract amendment) and sixteen pieces of recorded field feedback, of which the sharpest are that action cards name work the product cannot perform and that nobody can view the evidence the system so carefully collects.
+- The **historical 2026-08-07 run record** below refers to the then-current nine-phase workflow and two-signature Pre-gunite process. It is preserved as historical evidence and is superseded for active workflows by the current 11-phase, single-signature implementation documented in `STATUS.md` and `docs/decisions/single-signature-gates.md`.
 
 **Deployment is less blocked than it has been recorded as.** Only the DNS record needs a final hostname. The Cloudflare account, the R2 bucket, the Auth0 tenant and the Render blueprint do not, and Render serves a free `*.onrender.com` host that is enough to prove the stack end to end. The domain has been held back deliberately — Monsoon is expected to hand over the existing one (`apex-prds/decision-register.md` item 21) and a second purchase would be waste. **The hard line is unchanged: issue no real customer link until the hostname is final**, because a link's origin is fixed when it is issued and only the token hash is stored.
 
@@ -188,8 +188,7 @@ Currently aligned:
 - Designer-owned canonical quantities flow directly into Proposal pricing with Calc provenance, revision pinning, and an order-sensitive quantity-payload SHA-256
 - Admin/office/field/customer row-level authorization policies
 
-- The nine confirmed construction phases, six customer milestones, and the §9.3
-  project record, keyed by Job ID
+- The **historical nine-phase construction model** described in the original integration notes is superseded by the current eleven-phase model, which adds Automation Programming and Cover Install.
 
 Currently disconnected:
 
@@ -1312,8 +1311,8 @@ What it produced:
 | | |
 |---|---|
 | Approved takeoff | 17 signed quantities, `designer-quantity-v4` |
-| Gates | **7 of 7 released**, including the two-signature pre-gunite hold point |
-| Construction phase | 9 of 9, carried by the Gates rather than set by hand |
+| Gates | **7 of 7 released** in the historical run; active workflow now includes the expanded Equipment, Automation Programming Complete, and Install Cover sequence |
+| Construction phase | **9 of 9 in the historical run**; active workflow now uses 11 phases |
 | Contract | $120,000.00 |
 | Draws | 10/30/30/20/10 → $12,000 / $36,000 / $36,000 / $24,000 / $12,000 |
 | Ready to bill | **$120,000.00** |
@@ -1323,13 +1322,7 @@ attached through the UI. Its digest differs from Gamble's and Zephyr's, which
 share one because both were posted from a script — the difference between a
 fixture replayed and a pool designed.
 
-**Two stand-ins, recorded rather than glossed.** Gamble's contract came from a
-signed proposal row written by hand, because the Proposal engine is not wired to
-Apex OS and there is deliberately no field that takes a contract number — a
-contract value with no proposal behind it is a figure nobody agreed to. And the
-pre-gunite countersign was made by a second `admin` rather than by the
-superintendent who signed off, because the sign-off was recorded as the owner
-first. The two-person rule held either way; what it cannot enforce is *which* two.
+**Historical note:** The two-signature Pre-gunite details in this preserved run record describe the former policy. Active Gates now use one release signature; see `docs/decisions/single-signature-gates.md`.
 
 **Three bugs found by driving, none of which had a failing test:**
 

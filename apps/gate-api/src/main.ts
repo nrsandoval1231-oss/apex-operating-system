@@ -212,7 +212,7 @@ server.listen(port, HOST, () => {
   console.log(`Identity            ${oidc ? `${oidc.issuer} (audience ${oidc.audience})` : 'local pilot secret'}`);
   console.log(`Customer links      ${publicOrigin ? `${publicOrigin}/c/…` : 'this machine only (APEX_PUBLIC_ORIGIN unset)'}`);
   console.log(`Apex OS             http://${HOST}:${port}/app`);
-  console.log(`Gate field console  http://${HOST}:${port}/`);
+
   if (customerContact === undefined) {
     console.warn(
       '  !  No APEX_CUSTOMER_CONTACT_PHONE set: customer progress pages will show no call or text route.',

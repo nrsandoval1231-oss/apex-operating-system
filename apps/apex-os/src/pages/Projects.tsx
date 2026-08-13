@@ -16,7 +16,7 @@ import {
  * pool from another at a glance.
  */
 export default function Projects() {
-  const { data, error, loading, reload } = useJobs();
+  const { data, error, loading, reload } = useJobs('active');
   const jobs = data ?? [];
 
   return (
@@ -60,7 +60,7 @@ export default function Projects() {
             <span className="due">
               {job.project === null
                 ? 'No phase'
-                : `Phase ${job.project.currentPhaseSequence} of 9 · ${milestoneTitle(job.project.customerMilestone)}`}
+                : `Phase ${job.project.currentPhaseSequence} of 11 · ${milestoneTitle(job.project.customerMilestone)}`}
             </span>
             <span className="money">{formatContract(job.contractCents)}</span>
           </div>

@@ -32,15 +32,15 @@ const state = (overrides: Partial<ProjectPhaseState> = {}): ProjectPhaseState =>
 });
 
 describe('the confirmed construction model', () => {
-  it('has exactly the nine phases Apex builds, in order', () => {
-    expect(CONSTRUCTION_PHASES.map((phase) => phase.key)).toEqual([...CONSTRUCTION_PHASE_KEYS]);
-    expect(CONSTRUCTION_PHASES.map((phase) => phase.sequence)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  it('has exactly the eleven phases Apex builds, in order', () => {
+    expect(CONSTRUCTION_PHASE_KEYS).toHaveLength(11);
+    expect(CONSTRUCTION_PHASES.map((phase) => phase.sequence)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
   });
 
-  it('collapses the nine phases into the six customer milestones', () => {
+  it('collapses the eleven phases into the six customer milestones', () => {
     expect(CUSTOMER_MILESTONES).toHaveLength(6);
     expect(CONSTRUCTION_PHASES.map((phase) => phase.customerMilestone)).toEqual([
-      'design', 'excavation', 'shell', 'shell', 'shell', 'finishes', 'finishes', 'water', 'water',
+      'design', 'excavation', 'shell', 'shell', 'shell', 'finishes', 'finishes', 'water', 'water', 'water', 'water',
     ]);
   });
 
@@ -53,7 +53,7 @@ describe('the confirmed construction model', () => {
   });
 
   it('ends the phase chain after plaster and fill', () => {
-    expect(nextConstructionPhase('equipment-hookup')).toBe('plaster-fill');
+    expect(nextConstructionPhase('equipment-hookup')).toBe('automation-programming');
     expect(nextConstructionPhase('plaster-fill')).toBeNull();
   });
 });

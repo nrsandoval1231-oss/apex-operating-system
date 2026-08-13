@@ -558,7 +558,7 @@ export class CustomerService {
       addressLine: identity.addressLine,
       currentPhaseKey: (row.current_phase_key as ConstructionPhaseKey | null) ?? null,
       // Handover comes from the job being finished and from nothing else.
-      jobComplete: row.status === 'complete',
+      jobComplete: row.status === 'complete' || row.status === 'closed',
       decisions: decisions.rows.map((decision): CustomerDecision => ({
         decisionId: decision.decision_id as CustomerDecision['decisionId'],
         title: decision.title,

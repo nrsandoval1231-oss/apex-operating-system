@@ -1,11 +1,14 @@
 import { useState } from 'react';
-import { Link, useParams } from 'react-router';
+import { z } from 'zod';
+import { Link, useParams, useSearchParams } from 'react-router';
 import { CONSTRUCTION_PHASES, type DrawStatus, type VisitStatus } from '@apex/contracts';
 import { useDrawSchedule, useJob, useJobGates, useJobInspections, useJobSchedule } from '../api/useJobs';
 import AttachTakeoff from '../components/AttachTakeoff';
 import AssignSuperintendent from '../components/AssignSuperintendent';
 import ConfirmInvoice from '../components/ConfirmInvoice';
-import GateDetail from '../components/GateDetail';
+import CloseJob from '../components/CloseJob';
+import { apiSend } from '../api/client';
+import GateWorkflow from '../components/GateWorkflow';
 import Inspections from '../components/Inspections';
 import OpenProject from '../components/OpenProject';
 import QueryState from '../components/QueryState';
@@ -55,16 +58,18 @@ const GATE_TAG = (status: string | null): string => {
   return 'tag-pool';
 };
 
-/** Work still to be built on this screen, stated rather than implied. */
-const PENDING = [
-  ['Checklists and photos', 'Requirement checklists and evidence capture run in the Gate field console.'],
-] as const;
-
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>();
-  // Which Gate is open for review. One at a time: this is for looking at a
-  // specific signature, not for scanning them all at once.
-  const [openGate, setOpenGate] = useState<string | null>(null);
+  const [searchParams] = useSearchParams();
+  // Today cards carry the exact Gate they need. Opening it here means the
+  // action feed and the unified Projects workflow are one continuous path.
+  const requestedGate = searchParams.get('gate');
+  const [openGate, setOpenGate] = useState<string | null>(requestedGate);
+  const [movingVisitId, setMovingVisitId] = useState<string | null>(null);
+  const [moveStartsOn, setMoveStartsOn] = useState('');
+  const [moveEndsOn, setMoveEndsOn] = useState('');
+  const [targetEnd, setTargetEnd] = useState('');
+  const [actionError, setActionError] = useState<string | null>(null);
   const { data: job, error, loading, reload } = useJob(id);
   const gates = useJobGates(id);
   const gatePlan = gates.data ?? [];
@@ -78,6 +83,29 @@ export default function ProjectDetail() {
   const today = new Date().toISOString().slice(0, 10);
   const visits = schedule.data?.visits ?? [];
   const conflicts = schedule.data?.conflicts ?? [];
+  const phase = job?.project ?? null;
+
+  const moveVisit = async (visitId: string) => {
+    setActionError(null);
+    try {
+      await apiSend(`/api/visits/${visitId}/move`, z.unknown(), {
+        method: 'POST', body: { startsOn: moveStartsOn, endsOn: moveEndsOn, reason: 'Resolved from Apex Today conflict.' },
+      });
+      setMovingVisitId(null);
+      schedule.reload();
+    } catch (error) { setActionError(error instanceof Error ? error.message : 'Visit could not be moved.'); }
+  };
+
+  const updateTarget = async () => {
+    if (id === undefined || phase === null) return;
+    setActionError(null);
+    try {
+      await apiSend(`/api/jobs/${id}/project/target`, z.unknown(), {
+        method: 'POST', body: { targetCompletionStart: phase.targetCompletionStart, targetCompletionEnd: targetEnd || null },
+      });
+      reload();
+    } catch (error) { setActionError(error instanceof Error ? error.message : 'Target could not be updated.'); }
+  };
 
   if (job === null) {
     return (
@@ -98,8 +126,6 @@ export default function ProjectDetail() {
     );
   }
 
-  const phase = job.project;
-
   return (
     <>
       <header className="title-block">
@@ -116,6 +142,7 @@ export default function ProjectDetail() {
       </header>
 
       <p className="notice">{jobLocation(job)}</p>
+      {actionError !== null && <p className="error" role="alert">{actionError}</p>}
 
       {/* ---------------------------------------------------------- phases */}
 
@@ -158,9 +185,13 @@ export default function ProjectDetail() {
           <div className="track-caption">
             <span className="now">{phase.currentPhaseTitle}</span>
             <span className="of">
-              {phase.currentPhaseSequence} of 9 · {milestoneTitle(phase.customerMilestone)}
+              {phase.currentPhaseSequence} of 11 · {milestoneTitle(phase.customerMilestone)}
             </span>
           </div>
+
+          <p className="notice" style={{ marginTop: '14px' }}>
+            Gates, inspections, and evidence control progression through the build. Releasing the active Gate advances this project to the next applicable construction phase; the phase cannot be skipped from this screen.
+          </p>
 
           <dl className="facts">
             <dt>Super</dt>
@@ -177,6 +208,12 @@ export default function ProjectDetail() {
             <dt>Target</dt>
             <dd className={targetWindow(phase) === null ? 'unset' : ''}>
               {targetWindow(phase) ?? 'Not recorded'}
+              {id !== undefined && (
+                <span className="inline-action">
+                  <input type="date" aria-label="New target completion date" value={(targetEnd || phase.targetCompletionEnd) ?? ''} onChange={(event) => setTargetEnd(event.target.value)} />
+                  <button className="btn ghost" onClick={updateTarget}>Update target</button>
+                </span>
+              )}
             </dd>
             <dt>Risks</dt>
             <dd className={phase.riskNote === null ? 'unset' : ''}>
@@ -212,6 +249,7 @@ export default function ProjectDetail() {
                   <div className="what">{entry.title}</div>
                   <div className="note">
                     {[
+                      entry.phaseKey === null ? null : CONSTRUCTION_PHASES.find((step) => step.key === entry.phaseKey)?.title,
                       entry.drawCode === null ? 'No draw' : 'Releases a draw',
                       entry.requiresCountersign ? 'Owner countersign' : null,
                     ].filter(Boolean).join(' · ')}
@@ -227,20 +265,20 @@ export default function ProjectDetail() {
                     * has no requirements, no evidence and nothing to review — an
                     * expander there would open onto an empty box.
                     */}
-                  {entry.gateInstanceId !== null && (
+                  {(entry.gateInstanceId !== null || entry.status === null) && (
                     <button
                       type="button"
                       className="action action-quiet"
                       aria-expanded={openGate === entry.definitionKey}
                       onClick={() => setOpenGate(openGate === entry.definitionKey ? null : entry.definitionKey)}
                     >
-                      {openGate === entry.definitionKey ? 'Hide proof' : 'See proof'}
+                      {openGate === entry.definitionKey ? 'Hide workflow' : 'Open workflow'}
                     </button>
                   )}
                 </div>
               </div>
-              {openGate === entry.definitionKey && entry.gateInstanceId !== null && (
-                <GateDetail gateInstanceId={entry.gateInstanceId} />
+              {openGate === entry.definitionKey && id !== undefined && (
+                <GateWorkflow jobId={id} entry={entry} onChanged={() => { gates.reload(); reload(); }} />
               )}
             </li>
           ))}
@@ -290,6 +328,18 @@ export default function ProjectDetail() {
                         : `Booked before the ${conflict.gateTitle} gate has released`}
                     </div>
                   ))}
+                  {against.length > 0 && visit.status !== 'done' && visit.status !== 'cancelled' && (
+                    movingVisitId === visit.visitId ? (
+                      <span className="inline-action">
+                        <input type="date" aria-label="Move visit start" value={moveStartsOn} onChange={(event) => setMoveStartsOn(event.target.value)} />
+                        <input type="date" aria-label="Move visit end" value={moveEndsOn} onChange={(event) => setMoveEndsOn(event.target.value)} />
+                        <button className="btn ghost" onClick={() => moveVisit(visit.visitId)}>Save move</button>
+                        <button className="btn ghost" onClick={() => setMovingVisitId(null)}>Cancel</button>
+                      </span>
+                    ) : (
+                      <button className="btn ghost" onClick={() => { setMovingVisitId(visit.visitId); setMoveStartsOn(visit.startsOn); setMoveEndsOn(visit.endsOn); }}>Move visit</button>
+                    )
+                  )}
                 </div>
                 <div className="figure">
                   <span className={`tag ${against.length > 0 ? 'tag-stamp' : VISIT_TAG[visit.status]}`}>
@@ -405,7 +455,10 @@ export default function ProjectDetail() {
 
       {/* ----------------------------------------------------- inspections */}
 
-      {id !== undefined && <Inspections jobId={id} query={inspections} today={today} />}
+      {id !== undefined && <Inspections jobId={id} query={inspections} today={today} focus={new URLSearchParams(window.location.search).get('focus')} />}
+
+      <div className="section-rule"><h2>Completion</h2></div>
+      <CloseJob job={job} onClosed={() => { reload(); }} />
 
       {/* --------------------------------------------------------- customer */}
 
@@ -420,15 +473,7 @@ export default function ProjectDetail() {
         </Link>
       </div>
 
-      <div className="section-rule"><h2>Not built yet</h2></div>
-      <dl className="facts">
-        {PENDING.map(([title, detail]) => (
-          <div key={title} style={{ display: 'contents' }}>
-            <dt>{title}</dt>
-            <dd className="unset">{detail}</dd>
-          </div>
-        ))}
-      </dl>
+
     </>
   );
 }
