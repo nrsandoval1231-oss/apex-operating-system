@@ -1,10 +1,6 @@
 # Apex Operating System
 
-Apex is a unified operating-system project for a pool and outdoor-construction business. It connects lead capture, estimating, technical takeoff, field execution, customer communication, billing gates, job costing, and growth feedback without forcing every workflow into one giant application.
-
-## Vision
-
-The upstream statement of what Apex is for — and the test every work item must pass — lives in [`docs/vision.md`](docs/vision.md). Read it first. Everything below is implementation.
+Apex is the operating system for Apex Designer Pools. It carries one durable project identity from pre-contract opportunity through design, ordering, proposal, construction, closeout, and read-only history.
 
 ## Product thesis
 
@@ -12,95 +8,123 @@ The upstream statement of what Apex is for — and the test every work item must
 
 ## Current state
 
-**Phase 1 — Shared operational spine and controlled Gate vertical slice.**
-
-Phase 0 preservation is complete. The root workspace contains the shared contracts, domain rules, PostgreSQL migrations, authorization policies, private evidence-storage policies, and CI verification, plus the adopted Apex OS UI shell. Apex is **not yet a production end-to-end system**; the next proof is one persistent pre-gunite Gate workflow on a real pilot job.
-
-See:
-
-- [`docs/vision.md`](docs/vision.md) — the vision; upstream source for all product decisions
-- [`docs/status.md`](docs/status.md) — verified current status and launch blockers
-- [`docs/plans/apex-os-v1-build-plan.md`](docs/plans/apex-os-v1-build-plan.md) — approved build sequence
-- [`docs/apex-audit-2026-07-31.md`](docs/apex-audit-2026-07-31.md) — folder audit measured against the vision
-- [`docs/repositories.md`](docs/repositories.md) — private remote and local-source map
-- [`docs/architecture/apex-system-showcase.html`](docs/architecture/apex-system-showcase.html) — visual walkthrough of the unified operating model
-- [`docs/decisions/ADR-0001-system-boundaries.md`](docs/decisions/ADR-0001-system-boundaries.md) — proposed system authorities and boundaries
-- [`docs/decisions/ADR-0002-non-website-build-profile.md`](docs/decisions/ADR-0002-non-website-build-profile.md) — accepted implementation defaults and Website exclusion
-- [`docs/decisions/ADR-0003-canonical-identity-contracts-persistence.md`](docs/decisions/ADR-0003-canonical-identity-contracts-persistence.md) — canonical IDs, events, authorization, evidence, and persistence
-- [Unified implementation plan](.hermes/plans/2026-07-28_160832-apex-unified-operating-system.md)
-
-## Intended lifecycle
+The non-Website product path is implemented, pushed, and CI-verified:
 
 ```text
-Website lead
-→ accepted lead / opportunity
-→ versioned proposal
-→ signed contract / Job ID
-→ versioned plan and takeoff
-→ Gate field execution
-→ inspections and draw releases
-→ QuickBooks invoices, payments, and actual costs
-→ completion and reconciliation
-→ customer review and marketing feedback
+Opportunity
+→ Apex Designer
+→ ordering-focused Takeoff (.xlsx)
+→ Finish estimate
+→ versioned, email-ready Proposal
+→ explicit acceptance / signed Proposal
+→ Job + construction Project
+→ Gates, inspections, evidence, draws, and customer updates
+→ close and archive
+→ immutable, read-only History
 ```
 
-## Existing components
+A pre-contract intake creates a Lead/opportunity only. Apex does **not** create a construction Job until an authorized user records acceptance of the exact issued Proposal version. Closed projects remain searchable and readable, while mutation APIs reject further operational changes.
 
-| Component | Purpose | Current status |
-|---|---|---|
-| `packages/*` + `apps/gate-api` | Operational spine: contracts, domain rules, database, gate service, authenticated pilot API and field console | 85 root tests + 1 integration test passing; local vertical slice only, not production |
-| `apps/apex-os` | Owner/office UI shell (Today feed, Projects, Project detail wired to the Gate API; Owner Brief and Customer view still labelled sample data) | Adopted into the workspace 2026-07-31 |
-| `Apex Designer` | Technical pool/spa plan and materials takeoff | 318 tests pass; real-job reconciliation still gates authority |
-| `apex-proposal-engine` | Quantity-to-price proposal engine | 116 engine checks + 11 evidence checks pass; customer issuance fails closed; provisional pricing is not authority |
-| `apex-website` | External public marketing site and upstream lead producer | Explicitly excluded from this build-out; maintained in a separate workstream |
-| `apex-lead-engine` | n8n intake and job-status workflow source | Source exists; intake inactive; speed-to-lead not built |
-| `apex-prds` | Foundation, decisions, and product requirements, including the decision register | Active |
-| `apex-decks` | Strategy and pitch-deck generators | Deck files regenerate on demand from source; slide-level visual QA pending before external use |
-| `docs/archive/` | Superseded artifacts kept for history — the `gate-v3.jsx` mockup, the pre-wiring browser demo, and two earlier handoffs | Reference only; not source of truth |
+This code is production-shaped but deployment remains an explicit operator decision. See [`STATUS.md`](STATUS.md) for the current verified baseline and [`docs/runbooks/deployment.md`](docs/runbooks/deployment.md) before staging or production work.
 
-Each existing Git component remains an independent repository during Phase 0/1. The root repository preserves the system-level plans and non-repository artifacts. A later approved migration will import component histories into the target monorepo rather than copying files blindly.
+## Authoritative components
 
-## Shared workspace
+| Component | Authority and responsibility |
+|---|---|
+| `Apex Designer` (separate repository) | Pool/spa geometry, true 3′–5′–3′ sports profiles, quantity model `designer-quantity-v5`, plan/section views, and the ordering workbook |
+| `packages/contracts` | Runtime-validated IDs, takeoff/Proposal/Job contracts, events, and customer-safe projections |
+| `packages/pricing-engine` | Typed, fail-closed pricing of an approved takeoff using entered estimates; it never infers missing prices |
+| `packages/database` | Operational PostgreSQL schema, forward-only migrations, immutable proposal/takeoff evidence, events, and closeout state |
+| `packages/gate-service` | Opportunity estimates, Proposal versions, Job binding, Gates, inspections, schedules, draws, closeout, and archived reads |
+| `apps/gate-api` | Authenticated API, evidence storage boundary, migration startup, and customer-safe endpoints |
+| `apps/apex-os` | Office/owner UI for opportunities, Proposals, Projects, Today, Calendar, History, and retained artifacts |
+| `apex-proposal-engine` (separate repository) | Legacy reference/calibration implementation; not the production Proposal authority |
+| `docs/archive/` | Historical evidence only; preserved content is not current guidance |
 
-The root non-Website workspace uses pnpm, strict TypeScript, Vitest, Zod, and PostgreSQL-compatible migrations.
+## Lifecycle invariants
+
+1. **Opportunity before Job.** Intake creates a Lead/opportunity without fabricating signed contract state.
+2. **Designer owns measured quantities.** Apex OS consumes an approved, digest-matching takeoff revision and does not recompute geometry.
+3. **Pricing fails closed.** Every measured line needs an approved estimate; every direct line needs a real quote or an explicit not-applicable decision.
+4. **Proposal versions are durable.** Drafts use optimistic revisions; issued and signed versions are immutable.
+5. **Signing binds exactly once.** Recording acceptance of an issued Proposal idempotently creates one Job and one construction Project.
+6. **Closed means read-only.** Closeout is idempotent, requires reconciliation, preserves artifacts, and has no reopen path.
+7. **External systems do not become hidden authorities.** QuickBooks remains financial authority; n8n is an adapter/notification layer.
+
+## Designer workflow
+
+From `Apex Designer`:
+
+1. Create or select an opportunity.
+2. Draw the pool and choose the depth profile, including **Sports Pool 3′–5′–3′** when appropriate.
+3. Resolve design blockers.
+4. Download **Takeoff (.xlsx)**. `Order List` is the first sheet; excavation and calculation references are secondary.
+5. Use **Finish estimate** to hand the exact design revision to Apex OS.
+6. Complete every authoritative price or explicit not-applicable decision before issuing the Proposal.
+
+Excavation/soil assumptions and raw JSON diagnostics are available under **Advanced** rather than occupying the primary design workflow.
+
+## Proposal workflow
+
+`Finish estimate` is idempotent for an opportunity and design-input digest. It pins the approved takeoff revision and quantity digest, then returns structured pricing blockers or a durable Proposal version.
+
+An authorized admin/office user can:
+
+- review and update a draft with optimistic revision checks;
+- issue a blocker-free version;
+- print/save the customer-ready Proposal as PDF;
+- copy the prepared email or open a `mailto:` draft; and
+- record customer acceptance of the exact issued version.
+
+A mail action prepares content; Apex never claims an email was sent unless an external delivery system later records that fact.
+
+## Construction and History
+
+A signed Proposal creates the Job and Project. Construction uses the current 11-phase model, nine active Gate definitions, inspections, retained evidence, schedules, and the fixed 10/30/30/20/10 draw schedule.
+
+Closeout requires authoritative reconciliation. After close:
+
+- active mutation routes return a domain refusal;
+- retained takeoffs and project artifacts remain readable;
+- History supports customer/address/project identity search; and
+- archived detail omits mutation controls.
+
+## Local verification
+
+Root workspace:
 
 ```bash
 pnpm install
-pnpm verify
+pnpm run typecheck
+pnpm --filter @apex/os build
+pnpm run test
 pnpm audit --prod --audit-level high
 ```
 
-- `packages/contracts` — runtime schemas, canonical IDs, event vocabulary, and customer-safe projections
-- `packages/domain` — pure Gate authority and release rules
-- `packages/database` — operational schema, row-level authorization, private evidence storage, and migration execution tests
-- `packages/gate-service` — idempotent Gate commands, durable event reconstruction, and atomic release projections
-- `apps/gate-api` — authenticated loopback pilot API, private evidence files, and the field console
-- `apps/apex-os` — the Apex OS React UI shell
+Designer repository:
 
-The controlled-pilot procedure and refusal boundaries are in [`docs/runbooks/gate-controlled-pilot.md`](docs/runbooks/gate-controlled-pilot.md).
+```bash
+npm install
+npm test
+npm run build
+```
 
-## System boundaries
+The latest verified baseline is in [`STATUS.md`](STATUS.md). CI also runs the container against real PostgreSQL and MinIO-compatible storage, tests the no-object-storage warning path, and proves a deployed image cannot enable the local authentication bypass.
 
-- Apex Postgres: operational identity, jobs, proposals, takeoff revisions, gates, events, and customer-safe projections
-- Shared pool engine: authoritative geometry and quantities
-- Shared pricing engine: cost codes, rates, allowances, and proposal totals
-- Gate: field-facing command center
-- n8n: notifications and external adapters, not canonical business state
-- QuickBooks: financial authority
-- Monday: transitional adapter only unless an explicit decision says otherwise
+## Documentation map
 
-## Historical artifacts
+- [`STATUS.md`](STATUS.md) — concise current state, verification, and remaining operational work
+- [`NEXT.md`](NEXT.md) — immediate staging/pilot sequence
+- [`docs/runbooks/deployment.md`](docs/runbooks/deployment.md) — deployment, rollback, backup, identity, storage, and CI keys
+- [`docs/decisions/project-workspace-gate-boundary.md`](docs/decisions/project-workspace-gate-boundary.md) — authoritative mutation boundary
+- [`docs/decisions/single-signature-gates.md`](docs/decisions/single-signature-gates.md) — current active Gate authority
+- [`docs/requirements/designer-next-slice.md`](docs/requirements/designer-next-slice.md) — implemented Designer slice and explicitly deferred catalog/dig-sheet items
+- [`docs/status.md`](docs/status.md) — chronological engineering record; older sections are historical, not current status
+- [`docs/archive/README.md`](docs/archive/README.md) — superseded artifacts and preserved evidence
 
-The following are preserved for history but must not be treated as current source of truth:
+## Safety
 
-They live in [`docs/archive/`](docs/archive/README.md), which says what each one is and what replaced it:
-
-- `apex-handoff.md` — original client/project context (Travis, margin finding, tooling decisions)
-- `SESSION-HANDOFF.md` — 2026-07-26 build-state handoff
-- `gate-v3.jsx`, `demo.html`, `README-DEMO.md` — the pre-`apps/apex-os` prototypes
-
-Superseded artifacts were moved to `_to_delete/` during the 2026-07-31 cleanup and the root was flattened again on 2026-08-05. Current status belongs in `docs/status.md`. Architecture decisions belong in `docs/decisions/`.
-
-## Safety and readiness
-
-Do not use current calculation outputs for material ordering, safety-critical field decisions, or customer pricing without reviewing the blockers in `docs/status.md` and reconciling against approved real-job inputs.
+- Do not invent prices, send claims, signed acceptance, safety facts, or customer data.
+- Do not edit or delete applied migrations; reverse behavior with a new forward migration.
+- Do not issue real customer links until the final HTTPS origin is configured.
+- Do not treat archived fixtures or the legacy Proposal engine as current production authority.

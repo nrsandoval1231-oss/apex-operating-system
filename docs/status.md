@@ -1,24 +1,18 @@
 # Apex Current Status
 
-**Last updated:** 2026-08-07
+**Last current-status update:** 2026-08-13
 
-**Program phase:** Phase 1 — Shared operational spine and controlled Gate vertical slice (Phase 0 preservation complete). **Apex OS build plan Steps 1–8 are complete, every MVP item in PRD §19 is built, and all content is approved.** Travis Sandoval approved the inspection list and lead times, the twelve added gate checklist items, and the nine customer-facing phase descriptions as written on 2026-08-03 (`docs/inspections-and-gate-checklists-2026-08-03.md`). Nothing is blocked on code and nothing is awaiting sign-off.
+> **Chronological engineering record.** Current operational status moved to root [`STATUS.md`](../STATUS.md), immediate work to [`NEXT.md`](../NEXT.md), and deployment procedure to [`docs/runbooks/deployment.md`](runbooks/deployment.md). Dated sections below are preserved evidence of what was true when written; they must not override those current documents.
 
-- The **historical 2026-08-07 run record** below refers to the then-current nine-phase workflow and two-signature Pre-gunite process. It is preserved as historical evidence and is superseded for active workflows by the current 11-phase, single-signature implementation documented in `STATUS.md` and `docs/decisions/single-signature-gates.md`.
+**Current summary:** The unified Opportunity → Designer → Takeoff `.xlsx` → Finish Estimate → versioned Proposal → accepted Proposal/Job → Construction → close/archive → read-only History lifecycle is implemented and CI-green. Active construction uses 11 phases, nine active Gate definitions, and one authorized release signature. New Designer exports use `designer-quantity-v5`; older approved revisions retain their recorded model version.
 
-**Deployment is less blocked than it has been recorded as.** Only the DNS record needs a final hostname. The Cloudflare account, the R2 bucket, the Auth0 tenant and the Render blueprint do not, and Render serves a free `*.onrender.com` host that is enough to prove the stack end to end. The domain has been held back deliberately — Monsoon is expected to hand over the existing one (`apex-prds/decision-register.md` item 21) and a second purchase would be waste. **The hard line is unchanged: issue no real customer link until the hostname is final**, because a link's origin is fixed when it is issued and only the token hash is stored.
+**Production status:** Deployment remains an explicit operator decision. Follow the staging acceptance sequence before production and issue no real customer link until the final HTTPS origin is configured.
 
-**All 28 decision-register items are now decided.** Travis approved the nineteen that were his, as written, on 2026-08-05 — relayed by Nick, with no signed document, which the register records rather than implies. PRD 03 is written; PRD 04 has no remaining blocker. One precondition survives the approval: **the customer agreement must be amended before the broad reimbursable-cost definition is billed against.**
+---
 
-**Production status:** Deployed to a free host for end-to-end verification; not yet pilot-ready. No real customer link has been issued.
+## Historical record through 2026-08-07
 
-**Current source of truth for status:** This file. `docs/HANDOFF.md` is a one-page orientation that points here rather than restating it.
-
-**Active build scope:** All Apex components except the Website. The Website is being developed separately and must not be modified by this build workstream. See `docs/decisions/ADR-0002-non-website-build-profile.md`.
-
-## Executive status
-
-Apex has a coherent lifecycle, strong PRDs, a tested technical takeoff prototype, a tested proposal prototype, an actively developed website, and a high-value Gate field-operations concept. These components do not yet form a deployed end-to-end system.
+The material below is retained because it records prior verification, decisions, defects, and deployment evidence. Statements such as “not built,” old test totals, nine phases, seven Gates, two signatures, or `designer-quantity-v4` describe their dated context unless a later note explicitly says otherwise.
 
 Phase 0 goals:
 
@@ -1307,6 +1301,8 @@ person clicking.** No scripts in the operating path. This is the run PRD 03 §13
 and PRD 04 §7 both end on, and it had never happened before.
 
 What it produced:
+
+**Current clarification (2026-08-13):** The following table records the 2026-08-07 run and therefore keeps the historical `designer-quantity-v4` evidence. New Designer exports use `designer-quantity-v5`; do not rewrite the old approved row.
 
 | | |
 |---|---|

@@ -1,6 +1,8 @@
 # Apex Construction Model - Confirmed Decisions
 
 **Recorded:** 2026-07-31
+
+> **Superseded for active workflow (2026-08-13):** This document preserves the original nine-phase/seven-Gate/two-signature decision and must not be read as the current model. Active authority is the migration chain through `0030_equipment_automation_cover_gates.sql`, [`single-signature-gates.md`](single-signature-gates.md), and root [`STATUS.md`](../../STATUS.md). The current system has 11 phases, nine active Gate definitions, and one authorized release signature.
 **Source:** Nick Sandoval, this session
 **Status:** Confirmed for build. **All open flags resolved 2026-07-31** — see §5. **Inspection list, lead times, and the revised gate checklists approved by Travis Sandoval 2026-08-03** — see §6 and `docs/inspections-and-gate-checklists-2026-08-03.md`.
 **Resolves:** PRD §20 Q3 (gate authority), Q4 (phases and gate templates), Q5 (draw schedules), Q6 (jurisdictions)

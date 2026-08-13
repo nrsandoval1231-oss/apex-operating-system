@@ -1,6 +1,9 @@
 # Apex OS — deployment runbook
 
 **Written:** 2026-08-03 (deployment plan slice 9)
+
+**Updated:** 2026-08-13 for the unified opportunity, Proposal, closeout, and History workflow
+
 **Applies to:** Render web service `apex-os` + Render Postgres `apex-postgres`,
 Cloudflare R2 or S3 for evidence, Auth0 or Clerk for staff identity.
 
@@ -116,11 +119,22 @@ Then, in order:
 1. `https://apex.<domain>/app` loads and asks you to sign in.
 2. Sign in. If it refuses, the account exists at the provider but not in
    `app_users` — see §3.
-3. Open a project, then its Customer page. Issue a link. The URL should begin
-   with your domain, **not** a bare `/c/…`, and the "only works on this machine"
-   warning should be absent.
-4. Open that link on a phone, on cellular, with wifi off. This is the only test
-   that proves the thing the pilot exists for.
+3. Create a **non-production opportunity**. Confirm Projects/Today do not show a
+   fabricated construction Job.
+4. In Designer, produce a design (include the 3′–5′–3′ sports profile in staging),
+   download the `.xlsx`, and inspect that `Order List` is first.
+5. Use **Finish estimate**. Confirm unresolved measured prices/direct scope appear
+   as blockers and that no Proposal can be issued until every line has an approved
+   amount or an explicit not-applicable decision.
+6. Issue the Proposal, save/print it as PDF, and verify copy-email/`mailto:` prepare
+   content without recording an email as sent.
+7. Record acceptance of the exact issued version. Retry the command and confirm
+   exactly one Job and Project exist.
+8. Complete a disposable construction/closeout path, archive it, then confirm
+   History retains takeoff/Proposal/artifact reads while mutation routes refuse it.
+9. Open a customer progress link on a phone, on cellular, with wifi off. This is
+   the only test that proves the customer route is reachable outside the operator's
+   machine.
 
 ---
 
@@ -164,6 +178,11 @@ not what stops access.
 ## 4. Deploying a change
 
 `autoDeploy` is off. A push does not deploy; deploying is a decision.
+
+The pricing library is intentionally code-identified as
+`manual-approved-pricing-v1`; it is **not** an environment rate card. A deployment
+must not add default prices in secrets or configuration. Each estimate must carry
+real approved amounts/bases, and missing values must continue to block issue.
 
 1. Confirm CI is green on `main`. It builds and *runs* the container against a
    real Postgres and a real object store, so a green run means the image boots.

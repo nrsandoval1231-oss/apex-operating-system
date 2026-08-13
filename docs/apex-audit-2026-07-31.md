@@ -1,5 +1,7 @@
 # Apex Folder Audit — Vision Recapture
 
+> **Historical audit:** This is a point-in-time finding from 2026-07-31, not current status. The assistant/operating workflow described as missing here was subsequently implemented. Use root [`STATUS.md`](../STATUS.md) for current facts.
+
 **Date:** 2026-07-31
 **Scope:** `…\Nick-Assistant\Projects\Apex` (full tree, node_modules and git internals excluded)
 **Purpose:** Measure what has actually been built against the vision, and find where the two drifted apart.

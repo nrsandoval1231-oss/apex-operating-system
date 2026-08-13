@@ -7,6 +7,8 @@
 **Status:** Build-ready draft. Phases, gate templates, draw schedule, and gate authority confirmed 2026-07-31 — see [`docs/decisions/construction-model.md`](docs/decisions/construction-model.md).  
 **Initial customer:** Apex Designer Pools only
 
+> **Implementation note (2026-08-13):** This v1 PRD preserves the requirements and decisions that drove the build. Current implemented authority is root [`STATUS.md`](STATUS.md), [`NEXT.md`](NEXT.md), and the migration/contract code. The active system now uses 11 construction phases, nine active Gate definitions, one authorized release signature, pre-contract opportunities, versioned Proposals, Proposal-acceptance Job creation, and read-only archived History. Older nine-phase/seven-Gate/two-signature statements below are historical design context.
+
 ---
 
 ## 1. Executive Summary

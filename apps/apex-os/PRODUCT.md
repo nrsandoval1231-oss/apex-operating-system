@@ -6,132 +6,108 @@
 
 web
 
-## Users
+## Primary users
 
-**One primary user: the owner of Apex Designer Pools (Travis).** Confirmed
-2026-07-31 — during the pilot, he is the only person who opens this app.
+Apex OS is the owner/office operating surface, designed first for Travis and also used by authorized office staff for opportunity, estimate, Proposal, and closeout work. Superintendent and field roles perform authorized construction actions through the same Job-centered Project workspace and Gate surfaces. Customers use token-authorized progress pages; they do not sign into Apex OS.
 
-His situation: a pool builder running three to five concurrent pool builds in
-Lubbock, Texas. He reads this on a phone, one-handed, outdoors in direct sun, at
-the start of the day and in gaps between jobs. He is not at a desk and is not
-looking for a dashboard.
+The field design condition remains a phone used one-handed, outdoors, in direct sun. Office estimate and Proposal views must also work at a desk without becoming a separate source of truth.
 
-His job: find out what needs him today, decide, and get on with it.
+## Product purpose
 
-Other roles exist in the system and hold real authority — superintendent
-(runs gates in the field, signs off non-money gates), office (confirms invoices),
-field (captures evidence) — but they work through the separate Gate field
-console, not this app. If they ever adopt this app, that is a later decision and
-this record must be updated rather than assumed.
+Apex OS carries one project identity from pre-contract opportunity through Proposal, construction, closeout, and read-only History. It turns each pool build into verified transitions, surfaces decisions that need a person, and connects accepted scope to construction and billing readiness.
 
-## Product Purpose
-
-Apex OS is the daily control system for Apex Designer Pools. It turns each pool
-build into a sequence of verified gates, surfaces only the decisions that need a
-person, and connects completed work to billing readiness.
-
-This app is its owner-facing surface. Success is Travis relying on it as the
-daily operating view — and a morning that is quieter because of it.
-
-It answers four questions every morning (PRD §1):
+It answers:
 
 1. What needs attention today?
 2. Which jobs are at risk?
 3. What work is ready to proceed?
 4. What work is ready to bill?
+5. Which opportunities need a complete estimate or Proposal decision?
+6. Which completed projects must remain available as immutable history?
+
+## Lifecycle
+
+```text
+Opportunity
+→ Designer / approved takeoff
+→ Finish estimate
+→ versioned Proposal
+→ accepted Proposal / Job created
+→ construction Project
+→ Gates, inspections, draws, customer updates
+→ close and archive
+→ read-only History
+```
+
+A Lead/opportunity is not a Job. Only authoritative acceptance of an issued Proposal creates the Job and construction Project.
 
 ## Positioning
 
-The **gate**: every project has a current state, a next gate, evidence required
-to pass it, and operational or financial consequences attached to that gate. A
-general CRM or construction suite tracks tasks; this refuses to let work proceed
-without verified prerequisites, and turns a passed gate directly into billable
-money.
+The **Gate** remains the construction control: every Project has a current state, a next Gate, evidence required to pass it, and operational or financial consequences. A general CRM tracks tasks; Apex refuses controlled transitions without their prerequisites.
 
-It is deliberately not a CRM, an accounting package, or a full
-construction-management suite. QuickBooks stays the financial authority.
+Apex OS is deliberately not the geometry engine, an accounting package, or an email-delivery service:
 
-## Operating Context
+- Designer owns measured geometry and quantities.
+- The root pricing engine prices approved facts but never invents a missing rate.
+- QuickBooks remains financial authority.
+- Copy-email and `mailto:` prepare communication but do not claim delivery.
 
-- Nine confirmed construction phases per pool, from design and permitting to
-  plaster and water fill.
-- Seven gate templates; four release draws. Pre-gunite takes two signatures
-  because gunite buries its own evidence.
-- Draw schedule fixed by Apex's contract: 10 / 30 / 30 / 20 / 10.
-- Six customer-facing milestones collapse the nine internal phases.
-- Evidence is photos taken on a phone at a jobsite, hashed and stored privately.
-- Evidence capture and Gate release happen inside the Project workspace; there is
-  no separate Gate staff console.
-- Authority for all of the above: `docs/decisions/construction-model.md`,
-  confirmed 2026-07-31.
+## Operating context
 
-## Capabilities and Constraints
+- Eleven construction phases from design/permitting through automation, cover installation, plaster, and water fill.
+- Nine active Gate definitions, including Automation Programming Complete and Install Cover.
+- Active Gates use one authorized release signature. Historical countersign data remains preserved.
+- Fixed contract draw schedule: 10 / 30 / 30 / 20 / 10.
+- Six customer-facing milestones collapse internal construction detail.
+- Evidence is hashed, private, retained, and readable after archive.
+- Closed Jobs reject operational mutations and have no reopen path.
 
-**Built and working:** action-card feed derived from stored state, project and
-phase records, seven gate templates with two-signature release, draw schedule
-with ready-to-bill and human invoice confirmation, customer-safe milestone
-projection.
+Authority: current migrations, `docs/decisions/single-signature-gates.md`, and `STATUS.md`. Older nine-phase/two-signature records are historical.
 
-**Not built:** inspections (blocked on Apex's inspection list and lead times),
-scheduled visits and crew-conflict detection, customer progress page, daily
-brief, snooze/delegate/acknowledge on cards, QuickBooks synchronisation.
+## Built capabilities
 
-**Technical constraints:**
+- Opportunity intake without fabricated Job state.
+- Approved Designer takeoff ingestion and retained workbook/artifact reads.
+- Idempotent Finish Estimate tied to opportunity and design digest.
+- Fail-closed typed pricing with structured blockers.
+- Durable optimistic Proposal drafts and immutable issued/signed versions.
+- Proposal preview, print/save-as-PDF, copy email, and `mailto:` preparation.
+- Idempotent acceptance recording that creates exactly one Job and Project.
+- Today feed, Projects, Project workspace, Gates, inspections, scheduling, evidence, draw readiness, and customer-safe progress.
+- Authoritative closeout checks, idempotent close, searchable History, and read-only archived detail.
 
-- React 19 + Vite, no UI framework, no CSS framework. Hand-written CSS.
-- All data comes from the loopback Gate API. This app holds no database and
-  mints no credentials.
-- Authentication is a pasted short-lived pilot JWT. Production identity is a
-  known launch blocker, not a design problem to solve here.
-- Screens never fall back to sample data. A failed or empty load says so
-  explicitly, because inventing a pool inside a system built for trustworthy
-  field evidence is the one unforgivable bug.
+## Constraints
 
-## Brand Commitments
+- React 19 + Vite; no UI or CSS framework.
+- All durable writes cross the authenticated Gate API/service boundary.
+- Browser state is never business authority.
+- Screens never fall back to sample data.
+- Missing pricing, evidence, identity, or reconciliation produces a blocker/refusal—not a plausible default.
+- Issued/signed Proposals and archived business evidence are immutable.
 
-Binding, from `apex-website/src/styles/global.css` — the approved Apex design
-system:
+## Brand commitments
 
-- **Charcoal** `#1b1c1e` — the base.
-- **Sage** `#a1ccca` — the brand accent, sampled from the Apex logo. Carries
-  identity and primary action.
-- **Amber** `#e0901b` — interaction feedback and alerts **only**. Never brand,
-  never the default CTA. If amber appears outside alerts and focus, it has
-  drifted.
-- Vertical identity for pools: `#0e6e7c`.
+- **Charcoal** `#1b1c1e` — base.
+- **Sage** `#a1ccca` — identity and primary action.
+- **Amber** `#e0901b` — alerts and interaction feedback only.
+- Pool identity: `#0e6e7c`.
+- High contrast, direct-sun readability, and equipment-not-website character.
 
-User-pinned 2026-07-31: dark, high-contrast, reads in direct sun, feels like
-equipment rather than a website.
+## Product principles
 
-## Evidence on Hand
+1. **Action before information.**
+2. **Every card states its consequence.**
+3. **Never invent a fact or price.**
+4. **Opportunity before Job; acceptance before construction.**
+5. **Gates before tasks.**
+6. **One authoritative mutation path.**
+7. **Closed means immutable but still readable.**
+8. **One glance, one thumb where field action is expected.**
 
-- Real pilot data in the local dev database: two jobs, one with the genuine
-  Whitaker contract value of $152,041.73 and a real approved takeoff revision.
-- Real gate templates, phases, and draw percentages from Apex's own contract.
-- **No real photography.** Nine photography slots on the website remain
-  unfilled; this app must not fabricate jobsite imagery.
-- No customer testimonials, benchmarks, or pricing claims exist. Do not invent
-  any.
+## Accessibility and inclusion
 
-## Product Principles
-
-1. **Action before information.** The home screen shows what needs deciding, not
-   a wall of metrics.
-2. **Every card states its consequence.** What to do, why it matters, what
-   happens if it waits. A card that cannot say all three should not exist.
-3. **Never invent a fact.** Missing data says "not recorded". A figure the
-   system does not have is never printed as zero.
-4. **Gates before tasks.** A controlled transition with evidence and
-   consequences outranks a checkbox.
-5. **One glance, one thumb.** If it cannot be understood in a glance and acted
-   on with a thumb in sunlight, it is not finished.
-
-## Accessibility & Inclusion
-
-- Direct sunlight is the design condition, not an edge case. Contrast targets
-  exceed WCAG AA deliberately.
-- Touch targets sized for a working hand, gloved or wet.
-- Keyboard accessible with visible focus; amber carries focus so it stays
-  legible against sage controls.
-- Reduced-motion support respected.
-- Errors in plain language, never a status code alone.
+- Contrast exceeds WCAG AA where practical for outdoor use.
+- Touch targets support working, gloved, or wet hands.
+- Keyboard access and visible focus are required.
+- Reduced motion is respected.
+- Errors and blockers use plain language and identify the corrective action.
