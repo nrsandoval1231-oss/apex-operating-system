@@ -108,6 +108,38 @@ beforeEach(async () => {
 
 const tokenOf = (url: string): string => url.replace('/c/', '');
 
+describe('closed customer records', () => {
+  it('refuses every customer-facing staff mutation while retaining reads', async () => {
+    await customers.issueLink({ jobId: ids.job as JobId, actor: owner });
+    const photoId = await addPhoto();
+    const decision = await customers.raiseDecision({
+      jobId: ids.job as JobId,
+      title: 'Finish choice', detail: 'Choose the finish.', consequence: 'Ordering waits.', actor: owner,
+    });
+    await db.query(
+      `update jobs set status = 'closed', closed_at = now(), closed_by = $2, reconciliation_complete = true where job_id = $1`,
+      [ids.job, ids.owner],
+    );
+
+    await expect(customers.issueLink({ jobId: ids.job as JobId, actor: owner })).rejects.toThrow(/closed.*cannot be edited/i);
+    await expect(customers.rotateLink({ jobId: ids.job as JobId, actor: owner })).rejects.toThrow(/closed.*cannot be edited/i);
+    await expect(customers.revokeLink({ jobId: ids.job as JobId, actor: owner })).rejects.toThrow(/closed.*cannot be edited/i);
+    await expect(customers.setPhotoVisibility({ evidenceId: photoId, visible: true, actor: owner }))
+      .rejects.toThrow(/closed.*cannot be edited/i);
+    await expect(customers.raiseDecision({
+      jobId: ids.job as JobId,
+      title: 'Another choice', detail: 'Choose again.', consequence: 'Work waits.', actor: owner,
+    })).rejects.toThrow(/closed.*cannot be edited/i);
+    await expect(customers.resolveDecision({
+      decisionId: decision.decisionId, status: 'answered', answerNote: 'Selected.', actor: owner,
+    })).rejects.toThrow(/closed.*cannot be edited/i);
+
+    expect((await customers.getLinkStatus(ids.job as JobId)).history).toHaveLength(1);
+    expect(await customers.listJobPhotos(ids.job as JobId)).toHaveLength(1);
+    expect(await customers.listDecisions(ids.job as JobId)).toHaveLength(1);
+  });
+});
+
 describe('issuing a link', () => {
   it('returns the token once and stores only its hash', async () => {
     const issued = await customers.issueLink({ jobId: ids.job, actor: owner });

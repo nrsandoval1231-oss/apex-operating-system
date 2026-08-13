@@ -83,6 +83,22 @@ const bookGunite = (startsOn: string) => service.scheduleVisit({
   actor: owner,
 });
 
+describe('closed inspection records', () => {
+  it('retains reads and refuses requests or results', async () => {
+    await db.query(
+      `update jobs set status = 'closed', closed_at = now(), closed_by = $2, reconciliation_complete = true where job_id = $1`,
+      [ids.job, ids.owner],
+    );
+    await expect(inspections.requestInspection({
+      jobId, inspectionKey: 'pool-steel-structural', requestedOn: '2026-08-13', actor: owner,
+    })).rejects.toThrow(/closed.*cannot be edited/i);
+    await expect(inspections.recordResult({
+      jobId, inspectionKey: 'pool-steel-structural', outcome: 'passed', occurredOn: '2026-08-13', actor: owner,
+    })).rejects.toThrow(/closed.*cannot be edited/i);
+    expect(await inspections.listJobInspections(jobId)).toHaveLength(7);
+  });
+});
+
 describe('the inspection list', () => {
   it('is the seven from the approved list, fixed by migration', async () => {
     const types = await inspections.listInspectionTypes();

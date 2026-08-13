@@ -6,6 +6,7 @@ import {
   CustomerLinkStatusSchema,
   DailyBriefSchema,
   JobInspectionListSchema,
+  JobCloseoutSchema,
   JobPhotoListSchema,
   ScheduledVisitListSchema,
   StaffCustomerDecisionListSchema,
@@ -20,6 +21,7 @@ import {
   type DrawSchedule,
   type JobGatePlanEntry,
   type JobInspection,
+  type JobCloseout,
   type JobPhoto,
   type JobSummary,
   type StaffCustomerDecision,
@@ -97,6 +99,12 @@ export const useJobs = (view: 'all' | 'active' | 'historical' = 'all'): Query<re
 /** One job summary. Pass undefined while the route parameter is unresolved. */
 export const useJob = (jobId: string | undefined): Query<JobSummary> =>
   useResource(jobId === undefined ? null : `/api/jobs/${jobId}`, loadJob);
+
+const loadCloseout = (path: string, signal: AbortSignal): Promise<JobCloseout> =>
+  apiGet(path, JobCloseoutSchema, signal);
+
+export const useJobCloseout = (jobId: string | undefined): Query<JobCloseout> =>
+  useResource(jobId === undefined ? null : `/api/jobs/${jobId}/close`, loadCloseout);
 
 const loadCards = (path: string, signal: AbortSignal): Promise<readonly ActionCard[]> =>
   apiGet(path, ActionCardListSchema, signal);

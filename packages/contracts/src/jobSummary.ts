@@ -62,6 +62,32 @@ export const JobSummaryProjectSchema = z.strictObject({
 });
 export type JobSummaryProject = z.infer<typeof JobSummaryProjectSchema>;
 
+/** Immutable operational facts checked when a completed job is archived. */
+export const JobCloseoutSchema = z.strictObject({
+  finalPhaseComplete: z.boolean(),
+  gates: z.strictObject({
+    released: z.number().int().nonnegative(),
+    required: z.number().int().nonnegative(),
+    complete: z.boolean(),
+  }),
+  inspections: z.strictObject({
+    cleared: z.number().int().nonnegative(),
+    required: z.number().int().nonnegative(),
+    complete: z.boolean(),
+  }),
+  draws: z.strictObject({
+    invoiced: z.number().int().nonnegative(),
+    required: z.number().int().nonnegative(),
+    complete: z.boolean(),
+  }),
+  customerHandoverComplete: z.boolean(),
+  ready: z.boolean(),
+  closedAt: z.string().datetime({ offset: true }).nullable(),
+  closedByUserId: idSchemas.user.nullable(),
+  closedByName: z.string().min(1).max(200).nullable(),
+});
+export type JobCloseout = z.infer<typeof JobCloseoutSchema>;
+
 export const JobSummarySchema = z.strictObject({
   jobId: idSchemas.job,
   leadId: idSchemas.lead,
@@ -79,6 +105,8 @@ export const JobSummarySchema = z.strictObject({
    * unique index rather than by convention.
    */
   approvedTakeoffRevisionId: idSchemas.revision.nullable(),
+  /** Stable identity of the signed proposal retained with historical records. */
+  proposalId: idSchemas.proposal.nullable(),
   /** Most recent unreleased Gate, else the most recent released Gate, else null. */
   currentGate: JobSummaryGateSchema.nullable(),
   /** §9.3 project record. Null until the job is opened as a construction project. */

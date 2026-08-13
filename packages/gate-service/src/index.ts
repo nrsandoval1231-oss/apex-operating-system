@@ -4,11 +4,13 @@ import {
   ApexEventSchema,
   ApprovedTakeoffRevisionSchema,
   CustomerMilestoneProjectionSchema,
+  CONSTRUCTION_PHASES,
   DRAW_CODES,
   DRAW_SCHEDULE_TEMPLATE,
   DailyBriefSchema,
   DrawScheduleSchema,
   JobDrawSchema,
+  JobCloseoutSchema,
   JobSummarySchema,
   ScheduledVisitSchema,
   SubcontractorSchema,
@@ -39,6 +41,7 @@ import {
   type GateReleaseRole,
   type JobId,
   type JobInspection,
+  type JobCloseout,
   type JobSummary,
   type UserId,
 } from '@apex/contracts';
@@ -67,6 +70,7 @@ import {
   type ProjectPhaseState,
 } from '@apex/domain';
 import { InspectionService } from './inspections.js';
+import { assertJobMutable } from './jobState.js';
 import { ProposalService, type FinishEstimateResult } from './proposal.js';
 export { ProposalService, type FinishEstimateResult } from './proposal.js';
 
@@ -217,6 +221,7 @@ interface JobSummaryRow {
   gate_title: string | null;
   gate_phase: string | null;
   customer_milestone: string | null;
+  proposal_id: string | null;
   current_phase_key: string | null;
   superintendent_user_id: string | null;
   superintendent_name: string | null;
@@ -240,7 +245,8 @@ const jobSummaryQuery = (filter: 'all' | 'active' | 'historical' | 'one') => `
     gd.title as gate_title, gd.phase as gate_phase, gd.customer_milestone,
     p.current_phase_key, p.superintendent_user_id,
     su.display_name as superintendent_name,
-    p.target_completion_start, p.target_completion_end, p.risk_note
+    p.target_completion_start, p.target_completion_end, p.risk_note,
+    pv.proposal_id
   from jobs j
   join leads l on l.lead_id = j.lead_id
   -- The job's approved takeoff, not the Gate's. Reading it off the Gate meant a
@@ -250,7 +256,7 @@ const jobSummaryQuery = (filter: 'all' | 'active' | 'historical' | 'one') => `
   left join projects p on p.job_id = j.job_id
   left join app_users su on su.user_id = p.superintendent_user_id
   left join lateral (
-    select total_cents from proposal_versions
+    select proposal_id, total_cents from proposal_versions
     where job_id = j.job_id and status = 'signed'
     order by version_number desc limit 1
   ) pv on true
@@ -263,7 +269,7 @@ const jobSummaryQuery = (filter: 'all' | 'active' | 'historical' | 'one') => `
   ) gi on true
   left join gate_definitions gd
     on gd.definition_key = gi.definition_key and gd.version = gi.definition_version
-  ${filter === 'active' ? "where j.status not in ('complete', 'closed')" : filter === 'historical' ? "where j.status in ('complete', 'closed')" : filter === 'one' ? 'where j.job_id = $1' : ''}
+  ${filter === 'active' ? "where j.status not in ('closed', 'cancelled')" : filter === 'historical' ? "where j.status in ('closed', 'cancelled')" : filter === 'one' ? 'where j.job_id = $1' : ''}
   order by j.created_at desc, j.job_id desc
 `;
 
@@ -315,6 +321,7 @@ const toJobSummary = (row: JobSummaryRow): JobSummary => {
   return JobSummarySchema.parse({
     jobId: row.job_id,
     leadId: row.lead_id,
+    proposalId: row.proposal_id,
     status: row.status,
     createdAt: new Date(row.created_at).toISOString(),
     customerName: identity.customerName,
@@ -369,6 +376,67 @@ const commandKey = (value: string) => {
   return `gate:${createHash('sha256').update(value).digest('hex')}`;
 };
 
+const summarizeCloseout = async (db: Queryable, jobId: JobId): Promise<JobCloseout> => {
+  const result = await db.query<{
+    status: string;
+    current_phase_key: string | null;
+    required_gates: string;
+    released_gates: string;
+    required_inspections: string;
+    cleared_inspections: string;
+    invoiced_draws: string;
+    final_gate_released: boolean;
+    closed_at: string | Date | null;
+    closed_by: string | null;
+    closed_by_name: string | null;
+  }>(`
+    select j.status, p.current_phase_key, j.closed_at, j.closed_by,
+      closer.display_name as closed_by_name,
+      (select count(*)::text from gate_definitions where active) as required_gates,
+      (select count(*)::text from gate_instances gi
+        join gate_definitions gd on gd.definition_key = gi.definition_key
+          and gd.version = gi.definition_version and gd.active
+        where gi.job_id = j.job_id and gi.status = 'released') as released_gates,
+      (select count(*)::text from inspection_types) as required_inspections,
+      (select count(*)::text from job_inspections
+        where job_id = j.job_id and status in ('passed', 'waived')) as cleared_inspections,
+      (select count(*)::text from job_draws
+        where job_id = j.job_id and draw_code = any($2::text[]) and status in ('invoiced', 'paid')) as invoiced_draws,
+      exists(select 1 from gate_instances gi
+        join gate_definitions gd on gd.definition_key = gi.definition_key
+          and gd.version = gi.definition_version and gd.active
+        where gi.job_id = j.job_id and gi.definition_key = 'final' and gi.status = 'released') as final_gate_released
+    from jobs j
+    left join projects p on p.job_id = j.job_id
+    left join app_users closer on closer.user_id = j.closed_by
+    where j.job_id = $1
+  `, [jobId, [...DRAW_CODES]]);
+  const row = result.rows[0];
+  if (!row) throw new DomainRuleError(`Unknown Job: ${jobId}.`);
+  const requiredGates = Number(row.required_gates);
+  const releasedGates = Number(row.released_gates);
+  const requiredInspections = Number(row.required_inspections);
+  const clearedInspections = Number(row.cleared_inspections);
+  const requiredDraws = DRAW_CODES.length;
+  const invoicedDraws = Number(row.invoiced_draws);
+  const finalPhaseComplete = row.current_phase_key === CONSTRUCTION_PHASES.at(-1)?.key;
+  const gatesComplete = requiredGates > 0 && releasedGates === requiredGates;
+  const inspectionsComplete = requiredInspections > 0 && clearedInspections === requiredInspections;
+  const drawsComplete = requiredDraws > 0 && invoicedDraws === requiredDraws;
+  const customerHandoverComplete = (row.status === 'complete' || row.status === 'closed') && row.final_gate_released;
+  return JobCloseoutSchema.parse({
+    finalPhaseComplete,
+    gates: { released: releasedGates, required: requiredGates, complete: gatesComplete },
+    inspections: { cleared: clearedInspections, required: requiredInspections, complete: inspectionsComplete },
+    draws: { invoiced: invoicedDraws, required: requiredDraws, complete: drawsComplete },
+    customerHandoverComplete,
+    ready: finalPhaseComplete && gatesComplete && inspectionsComplete && drawsComplete && customerHandoverComplete,
+    closedAt: row.closed_at === null ? null : new Date(row.closed_at).toISOString(),
+    closedByUserId: row.closed_by,
+    closedByName: row.closed_by_name,
+  });
+};
+
 export class GateService {
   constructor(private readonly db: Database) {}
 
@@ -415,6 +483,7 @@ export class GateService {
     jobId: JobId;
     definitionKey: string;
   }): Promise<GateState> {
+    await assertJobMutable(this.db, input.jobId);
     const existing = await this.db.query<{ gate_instance_id: GateInstanceId }>(
       `select gate_instance_id from gate_instances
        where job_id = $1 and definition_key = $2`,
@@ -583,6 +652,7 @@ export class GateService {
     }
 
     const state = await this.getGate(gateInstanceId);
+    await assertJobMutable(this.db, state.jobId);
     // Authority and the checklist are decided first, by the pure engine. The
     // inspection guard runs only on a release that is otherwise good: someone
     // with no authority to release must be told exactly that, and must not
@@ -678,37 +748,51 @@ export class GateService {
     return row === undefined ? null : toJobSummary(row);
   }
 
-  /** Close a completed job after reconciliation has been explicitly declared. */
+  /** Current closeout facts. Closed jobs retain these records as read-only history. */
+  async getJobCloseout(jobId: JobId): Promise<JobCloseout> {
+    return summarizeCloseout(this.db, jobId);
+  }
+
+  /** Close a completed job once the authoritative closeout checks pass. */
   async closeJob(input: { jobId: JobId; actor: EventActor; idempotencyKey: string }): Promise<JobSummary> {
     if (input.actor.kind !== 'user') throw new DomainRuleError('Closing a job requires an authenticated human actor.');
     if (!['admin', 'office'].includes(input.actor.role)) {
       throw new DomainRuleError(`Role ${input.actor.role} may not close a job.`);
     }
     const actorUserId = input.actor.userId;
-    const current = await this.db.query<{ status: string }>('select status from jobs where job_id = $1', [input.jobId]);
-    const status = current.rows[0]?.status;
-    if (status === undefined) throw new DomainRuleError(`Unknown Job: ${input.jobId}.`);
-    if (status === 'closed') {
-      const existing = await this.getJob(input.jobId);
-      if (!existing) throw new DomainRuleError(`Unknown Job: ${input.jobId}.`);
-      return existing;
-    }
-    if (status !== 'complete') throw new DomainRuleError('A job must be marked complete before it can be closed and reconciled.');
-    const baseKey = commandKey(input.idempotencyKey);
-    const duplicate = await this.db.query<{ event_id: string }>(
-      'select event_id from events where idempotency_key = $1 limit 1', [`${baseKey}:job.closed`],
-    );
-    if (duplicate.rows.length === 0) {
+    await this.db.transaction(async (tx) => {
+      const current = await tx.query<{ status: string }>(
+        'select status from jobs where job_id = $1 for update',
+        [input.jobId],
+      );
+      const status = current.rows[0]?.status;
+      if (status === undefined) throw new DomainRuleError(`Unknown Job: ${input.jobId}.`);
+      if (status === 'closed') return;
+      if (status !== 'complete') {
+        throw new DomainRuleError('A job must be marked complete before it can be closed and reconciled.');
+      }
+      const closeout = await summarizeCloseout(tx, input.jobId);
+      const missing = [
+        !closeout.finalPhaseComplete ? 'the project is not at the final phase' : null,
+        !closeout.gates.complete ? `${closeout.gates.required - closeout.gates.released} gates are not released` : null,
+        !closeout.inspections.complete
+          ? `${closeout.inspections.required - closeout.inspections.cleared} inspections are incomplete`
+          : null,
+        !closeout.draws.complete ? `${closeout.draws.required - closeout.draws.invoiced} draws are not invoiced` : null,
+        !closeout.customerHandoverComplete ? 'customer handover is incomplete' : null,
+      ].filter((item): item is string => item !== null);
+      if (!closeout.ready) {
+        throw new DomainRuleError(`Cannot close this job until closeout is complete: ${missing.join('; ')}.`);
+      }
+      const baseKey = commandKey(input.idempotencyKey);
       const at = new Date().toISOString();
-      await this.db.transaction(async (tx) => {
-        const event = await this.writeEvent(tx, {
-          eventType: 'job.closed', jobId: input.jobId, actor: input.actor, at,
-          correlationId: createCanonicalId('event'), idempotencyKey: `${baseKey}:job.closed`,
-          payload: { closedBy: actorUserId, reconciliationComplete: true },
-        });
-        await this.projectEvent(tx, event);
+      const event = await this.writeEvent(tx, {
+        eventType: 'job.closed', jobId: input.jobId, actor: input.actor, at,
+        correlationId: createCanonicalId('event'), idempotencyKey: `${baseKey}:job.closed`,
+        payload: { closedBy: actorUserId, reconciliationComplete: true },
       });
-    }
+      await this.projectEvent(tx, event);
+    });
     const closed = await this.getJob(input.jobId);
     if (!closed) throw new Error('Job disappeared after closure.');
     return closed;
@@ -732,6 +816,7 @@ export class GateService {
     if (!PROJECT_AUTHORITY.includes(input.actor.role as (typeof PROJECT_AUTHORITY)[number])) {
       throw new Error(`Role ${input.actor.role} may not open a construction project.`);
     }
+    await assertJobMutable(this.db, input.jobId);
     const existing = await this.getProject(input.jobId);
     if (existing) return existing;
 
@@ -778,6 +863,7 @@ export class GateService {
     command: ChangePhaseCommand,
     context: { idempotencyKey: string },
   ): Promise<ProjectSnapshot> {
+    await assertJobMutable(this.db, jobId);
     const state = await this.readProjectPhaseState(jobId);
     const [draft] = decidePhaseChange(state, command);
     if (command.actor.kind !== 'user') throw new Error('A phase change requires an authenticated human actor.');
@@ -826,6 +912,7 @@ export class GateService {
     target: { targetCompletionStart: string | null; targetCompletionEnd: string | null },
     context: { actor: EventActor; idempotencyKey: string },
   ): Promise<ProjectSnapshot> {
+    await assertJobMutable(this.db, jobId);
     if (context.actor.kind !== 'user') throw new DomainRuleError('Updating a project target requires an authenticated human actor.');
     if (!PROJECT_AUTHORITY.includes(context.actor.role as (typeof PROJECT_AUTHORITY)[number])) {
       throw new DomainRuleError(`Role ${context.actor.role} may not update a project target.`);
@@ -1006,6 +1093,7 @@ export class GateService {
     submission: DesignerTakeoffSubmission;
     idempotencyKey: string;
   }): Promise<ApprovedTakeoffRevision> {
+    await assertJobMutable(this.db, input.jobId);
     if (input.actor.kind !== 'user') {
       throw new Error('Approving a takeoff requires an authenticated human actor.');
     }
@@ -1173,6 +1261,7 @@ export class GateService {
     actor: EventActor;
     idempotencyKey: string;
   }): Promise<ProjectSnapshot> {
+    await assertJobMutable(this.db, input.jobId);
     if (input.actor.kind !== 'user') {
       throw new DomainRuleError('Assigning a superintendent requires an authenticated human actor.');
     }
@@ -1359,6 +1448,7 @@ export class GateService {
     actor: EventActor;
     idempotencyKey: string;
   }): Promise<DrawSchedule> {
+    await assertJobMutable(this.db, input.jobId);
     if (input.actor.kind !== 'user') throw new DomainRuleError('Creating a draw schedule requires an authenticated human actor.');
     if (!DRAW_SCHEDULE_AUTHORITY.includes(input.actor.role as (typeof DRAW_SCHEDULE_AUTHORITY)[number])) {
       throw new DomainRuleError(`Role ${input.actor.role} may not create a draw schedule.`);
@@ -1506,6 +1596,7 @@ export class GateService {
     actor: EventActor;
     dueDate?: string;
   }): Promise<DrawSchedule> {
+    await assertJobMutable(this.db, input.jobId);
     if (input.actor.kind !== 'user') throw new DomainRuleError('Confirming an invoice requires an authenticated human actor.');
     if (!DRAW_SCHEDULE_AUTHORITY.includes(input.actor.role as (typeof DRAW_SCHEDULE_AUTHORITY)[number])) {
       throw new DomainRuleError(`Role ${input.actor.role} may not confirm an invoice.`);
@@ -1559,6 +1650,7 @@ export class GateService {
     actor: EventActor;
     note?: string;
   }): Promise<ScheduledVisit> {
+    await assertJobMutable(this.db, input.jobId);
     if (input.actor.kind !== 'user') throw new DomainRuleError('Scheduling a visit requires an authenticated human actor.');
     if (!SCHEDULE_AUTHORITY.includes(input.actor.role as (typeof SCHEDULE_AUTHORITY)[number])) {
       throw new DomainRuleError(`Role ${input.actor.role} may not schedule a subcontractor visit.`);
@@ -1596,6 +1688,14 @@ export class GateService {
     actor: EventActor;
     reason?: string;
   }): Promise<ScheduledVisit> {
+    const existing = await this.db.query<{ job_id: string }>(
+      'select job_id from scheduled_visits where visit_id = $1',
+      [input.visitId],
+    );
+    const jobId = existing.rows[0]?.job_id as JobId | undefined;
+    if (!jobId) throw new DomainRuleError('This visit does not exist.');
+    await assertJobMutable(this.db, jobId);
+
     if (input.actor.kind !== 'user') throw new DomainRuleError('Moving a visit requires an authenticated human actor.');
     if (!SCHEDULE_AUTHORITY.includes(input.actor.role as (typeof SCHEDULE_AUTHORITY)[number])) {
       throw new DomainRuleError(`Role ${input.actor.role} may not move a subcontractor visit.`);

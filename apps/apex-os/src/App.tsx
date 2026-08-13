@@ -31,6 +31,7 @@ export default function App() {
         <Route path="calendar" element={<Calendar />} />
         <Route path="projects" element={<Projects />} />
         <Route path="historical" element={<HistoricalProjects />} />
+        <Route path="historical/:id" element={<ProjectDetail historical />} />
         <Route path="projects/:id" element={<ProjectDetail />} />
         <Route path="projects/:id/customer" element={<CustomerPage />} />
         <Route path="brief" element={<OwnerBrief />} />
