@@ -23,6 +23,7 @@ import {
   type StaffCustomerDecision,
 } from '@apex/contracts';
 import { DomainRuleError, buildCustomerPage } from '@apex/domain';
+import { assertJobMutable } from './jobState.js';
 
 /**
  * The customer progress page — PRD §9.11. Build-plan Step 7.
@@ -167,6 +168,7 @@ export class CustomerService {
    */
   async issueLink(input: { jobId: JobId; actor: EventActor }): Promise<IssuedCustomerLink> {
     const { userId } = requireRole(input.actor, LINK_AUTHORITY, 'Issuing a customer link');
+    await assertJobMutable(this.db, input.jobId);
     const live = await this.activeLinkRow(input.jobId);
     if (live !== null) {
       throw new DomainRuleError(
@@ -188,6 +190,7 @@ export class CustomerService {
     reason?: string;
   }): Promise<IssuedCustomerLink> {
     const { userId } = requireRole(input.actor, LINK_AUTHORITY, 'Rotating a customer link');
+    await assertJobMutable(this.db, input.jobId);
     const live = await this.activeLinkRow(input.jobId);
     return this.mintLink(input.jobId, userId, live === null ? null : {
       linkId: live.link_id,
@@ -198,6 +201,7 @@ export class CustomerService {
   /** Close the page. There is no un-revoke; issue a new link instead. */
   async revokeLink(input: { jobId: JobId; actor: EventActor; reason?: string }): Promise<CustomerLinkStatus> {
     const { userId } = requireRole(input.actor, LINK_AUTHORITY, 'Revoking a customer link');
+    await assertJobMutable(this.db, input.jobId);
     const live = await this.activeLinkRow(input.jobId);
     if (live === null) throw new DomainRuleError('This job has no live customer link to revoke.');
     await this.db.query(
@@ -347,6 +351,8 @@ export class CustomerService {
     actor: EventActor;
   }): Promise<JobPhoto> {
     const { userId } = requireRole(input.actor, PUBLISH_AUTHORITY, 'Publishing a photo to a customer');
+    const jobId = await this.jobOfEvidence(input.evidenceId);
+    await assertJobMutable(this.db, jobId);
     const existing = await this.db.query<{ kind: string }>(
       'select kind from evidence_records where evidence_id = $1',
       [input.evidenceId],
@@ -370,7 +376,7 @@ export class CustomerService {
       [input.evidenceId, input.visible, caption || null, userId],
     );
 
-    const photo = (await this.listJobPhotos(await this.jobOfEvidence(input.evidenceId)))
+    const photo = (await this.listJobPhotos(jobId))
       .find((row) => row.evidenceId === input.evidenceId);
     if (!photo) throw new Error('Photo disappeared after its visibility changed.');
     return photo;
@@ -426,6 +432,7 @@ export class CustomerService {
     actor: EventActor;
   }): Promise<StaffCustomerDecision> {
     const { userId } = requireRole(input.actor, PUBLISH_AUTHORITY, 'Raising a customer decision');
+    await assertJobMutable(this.db, input.jobId);
     const decisionId = createCanonicalId('decision');
     await this.db.query(
       `insert into customer_decisions
@@ -457,6 +464,16 @@ export class CustomerService {
     if (input.status === 'answered' && !note) {
       throw new DomainRuleError('Recording an answer requires writing down what the customer said.');
     }
+    const decisionRow = await this.db.query<{ job_id: string }>(
+      'select job_id from customer_decisions where decision_id = $1',
+      [input.decisionId],
+    );
+    const jobId = decisionRow.rows[0]?.job_id as JobId | undefined;
+    if (!jobId) {
+      throw new DomainRuleError('That decision does not exist or has already been resolved.');
+    }
+    await assertJobMutable(this.db, jobId);
+
     const updated = await this.db.query<{ job_id: string }>(
       `update customer_decisions
        set status = $2, answer_note = $3, resolved_at = now(), resolved_by = $4
@@ -464,11 +481,11 @@ export class CustomerService {
        returning job_id`,
       [input.decisionId, input.status, note ?? null, userId],
     );
-    const jobId = updated.rows[0]?.job_id;
-    if (jobId === undefined) {
+    const updatedJobId = updated.rows[0]?.job_id;
+    if (updatedJobId === undefined) {
       throw new DomainRuleError('That decision does not exist or has already been resolved.');
     }
-    const decision = (await this.listDecisions(jobId as JobId))
+    const decision = (await this.listDecisions(jobId))
       .find((row) => row.decisionId === input.decisionId);
     if (!decision) throw new Error('Decision disappeared after being resolved.');
     return decision;

@@ -1,9 +1,10 @@
 import { PGlite } from '@electric-sql/pglite';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { applyOperationalMigrations } from '@apex/database';
-import { createCanonicalId, type EventActor } from '@apex/contracts';
+import { DRAW_SCHEDULE_TEMPLATE, createCanonicalId, type EventActor } from '@apex/contracts';
 import { PhaseRuleError } from '@apex/domain';
 import { GateService } from './index.js';
+import { InspectionService } from './inspections.js';
 
 const ids = {
   lead: createCanonicalId('lead'),
@@ -45,6 +46,57 @@ beforeEach(async () => {
 
 const open = (overrides: Partial<Parameters<GateService['openProject']>[0]> = {}) =>
   service.openProject({ jobId: ids.job, actor: owner, idempotencyKey: 'open-project-key', ...overrides });
+
+const completeCloseout = async () => {
+  await service.recordApprovedTakeoff({
+    jobId: ids.job,
+    actor: owner,
+    idempotencyKey: 'closeout-takeoff-key',
+    submission: {
+      engineVersion: 'test', quantityModelVersion: 'test-v1', jobModel: {},
+      quantities: [{ code: 'pool.water-volume', value: 1, unit: 'gal', calcId: 'closeout.volume' }],
+      calcLedger: [{ id: 'closeout.volume', label: 'Volume', formula: 'V = 1', inputs: [], value: 1, unit: 'gal' }],
+      supersedeExisting: false,
+    },
+  });
+  await open({ initialPhaseKey: 'plaster-fill' });
+
+  const gateIds = new Map<string, string>();
+  for (const entry of await service.listJobGates(ids.job)) {
+    const gateId = createCanonicalId('gate');
+    await service.createGate({ gateInstanceId: gateId, jobId: ids.job, definitionKey: entry.definitionKey });
+    await db.query(
+      `update gate_instances set status = 'released', released_at = now(), released_by = $2 where gate_instance_id = $1`,
+      [gateId, ids.owner],
+    );
+    gateIds.set(entry.definitionKey, gateId);
+  }
+
+  const inspections = new InspectionService(db);
+  for (const inspection of await inspections.listInspectionTypes()) {
+    await inspections.recordResult({
+      jobId: ids.job, inspectionKey: inspection.inspectionKey,
+      outcome: 'passed', occurredOn: '2026-08-13', actor: owner,
+    });
+  }
+
+  for (const draw of DRAW_SCHEDULE_TEMPLATE) {
+    await db.query(
+      `insert into job_draws
+       (draw_id, job_id, draw_code, label, sequence, percent_basis_points, amount_cents,
+        release_condition, gate_definition_key, status, eligible_at, source_gate_instance_id,
+        invoice_reference, invoiced_at, invoiced_by)
+       values ($1, $2, $3, $4, $5, $6, 0, $7, $8, 'invoiced', now(), $9, $10, now(), $11)`,
+      [
+        createCanonicalId('draw'), ids.job, draw.code, draw.label, draw.sequence,
+        draw.percentBasisPoints, draw.releaseCondition, draw.gateDefinitionKey,
+        draw.gateDefinitionKey === null ? null : gateIds.get(draw.gateDefinitionKey),
+        `QB-${draw.sequence}`, ids.owner,
+      ],
+    );
+  }
+  await db.query(`update jobs set status = 'complete' where job_id = $1`, [ids.job]);
+};
 
 describe('opening a construction project', () => {
   it('starts at design and permitting and records the opening position', async () => {
@@ -197,23 +249,117 @@ describe('the job summary read model', () => {
 });
 
 describe('closing a completed job', () => {
-  it('closes a completed job only after reconciliation and is idempotent', async () => {
+  it('reports the authoritative blockers instead of treating completion as reconciliation', async () => {
     await expect(service.closeJob({ jobId: ids.job, actor: owner, idempotencyKey: 'close-before-complete' }))
       .rejects.toThrow(/marked complete/i);
     await db.query(`update jobs set status = 'complete' where job_id = $1`, [ids.job]);
-    const closed = await service.closeJob({ jobId: ids.job, actor: owner, idempotencyKey: 'close-job-key' });
-    expect(closed.status).toBe('closed');
-    expect((await db.query(`select status, closed_by, reconciliation_complete from jobs where job_id = $1`, [ids.job])).rows[0])
-      .toMatchObject({ status: 'closed', closed_by: ids.owner, reconciliation_complete: true });
+    const closeout = await service.getJobCloseout(ids.job);
+    expect(closeout).toMatchObject({
+      finalPhaseComplete: false,
+      gates: { complete: false },
+      inspections: { complete: false },
+      draws: { complete: false },
+      customerHandoverComplete: false,
+      ready: false,
+      closedAt: null,
+      closedByUserId: null,
+    });
+    await expect(service.closeJob({ jobId: ids.job, actor: owner, idempotencyKey: 'close-job-key' }))
+      .rejects.toThrow(/final phase|gates|inspections|draws|handover/i);
+  });
+
+  it('returns an already closed job without writing a second close event', async () => {
+    await db.query(
+      `update jobs set status = 'closed', closed_at = now(), closed_by = $2, reconciliation_complete = true where job_id = $1`,
+      [ids.job, ids.owner],
+    );
+    const first = await service.closeJob({ jobId: ids.job, actor: owner, idempotencyKey: 'close-job-key' });
+    const second = await service.closeJob({ jobId: ids.job, actor: owner, idempotencyKey: 'different-key' });
+    expect(first.status).toBe('closed');
+    expect(second.status).toBe('closed');
     expect((await db.query(`select event_type from events where job_id = $1 and event_type = 'job.closed'`, [ids.job])).rows)
-      .toHaveLength(1);
-    expect((await service.closeJob({ jobId: ids.job, actor: owner, idempotencyKey: 'different-key' })).status).toBe('closed');
+      .toHaveLength(0);
+  });
+
+  it('archives a fully reconciled job exactly once and moves it out of active work', async () => {
+    await completeCloseout();
+    expect(await service.getJobCloseout(ids.job)).toMatchObject({ ready: true });
+
+    const closed = await service.closeJob({ jobId: ids.job, actor: owner, idempotencyKey: 'close-ready-key' });
+    expect(closed.status).toBe('closed');
+    expect((await service.listJobs('active')).map((job) => job.jobId)).not.toContain(ids.job);
+    expect((await service.listJobs('historical')).map((job) => job.jobId)).toContain(ids.job);
+    expect(await service.getJobCloseout(ids.job)).toMatchObject({
+      ready: true, closedByUserId: ids.owner, closedByName: 'Travis',
+    });
+
+    await service.closeJob({ jobId: ids.job, actor: owner, idempotencyKey: 'close-again-key' });
+    expect((await db.query(
+      `select event_id from events where job_id = $1 and event_type = 'job.closed'`,
+      [ids.job],
+    )).rows).toHaveLength(1);
   });
 
   it('refuses field closure', async () => {
     await db.query(`update jobs set status = 'complete' where job_id = $1`, [ids.job]);
     await expect(service.closeJob({ jobId: ids.job, actor: fieldActor, idempotencyKey: 'field-close' }))
       .rejects.toThrow(/may not close/i);
+  });
+});
+
+describe('closed project mutation refusal', () => {
+  let gateId: Parameters<GateService['execute']>[0];
+
+  beforeEach(async () => {
+    await service.recordApprovedTakeoff({
+      jobId: ids.job, actor: owner, idempotencyKey: 'closed-guard-takeoff',
+      submission: {
+        engineVersion: 'test', quantityModelVersion: 'test-v1', jobModel: {},
+        quantities: [{ code: 'pool.water-volume', value: 1, unit: 'gal', calcId: 'guard.volume' }],
+        calcLedger: [{ id: 'guard.volume', label: 'Volume', formula: 'V = 1', inputs: [], value: 1, unit: 'gal' }],
+        supersedeExisting: false,
+      },
+    });
+    gateId = createCanonicalId('gate');
+    await service.createGate({ gateInstanceId: gateId, jobId: ids.job, definitionKey: 'permit' });
+    await db.query(
+      `update jobs set status = 'closed', closed_at = now(), closed_by = $2, reconciliation_complete = true where job_id = $1`,
+      [ids.job, ids.owner],
+    );
+  });
+
+  it('refuses gate, project, assignment, takeoff, and draw mutations', async () => {
+    await expect(service.createGate({
+      gateInstanceId: createCanonicalId('gate'), jobId: ids.job, definitionKey: 'final',
+    })).rejects.toThrow(/closed.*cannot be edited/i);
+    await expect(service.execute(gateId, {
+      type: 'start-gate', actor: owner, at: new Date().toISOString(),
+    }, { idempotencyKey: 'closed-gate-command' })).rejects.toThrow(/closed.*cannot be edited/i);
+    await expect(open()).rejects.toThrow(/closed.*cannot be edited/i);
+    await expect(service.changeProjectPhase(ids.job, {
+      actor: owner, at: new Date().toISOString(), toPhaseKey: 'layout-excavation',
+    }, { idempotencyKey: 'closed-phase' })).rejects.toThrow(/closed.*cannot be edited/i);
+    await expect(service.updateProjectTarget(ids.job, {
+      targetCompletionStart: null, targetCompletionEnd: null,
+    }, { actor: owner, idempotencyKey: 'closed-target' })).rejects.toThrow(/closed.*cannot be edited/i);
+    await expect(service.assignSuperintendent({
+      jobId: ids.job, superintendentUserId: ids.superintendent, actor: owner, idempotencyKey: 'closed-super',
+    })).rejects.toThrow(/closed.*cannot be edited/i);
+    await expect(service.recordApprovedTakeoff({
+      jobId: ids.job, actor: owner, idempotencyKey: 'closed-new-takeoff',
+      submission: {
+        engineVersion: 'test', quantityModelVersion: 'test-v2', jobModel: {},
+        quantities: [{ code: 'pool.water-volume', value: 2, unit: 'gal', calcId: 'guard.volume.2' }],
+        calcLedger: [{ id: 'guard.volume.2', label: 'Volume', formula: 'V = 2', inputs: [], value: 2, unit: 'gal' }],
+        supersedeExisting: true,
+      },
+    })).rejects.toThrow(/closed.*cannot be edited/i);
+    await expect(service.createDrawSchedule({
+      jobId: ids.job, actor: owner, idempotencyKey: 'closed-draws',
+    })).rejects.toThrow(/closed.*cannot be edited/i);
+    await expect(service.markDrawInvoiced({
+      jobId: ids.job, drawCode: 'deposit', invoiceReference: 'QB-1', actor: owner,
+    })).rejects.toThrow(/closed.*cannot be edited/i);
   });
 });
 

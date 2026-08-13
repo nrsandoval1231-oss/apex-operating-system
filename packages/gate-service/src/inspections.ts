@@ -11,6 +11,7 @@ import {
   type JobInspection,
 } from '@apex/contracts';
 import { DomainRuleError, blockingInspections, lastSafeRequestOn } from '@apex/domain';
+import { assertJobMutable } from './jobState.js';
 
 /**
  * Inspections — PRD §9.7. The inspection half of build-plan Step 5.
@@ -29,7 +30,6 @@ import { DomainRuleError, blockingInspections, lastSafeRequestOn } from '@apex/d
 
 /** Roles that may record an inspection. The field lead calls these in. */
 const INSPECTION_AUTHORITY = ['admin', 'office', 'superintendent', 'field'] as const;
-
 const asDay = (value: string | Date | null): string | null =>
   value === null ? null : (typeof value === 'string' ? value : value.toISOString()).slice(0, 10);
 
@@ -207,6 +207,7 @@ export class InspectionService {
     neededBy?: string;
     actor: EventActor;
   }): Promise<JobInspection> {
+    await assertJobMutable(this.db, input.jobId);
     const { userId } = requireInspectionRole(input.actor, 'Requesting an inspection');
     const known = await this.db.query(
       'select 1 from inspection_types where inspection_key = $1',
@@ -250,6 +251,7 @@ export class InspectionService {
     corrections?: string;
     actor: EventActor;
   }): Promise<JobInspection> {
+    await assertJobMutable(this.db, input.jobId);
     const { userId } = requireInspectionRole(input.actor, 'Recording an inspection result');
     if (input.outcome === 'failed' && !input.corrections?.trim()) {
       throw new DomainRuleError('A failed inspection has to record what must be corrected.');

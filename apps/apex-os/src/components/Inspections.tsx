@@ -52,6 +52,7 @@ export default function Inspections({
   query,
   today,
   focus,
+  readOnly,
 }: {
   jobId: string;
   query: Query<readonly JobInspection[]>;
@@ -59,6 +60,7 @@ export default function Inspections({
   today: string;
   /** Feed cards use this to land the operator at the resolving workflow. */
   focus?: string | null;
+  readOnly: boolean;
 }) {
   const [asking, setAsking] = useState<
     | { kind: 'request'; inspection: JobInspection }
@@ -137,7 +139,7 @@ export default function Inspections({
         quiet
       />
 
-      {asking?.kind === 'request' && (
+      {!readOnly && asking?.kind === 'request' && (
         <InlineForm
           title={`Call in ${asking.inspection.title}`}
           note={`${asking.inspection.requestMethod}. ${asking.inspection.authority}.`}
@@ -152,7 +154,7 @@ export default function Inspections({
         />
       )}
 
-      {asking?.kind === 'result' && (
+      {!readOnly && asking?.kind === 'result' && (
         <InlineForm
           title={`Result — ${asking.inspection.title}`}
           note="Passed, failed, or waived. A failure has to say what must be corrected; a waiver has to say why it does not apply to this pool."
@@ -218,7 +220,7 @@ export default function Inspections({
 
                 <div className="figure">
                   <span className={`tag ${PRESSURE_TAG[pressure]}`}>{label(inspection, pressure)}</span>
-                  {!settled && (
+                  {!readOnly && !settled && (
                     <>
                       <button
                         type="button"

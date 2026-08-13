@@ -715,6 +715,36 @@ describe('Gate HTTP vertical slice', () => {
     expect(unauthenticated.status).toBe(403);
   });
 
+  it('keeps archived reads available while mutation APIs refuse the closed job', async () => {
+    const office = await token(ids.office, 'office');
+    await db.query(
+      `update jobs set status = 'closed', closed_at = now(), closed_by = $2, reconciliation_complete = true where job_id = $1`,
+      [ids.job, ids.office],
+    );
+
+    expect((await call(`/api/jobs/${ids.job}`, office)).status).toBe(200);
+    expect((await call(`/api/jobs/${ids.job}/approved-takeoff`, office)).status).toBe(200);
+    expect((await call(`/api/jobs/${ids.job}/close`, office)).status).toBe(200);
+    const historical = await call('/api/jobs?view=historical', office);
+    expect((await historical.json() as Array<{ jobId: string }>).map((job) => job.jobId)).toContain(ids.job);
+
+    const commands: Array<[string, RequestInit]> = [
+      [`/api/jobs/${ids.job}/project`, { method: 'POST', body: '{}' }],
+      [`/api/jobs/${ids.job}/gates/final`, { method: 'POST', body: '{}' }],
+      [`/api/jobs/${ids.job}/inspections/final-safety-barrier/request`, {
+        method: 'POST', body: JSON.stringify({ requestedOn: '2026-08-13' }),
+      }],
+      [`/api/jobs/${ids.job}/customer-link`, { method: 'POST', body: '{}' }],
+    ];
+    for (const [index, [path, init]] of commands.entries()) {
+      const response = await call(path, office, {
+        ...init, headers: { 'idempotency-key': `closed-api-${index}` },
+      });
+      expect(response.status, path).toBe(409);
+      expect(await response.json(), path).toMatchObject({ error: expect.stringMatching(/closed.*cannot be edited/i) });
+    }
+  });
+
   it('reports the current Gate on the job summary once one exists', async () => {
     const field = await token(ids.field, 'field');
     await call(`/api/jobs/${ids.job}/gates/pre-gunite`, field, { method: 'POST', body: '{}' });

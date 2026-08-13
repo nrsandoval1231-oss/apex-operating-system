@@ -69,6 +69,7 @@ describe('JobSummarySchema', () => {
     addressLine: '4502 19th St, Lubbock, TX',
     contractCents: 18_500_000,
     approvedTakeoffRevisionId: createCanonicalId('revision'),
+    proposalId: createCanonicalId('proposal'),
     currentGate: {
       gateInstanceId: createCanonicalId('gate'),
       definitionKey: 'pre-gunite',
@@ -102,6 +103,7 @@ describe('JobSummarySchema', () => {
       addressLine: null,
       contractCents: null,
       approvedTakeoffRevisionId: null,
+      proposalId: null,
       currentGate: null,
       project: null,
     })).not.toThrow();
@@ -124,5 +126,22 @@ describe('JobSummarySchema', () => {
     expect(() => JobSummarySchema.parse({ ...base, jobId: 'job_not_a_ulid' })).toThrow();
     expect(() => JobSummarySchema.parse({ ...base, contractCents: -1 })).toThrow();
     expect(() => JobSummarySchema.parse({ ...base, marginCents: 100 })).toThrow();
+  });
+});
+
+describe('JobCloseoutSchema', () => {
+  it('requires every operational handoff before reporting ready', async () => {
+    const { JobCloseoutSchema } = await import('./jobSummary.js');
+    expect(() => JobCloseoutSchema.parse({
+      finalPhaseComplete: true,
+      gates: { released: 9, required: 9, complete: true },
+      inspections: { cleared: 7, required: 7, complete: true },
+      draws: { invoiced: 5, required: 5, complete: true },
+      customerHandoverComplete: true,
+      ready: true,
+      closedAt: null,
+      closedByUserId: null,
+      closedByName: null,
+    })).not.toThrow();
   });
 });

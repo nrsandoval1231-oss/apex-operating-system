@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { z } from 'zod';
-import { Link, useParams, useSearchParams } from 'react-router';
+import { Link, Navigate, useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
 import { CONSTRUCTION_PHASES, type DrawStatus, type VisitStatus } from '@apex/contracts';
-import { useDrawSchedule, useJob, useJobGates, useJobInspections, useJobSchedule } from '../api/useJobs';
+import { useDrawSchedule, useJob, useJobCloseout, useJobGates, useJobInspections, useJobSchedule } from '../api/useJobs';
 import AttachTakeoff from '../components/AttachTakeoff';
 import AssignSuperintendent from '../components/AssignSuperintendent';
 import ConfirmInvoice from '../components/ConfirmInvoice';
 import CloseJob from '../components/CloseJob';
+import DownloadRetainedTakeoff from '../components/DownloadRetainedTakeoff';
 import { apiSend } from '../api/client';
 import GateWorkflow from '../components/GateWorkflow';
 import Inspections from '../components/Inspections';
@@ -58,8 +59,10 @@ const GATE_TAG = (status: string | null): string => {
   return 'tag-pool';
 };
 
-export default function ProjectDetail() {
+export default function ProjectDetail({ historical = false }: { historical?: boolean }) {
   const { id } = useParams<{ id: string }>();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   // Today cards carry the exact Gate they need. Opening it here means the
   // action feed and the unified Projects workflow are one continuous path.
@@ -71,6 +74,7 @@ export default function ProjectDetail() {
   const [targetEnd, setTargetEnd] = useState('');
   const [actionError, setActionError] = useState<string | null>(null);
   const { data: job, error, loading, reload } = useJob(id);
+  const closeout = useJobCloseout(job?.status === 'complete' || job?.status === 'closed' ? id : undefined);
   const gates = useJobGates(id);
   const gatePlan = gates.data ?? [];
   const draws = useDrawSchedule(id);
@@ -126,12 +130,20 @@ export default function ProjectDetail() {
     );
   }
 
+  const archived = job.status === 'closed' || job.status === 'cancelled';
+  if (!historical && archived) return <Navigate replace to={`/historical/${job.jobId}`} />;
+  if (historical && !archived) return <Navigate replace to={`/projects/${job.jobId}`} />;
+  const readOnly = historical && archived;
+  const backTo = readOnly ? '/historical' : '/projects';
+  const backLabel = readOnly ? 'History' : 'All projects';
+  const justArchived = (location.state as { archived?: boolean } | null)?.archived === true;
+
   return (
     <>
       <header className="title-block">
         <div style={{ minWidth: 0 }}>
-          <Link to="/projects" className="link-quiet" style={{ display: 'inline-block', marginBottom: '10px' }}>
-            ← All projects
+          <Link to={backTo} className="link-quiet" style={{ display: 'inline-block', marginBottom: '10px' }}>
+            ← {backLabel}
           </Link>
           <h1>{jobTitle(job)}</h1>
         </div>
@@ -142,6 +154,15 @@ export default function ProjectDetail() {
       </header>
 
       <p className="notice">{jobLocation(job)}</p>
+      {readOnly && (
+        <p className="notice" role={justArchived ? 'status' : undefined}>
+          {justArchived ? 'Project closed and archived. ' : ''}
+          Historical record — changes are disabled.
+          {closeout.data?.closedAt
+            ? ` Closed ${new Date(closeout.data.closedAt).toLocaleString()} by ${closeout.data.closedByName ?? 'recorded staff'}.`
+            : ''}
+        </p>
+      )}
       {actionError !== null && <p className="error" role="alert">{actionError}</p>}
 
       {/* ---------------------------------------------------------- phases */}
@@ -159,7 +180,7 @@ export default function ProjectDetail() {
             * the deliberate act that says a signed job is now under
             * construction — a signed contract is not the same thing.
             */}
-          {id !== undefined && (
+          {id !== undefined && !readOnly && (
             <OpenProject jobId={id} onOpened={() => { reload(); gates.reload(); }} />
           )}
         </>
@@ -197,7 +218,7 @@ export default function ProjectDetail() {
             <dt>Super</dt>
             <dd className={phase.superintendentName === null ? 'unset' : ''}>
               {phase.superintendentName ?? 'Not assigned'}
-              {id !== undefined && (
+              {id !== undefined && !readOnly && (
                 <AssignSuperintendent
                   jobId={id}
                   currentUserId={phase.superintendentUserId ?? null}
@@ -208,7 +229,7 @@ export default function ProjectDetail() {
             <dt>Target</dt>
             <dd className={targetWindow(phase) === null ? 'unset' : ''}>
               {targetWindow(phase) ?? 'Not recorded'}
-              {id !== undefined && (
+              {id !== undefined && !readOnly && (
                 <span className="inline-action">
                   <input type="date" aria-label="New target completion date" value={(targetEnd || phase.targetCompletionEnd) ?? ''} onChange={(event) => setTargetEnd(event.target.value)} />
                   <button className="btn ghost" onClick={updateTarget}>Update target</button>
@@ -272,13 +293,13 @@ export default function ProjectDetail() {
                       aria-expanded={openGate === entry.definitionKey}
                       onClick={() => setOpenGate(openGate === entry.definitionKey ? null : entry.definitionKey)}
                     >
-                      {openGate === entry.definitionKey ? 'Hide workflow' : 'Open workflow'}
+                      {openGate === entry.definitionKey ? 'Hide record' : readOnly ? 'View record' : 'Open workflow'}
                     </button>
                   )}
                 </div>
               </div>
               {openGate === entry.definitionKey && id !== undefined && (
-                <GateWorkflow jobId={id} entry={entry} onChanged={() => { gates.reload(); reload(); }} />
+                <GateWorkflow jobId={id} entry={entry} readOnly={readOnly} onChanged={() => { gates.reload(); reload(); }} />
               )}
             </li>
           ))}
@@ -328,7 +349,7 @@ export default function ProjectDetail() {
                         : `Booked before the ${conflict.gateTitle} gate has released`}
                     </div>
                   ))}
-                  {against.length > 0 && visit.status !== 'done' && visit.status !== 'cancelled' && (
+                  {!readOnly && against.length > 0 && visit.status !== 'done' && visit.status !== 'cancelled' && (
                     movingVisitId === visit.visitId ? (
                       <span className="inline-action">
                         <input type="date" aria-label="Move visit start" value={moveStartsOn} onChange={(event) => setMoveStartsOn(event.target.value)} />
@@ -400,7 +421,7 @@ export default function ProjectDetail() {
                     * recorded — offering the action there would invite the
                     * refusal the service already gives.
                     */}
-                  {id !== undefined && draw.status === 'eligible' && (
+                  {id !== undefined && !readOnly && draw.status === 'eligible' && (
                     <ConfirmInvoice jobId={id} draw={draw} onDone={() => { draws.reload(); reload(); }} />
                   )}
                 </div>
@@ -441,7 +462,7 @@ export default function ProjectDetail() {
             : job.approvedTakeoffRevisionId.slice(-12)}
         </dd>
       </dl>
-      {id !== undefined && (
+      {id !== undefined && !readOnly && (
         <AttachTakeoff
           jobId={id}
           hasApproved={job.approvedTakeoffRevisionId !== null}
@@ -452,13 +473,25 @@ export default function ProjectDetail() {
           onAttached={() => { reload(); gates.reload(); }}
         />
       )}
+      {id !== undefined && readOnly && job.approvedTakeoffRevisionId !== null && (
+        <DownloadRetainedTakeoff jobId={id} />
+      )}
+      {readOnly && job.proposalId !== null && (
+        <p className="state-quiet">Retained proposal ID: <span className="mono">{job.proposalId}</span></p>
+      )}
 
       {/* ----------------------------------------------------- inspections */}
 
-      {id !== undefined && <Inspections jobId={id} query={inspections} today={today} focus={new URLSearchParams(window.location.search).get('focus')} />}
+      {id !== undefined && <Inspections jobId={id} query={inspections} today={today} readOnly={readOnly} focus={new URLSearchParams(window.location.search).get('focus')} />}
 
       <div className="section-rule"><h2>Completion</h2></div>
-      <CloseJob job={job} onClosed={() => { reload(); }} />
+      {!readOnly && (
+        <CloseJob
+          job={job}
+          closeout={closeout.data}
+          onClosed={() => navigate(`/historical/${job.jobId}`, { replace: true, state: { archived: true } })}
+        />
+      )}
 
       {/* --------------------------------------------------------- customer */}
 
@@ -467,11 +500,11 @@ export default function ProjectDetail() {
         The link the customer opens, which photos they can see, and what Apex is
         waiting on them for.
       </p>
-      <div style={{ marginTop: '12px' }}>
+      {!readOnly && <div style={{ marginTop: '12px' }}>
         <Link to={`/projects/${job.jobId}/customer`} className="action">
           Customer page
         </Link>
-      </div>
+      </div>}
 
 
     </>

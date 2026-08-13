@@ -1153,6 +1153,10 @@ export function createGateApi(options: GateApiOptions) {
       }
 
       const closeJobMatch = url.pathname.match(/^\/api\/jobs\/(job_[0-9A-HJKMNP-TV-Z]{26})\/close$/);
+      if (request.method === 'GET' && closeJobMatch) {
+        requireStaff(actor);
+        return sendJson(response, 200, await service.getJobCloseout(idSchemas.job.parse(closeJobMatch[1])));
+      }
       if (request.method === 'POST' && closeJobMatch) {
         requireStaff(actor);
         return sendJson(response, 200, await service.closeJob({

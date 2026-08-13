@@ -28,7 +28,13 @@ export default function GateWorkflow({
   jobId,
   entry,
   onChanged,
-}: { jobId: string; entry: JobGatePlanEntry; onChanged: () => void }) {
+  readOnly,
+}: {
+  jobId: string;
+  entry: JobGatePlanEntry;
+  onChanged: () => void;
+  readOnly: boolean;
+}) {
   const [gate, setGate] = useState<Gate | null>(null);
   const [gateId, setGateId] = useState(entry.gateInstanceId);
   const [error, setError] = useState<string | null>(null);
@@ -78,22 +84,30 @@ export default function GateWorkflow({
   });
 
   if (error) return <p className="error" role="alert">{error}</p>;
-  if (gate === null) return <div className="panel"><p className="state-quiet">{entry.title} is not open.</p><button className="action" disabled={busy} onClick={() => void open()}>Open {entry.title}</button></div>;
+  if (gate === null) {
+    return (
+      <div className="panel">
+        <p className="state-quiet">{entry.title} is not open.</p>
+        {!readOnly && <button type="button" className="action" disabled={busy} onClick={() => void open()}>Open {entry.title}</button>}
+      </div>
+    );
+  }
 
   const complete = gate.requirements.every((item) => item.status === 'passed' || item.status === 'overridden');
   return <div className="gate-workflow">
     <div className="row-foot"><span className="due">{entry.title} · {gate.status}</span><span className="tag tag-dim">{gate.requirements.filter((item) => item.status === 'passed' || item.status === 'overridden').length} / {gate.requirements.length} clear</span></div>
-    {gate.status === 'not-started' && <button className="action" disabled={busy} onClick={() => void start()}>Start {entry.title}</button>}
-    {gate.requirements.map((requirement) => <article className="gate-requirement" key={requirement.key}>
+      {gate.status === 'not-started' && !readOnly && <button type="button" className="action" disabled={busy} onClick={() => void start()}>Start {entry.title}</button>}
+      {gate.requirements.map((requirement) => <article className="gate-requirement" key={requirement.key}>
       <div className="gate-requirement-head"><span className="what">{title(requirement.key)}</span><span className="tag">{requirement.status}</span></div>
       {requirement.evidenceIds.length > 0 && <div className="proof-grid">{requirement.evidenceIds.map((id) => <EvidenceProof key={id} evidenceId={id} />)}</div>}
-      {gate.status !== 'released' && gate.status !== 'not-started' && <>
-        <input type="file" accept="image/jpeg,image/png,image/webp,video/mp4,application/pdf" disabled={busy || gate.status === 'not-started'} onChange={(event) => { const file = event.target.files?.[0]; if (file) void upload(requirement.key, file); }} />
+        {gate.status !== 'released' && gate.status !== 'not-started' && !readOnly && <>
+          <input type="file" accept="image/jpeg,image/png,image/webp,video/mp4,application/pdf" disabled={busy || gate.status === 'not-started'} onChange={(event) => { const file = event.target.files?.[0]; if (file) void upload(requirement.key, file); }} />
         <input aria-label={`${title(requirement.key)} note`} value={notes[requirement.key] ?? ''} onChange={(event) => setNotes((current) => ({ ...current, [requirement.key]: event.target.value }))} placeholder="Evaluation note" />
         <button className="action" disabled={busy || requirement.status === 'passed' || requirement.status === 'overridden'} onClick={() => void evaluate(requirement.key, 'passed')}>Pass</button>
         <button className="action action-quiet" disabled={busy} onClick={() => void evaluate(requirement.key, 'failed')}>Fail</button>
       </>}
     </article>)}
-    {gate.status !== 'released' && gate.status !== 'not-started' && <button className="action" disabled={busy || !complete} onClick={() => void release()}>{complete ? `Release ${entry.title}` : 'Complete requirements to release'}</button>}
+    {gate.status !== 'released' && gate.status !== 'not-started' && !readOnly
+      && <button type="button" className="action" disabled={busy || !complete} onClick={() => void release()}>{complete ? `Release ${entry.title}` : 'Complete requirements to release'}</button>}
   </div>;
 }

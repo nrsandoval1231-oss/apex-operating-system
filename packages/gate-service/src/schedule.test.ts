@@ -83,6 +83,22 @@ const book = (jobId: string, overrides: Partial<Parameters<GateService['schedule
     ...overrides,
   });
 
+describe('closed schedules', () => {
+  it('retains visits and refuses new or moved bookings', async () => {
+    const visit = await book(ids.jobA);
+    await db.query(
+      `update jobs set status = 'closed', closed_at = now(), closed_by = $2, reconciliation_complete = true where job_id = $1`,
+      [ids.jobA, ids.owner],
+    );
+    await expect(book(ids.jobA, { startsOn: '2026-08-11', endsOn: '2026-08-11' }))
+      .rejects.toThrow(/closed.*cannot be edited/i);
+    await expect(service.rescheduleVisit({
+      visitId: visit.visitId, startsOn: '2026-08-12', endsOn: '2026-08-12', actor: owner,
+    })).rejects.toThrow(/closed.*cannot be edited/i);
+    expect(await service.listJobVisits(ids.jobA as never)).toHaveLength(1);
+  });
+});
+
 describe('booking a crew', () => {
   it('stores the visit with the crew and trade resolved', async () => {
     const visit = await book(ids.jobA);

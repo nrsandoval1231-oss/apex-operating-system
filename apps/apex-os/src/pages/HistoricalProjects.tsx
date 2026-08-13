@@ -16,6 +16,7 @@ export default function HistoricalProjects() {
       job.addressLine,
       job.jobId,
       job.leadId,
+      job.proposalId,
     ].some((value) => value?.toLowerCase().includes(needle)));
   }, [data, query]);
 
@@ -30,12 +31,12 @@ export default function HistoricalProjects() {
         {data !== null && <div className="stamp">Saved jobs<b>{data.length}</b></div>}
       </header>
       <label className="archive-search">
-        <span>Search customer, address, Job ID, or lead ID</span>
+        <span>Search customer, address, Job ID, lead ID, or proposal ID</span>
         <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search historical jobs" />
       </label>
-      <QueryState loading={loading} error={error} isEmpty={jobs.length === 0} emptyTitle={query ? 'No matching historical jobs' : 'No historical jobs yet'} emptyBody={query ? 'Try a customer name, address, or stable Job ID.' : 'A job appears here after it is explicitly completed and closed.'} onRetry={reload} />
+      <QueryState loading={loading} error={error} isEmpty={jobs.length === 0} emptyTitle={query ? 'No matching historical jobs' : 'No historical jobs yet'} emptyBody={query ? 'Try a customer name, address, Job ID, lead ID, or proposal ID.' : 'A project appears here after it is explicitly closed and archived.'} onRetry={reload} />
       {jobs.map((job) => (
-        <Link key={job.jobId} to={`/projects/${job.jobId}`} className="row settle archive-row">
+        <Link key={job.jobId} to={`/historical/${job.jobId}`} className="row settle archive-row">
           <div className="row-head">
             <div style={{ minWidth: 0 }}>
               <div className="row-who">{jobTitle(job)}</div>
