@@ -146,7 +146,7 @@ describe.skipIf(!engineAvailable)('Designer to canonical contract compatibility'
     const parsed = DesignerTakeoffSubmissionSchema.parse(JSON.parse(JSON.stringify(submission)));
 
     expect(parsed.quantities).toHaveLength(17);
-    expect(parsed.quantityModelVersion).toBe('designer-quantity-v4');
+    expect(parsed.quantityModelVersion).toBe('designer-quantity-v5');
     // Absent from the export and defaulted here: replacing an approved revision
     // is the receiver's decision to require, not the sender's to declare.
     expect(parsed.supersedeExisting).toBe(false);
