@@ -9,16 +9,19 @@ Quantities only — no pricing, no design, not a permit set.
 ## Status
 
 Build order steps **1 (geometry + volume + Lubbock amendment checks)**,
-**2 (layered excavation)**, **3 (takeoff sheet on screen)**,
+**2 (layered excavation)**, **3 (ordering workbook + Advanced references)**,
 **4 (structure takeoff)**, **5 (hydraulics)**, **6 (equipment, gas demand and
 pad)**, **7 (cover)**, **8 (finishes, yard and drainage)**,
 **9 (SVG plan view)**, **10 (print stylesheet to PDF)** and **11 (input form and
-JSON save/load)** are complete. Every step in the PRD's build order is done.
+JSON save/load)** are complete. The production workflow also includes a true
+3′–5′–3′ sports profile, `.xlsx` export, and Finish Estimate handoff to Apex OS.
+Designer creates/uses a pre-contract opportunity; Apex OS creates the Job only
+after acceptance of an issued Proposal is recorded.
 
 ```bash
 npm install
 npm run dev     # takeoff sheet at localhost:5173
-npm test        # 549 tests
+npm test        # 580 tests
 npm run takeoff # same numbers, headless, for reconciliation
 ```
 
@@ -142,7 +145,9 @@ src/ui/              step 3 — the takeoff sheet
   **This gives up a property the tool used to have:** placement no longer leaves
   quantities alone. Dragging a bench from the shallow end to the deep end really
   does displace more water, and the drawing now says so — which is why the
-  quantity model is **`designer-quantity-v4`**.
+  quantity model was **`designer-quantity-v4`** at that point. The current
+  sports-profile-capable contract is **`designer-quantity-v5`**; historical v4
+  approvals remain historical evidence and are not rewritten.
 - **One definition of an object's footprint.** `stepFootprint` and
   `seatFootprint` serve the renderer, the drag handler and the takeoff. Three
   copies of that arithmetic is what produced a bench that flipped its shape the
