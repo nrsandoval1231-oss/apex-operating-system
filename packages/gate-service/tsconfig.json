@@ -9,6 +9,7 @@
   },
   "references": [
     { "path": "../contracts" },
+    { "path": "../pricing-engine" },
     { "path": "../database" },
     { "path": "../domain" }
   ],

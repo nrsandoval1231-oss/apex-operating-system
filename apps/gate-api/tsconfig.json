@@ -11,7 +11,8 @@
     { "path": "../../packages/contracts" },
     { "path": "../../packages/database" },
     { "path": "../../packages/domain" },
-    { "path": "../../packages/gate-service" }
+    { "path": "../../packages/gate-service" },
+    { "path": "../../packages/pricing-engine" }
   ],
   "include": ["src/**/*.ts"]
 }

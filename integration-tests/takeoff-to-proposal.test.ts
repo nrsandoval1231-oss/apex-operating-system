@@ -4,6 +4,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { ApprovedTakeoffRevisionSchema } from '../packages/contracts/src/records.ts';
 import { calculateQuantityPayloadSha256 } from '../packages/contracts/src/quantityDigest.ts';
+import { MEASURED_LINE_DEFINITIONS, priceApprovedTakeoff } from '../packages/pricing-engine/src/index.ts';
 
 /**
  * The chain, run end to end: Designer measures → the quantities are approved → Proposal prices
@@ -26,9 +27,18 @@ import { calculateQuantityPayloadSha256 } from '../packages/contracts/src/quanti
  */
 
 const here = dirname(fileURLToPath(import.meta.url));
-const designerPath = resolve(here, '../Apex Designer/src/engine/index.ts');
-const proposalPath = resolve(here, '../apex-proposal-engine/engine.mjs');
-const bothAvailable = existsSync(designerPath) && existsSync(proposalPath);
+const firstExisting = (paths: readonly string[]): string => paths.find(existsSync) ?? paths[0]!;
+const designerPath = firstExisting([
+  resolve(here, '../Apex Designer/src/engine/index.ts'),
+  resolve(here, '../../../../Apex Designer/src/engine/index.ts'),
+]);
+const proposalPath = firstExisting([
+  resolve(here, '../apex-proposal-engine/engine.mjs'),
+  resolve(here, '../../../../apex-proposal-engine/engine.mjs'),
+]);
+const designerAvailable = existsSync(designerPath);
+const proposalAvailable = existsSync(proposalPath);
+const bothAvailable = designerAvailable && proposalAvailable;
 
 /**
  * What makes the skip trustworthy — and it is NOT the console.warn below.
@@ -87,10 +97,10 @@ interface ProposalEngine {
   };
 }
 
-const designer: DesignerEngine | null = bothAvailable
+const designer: DesignerEngine | null = designerAvailable
   ? ((await import(pathToFileURL(designerPath).href)) as unknown as DesignerEngine)
   : null;
-const proposal: ProposalEngine | null = bothAvailable
+const proposal: ProposalEngine | null = proposalAvailable
   ? ((await import(pathToFileURL(proposalPath).href)) as unknown as ProposalEngine)
   : null;
 
@@ -260,5 +270,29 @@ describe.skipIf(!bothAvailable)('Designer takeoff to issued Proposal, end to end
     expect(() => proposal!.legacyReplayTakeoff({
       length: 24, width: 14, approvedTakeoffRevision: revision,
     })).toThrow(/production takeoff path/i);
+  });
+});
+
+describe.skipIf(designer === null)('Designer takeoff to local typed pricing', () => {
+  it('prices the canonical approved quantities without the read-only sibling Proposal runtime', () => {
+    const payload = designer!.exportDesignerQuantityPayload(designer!.runTakeoff({
+      ...designer!.STANDARD_MODEL, equipment: undefined,
+    }));
+    const revision = approve(payload);
+    const priced = priceApprovedTakeoff({
+      revision,
+      feeRateBps: 3000,
+      measuredLines: MEASURED_LINE_DEFINITIONS.map(([id]) => ({
+        id, amountCents: 10_000, basis: 'Approved integration estimate.',
+      })),
+      directLines: ([300, 500, 600, 900, 1100, 1200, 1300] as const).map((code) => ({
+        code, name: `Direct scope ${code}`, scopeStatus: 'not-applicable' as const,
+        amountCents: null, basis: 'Explicitly excluded in the integration fixture.',
+      })),
+    });
+    expect(priced.canIssue).toBe(true);
+    expect(priced.takeoffRevisionId).toBe(revision.revisionId);
+    expect(priced.quantityPayloadSha256).toBe(revision.quantityPayloadSha256);
+    expect(priced.lines.filter((line) => line.quantityAuthority).length).toBeGreaterThan(0);
   });
 });

@@ -8,6 +8,8 @@ import ProjectDetail from './pages/ProjectDetail';
 import OwnerBrief from './pages/OwnerBrief';
 import CustomerPage from './pages/CustomerPage';
 import AuthCallback from './pages/AuthCallback';
+import OpportunityEstimate from './pages/OpportunityEstimate';
+import ProposalPreview from './pages/ProposalPreview';
 
 /**
  * Only wired screens are routed.
@@ -32,6 +34,8 @@ export default function App() {
         <Route path="projects/:id" element={<ProjectDetail />} />
         <Route path="projects/:id/customer" element={<CustomerPage />} />
         <Route path="brief" element={<OwnerBrief />} />
+        <Route path="opportunities/:leadId/estimate" element={<OpportunityEstimate />} />
+        <Route path="proposals/:proposalVersionId" element={<ProposalPreview />} />
         <Route path="*" element={<Navigate to="/today" replace />} />
       </Route>
     </Routes>

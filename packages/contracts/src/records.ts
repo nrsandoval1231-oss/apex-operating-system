@@ -259,6 +259,7 @@ export const ProposalVersionSchema = z.strictObject({
   leadId: idSchemas.lead,
   jobId: idSchemas.job.nullable(),
   versionNumber: z.number().int().positive(),
+  draftRevision: z.number().int().positive().default(1),
   status: z.enum(['draft', 'issued', 'signed']),
   takeoffRevisionId: idSchemas.revision,
   quantityPayloadSha256: z.string().regex(/^[a-f0-9]{64}$/),

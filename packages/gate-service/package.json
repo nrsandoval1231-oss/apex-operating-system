@@ -12,7 +12,8 @@
   "dependencies": {
     "@apex/contracts": "workspace:*",
     "@apex/database": "workspace:*",
-    "@apex/domain": "workspace:*"
+    "@apex/domain": "workspace:*",
+    "@apex/pricing-engine": "workspace:*"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.4"
