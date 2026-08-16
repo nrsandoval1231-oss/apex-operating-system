@@ -1,4 +1,4 @@
-import { useState, type ChangeEvent } from 'react';
+import { useEffect, useState, type ChangeEvent } from 'react';
 import { Link } from 'react-router';
 import {
   DesignerTakeoffSubmissionSchema,
@@ -25,6 +25,28 @@ export default function FinishEstimate({ leadId }: { leadId: string }) {
   const [result, setResult] = useState<FinishEstimateResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    const readHandoff = (raw: string | null): { type?: string; submission?: unknown; fileName?: string; leadId?: string } | null => {
+      if (!raw) return null;
+      try { return JSON.parse(raw) as { submission?: unknown; fileName?: string; leadId?: string }; } catch { return null; }
+    };
+    const named = readHandoff(window.name);
+    const stored = sessionStorage.getItem(`apex-estimate-submission:${leadId}`);
+    const handoff = named?.type === 'apex-estimate-handoff' && named.leadId === leadId
+      ? named
+      : readHandoff(stored);
+    if (!handoff) return;
+    try {
+      const parsed = DesignerTakeoffSubmissionSchema.parse(handoff.submission);
+      setSubmission(parsed);
+      setFileName(handoff.fileName ?? 'Designer takeoff');
+      if (named?.leadId === leadId) window.name = '';
+    } catch {
+      sessionStorage.removeItem(`apex-estimate-submission:${leadId}`);
+      if (named?.leadId === leadId) window.name = '';
+    }
+  }, [leadId]);
 
   const load = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];

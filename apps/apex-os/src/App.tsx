@@ -10,6 +10,7 @@ import CustomerPage from './pages/CustomerPage';
 import AuthCallback from './pages/AuthCallback';
 import OpportunityEstimate from './pages/OpportunityEstimate';
 import ProposalPreview from './pages/ProposalPreview';
+import { App as DesignerApp } from '@apex/designer';
 
 /**
  * Only wired screens are routed.
@@ -25,6 +26,7 @@ export default function App() {
       {/* Outside the shell: the shell renders sign-in whenever the API is
           refusing, and during the callback it is — there is no token yet. */}
       <Route path="callback" element={<AuthCallback />} />
+      <Route path="designer" element={<DesignerApp />} />
       <Route path="/" element={<Layout />}>
         <Route index element={<Navigate to="/today" replace />} />
         <Route path="today" element={<TodayFeed />} />

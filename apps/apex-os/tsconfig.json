@@ -8,16 +8,19 @@
     "paths": {
       "@apex/contracts": ["../../packages/contracts/src/index.ts"],
       "@apex/domain": ["../../packages/domain/src/index.ts"],
-      "@apex/pricing-engine": ["../../packages/pricing-engine/src/index.ts"]
+      "@apex/pricing-engine": ["../../packages/pricing-engine/src/index.ts"],
+      "@apex/designer/*": ["../../Apex Designer/src/*"],
+      "@apex/designer": ["../../Apex Designer/src/App.tsx"]
     },
     "resolveJsonModule": true,
+    "allowImportingTsExtensions": true,
+    "exactOptionalPropertyTypes": false,
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
     "skipLibCheck": true,
 
     "strict": true,
-    "exactOptionalPropertyTypes": true,
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
     "useUnknownInCatchVariables": true,

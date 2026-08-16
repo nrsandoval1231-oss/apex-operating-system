@@ -336,7 +336,7 @@ interface GateApiOptions {
 const sendJson = (response: ServerResponse, status: number, value: unknown) => {
   const body = JSON.stringify(value);
   response.writeHead(status, {
-    'access-control-allow-origin': 'http://localhost:5173',
+    'access-control-allow-origin': '*',
     'access-control-allow-methods': 'GET,POST,OPTIONS',
     'access-control-allow-headers': 'authorization,content-type,idempotency-key',
     'content-type': 'application/json; charset=utf-8',
@@ -626,7 +626,7 @@ export function createGateApi(options: GateApiOptions) {
        */
       if (request.method === 'OPTIONS') {
         response.writeHead(204, {
-          'access-control-allow-origin': 'http://localhost:5173',
+          'access-control-allow-origin': '*',
           'access-control-allow-methods': 'GET,POST,OPTIONS',
           'access-control-allow-headers': 'authorization,content-type,idempotency-key',
         });
@@ -776,6 +776,27 @@ export function createGateApi(options: GateApiOptions) {
       }
 
       const actor = await authenticate(request);
+
+      if (request.method === 'GET' && url.pathname === '/api/opportunities') {
+        requireStaff(actor);
+        const opportunities = await options.db.query<{ lead_id: string; status: string; accepted_payload: unknown; created_at: string | Date }>(
+          `select lead_id, status, accepted_payload, created_at from leads order by created_at desc`,
+        );
+        const jobs = await options.db.query<{ job_id: string; lead_id: string }>(
+          `select job_id, lead_id from jobs where status = 'active'`,
+        );
+        const jobByLead = new Map(jobs.rows.map((job) => [job.lead_id, job.job_id]));
+        return sendJson(response, 200, opportunities.rows.map((row) => {
+          const identity = readLeadIdentity(row.accepted_payload);
+          return {
+            leadId: row.lead_id,
+            jobId: jobByLead.get(row.lead_id) ?? null,
+            customerName: identity.customerName ?? null,
+            addressLine: identity.addressLine,
+            status: row.status,
+          };
+        }));
+      }
 
       if (request.method === 'POST' && url.pathname === '/api/projects/intake') {
         requireStaff(actor);
