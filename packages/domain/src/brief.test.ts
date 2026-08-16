@@ -129,8 +129,8 @@ describe('honesty about coverage', () => {
   it('names the PRD sections nothing can answer yet', () => {
     const brief = build([]);
     expect(brief.notCovered).toEqual([...BRIEF_NOT_COVERED]);
-    expect(brief.notCovered).toContain('Inspections requiring action');
-    expect(brief.notCovered).toContain('Schedule conflicts');
+    expect(brief.notCovered).not.toContain('Inspections requiring action');
+    expect(brief.notCovered).not.toContain('Schedule conflicts');
   });
 
   it('says so even on a morning with nothing outstanding', () => {

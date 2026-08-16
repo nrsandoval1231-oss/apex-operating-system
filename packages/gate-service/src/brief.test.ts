@@ -73,7 +73,7 @@ describe('generating a brief', () => {
   });
 
   it('names what it cannot answer yet', async () => {
-    expect((await service.getDailyBrief('2026-08-02')).notCovered).toContain('Inspections requiring action');
+    expect((await service.getDailyBrief('2026-08-02')).notCovered).not.toContain('Inspections requiring action');
   });
 });
 

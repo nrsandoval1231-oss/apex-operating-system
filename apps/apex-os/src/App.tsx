@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router';
+import { lazy, Suspense } from 'react';
 import Layout from './components/Layout';
 import Calendar from './pages/Calendar';
 import TodayFeed from './pages/TodayFeed';
@@ -10,7 +11,11 @@ import CustomerPage from './pages/CustomerPage';
 import AuthCallback from './pages/AuthCallback';
 import OpportunityEstimate from './pages/OpportunityEstimate';
 import ProposalPreview from './pages/ProposalPreview';
-import { App as DesignerApp } from '@apex/designer';
+
+const DesignerApp = lazy(async () => {
+  const module = await import('@apex/designer');
+  return { default: module.App };
+});
 
 /**
  * Only wired screens are routed.
@@ -26,7 +31,11 @@ export default function App() {
       {/* Outside the shell: the shell renders sign-in whenever the API is
           refusing, and during the callback it is — there is no token yet. */}
       <Route path="callback" element={<AuthCallback />} />
-      <Route path="designer" element={<DesignerApp />} />
+      <Route path="designer" element={
+        <Suspense fallback={<main className="designer-loading" aria-live="polite">Opening Designer…</main>}>
+          <DesignerApp />
+        </Suspense>
+      } />
       <Route path="/" element={<Layout />}>
         <Route index element={<Navigate to="/today" replace />} />
         <Route path="today" element={<TodayFeed />} />

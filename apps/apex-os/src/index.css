@@ -712,7 +712,31 @@ body {
 }
 
 /* At phone width the two targets split the bar so either is under a thumb. */
-.nav-inner { display: flex; }
+.nav-inner { display: flex; overflow-x: auto; scrollbar-width: none; }
+.nav-inner::-webkit-scrollbar { display: none; }
+
+.nav a.workspace-brand {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.designer-loading {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  color: var(--ink-2);
+  font: 600 12px var(--f-mono);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.coverage-note {
+  margin: 18px var(--gutter) 0;
+  padding: 12px 14px;
+  border: 1px solid var(--rule);
+  color: var(--ink-2);
+  font-size: 13px;
+}
 
 .nav a {
   flex: 1;
@@ -747,6 +771,18 @@ body {
   padding: 4px 7px;
   background: var(--amber);
   color: #241605;
+}
+
+@media (max-width: 719px) {
+  .nav a.workspace-brand { display: none; }
+  .nav a {
+    min-width: 0;
+    padding: 0 4px;
+    gap: 4px;
+    font-size: 11px;
+    letter-spacing: 0.025em;
+  }
+  .nav .badge { padding: 3px 5px; font-size: 10px; }
 }
 
 /* -------------------------------------------------------------------- motion
@@ -926,12 +962,12 @@ body {
 .proof-tile.is-missing { color: var(--bad, #c0392b); }
 
 
-.calendar-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.calendar-controls { display: flex; align-items: center; gap: 10px; flex-wrap: nowrap; flex-shrink: 0; }
 .calendar-unscheduled { margin: 18px 0; padding: 16px; border: 1px solid var(--rule); background: var(--panel); }
-.calendar-unscheduled h2 { margin: 0 0 5px; font: 20px var(--f-display); }
+.calendar-unscheduled h2 { margin: 0 0 5px; font: 20px var(--f-title); }
 .calendar-unscheduled p { margin: 0 0 12px; color: var(--ink-2); }
 .calendar-unscheduled-list { display: grid; gap: 6px; }
-.calendar-unscheduled-task { display: flex; justify-content: space-between; gap: 12px; padding: 9px 10px; border-left: 3px solid var(--amber); background: var(--panel-2); color: var(--ink); text-decoration: none; }
+.calendar-unscheduled-task { display: flex; justify-content: space-between; gap: 12px; padding: 9px 10px; border-top: 1px solid var(--amber); background: var(--panel-2); color: var(--ink); text-decoration: none; }
 .calendar-unscheduled-task span { color: var(--ink-2); font-size: 12px; }
 .calendar-legend { display: flex; gap: 18px; flex-wrap: wrap; color: var(--ink-2); font-size: 12px; margin: 18px 0; }
 .calendar-legend span { display: inline-flex; align-items: center; gap: 6px; }
@@ -942,14 +978,48 @@ body {
 .calendar-day { min-height: 132px; padding: 8px; border-right: 1px solid var(--rule); border-bottom: 1px solid var(--rule); background: var(--panel); }
 .calendar-day.outside { background: var(--ground); color: var(--ink-3); }
 .calendar-date { color: var(--ink-2); font: 12px var(--f-mono); margin-bottom: 6px; }
-.calendar-entry { display: block; padding: 6px; margin: 4px 0; border-left: 3px solid var(--sage); background: var(--panel-2); color: var(--ink); text-decoration: none; font-size: 11px; line-height: 1.3; cursor: grab; }
+.calendar-entry { display: block; padding: 6px; margin: 4px 0; border-top: 1px solid var(--sage); background: var(--panel-2); color: var(--ink); text-decoration: none; font-size: 11px; line-height: 1.3; cursor: grab; }
 .calendar-entry:active { cursor: grabbing; }
 .calendar-day.drop-target { background: #252a2a; }
 .calendar-entry.is-dragging { opacity: .45; }
-.calendar-entry.is-conflict { border-left-color: var(--amber); }
+.calendar-entry.is-conflict { border-top-color: var(--amber); }
 .calendar-entry b, .calendar-entry span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .calendar-entry span { color: var(--ink-2); margin-top: 3px; }
-@media (max-width: 700px) { .calendar-day { min-height: 92px; padding: 5px; } .calendar-entry { padding: 4px; font-size: 10px; } .calendar-entry span { display: none; } }
+.calendar-agenda { display: none; }
+.calendar-agenda-entry { display: grid; grid-template-columns: 58px 1fr auto; gap: 12px; align-items: start; min-height: var(--tap); padding: 13px var(--gutter); border-bottom: 1px solid var(--rule); color: var(--ink); text-decoration: none; }
+.calendar-agenda-entry time { color: var(--sage); font: 600 11px var(--f-mono); text-transform: uppercase; }
+.calendar-agenda-entry span { display: grid; gap: 3px; min-width: 0; }
+.calendar-agenda-entry b { font: 500 15px var(--f-title); }
+.calendar-agenda-entry small { color: var(--ink-2); font-size: 12px; }
+.calendar-agenda-entry strong { color: var(--amber); font: 600 10px var(--f-mono); text-transform: uppercase; }
+@media (max-width: 700px) {
+  .calendar-title-block { align-items: flex-start; flex-direction: column; }
+  .calendar-controls { justify-content: space-between; width: 100%; }
+  .calendar-grid, .calendar-weekday { display: none; }
+  .calendar-agenda { display: block; border-top: 1px solid var(--rule); }
+  .calendar-unscheduled-task { display: grid; }
+}
+
+.project-jump {
+  position: sticky;
+  top: 53px;
+  z-index: 8;
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  padding: 8px var(--gutter);
+  background: color-mix(in srgb, var(--ground) 94%, transparent);
+  border-bottom: 1px solid var(--rule);
+  scrollbar-width: none;
+}
+.project-jump::-webkit-scrollbar { display: none; }
+.project-jump a { flex: 0 0 auto; min-height: 36px; display: inline-flex; align-items: center; padding: 0 10px; color: var(--ink-2); border: 1px solid transparent; font: 600 10px var(--f-mono); letter-spacing: .06em; text-transform: uppercase; text-decoration: none; }
+.project-jump a:hover { color: var(--ink); border-color: var(--rule-bright); }
+.section-rule[id], #inspections { scroll-margin-top: 104px; }
+@media (max-width: 719px) {
+  .project-jump { top: 0; }
+  .section-rule[id], #inspections { scroll-margin-top: 53px; }
+}
 
 .archive-search {
   display: grid;
@@ -989,7 +1059,7 @@ body {
 .estimate-lines { margin: 18px 0 24px; border-top: 1px solid var(--rule); }
 .estimate-line { display: grid; grid-template-columns: minmax(0, 1fr) minmax(130px, 180px) auto; gap: 14px; align-items: center; padding: 13px 0; border-bottom: 1px solid var(--rule); }
 .estimate-line > div { display: grid; gap: 4px; }
-.estimate-line b { font: 500 17px var(--f-display); }
+.estimate-line b { font: 500 17px var(--f-title); }
 .estimate-line span { color: var(--ink-3); font: 11px var(--f-mono); }
 .estimate-line label { display: flex; align-items: center; gap: 8px; color: var(--ink-2); font-size: 13px; }
 .estimate-line label:not(.estimate-na) input { width: 100%; }
@@ -1001,13 +1071,13 @@ body {
 .proposal-paper { margin-top: 22px; background: #f2eee3; color: #202224; border-top: 6px solid #1b1c1e; padding: clamp(22px, 5vw, 54px); }
 .proposal-paper > header { display: flex; justify-content: space-between; gap: 32px; align-items: flex-start; padding-bottom: 24px; border-bottom: 1px solid #a9a397; }
 .proposal-paper h2, .proposal-paper h3, .proposal-paper p { margin: 0; }
-.proposal-paper h2 { font: 600 clamp(24px, 5vw, 38px) var(--f-display); text-transform: uppercase; }
-.proposal-paper h3 { font: 600 20px var(--f-display); text-transform: uppercase; letter-spacing: .03em; }
+.proposal-paper h2 { font: 600 clamp(24px, 5vw, 38px) var(--f-title); text-transform: uppercase; }
+.proposal-paper h3 { font: 600 20px var(--f-title); text-transform: uppercase; letter-spacing: .03em; }
 .proposal-paper header p { margin-top: 6px; color: #5b5a56; }
-.proposal-mark { font: 600 28px var(--f-display); letter-spacing: .04em; white-space: nowrap; }
+.proposal-mark { font: 600 28px var(--f-title); letter-spacing: .04em; white-space: nowrap; }
 .proposal-mark span { display: block; color: #0e6e7c; font: 600 10px var(--f-mono); letter-spacing: .12em; }
 .proposal-total { display: flex; align-items: baseline; justify-content: space-between; gap: 24px; margin: 28px 0; padding: 18px 0; border-bottom: 1px solid #a9a397; }
-.proposal-total span { font: 500 16px var(--f-display); text-transform: uppercase; }
+.proposal-total span { font: 500 16px var(--f-title); text-transform: uppercase; }
 .proposal-total b { font: 600 clamp(28px, 6vw, 46px) var(--f-mono); }
 .proposal-paper section > ul { list-style: none; padding: 0; margin: 14px 0 0; }
 .proposal-paper section > ul li { display: flex; justify-content: space-between; align-items: center; gap: 18px; padding: 11px 0; border-bottom: 1px solid #cbc5b8; }

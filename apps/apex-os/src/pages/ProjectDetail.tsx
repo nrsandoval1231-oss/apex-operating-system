@@ -165,9 +165,20 @@ export default function ProjectDetail({ historical = false }: { historical?: boo
       )}
       {actionError !== null && <p className="error" role="alert">{actionError}</p>}
 
+      <nav className="project-jump" aria-label="Project sections">
+        <a href="#construction">Construction</a>
+        <a href="#gates">Gates</a>
+        <a href="#schedule">Schedule</a>
+        <a href="#draws">Draws</a>
+        <a href="#takeoff">Takeoff</a>
+        <a href="#inspections">Inspections</a>
+        <a href="#completion">Completion</a>
+        {!readOnly && <a href="#customer">Customer</a>}
+      </nav>
+
       {/* ---------------------------------------------------------- phases */}
 
-      <div className="section-rule"><h2>Construction</h2></div>
+      <div className="section-rule" id="construction"><h2>Construction</h2></div>
 
       {phase === null ? (
         <>
@@ -246,7 +257,7 @@ export default function ProjectDetail({ historical = false }: { historical?: boo
 
       {/* ----------------------------------------------------------- gates */}
 
-      <div className="section-rule">
+      <div className="section-rule" id="gates">
         <h2>Gates</h2>
         <span className="count">{gatePlan.filter((g) => g.status === 'released').length} of {gatePlan.length} released</span>
       </div>
@@ -308,7 +319,7 @@ export default function ProjectDetail({ historical = false }: { historical?: boo
 
       {/* -------------------------------------------------------- schedule */}
 
-      <div className="section-rule">
+      <div className="section-rule" id="schedule">
         <h2>Schedule</h2>
         {conflicts.length > 0 && <span className="count">{conflicts.length} conflict{conflicts.length === 1 ? '' : 's'}</span>}
       </div>
@@ -375,7 +386,7 @@ export default function ProjectDetail({ historical = false }: { historical?: boo
 
       {/* ----------------------------------------------------------- draws */}
 
-      <div className="section-rule">
+      <div className="section-rule" id="draws">
         <h2>Draws</h2>
         {drawPlan !== null && drawPlan.eligibleUnbilledCents > 0 && (
           <span className="count">{formatContract(drawPlan.eligibleUnbilledCents)} ready</span>
@@ -453,7 +464,7 @@ export default function ProjectDetail({ historical = false }: { historical?: boo
 
       {/* --------------------------------------------------------- takeoff */}
 
-      <div className="section-rule"><h2>Takeoff</h2></div>
+      <div className="section-rule" id="takeoff"><h2>Takeoff</h2></div>
       <dl className="facts">
         <dt>Approved</dt>
         <dd className={job.approvedTakeoffRevisionId === null ? 'unset' : 'mono'}>
@@ -482,9 +493,9 @@ export default function ProjectDetail({ historical = false }: { historical?: boo
 
       {/* ----------------------------------------------------- inspections */}
 
-      {id !== undefined && <Inspections jobId={id} query={inspections} today={today} readOnly={readOnly} focus={new URLSearchParams(window.location.search).get('focus')} />}
+      {id !== undefined && <div id="inspections"><Inspections jobId={id} query={inspections} today={today} readOnly={readOnly} focus={new URLSearchParams(window.location.search).get('focus')} /></div>}
 
-      <div className="section-rule"><h2>Completion</h2></div>
+      <div className="section-rule" id="completion"><h2>Completion</h2></div>
       {!readOnly && (
         <CloseJob
           job={job}
@@ -495,7 +506,7 @@ export default function ProjectDetail({ historical = false }: { historical?: boo
 
       {/* --------------------------------------------------------- customer */}
 
-      <div className="section-rule"><h2>Customer</h2></div>
+      <div className="section-rule" id="customer"><h2>Customer</h2></div>
       <p className="state-quiet">
         The link the customer opens, which photos they can see, and what Apex is
         waiting on them for.

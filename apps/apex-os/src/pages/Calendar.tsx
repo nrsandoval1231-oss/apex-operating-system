@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { apiSend } from '../api/client';
 import { useCalendar } from '../api/useJobs';
 import QueryState from '../components/QueryState';
+import { needsScheduling } from '../lib/calendarDisplay';
 
 const monthLabel = (month: Date) => month.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
 const iso = (date: Date) => date.toISOString().slice(0, 10);
@@ -25,8 +26,11 @@ export default function Calendar() {
   const gridStart = startOfGrid(month);
   const days = Array.from({ length: 42 }, (_, index) => addDays(gridStart, index));
   const entries = calendar.data ?? [];
+  const unscheduledEntries = entries.filter(needsScheduling);
+  const monthPrefix = `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, '0')}`;
 
   const datedEntries = entries.filter((entry): entry is CalendarEntry & { startsOn: string; endsOn: string } => entry.startsOn !== null && entry.endsOn !== null);
+  const monthEntries = datedEntries.filter((entry) => entry.startsOn.startsWith(monthPrefix));
   const byDay = useMemo(() => {
     const map = new Map<string, readonly (CalendarEntry & { startsOn: string; endsOn: string })[]>();
     for (const entry of datedEntries) {
@@ -62,10 +66,10 @@ export default function Calendar() {
 
   return (
     <>
-      <header className="title-block">
+      <header className="title-block calendar-title-block">
         <div>
           <h1>Calendar</h1>
-          <p className="dek">Drag a task to move it everywhere · stable job IDs · conflicts stay visible</p>
+          <p className="dek">Move scheduled work once; Projects and Today stay aligned · conflicts stay visible</p>
         </div>
         <div className="calendar-controls">
           <button className="btn ghost" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))}>Previous</button>
@@ -84,16 +88,19 @@ export default function Calendar() {
           <span>Gunite/shotcrete occupies one day</span>
           {savingId !== null && <span>Saving move…</span>}
         </div>
-        {entries.some((entry) => entry.startsOn === null) && <section className="calendar-unscheduled" aria-label="Tasks needing scheduling">
+        {unscheduledEntries.length > 0 && <section className="calendar-unscheduled" aria-label="Tasks needing scheduling">
           <h2>Needs scheduling</h2>
           <p>These project tasks exist but do not have an operational date yet.</p>
           <div className="calendar-unscheduled-list">
-            {entries.filter((entry) => entry.startsOn === null).map((entry) => <Link className="calendar-unscheduled-task" to={`/projects/${entry.jobId}`} key={entry.taskId}>
+            {unscheduledEntries.map((entry) => <Link className="calendar-unscheduled-task" to={`/projects/${entry.jobId}`} key={entry.taskId}>
               <b>{entry.customerName} · {entry.title}</b>
               <span>{entry.taskType} · {entry.status} · Open project to schedule or complete</span>
             </Link>)}
           </div>
         </section>}
+        {monthEntries.length === 0 && unscheduledEntries.length === 0 && (
+          <p className="state-quiet">No dated work in {monthLabel(month)}. Nothing unfinished is waiting for a date.</p>
+        )}
         <div className="calendar-grid" aria-label={`${monthLabel(month)} operational calendar`}>
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => <div className="calendar-weekday" key={day}>{day}</div>)}
           {days.map((day) => {
@@ -126,6 +133,15 @@ export default function Calendar() {
               </Link>)}
             </div>;
           })}
+        </div>
+        <div className="calendar-agenda" aria-label={`${monthLabel(month)} operational agenda`}>
+          {monthEntries.length === 0
+            ? <p className="state-quiet">No dated work this month.</p>
+            : monthEntries.map((entry) => <Link className="calendar-agenda-entry" to={`/projects/${entry.jobId}`} key={entry.taskId}>
+                <time dateTime={entry.startsOn}>{new Date(`${entry.startsOn}T00:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</time>
+                <span><b>{entry.customerName} · {entry.title}</b><small>{entry.taskType} · {entry.status}</small></span>
+                {entry.conflict && <strong>Conflict</strong>}
+              </Link>)}
         </div>
       </>}
     </>

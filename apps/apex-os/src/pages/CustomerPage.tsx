@@ -36,6 +36,10 @@ const dateTime = new Intl.DateTimeFormat('en-US', {
 
 const readable = (iso: string): string => dateTime.format(new Date(iso));
 
+const humanizeKey = (value: string): string => value
+  .replace(/[-_]+/g, ' ')
+  .replace(/\b\w/g, (character) => character.toUpperCase());
+
 export default function CustomerPage() {
   const { id } = useParams<{ id: string }>();
   const job = useJob(id);
@@ -338,7 +342,7 @@ export default function CustomerPage() {
 
       {asking?.kind === 'publish' && (
         <InlineForm
-          title={`Publish this photo — ${asking.photo.requirementKey}`}
+          title={`Publish this photo — ${humanizeKey(asking.photo.requirementKey)}`}
           note="Write the caption for the customer. The internal caption is never shown to them, and leaving this blank publishes the photo with no caption at all."
           fields={[{
             name: 'caption',
@@ -360,7 +364,7 @@ export default function CustomerPage() {
               <div style={{ minWidth: 0 }}>
                 <div className="what">{photo.gateTitle}</div>
                 <div className="note">
-                  {[photo.requirementKey, readable(photo.capturedAt)].join(' · ')}
+                  {[humanizeKey(photo.requirementKey), readable(photo.capturedAt)].join(' · ')}
                 </div>
                 {/* Shown so whoever publishes can see what they would be
                     publishing under. The customer never sees this line. */}

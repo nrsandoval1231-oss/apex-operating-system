@@ -143,14 +143,17 @@ export default function OwnerBrief() {
         </>
       )}
 
-      {/* Named rather than omitted: a brief silently missing four of its nine
-          PRD sections reads as "all clear" on subjects it never checked. */}
-      <div className="section-rule"><h2>Not covered yet</h2></div>
+      <p className="coverage-note">
+        Monitored: Gates, draws, project risk, inspections, and schedule conflicts.
+      </p>
+
+      {/* Named rather than omitted: an uncovered subject must never read as all clear. */}
+      <div className="section-rule"><h2>Coverage gaps</h2></div>
       <dl className="facts">
         {brief.notCovered.map((subject) => (
           <div key={subject} style={{ display: 'contents' }}>
             <dt>{subject}</dt>
-            <dd className="unset">Not built</dd>
+            <dd className="unset">Not monitored yet</dd>
           </div>
         ))}
       </dl>
