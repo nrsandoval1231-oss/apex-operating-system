@@ -46,10 +46,8 @@ const readBillableCents = (cards: readonly ActionCard[]): number =>
     .filter((card) => card.kind === 'draw.uninvoiced')
     .reduce((sum, card) => sum + (card.amountCents ?? 0), 0);
 
-/** Sections PRD §9.14 asks for that nothing in the system can answer yet. */
+/** Sections PRD §9.14 asks for that no current action-card projection answers. */
 export const BRIEF_NOT_COVERED: readonly string[] = [
-  'Inspections requiring action',
-  'Schedule conflicts',
   'Customer decisions overdue',
   'Startup and curing checks',
 ];

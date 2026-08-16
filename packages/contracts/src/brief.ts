@@ -65,10 +65,9 @@ export const DailyBriefSchema = z.strictObject({
   /**
    * What this brief cannot speak to yet, named explicitly.
    *
-   * PRD §9.14 asks for inspections, schedule conflicts, customer decisions, and
-   * startup checks. None of those exist yet. A brief that quietly omits four of
-   * its nine sections reads as "all clear" on subjects it has never looked at,
-   * which is worse than saying nothing.
+   * Inspections and schedule conflicts now arrive through the shared action
+   * cards. Customer-decision deadlines and startup/curing checks still lack an
+   * authoritative model, so the brief names those remaining gaps explicitly.
    */
   notCovered: z.array(z.string().min(1).max(200)),
 });

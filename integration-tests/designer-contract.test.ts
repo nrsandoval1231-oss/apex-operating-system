@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { describe, expect, it } from 'vitest';
@@ -33,6 +33,18 @@ const here = dirname(fileURLToPath(import.meta.url));
 const enginePath = resolve(here, '../Apex Designer/src/engine/index.ts');
 const engineAvailable = existsSync(enginePath);
 const engineRequired = (process.env.APEX_REQUIRE_DESIGNER_CONTRACT ?? '').trim() !== '';
+
+describe.skipIf(!engineAvailable)('Designer route isolation', () => {
+  it('keeps generic Designer selectors and tokens inside its route root', () => {
+    const styles = readFileSync(resolve(here, '../Apex Designer/src/styles.css'), 'utf8');
+    const app = readFileSync(resolve(here, '../Apex Designer/src/App.tsx'), 'utf8');
+
+    expect(styles).toContain('@scope (.designer-root)');
+    expect(styles).not.toMatch(/^:root\s*\{/m);
+    expect(styles).not.toMatch(/^body\s*\{/m);
+    expect(app.match(/className="designer-root app/g)).toHaveLength(2);
+  });
+});
 
 interface DesignerEngine {
   readonly runTakeoff: (model: Record<string, unknown>) => {
