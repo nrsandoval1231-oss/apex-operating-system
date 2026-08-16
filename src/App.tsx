@@ -23,11 +23,13 @@ import { buildOrderWorkbook, orderWorkbookFileName } from './engine/orderWorkboo
  * origin, and hard-coding one host means a second deployment cannot be reached
  * without a rebuild of this tool.
  */
-const BRAND_LOGO_PATH = typeof window !== 'undefined' && window.location.pathname.startsWith('/app/')
+const RUNS_INSIDE_APEX_OS = typeof window !== 'undefined'
+  && (window.location.pathname === '/app' || window.location.pathname.startsWith('/app/'));
+const BRAND_LOGO_PATH = RUNS_INSIDE_APEX_OS
   ? '/app/brand/apex-logo.png'
   : '/brand/apex-logo.png';
 const APEX_OS_ORIGIN = import.meta.env.VITE_APEX_OS_ORIGIN
-  ?? (typeof window !== 'undefined' && window.location.pathname.startsWith('/app/') ? window.location.origin : 'http://127.0.0.1:4100');
+  ?? (RUNS_INSIDE_APEX_OS ? window.location.origin : 'http://127.0.0.1:4100');
 
 /**
  * A tight lot: same pool, 5 ft to the house slab. The 6 ft deep end violates
@@ -341,7 +343,7 @@ export function App() {
 
   if (mode === 'outputs') {
     return (
-      <div className="app app-outputs">
+      <div className="designer-root app app-outputs">
         <main className="app-main">
           <AppHeader jobName={job.name} />
           <div className="switcher print-hide">
@@ -366,7 +368,7 @@ export function App() {
   }
 
   return (
-    <div className="app">
+    <div className="designer-root app">
       {showAdvanced && (
         <JobEditor
           job={job}

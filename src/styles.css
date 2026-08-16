@@ -16,7 +16,13 @@
  * Designer is the pools tool, so the working accent is the Designer Pools
  * vertical colour (--pool), which is legible on the paper the sheet is drawn on.
  */
-:root {
+/*
+ * Designer is embedded inside Apex OS. Keep its plan-sheet visual system
+ * inside this route so generic names such as .app, .sheet, .btn, and token
+ * variables cannot restyle the surrounding operating system.
+ */
+@scope (.designer-root) {
+:scope {
   --char: #1b1c1e;
   --brand-char: #383c3d;
   --sage: #a1ccca;
@@ -53,13 +59,12 @@
   box-sizing: border-box;
 }
 
-html,
-body {
+:scope {
   margin: 0;
   padding: 0;
 }
 
-body {
+:scope {
   background: var(--concrete);
   color: var(--ink);
   font-family: var(--sans);
@@ -442,7 +447,6 @@ tr.is-fail .check-message {
   margin: 20px 0;
   padding: 14px 16px;
   border: 1px solid var(--fail);
-  border-left-width: 3px;
   border-radius: var(--radius);
   background: rgba(163, 52, 31, 0.05);
 }
@@ -897,7 +901,7 @@ tr.is-fail .check-message {
 
 /* --- job editor (step 11) -------------------------------------------------- */
 
-.app {
+:scope.app {
   display: flex;
   align-items: flex-start;
   gap: 0;
@@ -1372,7 +1376,7 @@ tr.is-fail .check-message {
 }
 
 @media (max-width: 900px) {
-  .app {
+  :scope.app {
     display: block;
   }
   .editor {
@@ -1448,7 +1452,8 @@ tr.is-fail .check-message {
   padding: 14px 18px;
   display: grid;
   gap: 4px;
-  border-left: 4px solid var(--pool);
+  border: 1px solid var(--line);
+  border-top: 2px solid var(--pool);
   background: #eef5f3;
   color: var(--ink);
 }
@@ -1892,4 +1897,6 @@ tr.is-fail .check-message {
   .sheet.is-plain .calcs td:nth-child(3) {
     display: table-cell;
   }
+}
+
 }
