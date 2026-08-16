@@ -1,5 +1,6 @@
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
+import { copyFileSync, mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 /**
@@ -8,14 +9,24 @@ import { resolve } from 'node:path';
  * app holding a database of its own.
  */
 const apiTarget = process.env['APEX_API_URL'] ?? 'http://127.0.0.1:4100';
+const designerBrandSource = resolve(import.meta.dirname, '../../Apex Designer/public/brand/apex-logo.png');
+const designerBrandPlugin: Plugin = {
+  name: 'copy-designer-brand-assets',
+  closeBundle() {
+    const targetDirectory = resolve(import.meta.dirname, 'dist/brand');
+    mkdirSync(targetDirectory, { recursive: true });
+    copyFileSync(designerBrandSource, resolve(targetDirectory, 'apex-logo.png'));
+  },
+};
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), designerBrandPlugin],
   resolve: {
     alias: {
       '@apex/contracts': resolve(import.meta.dirname, '../../packages/contracts/src/index.ts'),
       '@apex/domain': resolve(import.meta.dirname, '../../packages/domain/src/index.ts'),
       '@apex/pricing-engine': resolve(import.meta.dirname, '../../packages/pricing-engine/src/index.ts'),
+      '@apex/designer': resolve(import.meta.dirname, '../../Apex Designer/src/App.tsx'),
     },
   },
   /**

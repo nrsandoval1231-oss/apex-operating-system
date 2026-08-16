@@ -3,6 +3,8 @@ import { setToken } from '../api/session';
 import { useActionCards, useToken } from '../api/useJobs';
 import SignIn from './SignIn';
 
+// Designer is an Apex OS workspace, served at the same origin under /app/designer.
+
 /**
  * The app shell.
  *
@@ -36,7 +38,9 @@ export default function Layout() {
           <NavLink to="/calendar">
             <span>Calendar</span>
           </NavLink>
-          <a href="http://localhost:5173/" className="workspace-link">Designer</a>
+          <NavLink to="/designer">
+            <span>Designer</span>
+          </NavLink>
           <NavLink to="/projects">
             <span>Projects</span>
           </NavLink>
