@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildApexSubmission, submissionFileName } from './apexSubmission.ts';
+import { buildApexSubmission, draftEstimateStorageKey, submissionFileName } from './apexSubmission.ts';
 import { runTakeoff } from './index.ts';
 import { STANDARD_MODEL } from './standardModel.ts';
 import type { Job } from './types.ts';
@@ -91,6 +91,9 @@ describe('the Apex OS submission', () => {
     expect(() => buildApexSubmission(STANDARD_MODEL, unsafe)).toThrow(/code or safety/i);
   });
 
+  it('uses a lead-scoped storage key for restoring a draft estimate handoff', () => {
+    expect(draftEstimateStorageKey('lead_123')).toBe('apex-estimate-submission:lead_123');
+  });
   it('names the file after the design rather than the moment it was exported', () => {
     expect(submissionFileName({ ...safeStandardJob(), name: 'Gamble — 15x30' }))
       .toBe('apex-takeoff-gamble-15x30.json');

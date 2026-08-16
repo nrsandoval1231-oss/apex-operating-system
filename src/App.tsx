@@ -1,3 +1,4 @@
+import './styles.css';
 import { useEffect, useState } from 'react';
 import { SCENARIOS } from './engine/jobs/scenarios.ts';
 
@@ -13,7 +14,7 @@ import { JobEditor } from './ui/JobEditor.tsx';
 import { DesignControls } from './ui/DesignControls.tsx';
 import { SavedJobsPanel, useSavedJobs } from './ui/SavedJobs.tsx';
 import { runTakeoff } from './engine/index.ts';
-import { buildApexSubmission, submissionFileName } from './engine/apexSubmission.ts';
+import { buildApexSubmission, draftEstimateStorageKey, submissionFileName } from './engine/apexSubmission.ts';
 import { buildOrderWorkbook, orderWorkbookFileName } from './engine/orderWorkbook.ts';
 
 /**
@@ -22,8 +23,11 @@ import { buildOrderWorkbook, orderWorkbookFileName } from './engine/orderWorkboo
  * origin, and hard-coding one host means a second deployment cannot be reached
  * without a rebuild of this tool.
  */
-const APEX_OS_ORIGIN = import.meta.env.VITE_APEX_OS_ORIGIN ?? 'http://127.0.0.1:4100';
-const APEX_GATE_ORIGIN = import.meta.env.VITE_APEX_GATE_ORIGIN ?? 'http://127.0.0.1:4100';
+const BRAND_LOGO_PATH = typeof window !== 'undefined' && window.location.pathname.startsWith('/app/')
+  ? '/app/brand/apex-logo.png'
+  : '/brand/apex-logo.png';
+const APEX_OS_ORIGIN = import.meta.env.VITE_APEX_OS_ORIGIN
+  ?? (typeof window !== 'undefined' && window.location.pathname.startsWith('/app/') ? window.location.origin : 'http://127.0.0.1:4100');
 
 /**
  * A tight lot: same pool, 5 ft to the house slab. The 6 ft deep end violates
@@ -46,10 +50,18 @@ interface ApexJobChoice {
   readonly status: string;
 }
 
+interface ApexOpportunityChoice {
+  readonly leadId: string;
+  readonly jobId: string | null;
+  readonly customerName: string | null;
+  readonly addressLine: string | null;
+  readonly status: string;
+}
+
 function AppHeader({ jobName, right }: { jobName: string; right?: React.ReactNode }) {
   return (
     <header className="app-header">
-      <img src="/brand/apex-logo.png" alt="Apex" width={126} height={30} />
+      <img src={BRAND_LOGO_PATH} alt="Apex" width={126} height={30} />
       <div className="app-header-title">
         <strong>Designer</strong>
         <span>{jobName}</span>
@@ -57,7 +69,6 @@ function AppHeader({ jobName, right }: { jobName: string; right?: React.ReactNod
       <nav className="apex-workspace-nav" aria-label="Apex workspace">
         <a href={`${APEX_OS_ORIGIN}/app/today`}>Today</a>
         <a href={`${APEX_OS_ORIGIN}/app/projects`}>Projects</a>
-        <a href={`${APEX_GATE_ORIGIN}/`}>Gate</a>
         <span className="is-current">Designer</span>
       </nav>
       <div className="app-header-right">{right}</div>
@@ -96,10 +107,12 @@ export function App() {
   /** Why the last export refused, shown where the button is rather than in a dialog. */
   const [exportError, setExportError] = useState<string | null>(null);
   const [apexJobs, setApexJobs] = useState<readonly ApexJobChoice[]>([]);
+  const [apexOpportunities, setApexOpportunities] = useState<readonly ApexOpportunityChoice[]>([]);
   const [selectedApexJobId, setSelectedApexJobId] = useState('');
   const [sendingToApex, setSendingToApex] = useState(false);
-  const [apexHandoff, setApexHandoff] = useState<{ job: ApexJobChoice; revisionId: string } | null>(null);
+  const [apexHandoff, setApexHandoff] = useState<{ kind: 'job'; job: ApexJobChoice; revisionId: string } | null>(null);
   const [showNewProject, setShowNewProject] = useState(false);
+  const [savedCustomer, setSavedCustomer] = useState<{ leadId: string; customerName: string; addressLine: string } | null>(null);
   const [newProjectBusy, setNewProjectBusy] = useState(false);
   const [newProjectError, setNewProjectError] = useState<string | null>(null);
   const [newProject, setNewProject] = useState({
@@ -201,11 +214,12 @@ export function App() {
     setExportError(null);
     try {
       const destination = apexJobs.find((entry) => entry.jobId === selectedApexJobId);
+      const opportunity = apexOpportunities.find((entry) => entry.leadId === selectedApexJobId);
       const metadata = {
-        customerName: destination?.customerName ?? undefined,
+        customerName: destination?.customerName ?? opportunity?.customerName ?? undefined,
         projectName: job.name,
-        address: destination?.addressLine ?? undefined,
-        opportunityId: destination?.jobId ?? undefined,
+        address: destination?.addressLine ?? opportunity?.addressLine ?? undefined,
+        opportunityId: opportunity?.leadId ?? destination?.jobId ?? undefined,
         revision: 1,
       };
       const bytes = await buildOrderWorkbook(job, metadata);
@@ -234,9 +248,18 @@ export function App() {
         headers: { 'content-type': 'application/json', accept: 'application/json', 'idempotency-key': crypto.randomUUID() },
         body: JSON.stringify(newProject),
       });
-      const body = await response.json() as { jobId?: string; error?: string };
-      if (!response.ok || !body.jobId) throw new Error(body.error ?? `Project intake failed (HTTP ${response.status}).`);
-      window.location.href = `${APEX_OS_ORIGIN}/app/projects/${body.jobId}`;
+      const body = await response.json() as { leadId?: string; error?: string };
+      if (!response.ok || !body.leadId) throw new Error(body.error ?? `Customer intake failed (HTTP ${response.status}).`);
+      setSavedCustomer({
+        leadId: body.leadId,
+        customerName: newProject.customerName,
+        addressLine: `${newProject.streetAddress}, ${newProject.city}, ${newProject.state} ${newProject.postalCode}`,
+      });
+      setShowNewProject(false);
+      setNewProject({
+        customerName: '', streetAddress: '', city: 'Lubbock', state: 'TX', postalCode: '',
+        phone: '', email: '', referralSource: '', notes: '',
+      });
     } catch (error) {
       setNewProjectError(error instanceof Error ? error.message : 'The design project could not be created.');
     } finally {
@@ -245,13 +268,18 @@ export function App() {
   };
 
   useEffect(() => {
-    fetch(`${APEX_OS_ORIGIN}/api/jobs?view=active`, { headers: { accept: 'application/json' } })
+    fetch(`${APEX_OS_ORIGIN}/api/opportunities`, { headers: { accept: 'application/json' } })
       .then(async (response) => {
-        if (!response.ok) throw new Error('Apex jobs could not be loaded.');
-        return response.json() as Promise<readonly ApexJobChoice[]>;
+        if (!response.ok) throw new Error('Apex opportunities could not be loaded.');
+        return response.json() as Promise<readonly ApexOpportunityChoice[]>;
       })
-      .then((jobs) => setApexJobs(jobs))
-      .catch(() => setApexJobs([]));
+      .then((opportunities) => {
+        setApexOpportunities(opportunities);
+        setApexJobs(opportunities.filter((entry): entry is ApexJobChoice & ApexOpportunityChoice => entry.jobId !== null).map((entry) => ({
+          jobId: entry.jobId!, customerName: entry.customerName, addressLine: entry.addressLine, status: entry.status,
+        })));
+      })
+      .catch(() => { setApexOpportunities([]); setApexJobs([]); });
   }, []);
 
   const sendToApex = async () => {
@@ -261,9 +289,10 @@ export function App() {
       setExportError('Choose the Apex project that owns this design before sending it.');
       return;
     }
+    const selectedOpportunity = apexOpportunities.find((entry) => entry.jobId === selectedApexJobId || entry.leadId === selectedApexJobId);
     const destination = apexJobs.find((entry) => entry.jobId === selectedApexJobId);
-    if (!destination) {
-      setExportError('The selected Apex project is no longer available. Reload the job list and try again.');
+    if (!selectedOpportunity || (selectedOpportunity.jobId !== null && !destination)) {
+      setExportError('The selected customer or project is no longer available. Reload the customer list and try again.');
       return;
     }
     setSendingToApex(true);
@@ -271,14 +300,28 @@ export function App() {
       const checked = runTakeoff(job);
       if (checked.hasCodeFailure) throw new Error(`Cannot send: ${checked.codeFailureAreas.join(', ')} has a failing check.`);
       const submission = buildApexSubmission(job, checked);
-      const response = await fetch(`${APEX_OS_ORIGIN}/api/jobs/${destination.jobId}/approved-takeoff`, {
+      if (selectedOpportunity.jobId === null) {
+        const response = await fetch(`${APEX_OS_ORIGIN}/api/opportunities/${selectedOpportunity.leadId}/finish-estimate`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', accept: 'application/json', 'idempotency-key': crypto.randomUUID() },
+          body: JSON.stringify({ submission, directLines: [], measuredLines: [], feeRateBps: 0 }),
+        });
+        const body = await response.json() as { proposal?: { proposalVersionId?: string }; error?: string };
+        if (!response.ok || !body.proposal?.proposalVersionId) throw new Error(body.error ?? `Estimate draft could not be created (HTTP ${response.status}).`);
+        const handoff = JSON.stringify({ type: 'apex-estimate-handoff', leadId: selectedOpportunity.leadId, submission, fileName: submissionFileName(job) });
+        window.name = handoff;
+        sessionStorage.setItem(draftEstimateStorageKey(selectedOpportunity.leadId), JSON.stringify({ submission, fileName: submissionFileName(job) }));
+        window.location.href = `${APEX_OS_ORIGIN}/app/opportunities/${selectedOpportunity.leadId}/estimate`;
+        return;
+      }
+      const response = await fetch(`${APEX_OS_ORIGIN}/api/jobs/${destination!.jobId}/approved-takeoff`, {
         method: 'POST',
         headers: { 'content-type': 'application/json', accept: 'application/json', 'idempotency-key': crypto.randomUUID() },
         body: JSON.stringify({ ...submission, supersedeExisting: false }),
       });
       const body = await response.json() as { revisionId?: string; error?: string };
       if (!response.ok) throw new Error(body.error ?? `Apex rejected the takeoff (HTTP ${response.status}).`);
-      setApexHandoff({ job: destination, revisionId: body.revisionId ?? 'created' });
+      setApexHandoff({ kind: 'job', job: destination!, revisionId: body.revisionId ?? 'created' });
     } catch (error) {
       setExportError(error instanceof Error ? error.message : 'The takeoff could not be sent to Apex OS.');
     } finally {
@@ -347,7 +390,7 @@ export function App() {
                 Advanced
               </button>
               <button className="btn" onClick={() => { setNewProjectError(null); setShowNewProject(true); }}>
-                New design project
+                New customer
               </button>
               {showAdvanced && <button className="btn ghost" onClick={exportForApex}>Download JSON fallback</button>}
               {/*
@@ -372,10 +415,16 @@ export function App() {
         {exportError !== null && (
           <p className="export-error" role="alert">{exportError}</p>
         )}
+        {savedCustomer !== null && (
+          <div className="customer-saved" role="status">
+            <strong>Customer saved.</strong>
+            <span>{savedCustomer.customerName} · {savedCustomer.addressLine}</span>
+            <small>Now design the pool below. Run the takeoff when the design is ready; estimating stays a separate next step.</small>
+          </div>
+        )}
         {showNewProject && (
-          <section className="panel print-hide" aria-label="New design project">
-            <div className="section-rule"><h2>New design project</h2></div>
-            <p className="note">Start a referral or friend project here. It will be created in Apex OS at Design &amp; Permitting, ready for the 11-phase project workflow.</p>
+          <section className="panel intake-panel print-hide" aria-label="New customer">
+            <div className="intake-intro"><div><p className="eyebrow">Create a customer</p><h2>New customer</h2><p className="note">Capture the person and project address first. Apex will open the estimate workspace next, where the proposal becomes the project after acceptance.</p></div><button className="btn ghost" type="button" onClick={() => setShowNewProject(false)}>Close</button></div>
             {newProjectError !== null && <p className="export-error" role="alert">{newProjectError}</p>}
             <form className="intake-form" onSubmit={createNewProject}>
               {([
@@ -388,16 +437,20 @@ export function App() {
                     : <input value={newProject[key]} required={required} type={key === 'email' ? 'email' : 'text'} onChange={(event) => setNewProject((current) => ({ ...current, [key]: event.target.value }))} />}
                 </label>
               ))}
-              <div className="inline-action"><button className="btn" type="submit" disabled={newProjectBusy}>{newProjectBusy ? 'Creating…' : 'Create design project'}</button><button className="btn ghost" type="button" onClick={() => setShowNewProject(false)}>Cancel</button></div>
+              <div className="inline-action"><button className="btn" type="submit" disabled={newProjectBusy}>{newProjectBusy ? 'Saving customer…' : 'Save customer'}</button></div>
             </form>
           </section>
         )}
         <div className="apex-handoff print-hide">
           <label>
-            <span>Send this design to Apex project</span>
+            <span>{apexOpportunities.find((entry) => (entry.jobId ?? entry.leadId) === selectedApexJobId)?.jobId === null ? 'Create estimate from this takeoff' : 'Send this design to Apex project'}</span>
             <select value={selectedApexJobId} onChange={(event) => setSelectedApexJobId(event.target.value)}>
               <option value="">Choose a customer/job first</option>
-              {apexJobs.map((entry) => <option key={entry.jobId} value={entry.jobId}>{entry.customerName ?? entry.jobId} — {entry.addressLine ?? 'Address not recorded'}</option>)}
+              {apexOpportunities.map((entry) => {
+                const value = entry.jobId ?? entry.leadId;
+                const suffix = entry.jobId === null ? ' (saved customer; design pending)' : '';
+                return <option key={entry.leadId} value={value}>{entry.customerName ?? entry.leadId} — {entry.addressLine ?? 'Address not recorded'}{suffix}</option>;
+              })}
             </select>
           </label>
           {apexHandoff !== null && (
@@ -463,7 +516,7 @@ export function App() {
             Takeoff (.xlsx)
           </button>
           <button className="btn run-takeoff-button" onClick={() => void sendToApex()} disabled={sendingToApex}>
-            {sendingToApex ? 'Finishing…' : 'Finish estimate'}
+            {sendingToApex ? 'Creating estimate…' : apexOpportunities.find((entry) => (entry.jobId ?? entry.leadId) === selectedApexJobId)?.jobId === null ? 'Create estimate from takeoff' : 'Send takeoff to Apex'}
           </button>
           {showAdvanced && (
             <button className="btn ghost" onClick={() => setMode('outputs')}>Engineering details</button>

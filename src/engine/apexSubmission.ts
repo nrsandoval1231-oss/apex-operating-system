@@ -53,6 +53,15 @@ export function buildApexSubmission(job: Job, takeoff: TakeoffResult): ApexTakeo
  * No date: the file's meaning comes from the design it carries, and a stamp here
  * would be the moment it was exported rather than anything about the takeoff.
  */
+export function draftEstimateStorageKey(leadId: string): string {
+  return `apex-estimate-submission:${leadId}`;
+}
+
+/**
+ * The lead-scoped browser key used to carry the exact Designer submission into
+ * the estimate workspace without asking the estimator to download and re-upload
+ * the JSON by hand.
+ */
 export function submissionFileName(job: Job): string {
   const slug = job.name
     .toLowerCase()
