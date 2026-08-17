@@ -8,10 +8,8 @@
 var
 _to_delete
 
-# The preserved component repositories. They are gitignored and are not part of
-# this image. CI checks `Apex Designer` out for the contract test, which runs
-# before the build — the image itself must still never carry it.
-Apex Designer
+# Preserved component repositories that are not production dependencies.
+# Apex Designer is intentionally included: Apex OS embeds its pinned submodule.
 apex-decks
 apex-lead-engine
 apex-prds
@@ -25,4 +23,5 @@ apex-website
 
 # Foreign lockfiles: an npm install here breaks the pnpm workspace links.
 package-lock.json
+!Apex Designer/package-lock.json
 yarn.lock
