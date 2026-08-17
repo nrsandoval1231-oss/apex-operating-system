@@ -1,6 +1,10 @@
 node_modules/
 dist/
-public/
+public/*
+!public/brand/
+public/brand/*
+!public/brand/apex-logo.png
+!public/brand/apex-icon-32.png
 *.local
 .DS_Store
 .hermes/
