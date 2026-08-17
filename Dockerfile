@@ -23,15 +23,18 @@ COPY packages/storage/package.json packages/storage/
 COPY packages/gate-service/package.json packages/gate-service/
 COPY apps/gate-api/package.json apps/gate-api/
 COPY apps/apex-os/package.json apps/apex-os/
+COPY ["Apex Designer/package.json", "Apex Designer/package-lock.json", "Apex Designer/"]
 
 RUN pnpm install --frozen-lockfile
+RUN cd "Apex Designer" && npm ci --ignore-scripts
 
 COPY . .
 
 # `typecheck` is what emits dist/ for the workspace packages — the same ordering
 # trap that broke CI, and the reason the app build runs after it rather than
 # beside it.
-RUN pnpm typecheck && pnpm --filter @apex/os build
+RUN pnpm typecheck && pnpm --filter @apex/os build \
+  && rm -rf "Apex Designer/node_modules"
 
 # -------------------------------------------------------------- runtime stage
 FROM node:24-bookworm-slim AS runtime
