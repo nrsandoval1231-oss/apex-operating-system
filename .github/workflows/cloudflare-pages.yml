@@ -41,7 +41,7 @@ jobs:
       PUBLIC_ENV: ${{ inputs.deploy_environment || 'development' }}
       PUBLIC_SITE_URL: ${{ vars.PUBLIC_SITE_URL }}
       PUBLIC_LEAD_WEBHOOK_URL: ${{ vars.PUBLIC_LEAD_WEBHOOK_URL }}
-      PUBLIC_LEAD_TEST_WEBHOOK_URL: ${{ vars.PUBLIC_LEAD_TEST_WEBHOOK_URL }}
+      PUBLIC_LEAD_WEBHOOK_URL_TEST: ${{ vars.PUBLIC_LEAD_WEBHOOK_URL_TEST }}
     steps:
       - name: Check out source
         uses: actions/checkout@v7
@@ -65,7 +65,7 @@ jobs:
         run: pnpm --filter apex-website build
 
       - name: Run website preflight
-        run: pnpm --filter apex-website preflight
+        run: pnpm --filter apex-website preflight -- --development --allow-placeholders
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3

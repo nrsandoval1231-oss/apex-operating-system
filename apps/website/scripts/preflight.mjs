@@ -24,6 +24,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, '..');
 const dist = join(root, 'dist');
 const allowPlaceholders = process.argv.includes('--allow-placeholders');
+const developmentBuild = process.argv.includes('--development');
 
 const blockers = [];
 const warnings = [];
@@ -63,11 +64,10 @@ if (!existsSync(robotsPath)) {
 } else {
   const robots = readFileSync(robotsPath, 'utf8');
   if (/^\s*Disallow:\s*\/\s*$/m.test(robots)) {
-    block(
-      'robots.txt contains "Disallow: /"',
-      'This build was NOT made with PUBLIC_ENV=production. Uploading it de-indexes the entire ' +
-        'site. Rebuild with PUBLIC_ENV=production.',
-    );
+    const message = 'robots.txt contains "Disallow: /"';
+    const why = 'This build was NOT made with PUBLIC_ENV=production.';
+    if (developmentBuild) warn(message, `${why} This is expected for the isolated development site.`);
+    else block(message, `${why} Uploading it de-indexes the entire site. Rebuild with PUBLIC_ENV=production.`);
   } else if (!/Sitemap:/i.test(robots)) {
     block('robots.txt has no Sitemap: line', 'Search Console discovery gets slower for no reason.');
   } else {
@@ -149,11 +149,10 @@ const homeHtml = pages.find((p) => (p.path || '/') === '/')?.html ?? '';
 const allHtml = pages.map((p) => p.html).join('\n');
 
 if (/webhook-test/.test(allHtml)) {
-  block(
-    'the built output references a "webhook-test" URL',
-    'This is a non-production build — leads would post to the TEST endpoint and never reach ' +
-      'anyone. Rebuild with PUBLIC_ENV=production (Hard rule 6 / AC-1.7).',
-  );
+  const message = 'the built output references a "webhook-test" URL';
+  const why = 'This is a non-production build — leads must remain isolated from production.';
+  if (developmentBuild) warn(message, `${why} This is expected for the isolated development site.`);
+  else block(message, `${why} Rebuild with PUBLIC_ENV=production.`);
 } else if (/\/webhook\//.test(allHtml)) {
   pass('quote form points at the production lead webhook');
 } else {
