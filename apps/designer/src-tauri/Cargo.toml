@@ -1,0 +1,26 @@
+[package]
+name = "apex-designer"
+version = "0.1.0"
+description = "Pool and spa plan and materials takeoff"
+authors = ["Apex Designer Pools"]
+edition = "2021"
+rust-version = "1.77.2"
+
+[lib]
+name = "apex_designer_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+
+[profile.release]
+# The whole app is a drawing tool with no server. Optimise for a small binary
+# and a fast cold start rather than for throughput.
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+strip = true

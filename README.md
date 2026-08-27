@@ -31,14 +31,18 @@ This code is production-shaped but deployment remains an explicit operator decis
 
 | Component | Authority and responsibility |
 |---|---|
-| `Apex Designer` (separate repository) | Pool/spa geometry, true 3′–5′–3′ sports profiles, quantity model `designer-quantity-v5`, plan/section views, and the ordering workbook |
+| `apps/designer` | Pool/spa geometry, true 3′–5′–3′ sports profiles, quantity model `designer-quantity-v5`, plan/section views, and the ordering workbook |
+| `apps/website` | Astro marketing site, four-vertical routing, attribution, consent, and tagged lead capture |
 | `packages/contracts` | Runtime-validated IDs, takeoff/Proposal/Job contracts, events, and customer-safe projections |
 | `packages/pricing-engine` | Typed, fail-closed pricing of an approved takeoff using entered estimates; it never infers missing prices |
 | `packages/database` | Operational PostgreSQL schema, forward-only migrations, immutable proposal/takeoff evidence, events, and closeout state |
 | `packages/gate-service` | Opportunity estimates, Proposal versions, Job binding, Gates, inspections, schedules, draws, closeout, and archived reads |
 | `apps/gate-api` | Authenticated API, evidence storage boundary, migration startup, and customer-safe endpoints |
 | `apps/apex-os` | Office/owner UI for opportunities, Proposals, Projects, Today, Calendar, History, and retained artifacts |
-| `apex-proposal-engine` (separate repository) | Legacy reference/calibration implementation; not the production Proposal authority |
+| `workflows/lead-engine` | Apex lead intake and job-status workflow source, contracts, and fixtures |
+| `docs/prd` | Apex product requirements, decision register, and operational specifications |
+| `archive/proposal-engine` | Legacy reference/calibration implementation; not the production Proposal authority |
+| `tools/decks` | Reproducible Apex strategy and pitch-deck generators |
 | `docs/archive/` | Historical evidence only; preserved content is not current guidance |
 
 ## Lifecycle invariants

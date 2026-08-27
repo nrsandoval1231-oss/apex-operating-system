@@ -1,0 +1,126 @@
+---
+/**
+ * Faq.astro — the visible FAQ on a vertical landing page.
+ *
+ * Two jobs. (1) It answers the questions a Lubbock buyer actually types into search, which is
+ * the organic surface a four-vertical site otherwise has no room for. (2) It is the visible
+ * half of the FAQPage JSON-LD — Google requires the markup and the rendered content to match,
+ * so both read from the SAME content object (content/vertical-pages.ts). Never emit the schema
+ * without rendering this component.
+ *
+ * Native <details>/<summary>: keyboard-operable and screen-reader-announced with zero JS
+ * (AC-6.1, AC-6.2), and it degrades to plain readable text with CSS off.
+ */
+import type { FaqEntry } from '@content/vertical-pages';
+
+interface Props {
+  items: readonly FaqEntry[];
+  /** Accent CSS variable for the vertical, e.g. "--pool". */
+  accentVar: string;
+  heading?: string;
+}
+
+const { items, accentVar, heading = 'Common questions' } = Astro.props;
+---
+<section class="faq" id="faq" style={`--vt:var(${accentVar})`}>
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Before you call</p>
+      <h2>{heading}</h2>
+    </div>
+    <div class="faq-list">
+      {items.map((item) => (
+        <details class="faq-item">
+          <summary>
+            <span class="faq-q">{item.q}</span>
+            <span class="faq-mark" aria-hidden="true"></span>
+          </summary>
+          <div class="faq-a"><p>{item.a}</p></div>
+        </details>
+      ))}
+    </div>
+  </div>
+</section>
+
+<style>
+  .faq {
+    padding: 72px 0;
+    background: var(--paper);
+    border-top: 1px solid var(--line);
+  }
+  .faq-list {
+    max-width: 780px;
+    margin-top: 28px;
+    border-top: 1px solid var(--line);
+  }
+  .faq-item {
+    border-bottom: 1px solid var(--line);
+  }
+  .faq-item summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 20px 4px;
+    cursor: pointer;
+    list-style: none;
+  }
+  /* Hide the native disclosure triangle in favour of the custom mark. */
+  .faq-item summary::-webkit-details-marker {
+    display: none;
+  }
+  .faq-item summary::marker {
+    content: '';
+  }
+  .faq-item summary:focus-visible {
+    outline: 2px solid var(--amber);
+    outline-offset: 2px;
+  }
+  .faq-q {
+    font-family: Oswald, sans-serif;
+    font-weight: 500;
+    font-size: 19px;
+    letter-spacing: 0.01em;
+    color: var(--char);
+  }
+  /* Plus → minus, drawn in CSS so there's no icon font or JS. */
+  .faq-mark {
+    position: relative;
+    flex: 0 0 auto;
+    width: 16px;
+    height: 16px;
+  }
+  .faq-mark::before,
+  .faq-mark::after {
+    content: '';
+    position: absolute;
+    inset: 50% 0 auto 0;
+    height: 2px;
+    background: var(--vt);
+    transform: translateY(-50%);
+  }
+  .faq-mark::after {
+    inset: 0 auto 0 50%;
+    width: 2px;
+    height: 100%;
+    transform: translateX(-50%);
+    transition: opacity 160ms ease;
+  }
+  .faq-item[open] .faq-mark::after {
+    opacity: 0;
+  }
+  .faq-a {
+    padding: 0 4px 22px;
+    max-width: 68ch;
+  }
+  .faq-a p {
+    color: var(--steel);
+    line-height: 1.65;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .faq-mark::after {
+      transition: none;
+    }
+  }
+</style>
