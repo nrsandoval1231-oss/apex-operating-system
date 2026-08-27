@@ -1,39 +1,41 @@
 # Apex Repository Map
 
-All repositories below were created as **private** GitHub repositories on 2026-07-28. Local and remote `main` heads were verified to match after the initial push.
+Apex is consolidated into this repository: `nrsandoval1231-oss/apex-operating-system`.
+The six former component repositories remain preserved source archives while the
+monorepo migration is verified; they are no longer runtime dependencies or CI
+checkout dependencies.
 
-Local source root: `C:\Users\NickSandoval\Nick OS\02_Projects\Apex` (moved from
-`Desktop\Nick-Assistant\Projects\Apex`; the older path appears in scripts and
-audit documents written before the move and is no longer valid).
+## Canonical layout
 
-Wrapper directories were flattened on 2026-07-31 (`apex-lead-engine\apex-lead-engine` → `apex-lead-engine`, and the same for `apex-prds` and `apex-website`).
+| Component | Canonical path |
+|---|---|
+| Operating system UI | `apps/apex-os` |
+| Designer | `apps/designer` |
+| Website | `apps/website` |
+| Gate API | `apps/gate-api` |
+| Lead Engine workflows | `workflows/lead-engine` |
+| Shared contracts/domain/pricing/database/storage | `packages/*` |
+| Product requirements and decisions | `docs/prd` plus `docs/decisions` |
+| Legacy proposal calibration | `archive/proposal-engine` |
+| Deck generators | `tools/decks` |
+| Historical evidence | `docs/archive` |
 
-| Component | Private remote | Local source during Phase 0 |
-|---|---|---|
-| System root | https://github.com/nrsandoval1231-oss/apex-operating-system | `.` (the source root above) |
-| Designer | https://github.com/nrsandoval1231-oss/apex-designer | `Apex Designer` |
-| Decks | https://github.com/nrsandoval1231-oss/apex-decks | `apex-decks` |
-| Lead Engine | https://github.com/nrsandoval1231-oss/apex-lead-engine | `apex-lead-engine` |
-| PRDs | https://github.com/nrsandoval1231-oss/apex-prds | `apex-prds` |
-| Proposal Engine | https://github.com/nrsandoval1231-oss/apex-proposal-engine | `apex-proposal-engine` |
-| Website | https://github.com/nrsandoval1231-oss/apex-website | `apex-website` |
+## Preserved source repositories
 
-## Phase 0 preservation model
+- https://github.com/nrsandoval1231-oss/apex-designer
+- https://github.com/nrsandoval1231-oss/apex-decks
+- https://github.com/nrsandoval1231-oss/apex-lead-engine
+- https://github.com/nrsandoval1231-oss/apex-prds
+- https://github.com/nrsandoval1231-oss/apex-proposal-engine
+- https://github.com/nrsandoval1231-oss/apex-website
 
-The root repository intentionally ignores the six component working trees. Each component preserves its own history and is pushed independently. The system root tracks cross-component status, decisions, plans, Gate, detached operational exports, and historical artifacts.
+These source repositories must remain unchanged until the consolidated branch
+passes verification. After cutover, each should receive a deprecation README or
+be archived—not deleted—so rollback remains possible.
 
-This is temporary. The approved target is a monorepo. Later migration must import component history with a history-preserving method such as `git subtree`/history rewriting; do not copy current files into a fresh repository and discard provenance.
+## Migration provenance
 
-## Additional local recovery backup
-
-`C:\Users\NickSandoval\Desktop\Apex-Phase0-Backup-20260728_161654`
-
-This backup contains:
-
-- verified source-only working-tree ZIP
-- six verified Git bundles
-- captured dirty/untracked statuses
-- tracked binary-capable patches
-- SHA-256 manifest and artifact checksums
-
-The backup predates the Phase 0 checkpoint commits and remote pushes and can reconstruct the exact starting state. It also predates the 2026-07-31 wrapper flattening; paths inside the backup use the original nested layout.
+The migration branch imported each source with `git subtree`, preserving source
+history and producing a distinct destination path. External identifiers and
+contracts remain unchanged: n8n webhook paths, environment names, API routes,
+auth/session behavior, database migrations, storage keys, and artifact formats.

@@ -27,15 +27,8 @@ import { MEASURED_LINE_DEFINITIONS, priceApprovedTakeoff } from '../packages/pri
  */
 
 const here = dirname(fileURLToPath(import.meta.url));
-const firstExisting = (paths: readonly string[]): string => paths.find(existsSync) ?? paths[0]!;
-const designerPath = firstExisting([
-  resolve(here, '../Apex Designer/src/engine/index.ts'),
-  resolve(here, '../../../../Apex Designer/src/engine/index.ts'),
-]);
-const proposalPath = firstExisting([
-  resolve(here, '../apex-proposal-engine/engine.mjs'),
-  resolve(here, '../../../../apex-proposal-engine/engine.mjs'),
-]);
+const designerPath = resolve(here, '../apps/designer/src/engine/index.ts');
+const proposalPath = resolve(here, '../archive/proposal-engine/engine.mjs');
 const designerAvailable = existsSync(designerPath);
 const proposalAvailable = existsSync(proposalPath);
 const bothAvailable = designerAvailable && proposalAvailable;
