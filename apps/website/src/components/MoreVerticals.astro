@@ -1,0 +1,62 @@
+---
+/**
+ * MoreVerticals.astro — the three "shallow" verticals (Concrete Coating, Design &
+ * Renovation, Pool Service), one card each. Content from content/service-cards.ts; brand,
+ * accent, and consent brand from the verticals single source of truth. Each CTA carries
+ * data-preselect with the exact vertical string for Phase 3 (AC-2.2, AC-2.4).
+ */
+import { sections } from '@content/site-copy';
+import { serviceCards } from '@content/service-cards';
+import { getVerticalConfig } from '@content/verticals';
+import ImageSlot from './ImageSlot.astro';
+---
+<section id="more">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">{sections.more.eyebrow}</p>
+      <h2>{sections.more.heading}</h2>
+    </div>
+    <div class="three">
+      {serviceCards.map((card) => {
+        const cfg = getVerticalConfig(card.vertical);
+        // The serv accent is too light for small text on white (AC-6.4); use its AA-safe
+        // text variant where it renders as text. The tile/band identity fill keeps --serv.
+        const textAccent = cfg.accentVar === '--serv' ? '--serv-text' : cfg.accentVar;
+        return (
+          <article class="vcard" style={`--vt:var(${cfg.accentVar});--vt-text:var(${textAccent})`}>
+            <div class="top">
+              <ImageSlot id={card.image} sizes="(max-width:900px) 100vw, 33vw" />
+            </div>
+            <div class="body">
+              <p class="eyebrow" style={`color:var(${textAccent})`}>{cfg.consentBrand}</p>
+              <h3>{card.heading}</h3>
+              <p>{card.description}</p>
+              <ul>
+                {card.services.map((s) => <li>{s}</li>)}
+              </ul>
+              <div class="foot">
+                <span class="minibadge">{card.minibadge}</span>
+                {/* Phase 4: the card's own quote CTA still jumps to the form on this page
+                    (pre-selecting the vertical), while "Details" hands the visitor to that
+                    vertical's landing page — the internal link that makes those pages
+                    reachable and crawlable from the home page. */}
+                <span class="vlinks">
+                  <a class="tlink" href={`/${cfg.slug}`}>Details</a>
+                  <a class="tlink" href="#quote" data-preselect={card.vertical}>{card.cta}</a>
+                </span>
+              </div>
+            </div>
+          </article>
+        );
+      })}
+    </div>
+  </div>
+</section>
+
+<style>
+  .vlinks {
+    display: inline-flex;
+    align-items: center;
+    gap: 18px;
+  }
+</style>

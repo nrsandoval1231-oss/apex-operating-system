@@ -1,0 +1,47 @@
+---
+/**
+ * index.astro — the Apex home page. Assembles the sections in the mockup order:
+ * header · hero+router · pools (deep) · three shallow verticals · guarantee band ·
+ * testimonials · owner · quote (Phase 3 placeholder) · footer.
+ *
+ * All copy/content comes from content/ data files; contact details from env; images from
+ * the manifest via <ImageSlot>. No lead form or webhook here — that's Phase 3.
+ */
+import BaseLayout from '@layouts/BaseLayout.astro';
+import Header from '@components/Header.astro';
+import Hero from '@components/Hero.astro';
+import PoolsSection from '@components/PoolsSection.astro';
+import MoreVerticals from '@components/MoreVerticals.astro';
+import GuaranteeBand from '@components/GuaranteeBand.astro';
+import Testimonials from '@components/Testimonials.astro';
+import Owner from '@components/Owner.astro';
+import QuoteSection from '@components/QuoteSection.astro';
+import Footer from '@components/Footer.astro';
+import { jsonLdGraph, organizationSchema, websiteSchema } from '@lib/seo';
+
+const title = 'Apex — Anything Construction. Apex Gets It Done. | Lubbock, TX';
+const description =
+  'Apex builds pools, coatings, renovations, and pool service across Lubbock and the South Plains. Four crews, one standard — done right the first time and backed for decades.';
+
+/**
+ * Phase 4: the business entity is declared HERE and only here. Vertical pages emit a Service
+ * node that references it by @id, so the graph has exactly one authoritative LocalBusiness
+ * rather than four competing copies of the same business.
+ * TODO(BLOCKED: D-09): the node is missing a postal address until the verified NAP / Google
+ * Business Profile structure is settled — see lib/seo.ts.
+ */
+const jsonLd = jsonLdGraph([organizationSchema(), websiteSchema()]);
+---
+<BaseLayout title={title} description={description} path="/" jsonLd={jsonLd}>
+  <Header />
+  <main>
+    <Hero />
+    <PoolsSection />
+    <MoreVerticals />
+    <GuaranteeBand />
+    <Testimonials />
+    <Owner />
+    <QuoteSection />
+  </main>
+  <Footer />
+</BaseLayout>

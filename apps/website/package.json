@@ -1,0 +1,43 @@
+{
+  "name": "apex-website",
+  "type": "module",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Marketing site for Apex (Lubbock, TX) — one brand, four verticals. Astro static build.",
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro",
+    "check": "astro check",
+    "check:images": "node scripts/check-images.mjs",
+    "stock:fetch": "node scripts/fetch-stock-images.mjs",
+    "preflight": "node scripts/preflight.mjs",
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "redirects:generate": "node scripts/generate-redirects.mjs",
+    "redirects:verify": "node scripts/verify-redirects.mjs"
+  },
+  "dependencies": {
+    "@astrojs/react": "^6.0.2",
+    "@fontsource/inter": "^5.1.0",
+    "@fontsource/jetbrains-mono": "^5.1.0",
+    "@fontsource/oswald": "^5.1.0",
+    "astro": "^7.1.6",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "allowScripts": {
+    "esbuild@0.21.5": true,
+    "sharp@0.33.5": true
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.9",
+    "@playwright/test": "^1.62.0",
+    "@types/node": "^26.1.2",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "typescript": "^5.9.3"
+  }
+}
