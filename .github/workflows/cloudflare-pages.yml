@@ -1,0 +1,75 @@
+name: Apex Website — Cloudflare Pages
+
+on:
+  push:
+    branches: [dev]
+    paths:
+      - 'apps/website/**'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'package.json'
+      - '.github/workflows/cloudflare-pages.yml'
+  workflow_dispatch:
+    inputs:
+      deploy_environment:
+        description: GitHub environment to deploy
+        required: true
+        default: development
+        type: choice
+        options:
+          - development
+          - staging
+
+permissions:
+  contents: read
+
+concurrency:
+  group: apex-pages-${{ inputs.deploy_environment || 'development' }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: 24
+  PNPM_VERSION: 11.18.0
+
+jobs:
+  deploy:
+    name: Build and deploy Apex Website
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: ${{ inputs.deploy_environment || 'development' }}
+    env:
+      PUBLIC_ENV: ${{ inputs.deploy_environment || 'development' }}
+      PUBLIC_SITE_URL: ${{ vars.PUBLIC_SITE_URL }}
+      PUBLIC_LEAD_WEBHOOK_URL: ${{ vars.PUBLIC_LEAD_WEBHOOK_URL }}
+      PUBLIC_LEAD_TEST_WEBHOOK_URL: ${{ vars.PUBLIC_LEAD_TEST_WEBHOOK_URL }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build website
+        run: pnpm --filter apex-website build
+
+      - name: Run website preflight
+        run: pnpm --filter apex-website preflight
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy apps/website/dist --project-name ${{ vars.CLOUDFLARE_PAGES_PROJECT }} --branch ${{ github.ref_name }}
