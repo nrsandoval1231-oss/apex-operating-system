@@ -1,0 +1,456 @@
+/**
+ * Takeoff sheet — build order step 3.
+ *
+ * Renders every engine step with formulas and inputs visible — the
+ * show-your-work pattern, all the way through the print stylesheet.
+ *
+ * This used to carry a "Not yet built" section listing steps 9, 10 and 11.
+ * All three shipped and the list did not, so the sheet spent a long time
+ * telling its reader that the plan view they were looking at did not exist.
+ * A panel naming what is missing has to be deleted the day nothing is.
+ */
+
+import { useState } from 'react';
+import { runTakeoff, type CodeFailureArea } from '../engine/index.ts';
+import { feetInches, planPrintScale, renderPlanView } from '../engine/planView.ts';
+import { rotationLabel, type QuarterTurns } from '../engine/planRotation.ts';
+import { renderSectionView, sectionPrintScale } from '../engine/sectionView.ts';
+import { MovablePlan } from './MovablePlan.tsx';
+import { StepsSection } from './StepsSection.tsx';
+import { BomSection } from './BomSection.tsx';
+import { SectionEditor } from './SectionEditor.tsx';
+import { GeometryInputError } from '../engine/geometry.ts';
+import { ExcavationInputError } from '../engine/excavation.ts';
+import type { Job } from '../engine/types.ts';
+import type { StandardDetail } from '../engine/standardDetail.ts';
+import { CalcTable } from './CalcTable.tsx';
+import { CodeCheckTable } from './CodeCheckTable.tsx';
+import { StructureSection } from './StructureSection.tsx';
+import { HydraulicsSection } from './HydraulicsSection.tsx';
+import { CoverSection, FinishesSection, YardSection } from './FinishesSection.tsx';
+import { EquipmentSection } from './EquipmentSection.tsx';
+import { num, num1 } from './format.ts';
+import { depthStations, maxDepth, segmentsFromProfile } from '../engine/profile.ts';
+
+/**
+ * The plan is draggable when the sheet is given an onChange and static when it
+ * is not, so the same component serves the editable app and any read-only
+ * render without a second drawing path.
+ */
+function PlanSheet({
+  job,
+  onChange,
+  printWidthIn,
+  planSvg,
+  quarterTurns,
+  onRotate,
+  children,
+}: {
+  job: Job;
+  onChange?: (job: Job) => void;
+  printWidthIn: number;
+  planSvg: string;
+  quarterTurns?: QuarterTurns;
+  onRotate?: (turns: QuarterTurns) => void;
+  children: React.ReactNode;
+}) {
+  if (onChange) {
+    return (
+      <MovablePlan
+        job={job}
+        onChange={onChange}
+        printWidthIn={printWidthIn}
+        quarterTurns={quarterTurns}
+        onRotate={onRotate}
+      >
+        {children}
+      </MovablePlan>
+    );
+  }
+  return (
+    <div
+      className="plan-frame plan-sheet"
+      style={{ ['--plan-print-width' as string]: `${printWidthIn.toFixed(2)}in` }}
+    >
+      <div dangerouslySetInnerHTML={{ __html: planSvg }} />
+      {children}
+    </div>
+  );
+}
+
+/** Same split as PlanSheet: draggable with an onChange, static without. */
+function SectionSheet({
+  job,
+  onChange,
+  printWidthIn,
+  sectionSvg,
+  quarterTurns,
+  children,
+}: {
+  job: Job;
+  onChange?: (job: Job) => void;
+  printWidthIn: number;
+  sectionSvg: string;
+  quarterTurns?: QuarterTurns;
+  children: React.ReactNode;
+}) {
+  if (onChange) {
+    return (
+      <SectionEditor job={job} onChange={onChange} quarterTurns={quarterTurns}>
+        {children}
+      </SectionEditor>
+    );
+  }
+  return (
+    <div
+      className="plan-frame plan-sheet"
+      style={{ ['--plan-print-width' as string]: `${printWidthIn.toFixed(2)}in` }}
+    >
+      <div dangerouslySetInnerHTML={{ __html: sectionSvg }} />
+      {children}
+    </div>
+  );
+}
+
+/**
+ * Where each family of blocking check is actually rendered on the sheet. The
+ * banner names the section the reader has to scroll to; naming the wrong one is
+ * worse than naming none, because it sends them to a table that is all green.
+ */
+const FAILURE_AREA_LABEL: Record<CodeFailureArea, string> = {
+  amendments: 'A City of Lubbock amendment check',
+  hydraulics: 'A hydraulic check',
+  gas: 'A gas sizing check',
+  'equipment-pad': 'An equipment pad run',
+};
+
+function failureAreaSentence(areas: readonly CodeFailureArea[]): string {
+  const labels = areas.map((area) => FAILURE_AREA_LABEL[area]);
+  if (labels.length === 0) return 'A blocking check failed.';
+  if (labels.length === 1) return `${labels[0]} failed.`;
+  // "A hydraulic check, a gas sizing check and an equipment pad run failed."
+  const rest = labels.slice(1).map((label) => label.replace(/^A[n]? /, (m) => m.toLowerCase()));
+  const last = rest.pop();
+  return `${[labels[0], ...rest].join(', ')} and ${last} failed.`;
+}
+
+export function TakeoffSheet({
+  job,
+  details,
+  onChange,
+  quarterTurns = 0,
+  onRotate,
+  view = 'full',
+}: {
+  job: Job;
+  details?: readonly StandardDetail[];
+  /** Supplied when the plan is editable; omitted renders a static drawing. */
+  onChange?: (job: Job) => void;
+  /**
+   * Quarter turns clockwise applied to the plan SHEET. A view preference, not a
+   * property of the job — it is deliberately not part of the saved job file, so
+   * a rotated drawing and an unrotated one are the same design.
+   */
+  quarterTurns?: QuarterTurns;
+  onRotate?: (turns: QuarterTurns) => void;
+  /**
+   * 'design' shows the drawings and nothing else — the takeoff still runs on
+   * every change (the code-stop banner depends on it) but its tables stay out
+   * of a builder's way. 'full' is the complete engineering sheet.
+   */
+  view?: 'design' | 'full';
+}) {
+  /* Default off: the answer first, the derivation on request. */
+  const [showWorking, setShowWorking] = useState(false);
+
+  let result;
+  try {
+    result = runTakeoff(job, details);
+  } catch (e) {
+    const isInput = e instanceof GeometryInputError || e instanceof ExcavationInputError;
+    return (
+      <div className="sheet">
+        <div className="stop">
+          <h3>{isInput ? 'Input stop — no quantities produced' : 'Engine error'}</h3>
+          <p>{e instanceof Error ? e.message : String(e)}</p>
+        </div>
+      </div>
+    );
+  }
+
+  const { geometry: g, excavation: x, codeBasis } = result;
+  const plan = renderPlanView(job, 1040, { quarterTurns });
+  const printScale = planPrintScale(plan);
+  const section = renderSectionView(job, 1040, { quarterTurns });
+  const sectionScale = sectionPrintScale(section);
+  const p = job.pool.profile;
+  const stations = depthStations(p);
+  const deepest = maxDepth(segmentsFromProfile(p));
+
+  return (
+    <div className={`sheet ${showWorking ? '' : 'is-plain'}`}>
+      {/*
+        * The engine belongs under the hood.
+        *
+        * Every table on this sheet led with a formula and its inputs, which is
+        * the derivation rather than the answer. What a superintendent needs is
+        * how much to order; the working is what makes it checkable, and being
+        * checkable does not require being read every time.
+        *
+        * Hidden, never removed. The Calc ledger is what the approved-quantity
+        * digest is computed over and what the compliance paths cite — this
+        * toggles two columns of a table and touches no number.
+        */}
+      {view === 'full' && <div className="working-toggle print-hide">
+        <button type="button" className="btn ghost" onClick={() => setShowWorking((open) => !open)}>
+          {showWorking ? 'Hide the working' : 'Show the working'}
+        </button>
+      </div>}
+      <header className="sheet-head">
+        <div>
+          <h1 className="sheet-title">{job.name}</h1>
+          <div className="sheet-sub">
+            Materials takeoff — geometry and excavation · {job.jurisdiction}
+          </div>
+        </div>
+        <div className="code-basis">
+          <div>
+            <strong>{codeBasis.edition}</strong>
+          </div>
+          <div>{codeBasis.ordinance}</div>
+          <div>Amendments: {codeBasis.amendments}</div>
+        </div>
+      </header>
+
+      {result.hasCodeFailure && (
+        <div className="stop">
+          <h3>Code stop</h3>
+          <p>
+            {failureAreaSentence(result.codeFailureAreas)} Quantities below are computed and shown,
+            but this configuration cannot be built as entered. See the compliance path on the
+            failing check.
+          </p>
+        </div>
+      )}
+
+      {/* The one bold moment: the plan drawing itself, and its own print sheet. */}
+      <PlanSheet
+        job={job}
+        onChange={onChange}
+        printWidthIn={printScale.widthIn}
+        planSvg={plan.svg}
+        quarterTurns={quarterTurns}
+        onRotate={onRotate}
+      >
+        <div className="plan-print-title">
+          <div>
+            <div className="ptb-job">{job.name}</div>
+            <div>
+              {job.jurisdiction} · dimensioned plan · skimmer, return and pad positions are
+              indicative, not surveyed
+            </div>
+          </div>
+          <div className="ptb-scale">
+            SCALE {printScale.label}
+            {!printScale.fits && ' — DOES NOT FIT 11×17'}
+            {/*
+              A turned sheet has to say so. Someone reading a printed plan cannot
+              see the button that turned it, and the house band and equipment pad
+              are the only orientation cues on the drawing — both of which move.
+            */}
+            {quarterTurns !== 0 && ` · ${rotationLabel(quarterTurns).toUpperCase()}`}
+          </div>
+          <div className="ptb-meta">
+            <div>
+              {codeBasis.edition} · {codeBasis.ordinance}
+            </div>
+            <div>{codeBasis.amendments}</div>
+            <div>Quantities only. Not a permit set, not a stamped document.</div>
+          </div>
+        </div>
+
+        <div className="plan-caption">
+          <span>
+            Dimensioned plan · water, deck, over-dig, plumbing and pad · skimmer, return and pad
+            positions are indicative, not surveyed
+          </span>
+          <span>
+            Prints at {printScale.label} on 11×17 landscape ·{' '}
+            {Math.round(g.totalVolumeGal.value).toLocaleString('en-US')} gal ·{' '}
+            {num1(g.totalWettedArea.value)} sf wetted · {num1(x.totalBankCy.value)} BCY cut
+          </span>
+        </div>
+      </PlanSheet>
+
+      {/*
+        The section is a second sheet, not a corner of the first. Depth is the
+        dimension a plan cannot draw, and the city asks for it — putting it in a
+        margin would make the one view that shows depth the smallest thing on
+        the page.
+      */}
+      <SectionSheet
+        job={job}
+        onChange={onChange}
+        printWidthIn={sectionScale.widthIn}
+        sectionSvg={section.svg}
+        quarterTurns={quarterTurns}
+      >
+        <div className="plan-caption">
+          <span>
+            Longitudinal section on the pool centreline · depths and runs dimensioned · step and
+            seat positions along the length are indicative
+          </span>
+          <span>
+            Prints at {sectionScale.label}
+            {!sectionScale.fits && ' — DOES NOT FIT 11×17'} ·{' '}
+            {feetInches(stations[0]!.depthFt)} end depth · {feetInches(deepest)} maximum ·{' '}
+            {feetInches(job.excavation.freeboardFt)} freeboard
+          </span>
+        </div>
+      </SectionSheet>
+
+      <section className="excavation-summary" aria-label="Excavation summary">
+        <strong>Excavation</strong>
+        <span>{num1(x.totalBankCy.value)} BCY bank</span>
+        <span>{num1(x.spoilHaulLooseCy.value)} LCY haul</span>
+        <span>{Math.ceil(x.truckCount.value)} estimated loads</span>
+        <span className="warn-note">Confirm excavation assumptions before ordering haul.</span>
+      </section>
+
+      {view === 'design' ? null : (
+      <div className="takeoff-body">
+
+      <BomSection job={job} takeoff={result} />
+
+
+      <section className="section">
+        <div className="section-head">
+          <h2>City of Lubbock amendment checks</h2>
+          <span className="note">
+            every check runs on every job · maximum depth allowed by the 1:1 setback on this site:{' '}
+            {num(g.maxAllowableDepthFt)} ft
+          </span>
+        </div>
+        <CodeCheckTable checks={g.checks} />
+      </section>
+
+      <StepsSection job={job} />
+
+      <section className="section" id="out-materials">
+        <div className="section-head">
+          <h2>1 · Geometry &amp; volume</h2>
+          <span className="note">rectangular bodies only · depth varies along the length</span>
+        </div>
+        <CalcTable
+          calcs={[
+            g.poolPlanArea,
+            g.poolPerimeter,
+            g.poolSectionArea,
+            g.poolGrossVolumeCf,
+            ...g.stepDisplacement,
+            ...g.seatDisplacement,
+            g.poolNetVolumeCf,
+            ...(g.spaVolumeCf ? [g.spaVolumeCf] : []),
+            g.totalVolumeCf,
+            g.totalVolumeGal,
+            g.averageDepth,
+            g.poolWettedArea,
+            ...(g.spaWettedArea ? [g.spaWettedArea] : []),
+            g.totalWettedArea,
+            g.waterlinePerimeter,
+          ]}
+          emphasize={[g.totalVolumeGal.id, g.totalWettedArea.id]}
+        />
+        {g.notes.length > 0 && (
+          <div className="notes">
+            <div className="notes-head">Input reconciliation</div>
+            <ul>
+              {g.notes.map((n) => (
+                <li key={n.id} className={n.severity === 'warning' ? 'warn-note' : undefined}>
+                  {n.message}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </section>
+
+      <section className="section" id="out-dig">
+        <div className="section-head">
+          <h2>2 · Excavation</h2>
+          <span className="note">
+            bank / loose / compacted reported separately · swell applied per layer
+          </span>
+        </div>
+        <CalcTable
+          calcs={[x.excavationLength, x.excavationWidth, x.maxCutDepth, x.totalCutCf]}
+        />
+
+        {x.layers.map((l) => (
+          <div key={l.layer.name}>
+            <div className="subsection">
+              {l.layer.name} — {num(l.bandTopFt)} to {num(l.bandBottomFt)} ft below grade · swell{' '}
+              {(l.layer.swellFactor * 100).toFixed(0)}% · compacted yield{' '}
+              {(l.layer.compactionYield * 100).toFixed(0)}%
+            </div>
+            <CalcTable calcs={[l.cutCf, l.bankCy, l.looseCy]} emphasize={[l.looseCy.id]} />
+          </div>
+        ))}
+
+        <div className="subsection">Totals, backfill balance and haul</div>
+        <CalcTable
+          calcs={[
+            x.totalBankCy,
+            x.totalLooseCy,
+            x.backfillVoidCf,
+            x.backfillCompactedCy,
+            x.backfillBankCy,
+            x.backfillLooseCy,
+            x.spoilHaulLooseCy,
+            x.truckCount,
+          ]}
+          emphasize={[x.spoilHaulLooseCy.id, x.truckCount.id]}
+        />
+
+        <div className="notes">
+          <div className="notes-head">Assumptions carried on this sheet</div>
+          <ul>
+            {x.notes.map((n) => (
+              <li key={n}>{n}</li>
+            ))}
+            <li className="warn-note">
+              Caliche swell and depth to caliche are placeholder inputs pending reconciliation
+              against a hand calc from a completed Lubbock job. Do not order hauling off this sheet
+              until they are replaced with measured values.
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <StructureSection structure={result.structure} />
+
+      <div id="out-plumbing"><HydraulicsSection hydraulics={result.hydraulics} /></div>
+
+      <div id="out-equipment"><EquipmentSection equipment={result.equipment} /></div>
+
+      <CoverSection cover={result.cover} />
+
+      <FinishesSection finishes={result.finishes} />
+
+      <YardSection yard={result.yard} />
+
+      </div>
+      )}
+
+      <footer className="footer">
+        <span>
+          Quantities only. No pricing, no labor. Not a permit submittal set and not a stamped
+          engineering document.
+        </span>
+        <span>
+          {codeBasis.edition} · {codeBasis.ordinance}
+        </span>
+      </footer>
+    </div>
+  );
+}

@@ -1,0 +1,70 @@
+---
+/**
+ * Footer.astro — brand, contact (from env), and the four-vertical accent line.
+ * Copy from content/site-copy.ts; contact and legal destinations from site config.
+ *
+ * Phase 5: the legal line is real links, not text. A site that captures SMS consent needs a
+ * reachable privacy policy — it is a carrier requirement for A2P 10DLC registration, not a
+ * formality. URLs are env-driven and currently point at where the policies actually live
+ * (apexcoatinglbk.com); see the D-03 note in lib/site.ts before that domain is redirected.
+ */
+import { site, legalUrls, financingUrl } from '@lib/site';
+import { footer } from '@content/site-copy';
+import Logo from './Logo.astro';
+---
+<div class="accent-line"></div>
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div>
+        {/* The footer has room for the tagline, which is not part of the lockup itself. */}
+        <Logo height={38} alt="Apex — Gets It Done" loading="lazy" />
+        <p class="foot-tag mono">GETS IT DONE</p>
+        <p style="max-width:320px;margin-top:16px">{footer.blurb}</p>
+      </div>
+      <div class="foot-contact">
+        {footer.verticalsLine}<br />
+        <a href={`tel:${site.phoneE164}`}>{site.phoneDisplay}</a><br />
+        <a href={`mailto:${site.contactEmail}`}>{site.contactEmail}</a><br />
+        {site.city}<br />
+        // <a class="fin-link" href={financingUrl} target="_blank" rel="noopener">{footer.financing}</a>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span>{footer.copyright}</span>
+      <span class="legal">
+        <a href={legalUrls.privacy}>{footer.privacyLabel}</a>
+        <span aria-hidden="true">·</span>
+        <a href={legalUrls.terms}>{footer.termsLabel}</a>
+      </span>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .foot-tag {
+    font-size: 9px;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    /* Brand sage. On the near-black footer this is high-contrast and is the logo's own
+       colour, so the tagline reads as part of the mark rather than as stray text. */
+    color: var(--sage);
+    margin: 10px 0 0;
+  }
+  .legal {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  /* The footer's small text is #948d83 on #141517 — already tuned to clear AA (AC-6.4).
+     Underline the legal links so they read as links at 11px, where colour alone is a weak
+     affordance and these two specifically must be findable. */
+  .legal a {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .fin-link {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+</style>

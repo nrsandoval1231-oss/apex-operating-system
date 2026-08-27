@@ -30,14 +30,14 @@ import { calculateQuantityPayloadSha256 } from '../packages/contracts/src/quanti
  */
 
 const here = dirname(fileURLToPath(import.meta.url));
-const enginePath = resolve(here, '../Apex Designer/src/engine/index.ts');
+const enginePath = resolve(here, '../apps/designer/src/engine/index.ts');
 const engineAvailable = existsSync(enginePath);
 const engineRequired = (process.env.APEX_REQUIRE_DESIGNER_CONTRACT ?? '').trim() !== '';
 
 describe.skipIf(!engineAvailable)('Designer route isolation', () => {
   it('keeps generic Designer selectors and tokens inside its route root', () => {
-    const styles = readFileSync(resolve(here, '../Apex Designer/src/styles.css'), 'utf8');
-    const app = readFileSync(resolve(here, '../Apex Designer/src/App.tsx'), 'utf8');
+    const styles = readFileSync(resolve(here, '../apps/designer/src/styles.css'), 'utf8');
+      const app = readFileSync(resolve(here, '../apps/designer/src/App.tsx'), 'utf8');
 
     expect(styles).toContain('@scope (.designer-root)');
     expect(styles).not.toMatch(/^:root\s*\{/m);

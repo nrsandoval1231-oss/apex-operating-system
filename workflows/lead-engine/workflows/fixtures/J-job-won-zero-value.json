@@ -1,0 +1,16 @@
+﻿{
+  "_case": "J — job WON with contract_value 0. Must QUARANTINE. Phase 5 pushes value to Meta; a conversion with no value is useless and would train the algorithm on nothing.",
+  "job_id": "APX-2026-030",
+  "lead_id": "apex_1722001188_c3d7",
+  "vertical": "Design & Renovation",
+  "from_status": "quoted",
+  "to_status": "won",
+  "changed_at": "2026-08-11T11:40:00-05:00",
+  "first_name": "Sam",
+  "last_name": "Okafor",
+  "email": "sam.okafor@email.com",
+  "phone": "8065552277",
+  "contract_value": 0,
+  "source_system": "monday",
+  "source_item_id": "9876543311"
+}
