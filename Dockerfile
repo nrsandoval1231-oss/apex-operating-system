@@ -23,7 +23,7 @@ COPY packages/storage/package.json packages/storage/
 COPY packages/gate-service/package.json packages/gate-service/
 COPY apps/gate-api/package.json apps/gate-api/
 COPY apps/apex-os/package.json apps/apex-os/
-COPY apps/designer/package.json apps/designer/
+COPY apps/designer/package.json apps/designer/package-lock.json apps/designer/
 COPY apps/website/package.json apps/website/
 
 RUN pnpm install --frozen-lockfile
