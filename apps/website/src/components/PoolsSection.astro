@@ -1,0 +1,91 @@
+---
+/**
+ * PoolsSection.astro — Designer Pools, built DEEP (process, features, warranty,
+ * financing, dedicated CTA). Content from content/pools.ts; brand + accent from the
+ * verticals single source of truth. The CTA carries data-preselect for Phase 3 (AC-2.2).
+ */
+import { pools } from '@content/pools';
+import { financingUrl } from '@lib/site';
+import { getVerticalConfig } from '@content/verticals';
+import ImageSlot from './ImageSlot.astro';
+
+const cfg = getVerticalConfig(pools.vertical);
+---
+<section id="pools">
+  <div class="wrap">
+    <div class="pool-grid">
+      <div>
+        <div class="sec-head vstripe">
+          <p class="eyebrow" style="color:var(--pool)">{cfg.consentBrand}</p>
+          <h2 set:html={pools.heading.replace(/, /, ',<br>')}></h2>
+        </div>
+        <p class="lead">{pools.lead}</p>
+
+        <ul class="featlist">
+          {pools.features.map((f) => <li>{f}</li>)}
+        </ul>
+
+        <div class="process">
+          {pools.process.map((step) => (
+            <div class="pstep">
+              <div class="n mono">{step.n}</div>
+              <h3>{step.title}</h3>
+              <p>{step.body}</p>
+            </div>
+          ))}
+        </div>
+
+        <div class="badge disp">{pools.warrantyBadge} <b>{pools.warrantyEmphasis}</b></div>
+        {/* Financing sits directly under the warranty badge and above the CTA on purpose:
+            this is where price anxiety peaks on the highest-ticket vertical, and it was
+            previously dead text. */}
+        <div class="fin">
+          // <a class="fin-link" href={financingUrl} target="_blank" rel="noopener">{pools.financing}</a>
+        </div>
+        <div class="pool-cta">
+          <a class="btn" href="#quote" data-preselect={pools.vertical}>{pools.cta}</a>
+          {/* Phase 4 internal link into the Designer Pools landing page — the deeper,
+              indexable version of this section (process, FAQ, service area). */}
+          <a class="pool-more" href={`/${cfg.slug}`}>See how we build pools &rarr;</a>
+        </div>
+      </div>
+
+      <div>
+        <ImageSlot id={pools.image} class="pools-hero-img" sizes="(max-width:900px) 100vw, 45vw" />
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .pool-cta {
+    margin-top: 26px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 22px;
+  }
+  .pool-more {
+    font-family: Oswald, sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 14px;
+    color: var(--pool);
+    border-bottom: 1.5px solid transparent;
+    /* 44px touch-target floor (AC-6). Sits next to a .btn in a centered flex row, so growing
+       it vertically costs no layout. */
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+  .pool-more:hover {
+    border-bottom-color: var(--pool);
+  }
+  .fin-link {
+    border-bottom: 1px solid var(--line);
+  }
+  .fin-link:hover {
+    color: var(--sage-ink);
+    border-bottom-color: var(--sage-ink);
+  }
+</style>
