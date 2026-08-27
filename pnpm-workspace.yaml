@@ -1,6 +1,8 @@
 packages:
   - "apps/*"
   - "packages/*"
+overrides:
+  nanoid: 3.3.18
 # esbuild is a Vite build-time dependency only. Its postinstall script merely
 # verifies the platform binary that pnpm already installs via @esbuild/<platform>,
 # so the script is denied rather than granted install-time execution.
