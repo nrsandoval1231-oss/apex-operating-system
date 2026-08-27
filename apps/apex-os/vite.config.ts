@@ -9,7 +9,7 @@ import { resolve } from 'node:path';
  * app holding a database of its own.
  */
 const apiTarget = process.env['APEX_API_URL'] ?? 'http://127.0.0.1:4100';
-const designerBrandSource = resolve(import.meta.dirname, '../../Apex Designer/public/brand/apex-logo.png');
+const designerBrandSource = resolve(import.meta.dirname, '../designer/public/brand/apex-logo.png');
 const designerBrandPlugin: Plugin = {
   name: 'copy-designer-brand-assets',
   closeBundle() {
@@ -26,7 +26,7 @@ export default defineConfig({
       '@apex/contracts': resolve(import.meta.dirname, '../../packages/contracts/src/index.ts'),
       '@apex/domain': resolve(import.meta.dirname, '../../packages/domain/src/index.ts'),
       '@apex/pricing-engine': resolve(import.meta.dirname, '../../packages/pricing-engine/src/index.ts'),
-      '@apex/designer': resolve(import.meta.dirname, '../../Apex Designer/src/App.tsx'),
+      '@apex/designer': resolve(import.meta.dirname, '../designer/src/App.tsx'),
     },
   },
   /**

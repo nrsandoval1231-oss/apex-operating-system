@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-08-13
 
-**Canonical workspace:** `C:\Users\NickSandoval\Nick OS\02_Projects\Apex`
+**Canonical workspace:** `nrsandoval1231-oss/apex-operating-system` (monorepo migration branch)
 
 ## Current verified state
 
@@ -38,11 +38,9 @@ Opportunity
 
 ### Repository state
 
-- Root `main` is pushed to `origin/main`.
-- Apex Designer `main` is pushed to its independent `origin/main`.
-- The legacy proposal-engine repository remains clean and preserved as reference/calibration evidence; root packages are the production Proposal authority.
-- Temporary implementation worktrees and branches were removed after integration.
-- No production deployment or production data mutation was performed by this completion pass.
+- The Apex monorepo migration branch contains Designer, Website, Lead Engine, PRDs, legacy proposal calibration, and deck generators under the canonical layout documented in `docs/repositories.md`.
+- The six former source repositories remain clean and preserved; they are no longer required by the monorepo CI path.
+- No production deployment or production data mutation was performed by this migration pass.
 
 ## Verification baseline
 
@@ -70,7 +68,7 @@ GitHub Actions run `31735048854` passed on root `main`:
 - no-object-storage warning behavior; and
 - refusal to ship an image with local authentication bypass enabled.
 
-CI checks out Apex Designer and verifies its contract. The optional legacy Designer → proposal-engine chain remains skipped until `APEX_PROPOSAL_DEPLOY_KEY` is configured; the production root Proposal workflow is covered by root pricing, service, API, migration, and integration tests.
+CI now verifies the consolidated Designer source at `apps/designer` and uses `archive/proposal-engine` only for the preserved legacy chain. No sibling checkout or deploy key is required for those tests.
 
 ## Deployment status
 

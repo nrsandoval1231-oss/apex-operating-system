@@ -9,8 +9,8 @@
       "@apex/contracts": ["../../packages/contracts/src/index.ts"],
       "@apex/domain": ["../../packages/domain/src/index.ts"],
       "@apex/pricing-engine": ["../../packages/pricing-engine/src/index.ts"],
-      "@apex/designer/*": ["../../Apex Designer/src/*"],
-      "@apex/designer": ["../../Apex Designer/src/App.tsx"]
+      "@apex/designer/*": ["../designer/src/*"],
+      "@apex/designer": ["../designer/src/App.tsx"]
     },
     "resolveJsonModule": true,
     "allowImportingTsExtensions": true,
