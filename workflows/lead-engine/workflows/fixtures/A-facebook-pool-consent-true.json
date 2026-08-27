@@ -1,0 +1,20 @@
+{
+  "lead_id": "apex_1721925123_a1b9",
+  "vertical": "Designer Pools",
+  "first_name": "Jordan",
+  "last_name": "Whitaker",
+  "email": "jordan.w@email.com",
+  "phone": "8065550142",
+  "consent_sms": true,
+  "consent_text": "I agree to receive text messages from Apex Designer Pools about my quote. ~2 msgs/month, data rates may apply. Reply STOP to opt out.",
+  "source": "facebook",
+  "medium": "paid",
+  "campaign": "summer-pools-2026",
+  "landing_page": "/pools",
+  "referrer": "https://l.facebook.com/",
+  "fbclid": "IwAR3xExampleClickId",
+  "gclid": "",
+  "page_submitted": "/",
+  "device": "mobile",
+  "submitted_at": "2026-07-25T14:32:11-05:00"
+}
