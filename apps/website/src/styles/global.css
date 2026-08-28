@@ -399,10 +399,10 @@ section { padding: 78px 0; }
 
 /* --- testimonials --- */
 #proof { background: var(--paper); }
-.quotes { columns: 3; column-gap: 22px; margin-top: 8px; }
-@media (max-width: 900px) { .quotes { columns: 2; } }
-@media (max-width: 600px) { .quotes { columns: 1; } }
-.q { break-inside: avoid; background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 20px; margin-bottom: 22px; }
+.quotes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; margin-top: 8px; align-items: start; }
+@media (max-width: 900px) { .quotes { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 600px) { .quotes { grid-template-columns: 1fr; } }
+.q { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 20px; }
 .q p { margin: 0; font-size: 15.5px; }
 .q .who { margin-top: 12px; font-family: Oswald, sans-serif; text-transform: uppercase; letter-spacing: 0.05em; font-size: 14px; }
 .q .who span { color: var(--steel); font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; display: block; font-weight: 400; }
