@@ -224,3 +224,21 @@ test.describe('AC-8.2 · vertical landing pages arrive pre-selected', () => {
     });
   }
 });
+
+/**
+ * The proof section should distribute cards in a predictable centered grid, not newspaper-style
+ * columns that make the section appear horizontally unbalanced at desktop widths.
+ */
+test('testimonial cards use the centered grid layout', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('.quotes')).toHaveCSS('display', 'grid');
+  await expect(page.locator('.quotes')).toHaveCSS('grid-template-columns', /repeat\(3/);
+});
+
+/** The financing partner is represented by its official logo and remains a real external link. */
+test('Lyon Financial logo is a clickable external link', async ({ page }) => {
+  await page.goto('/');
+  const link = page.locator('.fin-link');
+  await expect(link).toHaveAttribute('href', /lyonfinancial\.net/);
+  await expect(link.locator('img')).toHaveAttribute('alt', 'Lyon Financial');
+});
