@@ -50,6 +50,7 @@ if (preselect !== undefined && !isVertical(preselect)) {
     <div class="qgrid">
       <QuoteForm
         client:visible
+        initialVertical={preselect}
         webhookUrl={leadWebhookUrl}
         phoneDisplay={site.phoneDisplay}
         phoneE164={site.phoneE164}
