@@ -241,7 +241,8 @@ test('testimonial cards use the centered grid layout', async ({ page }) => {
 /** The financing partner is represented by its official logo and remains a real external link. */
 test('Lyon Financial logo is a clickable external link', async ({ page }) => {
   await page.goto('/');
-  const link = page.locator('.fin-link').filter({ has: page.locator('img[alt="Lyon Financial"]') });
-  await expect(link).toHaveAttribute('href', /lyonfinancial\.net/);
-  await expect(link.locator('img')).toHaveAttribute('alt', 'Lyon Financial');
+  const links = page.locator('.fin-link').filter({ has: page.locator('img[alt="Lyon Financial"]') });
+  await expect(links).toHaveCount(2);
+  await expect(links.first()).toHaveAttribute('href', /lyonfinancial\.net/);
+  await expect(links.first().locator('img')).toHaveAttribute('alt', 'Lyon Financial');
 });
