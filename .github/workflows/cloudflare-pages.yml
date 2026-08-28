@@ -67,6 +67,12 @@ jobs:
       - name: Run website preflight
         run: pnpm --filter apex-website preflight -- --development --allow-placeholders
 
+      - name: Install Playwright Chromium
+        run: pnpm --filter apex-website exec playwright install --with-deps chromium
+
+      - name: Run website browser acceptance tests
+        run: pnpm --filter apex-website test
+
       - name: Deploy to Cloudflare Pages
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
