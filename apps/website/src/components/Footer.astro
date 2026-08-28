@@ -27,7 +27,9 @@ import Logo from './Logo.astro';
         <a href={`tel:${site.phoneE164}`}>{site.phoneDisplay}</a><br />
         <a href={`mailto:${site.contactEmail}`}>{site.contactEmail}</a><br />
         {site.city}<br />
-        // <a class="fin-link" href={financingUrl} target="_blank" rel="noopener">{footer.financing}</a>
+        <a class="fin-link" href={financingUrl} target="_blank" rel="noopener" aria-label={`${footer.financing} (opens in a new tab)`}>
+          <img src="/images/lyon-financial.webp" alt="Lyon Financial" />
+        </a>
       </div>
     </div>
     <div class="foot-bottom">
@@ -64,7 +66,12 @@ import Logo from './Logo.astro';
     text-underline-offset: 3px;
   }
   .fin-link {
-    text-decoration: underline;
-    text-underline-offset: 3px;
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    margin-top: 8px;
+    text-decoration: none;
   }
+  .fin-link img { display: block; width: 150px; height: auto; }
+  .fin-link:hover { opacity: 0.86; }
 </style>
