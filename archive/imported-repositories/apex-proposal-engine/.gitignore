@@ -1,0 +1,9 @@
+node_modules/
+*.log
+.DS_Store
+Thumbs.db
+
+# Local test revisions. Never commit these: a plausible-looking "approved"
+# revision in the source tree is exactly the fabrication the digest cannot
+# catch, because a self-consistent file always verifies.
+test-revisions/
