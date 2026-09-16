@@ -1,0 +1,122 @@
+---
+/**
+ * BaseLayout.astro — the document shell for every page.
+ *
+ * Responsibilities:
+ *  - Self-hosted fonts (Oswald / Inter / JetBrains Mono) via @fontsource — no external
+ *    render-blocking request, better Lighthouse (AC-5.1) and no font layout shift.
+ *  - Design tokens + all styles via global.css.
+ *  - Runs the FIRST-TOUCH attribution capture on every page load (Phase 1 spine). This is
+ *    what makes landing_page/source/campaign survive navigation (AC-1.5) before the
+ *    Phase 3 form ever assembles a lead.
+ *  - Phase 4: the full per-page SEO head (unique title/description/canonical/OG — AC-5.2),
+ *    optional JSON-LD, and the analytics tag layer (AC-5.5).
+ *
+ * Every absolute URL comes from `site.url` (env), never a literal, because the canonical
+ * domain is BLOCKED on D-03 and has to be swappable with one env change.
+ */
+import '@fontsource/oswald/400.css';
+import '@fontsource/oswald/500.css';
+import '@fontsource/oswald/600.css';
+import '@fontsource/oswald/700.css';
+import '@fontsource/inter/400.css';
+import '@fontsource/inter/500.css';
+import '@fontsource/inter/600.css';
+import '@fontsource/inter/700.css';
+import '@fontsource/jetbrains-mono/400.css';
+import '@fontsource/jetbrains-mono/500.css';
+import '@fontsource/jetbrains-mono/700.css';
+import '../styles/global.css';
+
+import Analytics from '@components/Analytics.astro';
+import AnalyticsNoscript from '@components/AnalyticsNoscript.astro';
+import { absoluteUrl, ORG_BRAND } from '@lib/seo';
+import { ogImageUrl } from '@lib/site';
+
+interface Props {
+  /** Unique per page (AC-5.2). Include the brand; keep under ~60 chars of meaningful text. */
+  title: string;
+  /** Unique per page (AC-5.2). ~150–160 chars. */
+  description: string;
+  /**
+   * Site-relative path this page canonicalises to. Defaults to the current pathname; pass it
+   * explicitly on dynamically-routed pages so the canonical can't drift from the route.
+   */
+  path?: string;
+  /** OG type — "website" for the home page, "article"/"service" style pages use website too. */
+  ogType?: string;
+  /** Serialized JSON-LD @graph (build with `jsonLdGraph()` from lib/seo). */
+  jsonLd?: string;
+  /** Keep a page out of the index (thank-you pages, staging-only routes). */
+  noindex?: boolean;
+}
+
+const {
+  title,
+  description,
+  path = Astro.url.pathname,
+  ogType = 'website',
+  jsonLd,
+  noindex = false,
+} = Astro.props;
+
+const canonical = absoluteUrl(path);
+// D-20: there is no approved photography yet, so og:image is only emitted when an image is
+// actually configured. A broken OG image URL is worse than none — social scrapers cache it.
+const ogImage = ogImageUrl ? absoluteUrl(ogImageUrl) : null;
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    {/* Icons generated from the real logo's lion panel (scripts/../public/images/brand).
+        The previous /favicon.svg was the placeholder starburst mark from the pitch mockup and
+        was never Apex's identity — it is gone rather than kept as a fallback, because a
+        wrong-brand favicon is worse than a default one. */}
+    <link rel="icon" href="/images/brand/apex-icon-32.png" sizes="32x32" type="image/png" />
+    <link rel="icon" href="/images/brand/apex-icon-512.png" sizes="512x512" type="image/png" />
+    <link rel="apple-touch-icon" href="/images/brand/apex-icon-180.png" />
+    <link rel="canonical" href={canonical} />
+    <meta name="theme-color" content="#1B1C1E" />
+    <meta name="robots" content={noindex ? 'noindex, nofollow' : 'index, follow, max-image-preview:large'} />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content={ogType} />
+    <meta property="og:site_name" content={ORG_BRAND} />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    {ogImage && <meta property="og:image" content={ogImage} />}
+    {ogImage && <meta property="og:image:alt" content={description} />}
+
+    <!-- Twitter/X. summary_large_image needs an image; degrade to summary without one. -->
+    <meta name="twitter:card" content={ogImage ? 'summary_large_image' : 'summary'} />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    {ogImage && <meta name="twitter:image" content={ogImage} />}
+
+    {jsonLd && <script type="application/ld+json" is:inline set:html={jsonLd} />}
+
+    <Analytics />
+
+    <meta name="generator" content={Astro.generator} />
+  </head>
+  <body>
+    <AnalyticsNoscript />
+    <a class="skip-link" href="#top">Skip to content</a>
+    <slot />
+
+    <!--
+      Phase 1 spine: capture first-touch attribution on every page load.
+      Idempotent — persists to sessionStorage and never overwrites an earlier landing.
+    -->
+    <script>
+      import { captureFirstTouch } from '../lib/attribution';
+      captureFirstTouch();
+    </script>
+  </body>
+</html>

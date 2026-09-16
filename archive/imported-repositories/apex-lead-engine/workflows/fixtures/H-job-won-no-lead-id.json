@@ -1,0 +1,16 @@
+﻿{
+  "_case": "H — job WON with NO lead_id (walk-in / referral, never touched the website). Must ACCEPT but set meta_eligible: false. Meta matches on lead_id/fbclid; uploading this would corrupt attribution. Phase 4 still works later — a review request only needs contact details.",
+  "job_id": "APX-2026-021",
+  "vertical": "Concrete Coating",
+  "from_status": "quoted",
+  "to_status": "won",
+  "changed_at": "2026-08-04T09:12:00-05:00",
+  "first_name": "Dana",
+  "last_name": "Ruiz",
+  "email": "dana.ruiz@email.com",
+  "phone": "8065559981",
+  "contract_value": 8400,
+  "job_cost": 6461.54,
+  "source_system": "monday",
+  "source_item_id": "9876543299"
+}
