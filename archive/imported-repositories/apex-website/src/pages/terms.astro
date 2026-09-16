@@ -1,0 +1,30 @@
+---
+/**
+ * /terms — the terms and conditions, transcribed verbatim (see content/legal.ts).
+ *
+ * In practice this is the SMS programme disclosure: message frequency, STOP and HELP
+ * keywords, carrier liability, and rates. That is exactly the document an A2P 10DLC
+ * registration is checked against, which is why it must be reachable on the live domain.
+ */
+import BaseLayout from '@layouts/BaseLayout.astro';
+import Header from '@components/Header.astro';
+import Footer from '@components/Footer.astro';
+import LegalDocument from '@components/LegalDocument.astro';
+import { termsAndConditions } from '@content/legal';
+import { breadcrumbSchema, jsonLdGraph } from '@lib/seo';
+
+const path = '/terms';
+const jsonLd = jsonLdGraph([breadcrumbSchema('Terms and Conditions', path)]);
+---
+<BaseLayout
+  title="Terms & Conditions | Apex — Lubbock, TX"
+  description="Apex terms and conditions, including our SMS messaging programme: message frequency, opt-out by replying STOP, and HELP for assistance."
+  path={path}
+  jsonLd={jsonLd}
+>
+  <Header />
+  <main id="top">
+    <LegalDocument doc={termsAndConditions} />
+  </main>
+  <Footer />
+</BaseLayout>

@@ -1,0 +1,34 @@
+# build output
+dist/
+.output/
+# generated redirect files (scripts/generate-redirects.mjs) — config/redirects.json is the
+# committed source; the host-specific outputs are built at deploy time so a stale copy can
+# never ship, and so production redirects never end up inside a preview build.
+build/
+
+# dependencies
+node_modules/
+
+# astro
+.astro/
+
+# secrets — Hard rule 5: never commit env files
+.env
+.env.production
+.env.*.local
+
+# logs / os
+npm-debug.log*
+*.log
+.DS_Store
+Thumbs.db
+
+# local agent/session artifacts
+.hermes/
+.claude/
+
+# playwright
+test-results/
+playwright-report/
+blob-report/
+.playwright/

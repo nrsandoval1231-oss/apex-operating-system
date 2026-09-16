@@ -1,0 +1,22 @@
+---
+/**
+ * AnalyticsNoscript.astro — the GTM <noscript> fallback iframe.
+ *
+ * Google requires this immediately after the opening <body> tag, which is why it is split
+ * from Analytics.astro (that one renders in <head>). Same load gate applies: nothing renders
+ * unless the build is analytics-enabled (Hard rule 6).
+ */
+import { analytics, loadGtm } from '@lib/analytics';
+
+const { gtmId } = analytics;
+---
+{loadGtm && (
+  <noscript>
+    <iframe
+      src={`https://www.googletagmanager.com/ns.html?id=${gtmId}`}
+      height="0"
+      width="0"
+      style="display:none;visibility:hidden"
+      title="Google Tag Manager"></iframe>
+  </noscript>
+)}
