@@ -15,6 +15,14 @@ function envOr(key: string, fallback: string): string {
   return v && v.trim() ? v.trim() : fallback;
 }
 
+/** No live-host default. Empty in production fails the build (see below). */
+const leadWebhookProd = envOr('PUBLIC_LEAD_WEBHOOK_URL', '');
+/** Placeholder only. Contains `webhook-test` so non-production never matches a live path. */
+const leadWebhookTest = envOr(
+  'PUBLIC_LEAD_WEBHOOK_URL_TEST',
+  'https://n8n.example.hstgr.cloud/webhook-test/apex-lead-intake',
+);
+
 export const site = {
   /** Canonical URL — BLOCKED on D-03; only used for absolute URLs in Phase 4. */
   url: envOr('PUBLIC_SITE_URL', 'https://apexgetsitdone.com'),
@@ -25,19 +33,27 @@ export const site = {
   contactEmail: envOr('PUBLIC_CONTACT_EMAIL', 'travis@apexgetsitdone.com'),
   city: 'Lubbock, TX',
   /**
-   * Lead intake webhooks (apex-lead-engine). Defaults point at Apex's live n8n instance;
-   * override via env. The intake workflow must be active + its Airtable base configured for
-   * these to succeed (D-21).
+   * Lead intake webhooks (`workflows/lead-engine`). The quote form POSTs from the
+   * browser, so the URL is public once a build ships it — it is still not hardcoded.
+   * Astro inlines `PUBLIC_` vars at build time. A static host cannot inject them
+   * after upload, so set both in the environment of the build that produces `dist/`.
+   *
+   * Production has no committed default. A missing `PUBLIC_LEAD_WEBHOOK_URL` fails
+   * the production build below rather than guessing a live host. Non-production
+   * falls back to the placeholder in `.env.example`, which still contains
+   * `webhook-test`, so local and CI runs never target a live intake URL (Hard rule 6).
    */
-  leadWebhookProd: envOr(
-    'PUBLIC_LEAD_WEBHOOK_URL',
-    'https://n8n.srv1758862.hstgr.cloud/webhook/apex-lead-intake',
-  ),
-  leadWebhookTest: envOr(
-    'PUBLIC_LEAD_WEBHOOK_URL_TEST',
-    'https://n8n.srv1758862.hstgr.cloud/webhook-test/apex-lead-intake',
-  ),
+  leadWebhookProd,
+  leadWebhookTest,
 } as const;
+
+if (site.env === 'production' && site.leadWebhookProd === '') {
+  throw new Error(
+    'PUBLIC_LEAD_WEBHOOK_URL is required when PUBLIC_ENV=production. ' +
+      'Astro inlines it at build time; a static host cannot inject it after upload. ' +
+      'Set PUBLIC_LEAD_WEBHOOK_URL before building. See apps/website/.env.example.',
+  );
+}
 
 /**
  * Site-relative path to the social share image (og:image / twitter:image).

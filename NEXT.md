@@ -34,8 +34,9 @@ Create opportunity
 - Confirm real staff OIDC identities are mapped to active `app_users` rows and least-privilege roles.
 - Verify approved pricing inputs for the pilot estimate. Apex intentionally has no inferred/default customer price authority.
 - Confirm object-storage versioning and backup retention.
-- Decide whether to configure `APEX_PROPOSAL_DEPLOY_KEY` for the legacy cross-repository chain or retire that legacy CI dependency.
 - Obtain and approve the Hayward catalog and excavator dig-sheet reference before implementing those deferred Designer capabilities.
+
+The legacy takeoff-to-proposal chain reads `apps/designer` and `archive/proposal-engine` in this repository. Do not configure a proposal-engine deploy key.
 
 ## Verification commands
 

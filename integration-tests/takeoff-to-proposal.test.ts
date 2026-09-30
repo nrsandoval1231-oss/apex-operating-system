@@ -16,9 +16,8 @@ import { MEASURED_LINE_DEFINITIONS, priceApprovedTakeoff } from '../packages/pri
  * other, and the seam between them — the part where a real measured quantity becomes a real
  * dollar figure — was covered by nobody.
  *
- * This reaches into TWO sibling repositories, both gitignored here (ADR-0002): `Apex Designer/`
- * and `apex-proposal-engine/`. CI currently checks out only the first, so this skips there and
- * says so. Running it needs both repositories present, which is the normal local state.
+ * Both halves live in this repository: Designer at `apps/designer`, and the legacy
+ * proposal engine at `archive/proposal-engine`. No sibling checkout and no deploy key.
  *
  * What this deliberately does NOT prove: that the prices are right. The unit rates are
  * back-solved from one calibration job and are not pricing authority. What it proves is that
@@ -41,10 +40,9 @@ const bothAvailable = designerAvailable && proposalAvailable;
  * default run report "5 skipped" with no explanation at all. A skip nobody can see is
  * indistinguishable from coverage.
  *
- * So where the repositories are supposed to be checked out — CI, with both deploy keys — this
- * variable is set and a missing engine FAILS instead of skipping. Same discipline as
- * APEX_REQUIRE_DESIGNER_CONTRACT, and for the same reason: a checkout landing in the wrong
- * directory, or a revoked key, would otherwise look exactly like a green run.
+ * When APEX_REQUIRE_TAKEOFF_CHAIN is set, a missing engine FAILS instead of skipping.
+ * Same discipline as APEX_REQUIRE_DESIGNER_CONTRACT. Both files are in this tree;
+ * a miss means the path is wrong, not that a sibling repository failed to check out.
  */
 const chainRequired = (process.env.APEX_REQUIRE_TAKEOFF_CHAIN ?? '').trim() !== '';
 
@@ -104,7 +102,7 @@ if (!bothAvailable && !chainRequired) {
     '\n  !  SKIPPING the takeoff-to-proposal chain test.'
     + `\n     Designer engine present: ${existsSync(designerPath)}`
     + `\n     Proposal engine present: ${existsSync(proposalPath)}`
-    + '\n     Both sibling repositories must be checked out alongside this one.'
+    + '\n     Both engines are in this repository (apps/designer and archive/proposal-engine).'
     + '\n     This is NOT a pass — the chain is simply unverified here.\n',
   );
 }
@@ -119,8 +117,8 @@ describe.runIf(chainRequired && !bothAvailable)('takeoff-to-proposal chain requi
       'APEX_REQUIRE_TAKEOFF_CHAIN is set, so both engines must be present.'
       + ` Designer at "${designerPath}": ${existsSync(designerPath)}.`
       + ` Proposal at "${proposalPath}": ${existsSync(proposalPath)}.`
-      + ' Check that both checkouts landed at the repository root and that the deploy keys are'
-      + ' still valid. Unset the variable to allow the skip.',
+      + ' Expected apps/designer/src/engine/index.ts and archive/proposal-engine/engine.mjs.'
+      + ' Unset the variable to allow the skip.',
     );
   });
 });
