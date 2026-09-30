@@ -23,7 +23,8 @@ Every path ends in a Respond node, so the website's POST always gets a fast repl
 `status` (`accepted` | `duplicate` | `quarantined`) and `lead_id`.
 
 ### Deployed
-- Instance: `n8n.srv1758862.hstgr.cloud` (Apex Hostinger).
+- Instance: the Apex Hostinger n8n host (`N8N_BASE_URL` in `.env.example`; placeholder
+  `https://n8n.example.hstgr.cloud`). Do not commit the live hostname.
 - Workflow id: `CNWX9VjtK5gJJ6rG` — created **inactive**. It sends nothing, so activating it
   is safe once the store below exists.
 
@@ -40,8 +41,8 @@ Every path ends in a Respond node, so the website's POST always gets a fast repl
    is a change to the two Airtable nodes only (D-19).
 3. **Credential**: the Airtable Personal Access Token credential is already auto-linked.
 4. **Activate** the workflow, then point the website's `PUBLIC_LEAD_WEBHOOK_URL` at
-   `https://n8n.srv1758862.hstgr.cloud/webhook/apex-lead-intake` (test builds → the
-   `-test` path per Hard rule 6).
+   `https://n8n.example.hstgr.cloud/webhook/apex-lead-intake` (replace the host with
+   `N8N_BASE_URL`; test builds → the `-test` path per Hard rule 6).
 
 ### Testing against fixtures (fixtures/A–E) — maps to acceptance-criteria.md
 Send each fixture as the POST body to the intake URL (or pin it on the webhook node and

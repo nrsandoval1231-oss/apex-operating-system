@@ -1,8 +1,11 @@
 # Apex — Status
 
-**Last updated:** 2026-08-13
+**Last updated:** 2026-09-30
 
-**Canonical workspace:** `nrsandoval1231-oss/apex-operating-system` (monorepo migration branch)
+The verification counts below are the 2026-08-13 baseline. This update corrects
+repository layout: one tree on `main`, no sibling checkout, no deploy key.
+
+**Canonical workspace:** `nrsandoval1231-oss/apex-operating-system` (`main`)
 
 ## Current verified state
 
@@ -38,9 +41,9 @@ Opportunity
 
 ### Repository state
 
-- The Apex monorepo migration branch contains Designer, Website, Lead Engine, PRDs, legacy proposal calibration, and deck generators under the canonical layout documented in `docs/repositories.md`.
-- The six former source repositories remain clean and preserved; they are no longer required by the monorepo CI path.
-- No production deployment or production data mutation was performed by this migration pass.
+- Designer, Website, Lead Engine, PRDs, legacy proposal calibration, and deck generators are in this repository. Layout: `docs/repositories.md`.
+- The six former source repositories are preserved archives. They are not CI checkouts and not runtime dependencies.
+- No production deployment or production data mutation was performed by the consolidation.
 
 ## Verification baseline
 
@@ -52,7 +55,7 @@ Opportunity
 - Root integration suite without external services: **10 passed, 15 skipped**. The skips are the PostgreSQL/S3 cases that require service configuration.
 - Designer: **580 tests passed**, typecheck passed, production build passed.
 - Legacy proposal engine tests passed.
-- `git diff --check` passed across all three repositories.
+- `git diff --check` passed on the 2026-08-13 baseline (then still split across repositories; there is now one tree).
 - Designer was launched with Vite and rendered in headless Chrome; the normal view showed the sports-pool control, Takeoff `.xlsx`, Finish Estimate, clean plan/section views, and no default verbose JSON dump.
 
 ### CI
@@ -90,8 +93,9 @@ Migrations run forward on application startup under a PostgreSQL advisory lock. 
 1. Configure and deploy a staging environment.
 2. Execute the staging acceptance flow in [`NEXT.md`](NEXT.md).
 3. Exercise and document a backup restore before the pilot carries real money.
-4. Configure the optional proposal-engine deploy key only if the legacy cross-repository chain will remain supported; otherwise retire that check deliberately in a later cleanup.
-5. Obtain the brochure/reference inputs before implementing the deferred equipment-catalog and excavator-specific dig-sheet work.
+4. Obtain the brochure/reference inputs before implementing the deferred equipment-catalog and excavator-specific dig-sheet work.
+
+The legacy takeoff-to-proposal chain reads `archive/proposal-engine` in this repository. No proposal-engine deploy key is required.
 
 ## Historical records
 

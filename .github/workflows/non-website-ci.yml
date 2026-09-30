@@ -3,15 +3,16 @@ name: Apex non-Website verification
 on:
   # Run it on demand.
   #
-  # This workflow is the only place the Designer contract test executes: it
-  # checks the private apex-designer repository out beside this one with a
-  # read-only deploy key. So the signal is needed exactly when THAT repository
-  # changes and this one does not — a new quantity model, a new engine export —
-  # and the path filters below correctly decline to fire for that, because
-  # nothing in this workspace moved.
+  # Designer now lives in this repository at apps/designer, and the legacy
+  # proposal chain reads archive/proposal-engine. No deploy key and no sibling
+  # checkout. Path filters include apps/**, so a Designer change in this tree
+  # does run the suite. workflow_dispatch remains for an on-demand re-run when
+  # nothing in the filtered paths moved.
   #
-  # Without a manual trigger the only way to get the check was to commit
-  # something here that nobody wanted, purely to make a build happen.
+  # Website Playwright specs (apps/website/tests/*.spec.ts) are not part of
+  # this job. They need a separate npm install and Chromium, and the copy at
+  # apps/website/.github/workflows/ci.yml is never executed: GitHub only reads
+  # workflows from the repository-root .github/workflows directory.
   workflow_dispatch:
 
   push:

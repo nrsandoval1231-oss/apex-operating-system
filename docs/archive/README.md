@@ -1,8 +1,13 @@
 # Archive
 
-Preserved for history. **None of this is current source of truth.** Current
-status lives in [`docs/status.md`](../status.md); orientation in
-[`docs/HANDOFF.md`](../HANDOFF.md); decisions in [`docs/decisions/`](../decisions/).
+Preserved for history. **None of this is current source of truth.**
+
+Current status is the repository-root [`STATUS.md`](../../STATUS.md). Next
+work is [`NEXT.md`](../../NEXT.md). Orientation is
+[`docs/HANDOFF.md`](../HANDOFF.md). Layout is
+[`docs/repositories.md`](../repositories.md). Decisions are
+[`docs/decisions/`](../decisions/). [`docs/status.md`](../status.md) is the
+chronological engineering record, not the live status page.
 
 Moved here from the repository root on 2026-08-05 so the root holds only live
 build files.
@@ -11,9 +16,9 @@ build files.
 |---|---|---|
 | `gate-v3.jsx` | Original field command-center mockup, sample-driven | `apps/apex-os` |
 | `demo.html` | Standalone browser walkthrough of the spine, written 2026-07-31 before the UI was wired | `apps/apex-os` served at `/app` by `apps/gate-api` |
-| `README-DEMO.md` | How to run `demo.html` | `docs/HANDOFF.md` § Running it locally |
-| `SESSION-HANDOFF.md` | 2026-07-26 build-state handoff | `docs/status.md` |
-| `apex-handoff.md` | Original client/project context — Travis, the margin finding, tooling decisions | `docs/vision.md` and `apex-prds/` |
+| `README-DEMO.md` | How to run `demo.html` | Root `README.md` (local commands). `docs/HANDOFF.md` has no "Running it locally" section |
+| `SESSION-HANDOFF.md` | 2026-07-26 build-state handoff | Root `STATUS.md` (live) and `docs/status.md` (chronological record) |
+| `apex-handoff.md` | Original client/project context — Travis, the margin finding, tooling decisions | `docs/vision.md` and `docs/prd/` |
 
 Also deleted in the same pass, recoverable from git history: `cleanup.ps1` and
 `finish-cleanup.ps1` — one-off scripts that performed the 2026-07-31 folder
@@ -34,5 +39,8 @@ SHA-256 verification:
   the complete copy map.
 
 Temporary probes, exact duplicate files, empty patch artifacts, and redundant
-Downloads copies were removed after verification. The live source repositories
-were not overwritten, reset, or committed during this consolidation.
+Downloads copies were removed after verification. That 2026-08-11 pass did not
+overwrite the then-separate source repositories. Those trees were later
+imported into this monorepo; the working copies are the paths in
+[`docs/repositories.md`](../repositories.md), and the import record is
+[`docs/REPOSITORY_CONSOLIDATION_2026-09-16.md`](../REPOSITORY_CONSOLIDATION_2026-09-16.md).
