@@ -21,10 +21,10 @@ Start with `CLAUDE.md` (auto-loaded), then `docs/prd.md`. Build Phase 1 → 2 �
 
 ## Buildable now vs gated
 
-- **Now:** intake/validate/route (Phase 1), speed-to-lead email + team alerts (Phase 2), monitoring (Phase 6).
+- **Now:** intake/validate/route (`workflows/01-intake.ts`) and the job-status webhook (`workflows/02-job-status.ts`). Speed-to-lead is not in the tree: there is no `workflows/02-speed-to-lead.ts`.
 - **Needs a decision first:** SMS provider (D-11), inbox confirmation (D-13), CRM choice (D-10), job-status signal (D-12), Meta access (D-01).
 
 ## Relationship to other repos
 
-- **Upstream:** `apex-website` sends the lead object. The two data contracts must stay identical.
+- **Upstream:** `apps/website` sends the lead object. The two data contracts must stay identical. This directory is part of the monorepo, not a separate repository.
 - **Separate, not built here:** CRM, commission engine, job costing, QuickBooks. This engine *writes to* the CRM once it exists — it doesn't choose or build it.

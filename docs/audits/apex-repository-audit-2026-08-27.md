@@ -1,5 +1,11 @@
 # Apex GitHub Repository Audit
 
+> **Historical snapshot, generated 2026-08-27.** This audit describes the
+> GitHub repositories as they existed that day, before they were consolidated
+> into this monorepo. It is not a work list. Current layout:
+> `docs/repositories.md`. Provenance:
+> `docs/REPOSITORY_CONSOLIDATION_2026-09-16.md`.
+
 Generated: 2026-08-27T11:08:39-05:00
 
 ## Scope and method

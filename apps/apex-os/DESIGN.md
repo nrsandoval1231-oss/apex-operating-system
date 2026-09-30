@@ -2,7 +2,7 @@
 
 Durable visual decisions for `apps/apex-os`. Product truth lives in
 [PRODUCT.md](PRODUCT.md). Brand tokens originate in
-`apex-website/src/styles/global.css` and are binding.
+`apps/website/src/styles/global.css` and are binding.
 
 ---
 

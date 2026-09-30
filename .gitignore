@@ -8,6 +8,9 @@
 # instead of committing it for everyone.
 /package-lock.json
 **/package-lock.json
+# Designer is an npm app inside the workspace. The image build copies this
+# lockfile and runs `npm ci` (see Dockerfile). Keep it tracked.
+!apps/designer/package-lock.json
 /yarn.lock
 **/yarn.lock
 **/dist/
@@ -39,9 +42,9 @@ Thumbs.db
 # Hermes transient attachments (plans are intentional project records)
 .hermes/desktop-attachments/
 
-# Existing component repositories are preserved independently during Phase 0.
-# Apex Designer is the exception: it remains an independent repository but is
-# pinned here as a submodule because Apex OS embeds it in production.
+# Retired sibling-checkout names. Canonical copies live under apps/, workflows/,
+# docs/prd, archive/, and tools/. Do not reintroduce those directories at the
+# repository root (they are not submodules).
 /apex-decks/
 /apex-lead-engine/
 /apex-prds/

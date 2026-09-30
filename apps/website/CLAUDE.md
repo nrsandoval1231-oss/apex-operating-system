@@ -1,6 +1,6 @@
 # CLAUDE.md — Apex Website
 
-You are building the marketing website for **Apex** (Lubbock, TX), a single brand with **four service verticals**. This file is loaded on every task. Read `docs/prd.md` before starting work and `docs/decisions.md` before making any choice that isn't already specified here.
+You are building the marketing website for **Apex** (Lubbock, TX), a single brand with **four service verticals**. This app lives at `apps/website` inside the Apex monorepo, not in a separate repository. This file is loaded on every task. Read `docs/prd.md` before starting work and `docs/decisions.md` before making any choice that isn't already specified here.
 
 The job of this site is two things, in order: (1) route a visitor to the correct vertical, (2) **capture every lead with a vertical + source tag** so conversion and ad spend can be measured per vertical. Everything else is secondary.
 
@@ -85,6 +85,6 @@ Do **not** "fix" `playwright.config.ts` for this — the config is correct for t
 - `.env.example` — every credential the build needs. Copy to `.env` before starting.
 - `reference/apex-mockup.html` — the approved visual + interaction spec. Open it. The final build should match its layout, copy, and the capture-panel behavior. It is vanilla HTML; your job is to rebuild it in the stack above, not to ship it as-is.
 
-## Out of scope for this repo
+## Out of scope for this app
 
-CRM platform, commission engine, job costing, and the QuickBooks integration are **separate projects**, gated on decisions this repo does not own. Do not build them here. This repo ends at "tagged lead handed to the n8n webhook."
+CRM platform, commission engine, job costing, and the QuickBooks integration are not this app's job, even though other parts of the monorepo may own related code. Do not build them under `apps/website`. This app ends at "tagged lead handed to the n8n webhook."

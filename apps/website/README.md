@@ -31,10 +31,10 @@ What stands between this and launch is **not code**:
 - **D-07 · content-editing model** — Markdown in `content/` vs a headless CMS.
 - **D-21 · lead webhook** — the form needs a real `PUBLIC_LEAD_WEBHOOK_URL`.
 
-Also open, and owned by the maintainer rather than the code: the speed-to-lead copy ("we'll text you back in minutes, not days") promises an automated response `apex-lead-engine` has not built yet. Either build the automation or change the promise — see `docs/decisions.md`.
+Also open, and owned by the maintainer rather than the code: the speed-to-lead copy ("we'll text you back in minutes, not days") promises an automated response `workflows/lead-engine` has not built yet (`02-speed-to-lead.ts` does not exist). Either build the automation or change the promise — see `docs/decisions.md`.
 
 Full detail in `docs/decisions.md`.
 
-## Not in this repo
+## Not in this app
 
-CRM, commission engine, job costing, QuickBooks integration, Meta offline conversions. Separate projects, gated on separate decisions. This repo ends at the n8n webhook handoff.
+This site is `apps/website` in the Apex monorepo, not a separate repository. CRM, commission engine, job costing, QuickBooks integration, and Meta offline conversions are outside this app, gated on their own decisions. This app ends at the n8n webhook handoff.

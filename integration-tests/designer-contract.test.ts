@@ -11,22 +11,14 @@ import { calculateQuantityPayloadSha256 } from '../packages/contracts/src/quanti
 /**
  * Designer → canonical contract compatibility.
  *
- * This is the one test that reaches outside this repository. `Apex Designer/` is
- * a separate preserved component (ADR-0002, `docs/repositories.md`) and is
- * gitignored here — zero of its files are tracked — so a clone without it
- * sitting alongside cannot run this test at all.
+ * The engine lives in this repository at `apps/designer`. A clone of this
+ * tree has the file. The dynamic import remains so a partial checkout that
+ * is missing the engine skips instead of failing on an unresolved module.
  *
- * It used to import the engine statically, which meant CI failed on a module it
- * could never have resolved. Skipping is the honest outcome instead: the test is
- * real where the Designer source is present and absent where it is not, rather
- * than red everywhere.
- *
- * `APEX_REQUIRE_DESIGNER_CONTRACT` is what stops that leniency from swallowing
- * the CI signal. Where the Designer source is supposed to be present — CI checks
- * it out from the private `apex-designer` repository with a deploy key — the
- * variable is set, and a missing engine becomes a failure rather than a skip. A
- * checkout that lands in the wrong directory, or a deploy key that has been
- * revoked, would otherwise look exactly like a green run.
+ * `APEX_REQUIRE_DESIGNER_CONTRACT` turns that skip into a failure when the
+ * engine is supposed to be present. CI no longer checks out a sibling
+ * repository or uses a deploy key; if the variable is set and the file is
+ * missing, the path inside this tree is wrong.
  */
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -61,8 +53,8 @@ interface DesignerEngine {
 
 /**
  * Loaded dynamically so the import is not attempted when the file is missing.
- * Untyped at the boundary by necessity — the engine's own types live in the
- * other repository — so the shape it is expected to have is declared above and
+ * Untyped at the boundary by necessity — the engine's own types live in
+ * apps/designer — so the shape it is expected to have is declared above and
  * asserted here rather than left implicit.
  */
 const engine: DesignerEngine | null = engineAvailable
@@ -72,7 +64,8 @@ const engine: DesignerEngine | null = engineAvailable
 if (!engineAvailable && !engineRequired) {
   console.warn(
     `\n  !  SKIPPING the Designer contract test: ${enginePath} is not present.`
-    + '\n     This is expected on any clone without the Designer repository alongside.'
+    + '\n     The engine is part of this repository (apps/designer). A missing file'
+    + '\n     means this checkout is incomplete.'
     + '\n     It is NOT a pass — the contract is simply unverified here.\n',
   );
 }
@@ -86,8 +79,8 @@ describe.runIf(engineRequired && !engineAvailable)('Designer contract test requi
   it('finds the Designer engine, because APEX_REQUIRE_DESIGNER_CONTRACT is set', () => {
     expect.unreachable(
       `APEX_REQUIRE_DESIGNER_CONTRACT is set, so the Designer engine must be present, but ${enginePath} does not exist.`
-      + ' Check that the apex-designer checkout landed in "Apex Designer/" at the repository root'
-      + ' and that the deploy key is still valid. Unset the variable to allow the skip.',
+      + ' Expected apps/designer/src/engine/index.ts in this repository.'
+      + ' Unset the variable to allow the skip.',
     );
   });
 });

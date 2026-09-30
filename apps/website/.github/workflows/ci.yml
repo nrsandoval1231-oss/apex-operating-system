@@ -1,5 +1,12 @@
 name: Apex Website verification
 
+# This file does not run. GitHub Actions loads workflows only from the
+# repository-root .github/workflows directory. It is kept as the website
+# suite's recipe (npm ci, astro check, Playwright, preflight). Root CI does
+# not invoke it: the Playwright suite needs its own npm install and Chromium,
+# which is a poor fit for the root pnpm/Docker job. See the note in
+# .github/workflows/non-website-ci.yml.
+#
 # Runs on every push to main and every pull request, with no path filters.
 #
 # The sibling workflow in the Apex system repository filters by path, because
@@ -91,7 +98,12 @@ jobs:
       # off the checklist.
       - name: Pre-cutover preflight
         run: |
-          PUBLIC_ENV=production npm run build
+          # Placeholder host only. Production builds require PUBLIC_LEAD_WEBHOOK_URL;
+          # site.ts no longer falls back to a live n8n host. The real value is set
+          # in the environment of the build that is uploaded, not in this file.
+          PUBLIC_ENV=production \
+            PUBLIC_LEAD_WEBHOOK_URL=https://n8n.example.hstgr.cloud/webhook/apex-lead-intake \
+            npm run build
           npm run preflight -- --allow-placeholders
 
   # Its own job so the result is legible at a glance rather than buried at the

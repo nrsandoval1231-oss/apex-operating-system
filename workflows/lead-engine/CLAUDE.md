@@ -2,7 +2,7 @@
 
 You are building the **n8n automation layer** that receives leads from the Apex website and acts on them. This file loads on every task. Read `docs/prd.md` before working and `docs/decisions.md` before making any choice not specified here.
 
-This repo is the **downstream half** of the Apex website. The website's entire job is to hand you a correctly-tagged lead object at a webhook. Your job starts there: validate it, route it, respond to it fast, and — as later phases unlock — stitch it into the CRM, request reviews, and push won-job value back to Meta.
+This directory (`workflows/lead-engine`) is the **downstream half** of the Apex website at `apps/website`. The website's entire job is to hand you a correctly-tagged lead object at a webhook. Your job starts there: validate it, route it, respond to it fast, and — as later phases unlock — stitch it into the CRM, request reviews, and push won-job value back to Meta.
 
 The single most valuable thing this system does is **respond to a new lead within 5 minutes, automatically**. In home services that is the biggest conversion lever there is. Everything else is secondary to that working reliably.
 
@@ -22,10 +22,10 @@ The single most valuable thing this system does is **respond to a new lead withi
 
 ## Build method (decided — confirm before changing)
 
-- **Target instance:** Apex runs **self-hosted n8n on Hostinger** (`n8n.srv1758862.hstgr.cloud`). Workflows deploy there.
+- **Target instance:** Apex runs **self-hosted n8n on Hostinger**. The base URL is `N8N_BASE_URL` in `.env.example` (placeholder `https://n8n.example.hstgr.cloud`). Do not commit the live hostname. Workflows deploy there.
 - **Authoring:** use the **n8n Workflow SDK** (code-defined workflows), validated before creation. The maintainer has the n8n MCP connected — use `get_sdk_reference` and `validate_workflow` / `validate_node_config` as you build, and `create_workflow_from_code` to deploy. Prefer this over hand-writing raw workflow JSON: it validates.
 - **Repo holds:** the SDK source for each workflow under `workflows/`, plus these docs. The repo is the source of truth; the live n8n instance is the deploy target. Do not treat manual UI edits as canonical — round-trip them back into `workflows/`.
-- **One workflow per file**, named by phase (e.g. `workflows/01-intake.ts`, `workflows/02-speed-to-lead.ts`).
+- **One workflow per file**, named by phase. Present today: `workflows/01-intake.ts` and `workflows/02-job-status.ts`. There is no `workflows/02-speed-to-lead.ts`.
 
 ---
 
@@ -45,5 +45,5 @@ A workflow is done when it passes `docs/acceptance-criteria.md` — those are wr
 
 ## Relationship to the other repos
 
-- **Upstream:** `apex-website` — sends you the lead object. Its `docs/data-contract.md` and yours describe the same object and MUST stay identical. If they drift, that's a bug in whichever changed last.
+- **Upstream:** `apps/website` — sends you the lead object. Its `docs/data-contract.md` and yours describe the same object and MUST stay identical. If they drift, that's a bug in whichever changed last.
 - **Downstream / separate, not yours to build:** the CRM platform, commission engine, job costing, QuickBooks. You *write to* the CRM once it exists (D-10), but you do not choose or build it.

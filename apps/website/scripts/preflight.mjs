@@ -157,7 +157,12 @@ if (/webhook-test/.test(allHtml)) {
 } else if (/\/webhook\//.test(allHtml)) {
   pass('quote form points at the production lead webhook');
 } else {
-  warn('no lead webhook URL found in the output', 'The form island may not have rendered.');
+  block(
+    'no lead webhook URL found in the output',
+    'PUBLIC_LEAD_WEBHOOK_URL was unset at build time. Astro inlines it into the bundle, and a ' +
+      'static host cannot inject it after upload. Set PUBLIC_LEAD_WEBHOOK_URL and rebuild with ' +
+      'PUBLIC_ENV=production. See .env.example.',
+  );
 }
 
 /* -------------------------------------------------------------- 5. analytics (D-01) */

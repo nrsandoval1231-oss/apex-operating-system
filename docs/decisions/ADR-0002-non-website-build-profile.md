@@ -1,6 +1,13 @@
 # ADR-0002: Non-Website Build Profile
 
-- **Status:** Accepted for implementation
+> **Superseded as a repository map (consolidation on `main`, 2026-09-16).**
+> The website is in this repository at `apps/website`. The sentence below that
+> excludes "the existing Website repository" from the workspace describes the
+> 2026-07-29 split, not the current tree. Current layout: `docs/repositories.md`.
+> The build profile (platform, roles, Gate, identity) is still the record of
+> what was decided then.
+
+- **Status:** Accepted for implementation; website-exclusion clause superseded by consolidation
 - **Date:** 2026-07-29
 - **Decision owner:** Nick Sandoval
 - **Supersedes:** Open Phase 1 implementation choices in ADR-0001 for this build

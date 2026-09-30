@@ -8,8 +8,8 @@
 var
 _to_delete
 
-# Preserved component repositories that are not production dependencies.
-# Apex Designer is intentionally included: Apex OS embeds its pinned submodule.
+# Retired sibling-checkout directory names. Designer source that the image
+# needs is apps/designer, which is not excluded.
 apex-decks
 apex-lead-engine
 apex-prds
@@ -21,7 +21,8 @@ apex-website
 **/.env.*
 !**/.env.example
 
-# Foreign lockfiles: an npm install here breaks the pnpm workspace links.
+# Foreign lockfiles: an npm install at the workspace root breaks pnpm links.
+# The exception is the Designer lockfile the Dockerfile copies for `npm ci`.
 package-lock.json
-!Apex Designer/package-lock.json
+!apps/designer/package-lock.json
 yarn.lock
