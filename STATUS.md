@@ -42,7 +42,8 @@ Opportunity
 ### Repository state
 
 - Designer, Website, Lead Engine, PRDs, legacy proposal calibration, and deck generators are in this repository. Layout: `docs/repositories.md`.
-- The six former source repositories are preserved archives. They are not CI checkouts and not runtime dependencies.
+- The six former GitHub repositories were deleted. Their history lives in this repository's git history.
+- Duplicate working copies under `archive/imported-repositories/` and the matching bundles, zips, and duplicate PRD copies under `docs/archive/` were removed. `archive/proposal-engine` stays because the legacy chain test and CI reference it.
 - No production deployment or production data mutation was performed by the consolidation.
 
 ## Verification baseline
@@ -100,5 +101,5 @@ The legacy takeoff-to-proposal chain reads `archive/proposal-engine` in this rep
 ## Historical records
 
 - [`docs/status.md`](docs/status.md) is the chronological engineering record. Sections dated before this update describe the system as it existed then and are intentionally preserved.
-- [`docs/archive/`](docs/archive/README.md) contains immutable historical artifacts and old `designer-quantity-v4` fixtures; those files must not be rewritten to look current.
+- [`docs/archive/`](docs/archive/README.md) keeps historical artifacts that are not copies of the live trees, including the old `designer-quantity-v4` fixtures. Do not rewrite those fixtures to look current. Duplicate repo snapshots that used to sit beside them were removed; that history lives in git, and the old GitHub repositories were deleted.
 - Current active guidance is this file, [`README.md`](README.md), [`NEXT.md`](NEXT.md), and the deployment runbook.

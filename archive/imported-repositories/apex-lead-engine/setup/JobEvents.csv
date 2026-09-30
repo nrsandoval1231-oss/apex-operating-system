@@ -1,2 +1,0 @@
-event_id,job_id,lead_id,vertical,from_status,to_status,changed_at,first_name,last_name,email,phone,contract_value,job_cost,source_system,source_item_id,engine_received_at,dedupe_status,meta_eligible,review_eligible,routed_to,review_target
-evt_APX-2026-014_won,APX-2026-014,apex_1721925123_a1b9,Designer Pools,quoted,won,2026-07-26T14:32:11-05:00,EXAMPLE - DELETE,Whitaker,jordan.w@email.com,8065550142,152041.73,116955.18,monday,9876543210,2026-07-26T19:32:12.000Z,new,true,false,pools@apexgetsitdone.com,Google (pools GBP)
