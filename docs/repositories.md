@@ -1,8 +1,9 @@
 # Apex Repository Map
 
 Apex is consolidated into this repository: `nrsandoval1231-oss/apex-operating-system`.
-The six former component repositories are preserved source archives. They are
-not runtime dependencies and CI does not check them out.
+The six former GitHub repositories were deleted. Their history lives in this
+repository's git history. They are not runtime dependencies and CI does not
+check them out.
 
 ## Canonical layout
 
@@ -19,18 +20,22 @@ not runtime dependencies and CI does not check them out.
 | Deck generators | `tools/decks` |
 | Historical evidence | `docs/archive` |
 
-## Preserved source repositories
+## Former source repositories
 
-- https://github.com/nrsandoval1231-oss/apex-designer
-- https://github.com/nrsandoval1231-oss/apex-decks
-- https://github.com/nrsandoval1231-oss/apex-lead-engine
-- https://github.com/nrsandoval1231-oss/apex-prds
-- https://github.com/nrsandoval1231-oss/apex-proposal-engine
-- https://github.com/nrsandoval1231-oss/apex-website
+These GitHub repositories were deleted. History of the import lives in git.
 
-Consolidation is on `main`. Treat the paths above as the working copies.
-The former GitHub repositories should stay archived for rollback, not be
-used as sibling checkouts. Provenance: `docs/REPOSITORY_CONSOLIDATION_2026-09-16.md`.
+| Former repository | Canonical path |
+|---|---|
+| apex-designer | `apps/designer` |
+| apex-website | `apps/website` |
+| apex-lead-engine | `workflows/lead-engine` |
+| apex-prds | `docs/prd` |
+| apex-decks | `tools/decks` |
+| apex-proposal-engine | `archive/proposal-engine` |
+
+`archive/proposal-engine` stays. `integration-tests/takeoff-to-proposal.test.ts` and `.github/workflows/non-website-ci.yml` reference it.
+
+Duplicate working copies were removed: `archive/imported-repositories/`, plus the git bundles, source zips, duplicate PRD copies, and regenerable deck binaries under `docs/archive/`. Recover an older snapshot from git history. Provenance: `docs/REPOSITORY_CONSOLIDATION_2026-09-16.md`.
 
 ## Migration provenance
 

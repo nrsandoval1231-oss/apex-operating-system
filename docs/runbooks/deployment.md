@@ -400,8 +400,8 @@ Stated so nobody assumes otherwise:
 CI does not check out `apex-designer` and does not use a deploy key.
 
 The old procedure (a read-only deploy key, secret `APEX_DESIGNER_DEPLOY_KEY`,
-checkout into `Apex Designer/`) is retired. If that deploy key is still on the
-`apex-designer` repository, remove it. It is no longer used by this workflow.
+checkout into `Apex Designer/`) is retired. The `apex-designer` GitHub
+repository was deleted. Its history lives in this repository's git history.
 
 ---
 
@@ -412,7 +412,8 @@ and the legacy proposal engine at `archive/proposal-engine/engine.mjs`. Both
 are in this repository. CI does not check out `apex-proposal-engine` and does
 not use `APEX_PROPOSAL_DEPLOY_KEY`.
 
-The old "add a proposal-engine deploy key" procedure is retired. If that key
-is still installed, remove it. The production Proposal path is
-`packages/pricing-engine` in this repository; `archive/proposal-engine` is
-legacy calibration evidence for the chain test only.
+The old "add a proposal-engine deploy key" procedure is retired. The
+`apex-proposal-engine` GitHub repository was deleted. Its history lives in
+this repository's git history, and the legacy calibration copy that the chain
+test reads is `archive/proposal-engine`. The production Proposal path is
+`packages/pricing-engine`.
