@@ -1,6 +1,6 @@
 # Apex OS — handoff
 
-**As of:** 2026-08-13 verification baseline. Layout notes corrected 2026-09-30: one repository, no deploy keys.
+**As of:** 2026-08-13 verification baseline. Layout notes corrected 2026-09-30: one repository, no deploy keys. The former GitHub repositories were deleted; their history lives in this repository's git history.
 
 The unified non-Website lifecycle is implemented and CI-green on that baseline. Start with [`STATUS.md`](../STATUS.md) for the verified baseline, [`NEXT.md`](../NEXT.md) for staging acceptance, and [`docs/runbooks/deployment.md`](runbooks/deployment.md) for deployment operations.
 
@@ -79,5 +79,5 @@ This is now operational, not broad product implementation:
 - Do not edit applied migrations; add a forward migration.
 - Do not infer prices, acceptance, email delivery, or reconciliation.
 - Do not restore mutation controls to History without a new explicit business decision and migration.
-- Do not rewrite `docs/archive/` or old `designer-quantity-v4` fixtures to appear current.
+- Do not rewrite the remaining `docs/archive/` artifacts or old `designer-quantity-v4` fixtures to appear current. Duplicate imported-repo copies were removed; that history lives in git, and the old GitHub repositories were deleted.
 - Treat `STATUS.md`, `NEXT.md`, and current decision/runbook documents as active guidance; older sections of `docs/status.md` are chronological history.
