@@ -37,7 +37,7 @@ Removed from the working tree because they duplicated code or docs now in `apps/
 - `desktop-apex-20260805/hermes-desktop-attachments/Apex_OS_PRD_v1.md` — earlier copy of the root `PRD FINAL.md`.
 - `apex-strategy-deck.pptx` and `apex-pitch.pptx` under `desktop-apex-20260805/` (including the older render in `_inbox/`). Regenerate them from `tools/decks`.
 
-`archive/proposal-engine` stays. `integration-tests/takeoff-to-proposal.test.ts` and `.github/workflows/non-website-ci.yml` reference it. The duplicate of that tree inside `archive/imported-repositories/apex-proposal-engine/` was removed.
+`archive/proposal-engine` stays. `integration-tests/takeoff-to-proposal.test.ts` and `scripts/ci.sh` still run it. The GitHub Actions workflow that used to reference it has been removed. The duplicate of that tree inside `archive/imported-repositories/apex-proposal-engine/` was removed.
 
 ## What remains in this folder
 

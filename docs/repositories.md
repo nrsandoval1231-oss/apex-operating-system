@@ -33,7 +33,7 @@ These GitHub repositories were deleted. History of the import lives in git.
 | apex-decks | `tools/decks` |
 | apex-proposal-engine | `archive/proposal-engine` |
 
-`archive/proposal-engine` stays. `integration-tests/takeoff-to-proposal.test.ts` and `.github/workflows/non-website-ci.yml` reference it.
+`archive/proposal-engine` stays. `integration-tests/takeoff-to-proposal.test.ts` and `scripts/ci.sh` still run it. The GitHub Actions workflow that used to reference it has been removed.
 
 Duplicate working copies were removed: `archive/imported-repositories/`, plus the git bundles, source zips, duplicate PRD copies, and regenerable deck binaries under `docs/archive/`. Recover an older snapshot from git history. Provenance: `docs/REPOSITORY_CONSOLIDATION_2026-09-16.md`.
 

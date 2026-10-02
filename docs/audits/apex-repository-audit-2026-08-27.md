@@ -3,7 +3,8 @@
 > **Historical snapshot, generated 2026-08-27.** This audit describes the
 > GitHub repositories as they existed that day, before they were consolidated
 > into this monorepo. Those former GitHub repositories were later deleted;
-> their history lives in this repository's git history. It is not a work list.
+> their history lives in this repository's git history. Workflow paths named
+> below were removed from this tree on 2026-10-02. It is not a work list.
 > Current layout: `docs/repositories.md`. Provenance:
 > `docs/REPOSITORY_CONSOLIDATION_2026-09-16.md`.
 

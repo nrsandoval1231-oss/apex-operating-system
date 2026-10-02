@@ -8,7 +8,7 @@ import {
 /**
  * The S3-compatible adapter against a real object store — deployment slice 3.
  *
- * CI runs MinIO, which speaks the S3 API. The local adapter is covered by unit
+ * `scripts/ci.sh` runs these when an S3-compatible endpoint is configured. The local adapter is covered by unit
  * tests; what cannot be covered there is the part that only exists over HTTP —
  * signing, status-code mapping, and whether the write-once guard actually holds
  * against a server rather than against a filesystem.
@@ -27,7 +27,7 @@ const available = Boolean(endpoint && accessKeyId && secretAccessKey);
 if (!available) {
   console.warn(
     '\n  !  SKIPPING the S3 storage tests: S3_ENDPOINT is not set.'
-    + '\n     These run in CI against MinIO. Skipping is NOT a pass — the adapter'
+    + '\n     scripts/ci.sh runs them when S3_ENDPOINT is set. Skipping is NOT a pass — the adapter'
     + '\n     is simply unverified in this environment.\n',
   );
 }
