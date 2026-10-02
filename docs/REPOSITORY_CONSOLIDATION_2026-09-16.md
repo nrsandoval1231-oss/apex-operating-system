@@ -4,7 +4,7 @@ The active system is the canonical implementation in `apps/`, `packages/`, `work
 
 The working-tree snapshots previously kept at `archive/imported-repositories/` were removed. The former GitHub repositories were deleted. History of the subtree import, and of those removed copies, lives in this repository's git history.
 
-`archive/proposal-engine` stays. `integration-tests/takeoff-to-proposal.test.ts` and `.github/workflows/non-website-ci.yml` reference it. It is legacy calibration evidence. The production Proposal authority is `packages/pricing-engine`.
+`archive/proposal-engine` stays. `integration-tests/takeoff-to-proposal.test.ts` and `scripts/ci.sh` still run it. The GitHub Actions workflow that used to reference it was removed on 2026-10-02. It is legacy calibration evidence. The production Proposal authority is `packages/pricing-engine`.
 
 | Former repository | Frozen source commit at import | Canonical path |
 |---|---|---|

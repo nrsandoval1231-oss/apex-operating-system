@@ -4,7 +4,7 @@
 
 [`docs/runbooks/deployment.md`](docs/runbooks/deployment.md) is superseded. It describes Render. Hosting is Cloudflare only, never Vercel. Do not deploy until a Cloudflare plan exists and the owner approves it.
 
-1. Write that Cloudflare plan (static website, the Apex OS image, Postgres, evidence storage, staff identity). `render.yaml` and the GitHub Actions workflows are still in the tree until the owner removes them.
+1. Write that Cloudflare plan (static website, the Apex OS service, Neon Postgres, R2 evidence, staff identity). `render.yaml` and the GitHub Actions workflows have been removed. CI remains `scripts/ci.sh`.
 2. After that plan is approved, deploy the verified commit to staging. Confirm `/ready` reports database and evidence readiness.
 3. Run this controlled lifecycle with non-production customer data:
 

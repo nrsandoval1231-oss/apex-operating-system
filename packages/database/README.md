@@ -29,6 +29,6 @@ The numbered migration chain now covers:
 
 The database suite executes the complete migration chain against embedded PostgreSQL and checks schema construction, migration registration/idempotency, takeoff/proposal protections, event immutability, and storage policy definitions.
 
-CI additionally executes the operational chain through the real `pg` adapter against PostgreSQL, exercises pooled transactions and calendar-date parsing, and runs S3-compatible evidence tests against MinIO.
+`scripts/ci.sh` executes the operational chain through the real `pg` adapter against PostgreSQL, exercises pooled transactions and calendar-date parsing, and runs S3-compatible evidence tests when `DATABASE_URL` and the S3 settings are set.
 
-Local integration tests skip the external adapter cases when `DATABASE_URL`/S3 variables are absent. That is not treated as proof; GitHub Actions supplies those dependencies and must be green before deployment.
+Local integration tests skip the external adapter cases when those variables are absent. That skip is not a pass. There is no GitHub Actions workflow. Run `scripts/ci.sh` with Postgres and an S3-compatible endpoint before treating the adapters as verified.

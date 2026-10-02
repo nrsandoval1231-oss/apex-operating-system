@@ -2,9 +2,9 @@
 
 > **Superseded pending a Cloudflare plan (2026-10-02).** This runbook deploys a
 > Render web service and Render Postgres. The owner has decided hosting is
-> Cloudflare only, and never Vercel. Do not follow this runbook to deploy.
-> `render.yaml` is still in the tree until the owner removes it. A Cloudflare
-> deployment plan has not been written.
+> Cloudflare only, and never Vercel or GitHub Actions. Do not follow this
+> runbook to deploy. `render.yaml` was removed from the tree. A Cloudflare
+> deployment plan has not been written. The steps below are historical.
 
 **Written:** 2026-08-03 (deployment plan slice 9)
 

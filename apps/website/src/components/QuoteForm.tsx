@@ -23,6 +23,7 @@ import {
 } from '../lib/lead';
 
 interface Props {
+  initialVertical?: Vertical;
   webhookUrl: string;
   phoneDisplay: string;
   phoneE164: string;
@@ -32,8 +33,8 @@ type Status = 'idle' | 'submitting' | 'success' | 'error';
 
 const DEFAULT_VERTICAL: Vertical = VERTICAL_LIST[0].vertical;
 
-export default function QuoteForm({ webhookUrl, phoneDisplay, phoneE164 }: Props) {
-  const [vertical, setVertical] = useState<Vertical>(DEFAULT_VERTICAL);
+export default function QuoteForm({ initialVertical, webhookUrl, phoneDisplay, phoneE164 }: Props) {
+  const [vertical, setVertical] = useState<Vertical>(initialVertical ?? DEFAULT_VERTICAL);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');

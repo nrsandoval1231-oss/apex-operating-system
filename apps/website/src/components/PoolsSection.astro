@@ -40,7 +40,9 @@ const cfg = getVerticalConfig(pools.vertical);
             this is where price anxiety peaks on the highest-ticket vertical, and it was
             previously dead text. */}
         <div class="fin">
-          // <a class="fin-link" href={financingUrl} target="_blank" rel="noopener">{pools.financing}</a>
+          <a class="fin-link" href={financingUrl} target="_blank" rel="noopener" aria-label={`${pools.financing} (opens in a new tab)`}>
+            <img src="/images/lyon-financial.webp" alt="Lyon Financial" />
+          </a>
         </div>
         <div class="pool-cta">
           <a class="btn" href="#quote" data-preselect={pools.vertical}>{pools.cta}</a>
@@ -82,10 +84,14 @@ const cfg = getVerticalConfig(pools.vertical);
     border-bottom-color: var(--pool);
   }
   .fin-link {
-    border-bottom: 1px solid var(--line);
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 6px 0;
+    border-bottom: 1px solid transparent;
   }
+  .fin-link img { display: block; width: 176px; height: auto; }
   .fin-link:hover {
-    color: var(--sage-ink);
     border-bottom-color: var(--sage-ink);
   }
 </style>
