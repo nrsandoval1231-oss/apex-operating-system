@@ -67,6 +67,18 @@ test.describe('AC-3 · consent correctness (TCPA)', () => {
     expect(body.consent_text).not.toContain('Concrete Coating');
   });
 
+  test('vertical landing pages SSR the matching consent brand before interaction', async ({ page }) => {
+    for (const [path, brand] of [
+      ['/coating', 'Apex Concrete Coating'],
+      ['/renovation', 'Apex Design & Renovation'],
+      ['/service', 'Apex Pool Service'],
+    ] as const) {
+      await page.goto(path);
+      await expect(page.locator('.consent')).toContainText(brand);
+      await expect(page.locator('.consent')).not.toContainText('Apex Designer Pools');
+    }
+  });
+
   test('declining consent records consent_sms:false and an empty consent_text', async ({
     page,
   }) => {

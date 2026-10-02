@@ -72,7 +72,7 @@ The legacy Designer → proposal-engine chain reads `archive/proposal-engine` he
 
 This is now operational, not broad product implementation:
 
-1. Write a Cloudflare staging plan and get the owner's approval before any deploy. Do not use the Render runbook or `render.yaml`.
+1. Write a Cloudflare staging plan and get the owner's approval before any deploy. Do not use the Render runbook. `render.yaml` and the GitHub Actions workflows have been removed.
 2. Execute the full staged lifecycle in [`NEXT.md`](../NEXT.md).
 3. Run and document a backup restore.
 4. Use a final HTTPS origin before issuing real customer links.
