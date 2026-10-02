@@ -16,6 +16,7 @@ import { SavedJobsPanel, useSavedJobs } from './ui/SavedJobs.tsx';
 import { runTakeoff } from './engine/index.ts';
 import { buildApexSubmission, draftEstimateStorageKey, submissionFileName } from './engine/apexSubmission.ts';
 import { buildOrderWorkbook, orderWorkbookFileName } from './engine/orderWorkbook.ts';
+import { designerApi } from './apexApi.ts';
 
 /**
  * Where Apex OS lives. Configurable because Designer is built and run on a
@@ -68,11 +69,15 @@ function AppHeader({ jobName, right }: { jobName: string; right?: React.ReactNod
         <strong>Designer</strong>
         <span>{jobName}</span>
       </div>
-      <nav className="apex-workspace-nav" aria-label="Apex workspace">
-        <a href={`${APEX_OS_ORIGIN}/app/today`}>Today</a>
-        <a href={`${APEX_OS_ORIGIN}/app/projects`}>Projects</a>
-        <span className="is-current">Designer</span>
-      </nav>
+      {/* Inside Apex OS the shell already has this nav, and it is what
+          shows sign-in. A second bar here only appears in the standalone app. */}
+      {!RUNS_INSIDE_APEX_OS && (
+        <nav className="apex-workspace-nav" aria-label="Apex workspace">
+          <a href={`${APEX_OS_ORIGIN}/app/today`}>Today</a>
+          <a href={`${APEX_OS_ORIGIN}/app/projects`}>Projects</a>
+          <span className="is-current">Designer</span>
+        </nav>
+      )}
       <div className="app-header-right">{right}</div>
     </header>
   );
@@ -245,10 +250,9 @@ export function App() {
     setNewProjectError(null);
     setNewProjectBusy(true);
     try {
-      const response = await fetch(`${APEX_OS_ORIGIN}/api/projects/intake`, {
+      const response = await designerApi(APEX_OS_ORIGIN, '/api/projects/intake', {
         method: 'POST',
-        headers: { 'content-type': 'application/json', accept: 'application/json', 'idempotency-key': crypto.randomUUID() },
-        body: JSON.stringify(newProject),
+        body: newProject,
       });
       const body = await response.json() as { leadId?: string; error?: string };
       if (!response.ok || !body.leadId) throw new Error(body.error ?? `Customer intake failed (HTTP ${response.status}).`);
@@ -270,7 +274,7 @@ export function App() {
   };
 
   useEffect(() => {
-    fetch(`${APEX_OS_ORIGIN}/api/opportunities`, { headers: { accept: 'application/json' } })
+    designerApi(APEX_OS_ORIGIN, '/api/opportunities')
       .then(async (response) => {
         if (!response.ok) throw new Error('Apex opportunities could not be loaded.');
         return response.json() as Promise<readonly ApexOpportunityChoice[]>;
@@ -303,11 +307,14 @@ export function App() {
       if (checked.hasCodeFailure) throw new Error(`Cannot send: ${checked.codeFailureAreas.join(', ')} has a failing check.`);
       const submission = buildApexSubmission(job, checked);
       if (selectedOpportunity.jobId === null) {
-        const response = await fetch(`${APEX_OS_ORIGIN}/api/opportunities/${selectedOpportunity.leadId}/finish-estimate`, {
-          method: 'POST',
-          headers: { 'content-type': 'application/json', accept: 'application/json', 'idempotency-key': crypto.randomUUID() },
-          body: JSON.stringify({ submission, directLines: [], measuredLines: [], feeRateBps: 0 }),
-        });
+        const response = await designerApi(
+          APEX_OS_ORIGIN,
+          `/api/opportunities/${selectedOpportunity.leadId}/finish-estimate`,
+          {
+            method: 'POST',
+            body: { submission, directLines: [], measuredLines: [], feeRateBps: 0 },
+          },
+        );
         const body = await response.json() as { proposal?: { proposalVersionId?: string }; error?: string };
         if (!response.ok || !body.proposal?.proposalVersionId) throw new Error(body.error ?? `Estimate draft could not be created (HTTP ${response.status}).`);
         const handoff = JSON.stringify({ type: 'apex-estimate-handoff', leadId: selectedOpportunity.leadId, submission, fileName: submissionFileName(job) });
@@ -316,11 +323,14 @@ export function App() {
         window.location.href = `${APEX_OS_ORIGIN}/app/opportunities/${selectedOpportunity.leadId}/estimate`;
         return;
       }
-      const response = await fetch(`${APEX_OS_ORIGIN}/api/jobs/${destination!.jobId}/approved-takeoff`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json', accept: 'application/json', 'idempotency-key': crypto.randomUUID() },
-        body: JSON.stringify({ ...submission, supersedeExisting: false }),
-      });
+      const response = await designerApi(
+        APEX_OS_ORIGIN,
+        `/api/jobs/${destination!.jobId}/approved-takeoff`,
+        {
+          method: 'POST',
+          body: { ...submission, supersedeExisting: false },
+        },
+      );
       const body = await response.json() as { revisionId?: string; error?: string };
       if (!response.ok) throw new Error(body.error ?? `Apex rejected the takeoff (HTTP ${response.status}).`);
       setApexHandoff({ kind: 'job', job: destination!, revisionId: body.revisionId ?? 'created' });

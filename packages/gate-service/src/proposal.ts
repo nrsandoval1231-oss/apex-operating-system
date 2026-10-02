@@ -189,8 +189,38 @@ export class ProposalService {
           || priorTakeoff.quantityModelVersion !== submission.quantityModelVersion) {
         throw new DomainRuleError('This design revision key was already used with different canonical quantities.');
       }
-      return this.result(prior.rows[0].takeoff_revision_id,
-        prior.rows[0].proposal_version_id as ProposalVersionId);
+      const proposalVersionId = prior.rows[0].proposal_version_id as ProposalVersionId;
+      const existing = await this.result(prior.rows[0].takeoff_revision_id, proposalVersionId);
+      /*
+       * Issued and signed versions stay put: a retry of a finished estimate
+       * must not open another draft. A draft is the empty handoff Designer
+       * writes before anyone has typed a price. Returning that draft here
+       * throws away the prices on this call, so the estimate page shows
+       * "needs price" until a second click updates the draft itself.
+       */
+      if (existing.proposal.status !== 'draft') return existing;
+      const updated = await this.updateProposalDraft({
+        proposalVersionId,
+        expectedVersionNumber: existing.proposal.versionNumber,
+        expectedDraftRevision: existing.proposal.draftRevision,
+        directLines: input.directLines,
+        measuredLines: input.measuredLines,
+        feeRateBps: input.feeRateBps,
+        actor,
+        idempotencyKey: input.idempotencyKey,
+      });
+      const rawBlockers = updated.proposalPayload.blockers;
+      const blockers = Array.isArray(rawBlockers) ? rawBlockers as PricingBlocker[] : [];
+      if (blockers.length === 0) {
+        await this.issueProposal({
+          proposalVersionId: updated.proposalVersionId,
+          expectedVersionNumber: updated.versionNumber,
+          expectedDraftRevision: updated.draftRevision,
+          actor,
+          idempotencyKey: input.idempotencyKey,
+        });
+      }
+      return this.result(prior.rows[0].takeoff_revision_id, proposalVersionId);
     }
 
     const calcLedgerSha256 = sha256(JSON.stringify(submission.calcLedger));
