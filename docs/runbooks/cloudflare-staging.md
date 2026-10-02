@@ -8,7 +8,9 @@ The Render procedure in [`deployment.md`](deployment.md) is historical. Do not f
 
 Apex OS is a long-running Node server: `node:http`, node-postgres advisory locks, and the built staff bundle read from disk. The image is the repository [`Dockerfile`](../../Dockerfile). It listens on `0.0.0.0:4100` and answers `/ready`.
 
-A Workers rewrite would replace that process. Staging does not. A thin Worker in [`deploy/cloudflare/apex-os`](../../deploy/cloudflare/apex-os) starts one Cloudflare Container, injects the Hyperdrive connection string and the R2 and Access settings, and adds `X-Robots-Tag: noindex` to every response, including a failure to start. The Worker is not part of the pnpm workspace, so `scripts/ci.sh` does not install it.
+A Workers rewrite would replace that process. Staging does not. A thin Worker in [`deploy/cloudflare/apex-os`](../../deploy/cloudflare/apex-os) starts one Cloudflare Container, copies the Neon connection string and the R2 and Access settings into it, and adds `X-Robots-Tag: noindex` to every response, including a failure to start. The Worker is not part of the pnpm workspace, so `scripts/ci.sh` does not install it.
+
+The container starts with outbound internet enabled. Neon and R2 are both on the public internet. Cloudflare Containers cannot reach Hyperdrive, so staging does not use it. The Worker secret `CONTAINER_DATABASE_URL` is the Neon pooled string (`sslmode=require`). The Worker passes that value into the container as `DATABASE_URL`.
 
 The marketing site stays on Cloudflare Pages because the staging URL has to be `*.pages.dev`. The Worker answers the app. Pages answers the website.
 
@@ -31,8 +33,7 @@ None of these belong in git. Placeholders below are the strings to replace.
 | Cloudflare account login | `npx wrangler login` on your machine |
 | Account id | The R2 S3 endpoint host |
 | `workers.dev` subdomain | Printed by `npx wrangler whoami` and by the first deploy |
-| Neon project and connection string | `wrangler hyperdrive create` only. Not the container. |
-| Hyperdrive config id | `deploy/cloudflare/apex-os/wrangler.jsonc` in place of `REPLACE_WITH_HYPERDRIVE_ID` |
+| Neon pooled connection string, `sslmode=require` | `wrangler secret put CONTAINER_DATABASE_URL` |
 | R2 S3 access key id and secret | `wrangler secret put`, not the file |
 | Access team subdomain | `APEX_ACCESS_TEAM` in place of `REPLACE_WITH_ACCESS_TEAM` |
 | Access application AUD | `APEX_ACCESS_AUD` in place of `REPLACE_WITH_ACCESS_AUD` |
@@ -57,21 +58,19 @@ psql "$NEON_DATABASE_URL" -c 'select 1'
 
 The container applies `applyOperationalMigrations` on boot, under a Postgres advisory lock. You do not run the migration files by hand. The first `/ready` that reports `"database": true` means they have been applied.
 
-## 2. Hyperdrive
+## 2. Database secret
 
-From `deploy/cloudflare/apex-os`, with Wrangler logged in:
+From `deploy/cloudflare/apex-os`, with Wrangler logged in. Use the Neon **pooled** host and `sslmode=require`. That is the string the container opens itself. Do not create a Hyperdrive config for this Worker.
 
 ```bash
 npx wrangler login
 npx wrangler whoami
-npx wrangler hyperdrive create apex-staging \
-  --connection-string "$NEON_DATABASE_URL" \
-  --caching-disabled
+printf '%s' 'postgres://REPLACE_WITH_NEON_USER:REPLACE_WITH_NEON_PASSWORD@REPLACE_WITH_NEON_POOLER_HOST/REPLACE_WITH_NEON_DATABASE?sslmode=require' | npx wrangler secret put CONTAINER_DATABASE_URL
 ```
 
-Caching is disabled because this database is the system of record. A cached read of a proposal or a job would be a stale read.
+The secret stays on the Worker. On each start the Worker copies it into the container as `DATABASE_URL`. Do not put the string in `wrangler.jsonc`. A direct Neon host with `sslmode=require` also works. A Hyperdrive connection string does not: the container cannot reach it, and that string uses `sslmode=disable`.
 
-Copy the printed Hyperdrive id over `REPLACE_WITH_HYPERDRIVE_ID` in `wrangler.jsonc`. The container must not receive `NEON_DATABASE_URL`. The Worker passes `env.HYPERDRIVE.connectionString` in as `DATABASE_URL`. That string uses `sslmode=disable` for the hop inside Cloudflare's network. The app honors `sslmode=disable`. TLS to Neon is Hyperdrive's connection, using the string you passed to `hyperdrive create`.
+If the Worker is already deployed, set this secret and run `npx wrangler deploy` again. That deploy drops the Hyperdrive binding. The container is started with `enableInternet: true`, which is what lets it open TLS to the Neon host and to `*.r2.cloudflarestorage.com`.
 
 ## 3. R2 evidence
 
@@ -100,7 +99,7 @@ printf '%s' 'REPLACE_WITH_R2_ACCESS_KEY_ID' | npx wrangler secret put S3_ACCESS_
 printf '%s' 'REPLACE_WITH_R2_SECRET_ACCESS_KEY' | npx wrangler secret put S3_SECRET_ACCESS_KEY
 ```
 
-Do not set `DATABASE_URL`, `GATE_JWT_SECRET`, `GATE_LOCAL_USER`, or any `APEX_OIDC_*` variable. The Worker supplies `DATABASE_URL` from Hyperdrive. A second identity mechanism makes the process refuse to start.
+Do not set `DATABASE_URL`, `GATE_JWT_SECRET`, `GATE_LOCAL_USER`, or any `APEX_OIDC_*` variable on the Worker. The database secret is `CONTAINER_DATABASE_URL`. The Worker copies it into the container as `DATABASE_URL`. A second identity mechanism makes the process refuse to start.
 
 ## 4. Cloudflare Access
 

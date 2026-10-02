@@ -22,7 +22,7 @@ Apex reaches pilot-ready status when a non-production user can complete the full
 
 The commands are [`docs/runbooks/cloudflare-staging.md`](../runbooks/cloudflare-staging.md). Nothing has been deployed.
 
-- [ ] Provision staging Postgres (Neon) and reach it through Cloudflare Hyperdrive.
+- [ ] Provision staging Postgres (Neon) and set `CONTAINER_DATABASE_URL` to the pooled string with `sslmode=require`.
 - [ ] Provision private R2 evidence storage with versioning and retention.
 - [ ] Configure staff identity. Customers stay on unguessable links.
 - [ ] Deploy Apex OS and the website to `*.workers.dev` and `*.pages.dev` only. No custom domain until that decision is made.

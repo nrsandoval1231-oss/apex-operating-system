@@ -68,7 +68,7 @@ The 2026-08-13 GitHub Actions run `31735048854` is historical. It is not the cur
 
 ## Deployment status
 
-Staging is specified and not deployed. Hosting is Cloudflare only, never Render, Vercel, or GitHub Actions. The procedure is [`docs/runbooks/cloudflare-staging.md`](docs/runbooks/cloudflare-staging.md): Apex OS as a Cloudflare Container on `*.workers.dev`, the website on Cloudflare Pages (`*.pages.dev`), Neon Postgres through Hyperdrive, and R2 evidence. [`docs/runbooks/deployment.md`](docs/runbooks/deployment.md) is the old Render procedure. `render.yaml` and the GitHub Actions workflows have been removed. Production has not been touched.
+Hosting is Cloudflare only, never Render, Vercel, or GitHub Actions. The procedure is [`docs/runbooks/cloudflare-staging.md`](docs/runbooks/cloudflare-staging.md): Apex OS as a Cloudflare Container on `*.workers.dev`, the website on Cloudflare Pages (`*.pages.dev`), Neon Postgres via the pooled connection string (`CONTAINER_DATABASE_URL`), and R2 evidence. [`docs/runbooks/deployment.md`](docs/runbooks/deployment.md) is the old Render procedure. `render.yaml` and the GitHub Actions workflows have been removed. Production has not been touched.
 
 Required staging configuration:
 
