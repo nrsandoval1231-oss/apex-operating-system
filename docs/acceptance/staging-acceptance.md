@@ -6,7 +6,7 @@ Salvaged from `origin/dev` commit `bc504eb`. Staging is Cloudflare (`*.workers.d
 
 - [ ] Staging API reports healthy database and evidence storage from `/ready`.
 - [ ] Staging website is served from Cloudflare Pages and uses the staging/test webhook.
-- [ ] Staging staff identity is Cloudflare Access for the one allowed Gmail, mapped to one active `app_users` row (`APEX_ACCESS_USER_ID`). Customers stay on unguessable `/c/<token>` links.
+- [ ] Staging staff identity is Cloudflare Access. Each allowed mailbox maps to an active `app_users` row by lower-cased email, and the role comes from that row. Customers stay on `/c/<token>` links.
 - [ ] Approved pilot pricing inputs are loaded; no inferred/default customer pricing is enabled.
 - [ ] Backup exists and restore operator is identified.
 

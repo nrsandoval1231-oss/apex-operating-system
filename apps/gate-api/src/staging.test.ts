@@ -34,8 +34,11 @@ let privateKey: CryptoKey;
 let publicJwk: Record<string, unknown>;
 let userId: string;
 
-const sign = async (overrides: { email?: string; issuer?: string; audience?: string } = {}) =>
-  new SignJWT({ email: overrides.email ?? ALLOWED_EMAIL })
+const sign = async (overrides: { email?: string; issuer?: string; audience?: string; role?: string } = {}) =>
+  new SignJWT({
+    email: overrides.email ?? ALLOWED_EMAIL,
+    ...(overrides.role !== undefined ? { role: overrides.role } : {}),
+  })
     .setProtectedHeader({ alg: 'RS256', kid: publicJwk['kid'] as string })
     .setSubject('access-user')
     .setIssuer(overrides.issuer ?? ISSUER)
@@ -97,10 +100,10 @@ describe('Cloudflare Access as the only staging identity', () => {
     expect(response.headers.get('x-robots-tag')).toContain('noindex');
   });
 
-  it('refuses a different email', async () => {
+  it('refuses a different email that has no app_users row', async () => {
     const response = await jobs({ 'cf-access-jwt-assertion': await sign({ email: 'other@example.com' }) });
     expect(response.status).toBe(403);
-    expect(await response.json()).toEqual({ error: 'This Access identity is not allowed to use staging.' });
+    expect(await response.json()).toEqual({ error: 'No active Apex user is linked to this identity.' });
   });
 
   it('refuses a missing Access assertion, including a bearer token', async () => {
@@ -158,5 +161,102 @@ describe('staging switches stay off unless configured', () => {
       jwtSecret: secretText,
       access: { team: TEAM, audience: AUDIENCE, email: ALLOWED_EMAIL, userId },
     })).toThrow(/not both/i);
+  });
+});
+
+describe('Access email maps to app_users', () => {
+  const ownerEmail = 'owner@example.com';
+  const fieldEmail = 'field.hand@example.com';
+  let ownerId = '';
+  let fieldId = '';
+
+  const listen = async (access: {
+    team: string;
+    audience: string;
+    email?: string;
+    userId?: string;
+    jwksUri: string;
+  }) => {
+    await new Promise<void>((done) => api.close(() => done()));
+    api = createGateApi({
+      db,
+      storage: new LocalEvidenceStorage(evidence),
+      access,
+      disallowRobots: true,
+    });
+    await new Promise<void>((done) => api.listen(0, '127.0.0.1', done));
+    baseUrl = `http://127.0.0.1:${(api.address() as AddressInfo).port}`;
+  };
+
+  beforeEach(async () => {
+    ownerId = createCanonicalId('user');
+    fieldId = createCanonicalId('user');
+    await db.query(
+      `insert into app_users (user_id, auth_user_id, role, display_name, active, email) values
+       ($1, '00000000-0000-0000-0000-000000000042', 'admin', 'Owner', true, $2),
+       ($3, '00000000-0000-0000-0000-000000000043', 'field', 'Field', true, $4),
+       ($5, '00000000-0000-0000-0000-000000000044', 'office', 'Former', false, 'former.staff@example.com')`,
+      [ownerId, ownerEmail, fieldId, fieldEmail, createCanonicalId('user')],
+    );
+    await listen({
+      team: TEAM,
+      audience: AUDIENCE,
+      jwksUri: `http://127.0.0.1:${(jwksServer.address() as AddressInfo).port}/certs`,
+    });
+  });
+
+  const intake = (token: string) => fetch(`${baseUrl}/api/projects/intake`, {
+    method: 'POST',
+    headers: {
+      'cf-access-jwt-assertion': token,
+      'content-type': 'application/json',
+    },
+    body: '{}',
+  });
+
+  it('gives each verified email the role stored on that row', async () => {
+    const ownerToken = await sign({ email: 'Owner@Example.com', role: 'field' });
+    const ownerJobs = await jobs({ 'cf-access-jwt-assertion': ownerToken });
+    expect(ownerJobs.status).toBe(200);
+    const ownerIntake = await intake(ownerToken);
+    expect(ownerIntake.status).not.toBe(403);
+
+    const fieldToken = await sign({ email: fieldEmail, role: 'admin' });
+    const fieldJobs = await jobs({ 'cf-access-jwt-assertion': fieldToken });
+    expect(fieldJobs.status).toBe(200);
+    const fieldIntake = await intake(fieldToken);
+    expect(fieldIntake.status).toBe(403);
+    expect(await fieldIntake.json()).toEqual({ error: 'Office access is required to create a design project.' });
+  });
+
+  it('refuses an unknown email and an inactive email with the same 403', async () => {
+    const unknown = await jobs({ 'cf-access-jwt-assertion': await sign({ email: 'nobody@example.com' }) });
+    expect(unknown.status).toBe(403);
+    expect(await unknown.json()).toEqual({ error: 'No active Apex user is linked to this identity.' });
+
+    const inactive = await jobs({ 'cf-access-jwt-assertion': await sign({ email: 'Former.Staff@Example.com' }) });
+    expect(inactive.status).toBe(403);
+    expect(await inactive.json()).toEqual({ error: 'No active Apex user is linked to this identity.' });
+  });
+
+  it('prefers the email row over the legacy user id', async () => {
+    await listen({
+      team: TEAM,
+      audience: AUDIENCE,
+      email: ALLOWED_EMAIL,
+      userId,
+      jwksUri: `http://127.0.0.1:${(jwksServer.address() as AddressInfo).port}/certs`,
+    });
+    const response = await intake(await sign({ email: fieldEmail, role: 'admin' }));
+    expect(response.status).toBe(403);
+    expect(await response.json()).toEqual({ error: 'Office access is required to create a design project.' });
+  });
+
+  it('still checks audience when the email is known', async () => {
+    const response = await jobs({
+      'cf-access-jwt-assertion': await sign({ email: ownerEmail, audience: 'some-other-app' }),
+    });
+    expect(response.status).toBe(403);
+    expect(await response.json()).toEqual({ error: 'Authentication is invalid or expired.' });
   });
 });
