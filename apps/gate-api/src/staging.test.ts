@@ -112,6 +112,10 @@ describe('Cloudflare Access as the only staging identity', () => {
     expect(css.headers.get('content-type')).toContain('text/css');
     expect(await css.text()).toContain('--paper');
 
+    const head = await fetch(`${baseUrl}/customer.css`, { method: 'HEAD' });
+    expect(head.status).toBe(200);
+    expect(head.headers.get('content-type')).toContain('text/css');
+
     const icon = await fetch(`${baseUrl}/favicon.svg`);
     expect(icon.status).toBe(200);
     expect(icon.headers.get('content-type')).toContain('image/svg+xml');

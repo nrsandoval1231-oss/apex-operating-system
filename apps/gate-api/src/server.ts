@@ -827,7 +827,9 @@ export function createGateApi(options: GateApiOptions) {
        * worse, treat a loopback request as the local pilot user.
        * ------------------------------------------------------------------ */
 
-      const customerAsset = request.method === 'GET' ? CUSTOMER_ASSETS[url.pathname] : undefined;
+      const customerAsset = request.method === 'GET' || request.method === 'HEAD'
+        ? CUSTOMER_ASSETS[url.pathname]
+        : undefined;
       if (customerAsset) {
         const file = resolve(customerAssetDirectory, customerAsset.file);
         const content = file.startsWith(`${customerAssetDirectory}${sep}`)
@@ -841,6 +843,7 @@ export function createGateApi(options: GateApiOptions) {
           'referrer-policy': 'no-referrer',
           'cache-control': 'public, max-age=300',
         });
+        if (request.method === 'HEAD') return response.end();
         return response.end(content);
       }
 
