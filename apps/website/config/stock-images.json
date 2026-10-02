@@ -7,16 +7,21 @@
     "alt text below describes the photo generically, and each slot carries `stock: true` in",
     "src/content/images.ts so `npm run preflight` warns about them before any real launch.",
     "",
-    "Source: Unsplash. The Unsplash License permits commercial use, free of charge, with no",
-    "attribution required (attribution is appreciated, and the photographer is recorded below",
-    "regardless). It does NOT permit compiling a competing stock-photo service, which is not",
-    "what this is. https://unsplash.com/license",
+    "Most files are Unsplash downloads. The Unsplash License permits commercial use, free of",
+    "charge, with no attribution required (attribution is appreciated, and the photographer",
+    "is recorded below regardless). It does NOT permit compiling a competing stock-photo",
+    "service, which is not what this is. https://unsplash.com/license",
+    "",
+    "Three pool slots are supplied crops, not re-fetched: pools-home (Unsplash), pools-hero",
+    "and pools-backyard (Pexels). Each entry records its own photographer, source URL, and",
+    "license. `npm run stock:fetch` skips those slots so a later download cannot overwrite",
+    "the crop. The pools-backyard crop stops above a logo that was on the back wall.",
     "",
     "WHY THIS FILE EXISTS: six months from now, nobody will remember where a JPEG in",
     "public/ came from or whether it was licensed. Provenance for third-party media belongs",
     "in the repo, next to the media.",
     "",
-    "Re-download everything with: npm run stock:fetch",
+    "Re-download the Unsplash slots with: npm run stock:fetch. Supplied crops are left as committed.",
     "",
     "TODO(D-20): every entry here is a placeholder. Replacing one with real Apex photography",
     "is a content change only - drop the file in, update src/content/images.ts, delete the",
@@ -34,7 +39,9 @@
 
   "$imageFields": {
     "slot": "the image-manifest slot id in src/content/images.ts this fills",
-    "unsplashId": "the images.unsplash.com/photo-... identifier",
+    "unsplashId": "the images.unsplash.com/photo-... identifier, omitted when the file is a supplied crop",
+    "source": "the page the photograph came from",
+    "license": "the licence for this file, when it is not the Unsplash default above",
     "ratio": "aspect ratio the file is cropped to — MUST match the slot's ratio or the swap shifts layout",
     "widths": "the widths downloaded, emitted as a srcset (AC-9.5)",
     "describes": "what the photo actually shows — this becomes the alt text, and it must not claim the work is Apex's"
@@ -50,12 +57,37 @@
       "describes": "An illuminated backyard swimming pool photographed from above at night"
     },
     {
-      "slot": "pools-hero",
-      "unsplashId": "photo-1764419737670-5e63f20c5493",
-      "credit": "Matthew Dlr / Unsplash",
+      "slot": "pools-home",
+      "supplied": true,
+      "credit": "Marty O'Neill / Unsplash",
+      "source": "https://unsplash.com/photos/a-swimming-pool-with-a-building-in-the-background-K76E3nttJFE",
+      "license": "Unsplash License",
+      "licenseUrl": "https://unsplash.com/license",
       "ratio": "4:5",
       "widths": [800, 1400],
-      "describes": "A lit swimming pool in the backyard of a home at night"
+      "describes": "A dusk swimming pool with a raised spa, a stone fireplace, and water spouts beside a house"
+    },
+    {
+      "slot": "pools-hero",
+      "supplied": true,
+      "credit": "Ahmet Çötür / Pexels",
+      "source": "https://www.pexels.com/photo/a-luxury-villa-with-a-swimming-pool-at-dusk-28054849/",
+      "license": "Pexels License",
+      "licenseUrl": "https://www.pexels.com/license/",
+      "ratio": "4:5",
+      "widths": [800, 1400],
+      "describes": "A villa pool at dusk with a vanishing edge, LED lights, and lounge chairs standing in the water"
+    },
+    {
+      "slot": "pools-backyard",
+      "supplied": true,
+      "credit": "Ryan Stephens / Pexels",
+      "source": "https://www.pexels.com/photo/charming-backyard-with-modern-swimming-pool-in-texas-33404118/",
+      "license": "Pexels License",
+      "licenseUrl": "https://www.pexels.com/license/",
+      "ratio": "4:5",
+      "widths": [800, 1400],
+      "describes": "A Texas backyard pool with a raised spa and a cedar pergola"
     },
     {
       "slot": "tile-coating",
@@ -112,6 +144,11 @@
       "slot": "owner-portrait",
       "was": "photo-1672748341520-6a839e6c05bb",
       "note": "REPLACED with a real photograph of Travis supplied by the maintainer (public/images/team/). The first slot on the site to hold genuine Apex photography. Kept as a record of what was here, and so the stock file isn't re-fetched over it — `npm run stock:fetch` no longer downloads this slot."
+    },
+    {
+      "slot": "pools-hero",
+      "was": "photo-1764419737670-5e63f20c5493",
+      "note": "Matthew Dlr / Unsplash. Both the home Designer Pools section and the /pools hero used this one file. Replaced by the supplied crops in pools-home and pools-hero. Do not re-fetch this id."
     }
   ]
 }

@@ -2,7 +2,7 @@
  * fetch-stock-images.mjs — download the D-20 stock placeholders declared in
  * config/stock-images.json into public/images/stock/.
  *
- * Why a script instead of nine committed JPEGs and a shrug: the config file records where
+ * Why a script instead of committed JPEGs and a shrug: the config file records where
  * every image came from and under what licence, and this script is the thing that makes that
  * record verifiable rather than decorative. Delete public/images/stock/, run this, and you
  * get byte-identical files back.
@@ -61,6 +61,11 @@ let failed = 0;
 console.log(`\nFetching stock placeholders → ${config.outputDir}/\n`);
 
 for (const img of config.images) {
+  if (img.supplied) {
+    skipped += img.widths.length;
+    console.log(`  · ${img.slot.padEnd(26)} supplied crop, not re-fetched`);
+    continue;
+  }
   for (const width of img.widths) {
     const name = fileName(img.slot, width);
     const dest = join(outDir, name);

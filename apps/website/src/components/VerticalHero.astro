@@ -43,6 +43,7 @@ const { page, accentVar } = Astro.props;
     </div>
 
     <div class="vhero-media">
+      {/* Eager plus high fetch priority: this is the page LCP image. */}
       <ImageSlot id={page.image} loading="eager" sizes="(max-width:900px) 100vw, 45vw" />
     </div>
   </div>
