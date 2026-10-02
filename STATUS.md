@@ -1,9 +1,9 @@
 # Apex — Status
 
-**Last updated:** 2026-09-30
+**Last updated:** 2026-10-02
 
-The verification counts below are the 2026-08-13 baseline. This update corrects
-repository layout: one tree on `main`, no sibling checkout, no deploy key.
+The counts below are from `scripts/ci.sh` on 2026-10-02 (exit 0). That script is
+the verification entry point. GitHub Actions is not the CI for this repository.
 
 **Canonical workspace:** `nrsandoval1231-oss/apex-operating-system` (`main`)
 
@@ -30,7 +30,7 @@ Opportunity
 - Designer quantity model authority is `designer-quantity-v5`.
 - **Takeoff (.xlsx)** produces an ordering-focused workbook with `Order List` first; metadata, excavation, and calculation/reference material are secondary.
 - Soil/excavation assumptions and raw JSON diagnostics are under **Advanced**, not in the primary workflow.
-- **Finish estimate** pins the exact approved takeoff revision and is idempotent for opportunity + design digest.
+- **Finish estimate** pins the exact approved takeoff revision and is idempotent for opportunity + design digest. A first Finish on a draft the Designer already created applies the submitted prices and issues the proposal when nothing is missing. An issued or signed version is left unchanged.
 - Pricing uses `manual-approved-pricing-v1` and fails closed: missing estimates or unresolved direct scope become structured blockers; no amount is inferred.
 - Proposal drafts are server-backed and optimistically versioned. Issued and signed versions are immutable.
 - Recording acceptance of the exact issued Proposal idempotently creates one Job and one construction Project.
@@ -48,35 +48,27 @@ Opportunity
 
 ## Verification baseline
 
-### Local
+`scripts/ci.sh` on 2026-10-02, Node v22.22.2, pnpm 11.18.0, exit 0. Integration
+used PostgreSQL 16.15 on `127.0.0.1:5432` and moto (S3 API) on port 9000, bucket
+`apex-evidence`. The container image is still built from Node 24; this run did
+not build that image.
 
-- Root typecheck passed.
-- Apex OS production build passed.
-- Root unit suite: **34 files, 514 tests passed**.
-- Root integration suite without external services: **10 passed, 15 skipped**. The skips are the PostgreSQL/S3 cases that require service configuration.
-- Designer: **580 tests passed**, typecheck passed, production build passed.
-- Legacy proposal engine tests passed.
-- `git diff --check` passed on the 2026-08-13 baseline (then still split across repositories; there is now one tree).
-- Designer was launched with Vite and rendered in headless Chrome; the normal view showed the sports-pool control, Takeoff `.xlsx`, Finish Estimate, clean plan/section views, and no default verbose JSON dump.
+- Install (`pnpm install --frozen-lockfile`, then `npm ci --ignore-scripts` in `apps/designer`) completed.
+- Root typecheck passed. Designer typecheck passed.
+- Apex OS production build passed. Designer production build passed.
+- A website production build with `PUBLIC_ENV=production` and no `PUBLIC_LEAD_WEBHOOK_URL` failed on purpose. The following development website check and build, with `PUBLIC_LEAD_WEBHOOK_URL_TEST` set, completed. `astro check` reported 0 errors.
+- Core unit suite (`packages`, `apps/gate-api`, `apps/apex-os`): **36 files, 518 tests passed**.
+- Designer unit suite: **26 files, 585 tests passed**.
+- Legacy proposal engine: `engine.test.mjs` 119 pass / 0 fail, `whitaker-evidence.test.mjs` 11 pass / 0 fail, `approved-takeoff.test.mjs` passed, `browser-graph.test.mjs` passed, `quantity-ownership.test.mjs` 1 pass / 0 fail.
+- Website Playwright (Chromium desktop and mobile): **122 passed**.
+- Integration suite with `DATABASE_URL` and S3 set: **4 files, 24 passed, 2 skipped**. The two skips are the guards that run only when `APEX_REQUIRE_DESIGNER_CONTRACT` or `APEX_REQUIRE_TAKEOFF_CHAIN` is set and the engine file is missing. With both engines present, the Postgres adapter (including a second run of the calendar-date case against the same database), the S3 adapter, the Designer contract, and the takeoff-to-proposal chain all passed.
+- `pnpm audit --prod`: critical 0, high 0, moderate 1 (`uuid` via `exceljs`). Designer `npm audit`: critical 0, high 0, moderate 4 (`uuid`/`exceljs`, and `vitest`/`@vitest/mocker`). Forcing those would install `exceljs@3.4.0` or `vitest@5`, so they were left.
 
-### CI
-
-GitHub Actions run `31735048854` passed on root `main`:
-
-- `pnpm verify`;
-- real PostgreSQL adapter tests;
-- MinIO/S3 storage tests;
-- production dependency audit at high severity;
-- container image build;
-- container startup against real dependencies;
-- no-object-storage warning behavior; and
-- refusal to ship an image with local authentication bypass enabled.
-
-CI now verifies the consolidated Designer source at `apps/designer` and uses `archive/proposal-engine` only for the preserved legacy chain. No sibling checkout or deploy key is required for those tests.
+The 2026-08-13 GitHub Actions run `31735048854` is historical. It is not the current verification.
 
 ## Deployment status
 
-The repository is ready for a controlled staging deployment. Deployment is not automatic and production has not been touched.
+Staging is not ready. Hosting is Cloudflare only, never Vercel. [`docs/runbooks/deployment.md`](docs/runbooks/deployment.md) is a Render procedure and is superseded until a Cloudflare plan exists. `render.yaml` is still in the tree. Production has not been touched.
 
 Required staging configuration:
 
@@ -87,11 +79,11 @@ Required staging configuration:
 - optional customer contact phone/label; and
 - real, approved price inputs for each estimate. There is intentionally no environment-backed inferred rate card.
 
-Migrations run forward on application startup under a PostgreSQL advisory lock. Follow [`docs/runbooks/deployment.md`](docs/runbooks/deployment.md); never edit an applied migration.
+Migrations run forward on application startup under a PostgreSQL advisory lock. Never edit an applied migration. Do not follow the Render runbook to deploy.
 
 ## Remaining operational work
 
-1. Configure and deploy a staging environment.
+1. Write the Cloudflare staging plan (website on Cloudflare, Apex OS off Render). Then configure that environment. Do not deploy from `render.yaml`.
 2. Execute the staging acceptance flow in [`NEXT.md`](NEXT.md).
 3. Exercise and document a backup restore before the pilot carries real money.
 4. Obtain the brochure/reference inputs before implementing the deferred equipment-catalog and excavator-specific dig-sheet work.
@@ -102,4 +94,4 @@ The legacy takeoff-to-proposal chain reads `archive/proposal-engine` in this rep
 
 - [`docs/status.md`](docs/status.md) is the chronological engineering record. Sections dated before this update describe the system as it existed then and are intentionally preserved.
 - [`docs/archive/`](docs/archive/README.md) keeps historical artifacts that are not copies of the live trees, including the old `designer-quantity-v4` fixtures. Do not rewrite those fixtures to look current. Duplicate repo snapshots that used to sit beside them were removed; that history lives in git, and the old GitHub repositories were deleted.
-- Current active guidance is this file, [`README.md`](README.md), [`NEXT.md`](NEXT.md), and the deployment runbook.
+- Current active guidance is this file, [`README.md`](README.md), and [`NEXT.md`](NEXT.md). The deployment runbook is superseded pending a Cloudflare plan.
