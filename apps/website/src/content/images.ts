@@ -113,16 +113,41 @@ export const IMAGE_MANIFEST = {
     stock: true,
   },
 
-  // Pools deep section — hero image. The single highest-value photo on the site: Designer
-  // Pools is the highest-ticket vertical, and this is the image that carries it.
+  // Home Designer Pools section. Separate from the /pools hero so the two pages
+  // are not the same photograph.
+  'pools-home': {
+    id: 'pools-home',
+    alt: 'A dusk swimming pool with a raised spa, a stone fireplace, and water spouts beside a house',
+    label: 'REPLACE · a completed Apex pool and spa at dusk',
+    ratio: '4 / 5',
+    tone: 'pool',
+    src: '/images/stock/pools-home-1400.jpg',
+    srcset: '/images/stock/pools-home-800.jpg 800w, /images/stock/pools-home-1400.jpg 1400w',
+    stock: true,
+  },
+
+  // /pools hero. This is the LCP image on that page: VerticalHero loads it eagerly.
   'pools-hero': {
     id: 'pools-hero',
-    alt: 'A lit swimming pool in the backyard of a home at night',
-    label: 'REPLACE · a completed Apex pool + spa at dusk',
+    alt: 'A villa pool at dusk with a vanishing edge, LED lights, and lounge chairs standing in the water',
+    label: 'REPLACE · a completed Apex pool at dusk',
     ratio: '4 / 5',
     tone: 'pool',
     src: '/images/stock/pools-hero-1400.jpg',
     srcset: '/images/stock/pools-hero-800.jpg 800w, /images/stock/pools-hero-1400.jpg 1400w',
+    stock: true,
+  },
+
+  // Second photograph on /pools, beside the service list. The crop stops above
+  // a logo that was on the back wall of the original frame.
+  'pools-backyard': {
+    id: 'pools-backyard',
+    alt: 'A Texas backyard pool with a raised spa and a cedar pergola',
+    label: 'REPLACE · an Apex backyard with a spa and pergola',
+    ratio: '4 / 5',
+    tone: 'pool',
+    src: '/images/stock/pools-backyard-1400.jpg',
+    srcset: '/images/stock/pools-backyard-800.jpg 800w, /images/stock/pools-backyard-1400.jpg 1400w',
     stock: true,
   },
 
