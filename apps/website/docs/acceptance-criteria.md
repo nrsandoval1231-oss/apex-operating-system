@@ -92,7 +92,7 @@ Added with the tooling. These verify the *machinery* is correct, independent of 
 
 ## AC-9 · Imagery (D-20 — currently licensed STOCK placeholders)
 
-All nine slots are filled with licensed stock photography as stand-ins. Provenance and licence: `config/stock-images.json`; re-fetch with `npm run stock:fetch`.
+Eleven slots are filled: ten with licensed stock photography, and the owner portrait with a real photograph. Provenance and licence: `config/stock-images.json`. Unsplash slots re-fetch with `npm run stock:fetch`; the three supplied pool crops are skipped.
 
 - [x] **AC-9.1** Every image renders through a shared component with a defined aspect ratio — no layout shift when a real photo replaces a placeholder. *(Automated across all 5 pages: asserts each slot declares an `aspect-ratio` AND that the loaded file's intrinsic ratio matches it within 1%.)*
 - [x] **AC-9.2** Every image has meaningful `alt` text; decorative images are explicitly marked as such.
