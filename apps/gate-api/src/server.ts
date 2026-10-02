@@ -297,20 +297,28 @@ export interface OidcOptions {
 /**
  * Cloudflare Access — staging identity.
  *
- * Access already answered "is this browser the allowed Gmail?" at the edge and
- * injected `Cf-Access-Jwt-Assertion`. This server checks that assertion and
- * then loads the role from `app_users`. It does not accept a pasted gate token
- * at the same time: two ways in would be two doors.
+ * Access already answered "did this browser complete the PIN?" at the edge and
+ * injected `Cf-Access-Jwt-Assertion`. This server checks that assertion
+ * (signature, issuer, audience) and then loads the role from `app_users` by
+ * the lower-cased email claim. It does not accept a pasted gate token at the
+ * same time: two ways in would be two doors.
+ *
+ * `email` and `userId` are the legacy single-address fallback. They apply only
+ * when no `app_users` row has that email, so a person provisioned before the
+ * email column still signs in. A matching email row always wins.
  */
 export interface AccessOptions {
   /** Team name only, the subdomain of `<team>.cloudflareaccess.com`. */
   readonly team: string;
   /** Access application AUD tag. */
   readonly audience: string;
-  /** The one email allowed to act as staff. Compared case-insensitively. */
-  readonly email: string;
-  /** `app_users.user_id` for that person. The token does not choose the role. */
-  readonly userId: string;
+  /**
+   * Legacy mailbox, already lower-cased. Used only when no `app_users.email`
+   * matches the claim.
+   */
+  readonly email?: string;
+  /** `app_users.user_id` paired with `email`. The token does not choose the role. */
+  readonly userId?: string;
   /** Defaults to the team's Access certs URL. Tests point this at a local JWKS. */
   readonly jwksUri?: string;
 }
@@ -579,16 +587,28 @@ export function createGateApi(options: GateApiOptions) {
       if (error instanceof AuthError) throw error;
       throw new AuthError('Authentication is invalid or expired.');
     }
-    if (email !== access.email.trim().toLowerCase()) {
-      throw new AuthError('This Access identity is not allowed to use staging.');
-    }
-    const users = await options.db.query<{ role: AppRole }>(
-      `select role from app_users where user_id = $1 and active = true`,
-      [access.userId],
+    // A role claim is never read. The row below is the only authorization.
+    if (email.length === 0) throw new AuthError('No active Apex user is linked to this identity.');
+    const byEmail = await options.db.query<{ user_id: string; role: AppRole; active: boolean }>(
+      `select user_id, role, active from app_users where email = $1`,
+      [email],
     );
-    const role = users.rows[0]?.role;
-    if (role === undefined) throw new AuthError('No active Apex user is linked to this identity.');
-    return EventActorSchema.parse({ kind: 'user', userId: access.userId, role });
+    const matched = byEmail.rows[0];
+    if (matched) {
+      if (!matched.active) throw new AuthError('No active Apex user is linked to this identity.');
+      return EventActorSchema.parse({ kind: 'user', userId: matched.user_id, role: matched.role });
+    }
+    const legacyEmail = access.email?.trim().toLowerCase();
+    if (legacyEmail !== undefined && access.userId !== undefined && email === legacyEmail) {
+      const users = await options.db.query<{ role: AppRole }>(
+        `select role from app_users where user_id = $1 and active = true`,
+        [access.userId],
+      );
+      const role = users.rows[0]?.role;
+      if (role === undefined) throw new AuthError('No active Apex user is linked to this identity.');
+      return EventActorSchema.parse({ kind: 'user', userId: access.userId, role });
+    }
+    throw new AuthError('No active Apex user is linked to this identity.');
   };
 
   const authenticate = async (request: IncomingMessage): Promise<EventActor> => {

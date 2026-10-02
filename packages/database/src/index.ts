@@ -42,6 +42,7 @@ export const OPERATIONAL_MIGRATIONS = [
   '0030_equipment_automation_cover_gates.sql',
   '0031_remove_countersign_from_active_gates.sql',
   '0032_proposal_workflow.sql',
+  '0033_app_user_email.sql',
 ] as const;
 
 export const STORAGE_MIGRATION = '0003_evidence_storage.sql';

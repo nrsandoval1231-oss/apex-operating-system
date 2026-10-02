@@ -75,6 +75,24 @@ describe('operational schema', () => {
   it('registers durable Proposal versions in the runtime migrator', () => {
     expect(OPERATIONAL_MIGRATIONS).toContain('0008_proposal_versions.sql');
     expect(OPERATIONAL_MIGRATIONS).toContain('0032_proposal_workflow.sql');
+    expect(OPERATIONAL_MIGRATIONS).toContain('0033_app_user_email.sql');
+  });
+
+  it('stores one lower-cased email per staff row', async () => {
+    const migrated = new PGlite();
+    await applyOperationalMigrations(migrated);
+    await migrated.query(
+      `insert into app_users (user_id, auth_user_id, role, display_name, email)
+       values ('user_01ARZ3NDEKTSV4RRFFQ69G5FB2', '00000000-0000-0000-0000-000000000051', 'admin', 'One', 'owner@example.com')`,
+    );
+    await expect(migrated.query(
+      `insert into app_users (user_id, auth_user_id, role, display_name, email)
+       values ('user_01ARZ3NDEKTSV4RRFFQ69G5FB3', '00000000-0000-0000-0000-000000000052', 'office', 'Two', 'owner@example.com')`,
+    )).rejects.toThrow(/app_users_email_key|duplicate key/i);
+    await expect(migrated.query(
+      `insert into app_users (user_id, auth_user_id, role, display_name, email)
+       values ('user_01ARZ3NDEKTSV4RRFFQ69G5FB3', '00000000-0000-0000-0000-000000000052', 'office', 'Two', 'Owner@Example.com')`,
+    )).rejects.toThrow(/app_users_email|check/i);
   });
 
   it('executes every core and authorization migration in PostgreSQL', async () => {
