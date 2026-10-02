@@ -1,0 +1,45 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "apex-os-staging",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-02",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "preview_urls": false,
+  "containers": [
+    {
+      "class_name": "ApexOsContainer",
+      "image": "../../../Dockerfile",
+      "max_instances": 1,
+      "instance_type": "basic"
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "APEX_OS",
+        "class_name": "ApexOsContainer"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["ApexOsContainer"]
+    }
+  ],
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      "id": "REPLACE_WITH_HYPERDRIVE_ID"
+    }
+  ],
+  "vars": {
+    "S3_BUCKET": "apex-evidence-staging",
+    "S3_REGION": "auto",
+    "APEX_ACCESS_TEAM": "REPLACE_WITH_ACCESS_TEAM",
+    "APEX_ACCESS_AUD": "REPLACE_WITH_ACCESS_AUD",
+    "APEX_ACCESS_EMAIL": "REPLACE_WITH_NICK_GMAIL",
+    "APEX_ACCESS_USER_ID": "REPLACE_WITH_USER_ULID"
+  }
+}

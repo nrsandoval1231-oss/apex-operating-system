@@ -18,7 +18,9 @@ Apex reaches pilot-ready status when a non-production user can complete the full
 - [x] The first Finish on an existing draft keeps the entered prices.
 - [ ] Staging itself is not deployed. Production has not been touched.
 
-### 2. Staging acceptance — waiting on a Cloudflare plan
+### 2. Staging acceptance — procedure is written, not executed
+
+The commands are [`docs/runbooks/cloudflare-staging.md`](../runbooks/cloudflare-staging.md). Nothing has been deployed.
 
 - [ ] Provision staging Postgres (Neon) and reach it through Cloudflare Hyperdrive.
 - [ ] Provision private R2 evidence storage with versioning and retention.

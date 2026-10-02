@@ -1,0 +1,14 @@
+{
+  "name": "apex-os-staging-worker",
+  "private": true,
+  "type": "module",
+  "description": "Thin Cloudflare Worker that starts the Apex OS container. Not part of the pnpm workspace, so scripts/ci.sh does not install it.",
+  "scripts": {
+    "deploy:dry-run": "wrangler deploy --dry-run",
+    "types": "wrangler types"
+  },
+  "dependencies": {
+    "@cloudflare/containers": "0.3.7",
+    "wrangler": "4.147.0"
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "apex-website-staging",
+  "pages_build_output_dir": "../../../apps/website/dist",
+  "compatibility_date": "2026-10-02"
+}

@@ -2,7 +2,7 @@
 
 **Last current-status update:** 2026-08-13
 
-> **Chronological engineering record.** Current operational status is root [`STATUS.md`](../STATUS.md). Immediate work is [`NEXT.md`](../NEXT.md). The Render procedure in [`docs/runbooks/deployment.md`](runbooks/deployment.md) is superseded, and `render.yaml` has been removed. Dated sections below are preserved evidence of what was true when written; they must not override those current documents. Mentions of GitHub Actions and `render.yaml` in those sections describe the tree at that date.
+> **Chronological engineering record.** Current operational status is root [`STATUS.md`](../STATUS.md). Immediate work is [`NEXT.md`](../NEXT.md). Staging is [`docs/runbooks/cloudflare-staging.md`](runbooks/cloudflare-staging.md). The Render procedure in [`docs/runbooks/deployment.md`](runbooks/deployment.md) is historical, and `render.yaml` has been removed. Dated sections below are preserved evidence of what was true when written; they must not override those current documents. Mentions of GitHub Actions and `render.yaml` in those sections describe the tree at that date.
 
 **Current summary:** The unified Opportunity → Designer → Takeoff `.xlsx` → Finish Estimate → versioned Proposal → accepted Proposal/Job → Construction → close/archive → read-only History lifecycle is implemented and CI-green. Active construction uses 11 phases, nine active Gate definitions, and one authorized release signature. New Designer exports use `designer-quantity-v5`; older approved revisions retain their recorded model version.
 
