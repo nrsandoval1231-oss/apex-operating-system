@@ -1,10 +1,11 @@
 # Apex OS — deployment runbook
 
-> **Superseded pending a Cloudflare plan (2026-10-02).** This runbook deploys a
-> Render web service and Render Postgres. The owner has decided hosting is
-> Cloudflare only, and never Vercel or GitHub Actions. Do not follow this
-> runbook to deploy. `render.yaml` was removed from the tree. A Cloudflare
-> deployment plan has not been written. The steps below are historical.
+> **Superseded (2026-10-02).** This runbook deploys a Render web service and
+> Render Postgres. Hosting is Cloudflare only, and never Vercel or GitHub
+> Actions. Do not follow this runbook to deploy. `render.yaml` was removed
+> from the tree. Staging is [`cloudflare-staging.md`](cloudflare-staging.md):
+> a container on `*.workers.dev`, the website on `*.pages.dev`, Neon through
+> Hyperdrive, and evidence on R2. The steps below are historical.
 
 **Written:** 2026-08-03 (deployment plan slice 9)
 

@@ -11,6 +11,7 @@
 # Designer is an npm app inside the workspace. The image build copies this
 # lockfile and runs `npm ci` (see Dockerfile). Keep it tracked.
 !apps/designer/package-lock.json
+!deploy/cloudflare/apex-os/package-lock.json
 /yarn.lock
 **/yarn.lock
 **/dist/

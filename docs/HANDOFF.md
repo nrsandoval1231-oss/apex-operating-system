@@ -2,7 +2,7 @@
 
 **As of:** 2026-10-02, verified by `scripts/ci.sh` (exit 0). Layout: one repository, no deploy keys. The former GitHub repositories were deleted; their history lives in this repository's git history.
 
-The unified lifecycle is implemented. Local verification is `scripts/ci.sh`, not GitHub Actions. Start with [`STATUS.md`](../STATUS.md) for the verified baseline and [`NEXT.md`](../NEXT.md) for what comes next. [`docs/runbooks/deployment.md`](runbooks/deployment.md) is a Render procedure and is superseded until a Cloudflare plan exists. Do not deploy from it.
+The unified lifecycle is implemented. Local verification is `scripts/ci.sh`, not GitHub Actions. Start with [`STATUS.md`](../STATUS.md) for the verified baseline and [`NEXT.md`](../NEXT.md) for what comes next. Staging is [`docs/runbooks/cloudflare-staging.md`](runbooks/cloudflare-staging.md). [`docs/runbooks/deployment.md`](runbooks/deployment.md) is a Render procedure and is historical. Do not deploy from it.
 
 ## Current authority
 
@@ -72,7 +72,7 @@ The legacy Designer → proposal-engine chain reads `archive/proposal-engine` he
 
 This is now operational, not broad product implementation:
 
-1. Write a Cloudflare staging plan and get the owner's approval before any deploy. Do not use the Render runbook. `render.yaml` and the GitHub Actions workflows have been removed.
+1. Stand up staging from [`docs/runbooks/cloudflare-staging.md`](runbooks/cloudflare-staging.md). Do not use the Render runbook. `render.yaml` and the GitHub Actions workflows have been removed. Nick supplies the Cloudflare, Neon, R2, and Access values. This repository does not deploy itself.
 2. Execute the full staged lifecycle in [`NEXT.md`](../NEXT.md).
 3. Run and document a backup restore.
 4. Use a final HTTPS origin before issuing real customer links.
