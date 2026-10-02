@@ -33,6 +33,8 @@
     "S3_REGION": "auto",
     "APEX_ACCESS_TEAM": "REPLACE_WITH_ACCESS_TEAM",
     "APEX_ACCESS_AUD": "REPLACE_WITH_ACCESS_AUD",
+    // Legacy fallback for the one app_users row that has no email yet.
+    // Delete both keys after that row's email column is set. Do not commit a real address.
     "APEX_ACCESS_EMAIL": "REPLACE_WITH_NICK_GMAIL",
     "APEX_ACCESS_USER_ID": "REPLACE_WITH_USER_ULID"
   }

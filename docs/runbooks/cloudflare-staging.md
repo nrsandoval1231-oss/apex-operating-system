@@ -16,13 +16,15 @@ The marketing site stays on Cloudflare Pages because the staging URL has to be `
 
 ## Why staff sign-in is Cloudflare Access
 
-Access is the front door. It is configured in the Cloudflare dashboard, not in this repository. The policy is one-time email PIN, and the only allowed address is Nick's Gmail.
+Access is the front door. It is configured in the Cloudflare dashboard, not in this repository. The policy is one-time email PIN. Every person who should open `/app` is an email on that policy and a row in `app_users`.
 
-Inside the app, staging trusts that Access identity and does not also accept the pasted gate token (`GATE_JWT_SECRET`) or an OIDC issuer. The server already refuses to start with two identity mechanisms. The staff UI calls the API with no pasted token and shows sign-in only when the API returns 403. On a request that carries the `CF_Authorization` cookie, Cloudflare adds `Cf-Access-Jwt-Assertion`. The server verifies that JWT against `https://<team>.cloudflareaccess.com/cdn-cgi/access/certs`, requires the `email` claim to match `APEX_ACCESS_EMAIL`, and loads the role from `app_users` for `APEX_ACCESS_USER_ID`. A role claim in the token is ignored.
+Inside the app, staging trusts that Access identity and does not also accept the pasted gate token (`GATE_JWT_SECRET`) or an OIDC issuer. The server already refuses to start with two identity mechanisms. The staff UI calls the API with no pasted token and shows sign-in only when the API returns 403. On a request that carries the `CF_Authorization` cookie, Cloudflare adds `Cf-Access-Jwt-Assertion`. The server verifies that JWT against `https://<team>.cloudflareaccess.com/cdn-cgi/access/certs` (signature, issuer, and the application AUD). It lower-cases the `email` claim and loads `app_users` where `email` matches and `active` is true. The role comes from that row. A role claim in the token is ignored. An unknown email, or an email on an inactive row, gets the existing 403 `No active Apex user is linked to this identity.`
+
+`APEX_ACCESS_EMAIL` and `APEX_ACCESS_USER_ID` are a legacy pair for the one row that was inserted before the email column existed. They apply only when no row has that email. Once that row's `email` is set, the pair can be removed. A matching email row always wins over the pair.
 
 Customer pages at `/c/<token>` stay authorized by the unguessable token. They must be an Access bypass, or a homeowner would be asked for Nick's PIN. `/health`, `/ready`, and `/robots.txt` are bypasses so a probe can see readiness. `/app` and `/api` stay behind the PIN.
 
-An Access service token is only for `scripts/staging-smoke.sh`. It gets past Access. It does not become a staff user unless its JWT email matches `APEX_ACCESS_EMAIL`, which a service token usually does not.
+An Access service token is only for `scripts/staging-smoke.sh`. It gets past Access. It does not become a staff user unless its JWT email matches an active `app_users.email`, which a service token usually does not.
 
 ## What you have to supply
 
@@ -37,15 +39,16 @@ None of these belong in git. Placeholders below are the strings to replace.
 | R2 S3 access key id and secret | `wrangler secret put`, not the file |
 | Access team subdomain | `APEX_ACCESS_TEAM` in place of `REPLACE_WITH_ACCESS_TEAM` |
 | Access application AUD | `APEX_ACCESS_AUD` in place of `REPLACE_WITH_ACCESS_AUD` |
-| Nick's Gmail, confirmed | `APEX_ACCESS_EMAIL` in place of `REPLACE_WITH_NICK_GMAIL` |
-| Minted `user_<ULID>` | `APEX_ACCESS_USER_ID` in place of `REPLACE_WITH_USER_ULID`, and the `app_users` row |
+| Each staff mailbox, confirmed | Access policy Include rule, and `app_users.email`. Placeholders only in git |
+| Legacy single mailbox, optional | `APEX_ACCESS_EMAIL` in place of `REPLACE_WITH_NICK_GMAIL`, only until that row has an email |
+| Legacy `user_<ULID>`, optional | `APEX_ACCESS_USER_ID` in place of `REPLACE_WITH_USER_ULID`, paired with the email above |
 | `APEX_PUBLIC_ORIGIN` | `wrangler secret put` after the workers.dev host is known |
 | `PUBLIC_SITE_URL` | `https://*.pages.dev` for the website build |
 | `PUBLIC_LEAD_WEBHOOK_URL_TEST` | A non-production intake URL that contains `webhook-test` |
 | Optional Access service token | `CF_ACCESS_CLIENT_ID` and `CF_ACCESS_CLIENT_SECRET` in the shell for the smoke script |
 | Optional `APEX_CUSTOMER_CONTACT_PHONE` | E.164, `wrangler secret put` |
 
-The git author address `nrsandoval1231@gmail.com` is a hint for which inbox to confirm. Do not treat it as already allow-listed. Type the mailbox Nick actually reads into `APEX_ACCESS_EMAIL` and into the Access policy.
+The git author address `nrsandoval1231@gmail.com` is a hint for which inbox to confirm. Do not treat it as already allow-listed, and do not commit it. Type each mailbox into the Access policy and into the SQL below. Use `REPLACE_WITH_STAFF_EMAIL` in anything that is committed.
 
 ## 1. Neon Postgres
 
@@ -108,13 +111,13 @@ This step is manual. Access is not represented in the repo.
 1. Zero Trust → Access → Applications → Add an application → self-hosted.
 2. Application domain: the `*.workers.dev` hostname from the deploy below. No custom domain. Leave the path empty.
 3. Identity provider: One-time PIN.
-4. Policy action Allow. Include rule: Emails is `REPLACE_WITH_NICK_GMAIL`. Confirm that inbox first.
+4. Policy action Allow. Include rule: Emails. Add each staff mailbox, starting with `REPLACE_WITH_STAFF_EMAIL`. Confirm that inbox first. Add the next person by adding their mailbox to this same rule. Do not put the address in git.
 5. Add a Bypass policy for these paths: `/health`, `/ready`, `/robots.txt`, `/c`, and `/c/*`.
 6. Add a second self-hosted application for the `*.pages.dev` hostname. Same email allow rule. No bypass. The marketing preview is private.
 7. Optional: create an Access service token and add an Include rule for it on both applications, if you want `scripts/staging-smoke.sh` to see `/app` and the website HTML.
 8. Copy the team subdomain (the label in `https://<team>.cloudflareaccess.com`) and the workers.dev application's AUD tag.
 
-Edit `deploy/cloudflare/apex-os/wrangler.jsonc` and replace the four `REPLACE_WITH_*` vars:
+Edit `deploy/cloudflare/apex-os/wrangler.jsonc` and replace the team and audience. The email and user id vars are the legacy pair. Leave them only while the original row has no `email`. Delete both keys once that column is filled. Do not commit a real address.
 
 ```jsonc
 "APEX_ACCESS_TEAM": "REPLACE_WITH_ACCESS_TEAM",
@@ -123,16 +126,38 @@ Edit `deploy/cloudflare/apex-os/wrangler.jsonc` and replace the four `REPLACE_WI
 "APEX_ACCESS_USER_ID": "REPLACE_WITH_USER_ULID"
 ```
 
-`APEX_ACCESS_TEAM` is the subdomain only, for example `apex`, not a URL. `APEX_ACCESS_USER_ID` must match `user_` plus 26 Crockford characters (no I, L, O, or U). Mint a new id. The shape, which you must not reuse if it is already taken, is `user_01ARZ3NDEKTSV4RRFFQ69G5FAV`.
+`APEX_ACCESS_TEAM` is the subdomain only, for example `apex`, not a URL. `APEX_ACCESS_USER_ID`, when you still set it, must match `user_` plus 26 Crockford characters (no I, L, O, or U). Mint a new id. The shape, which you must not reuse if it is already taken, is `user_01ARZ3NDEKTSV4RRFFQ69G5FAV`.
 
-After the first boot has applied migrations, insert the row against Neon:
+After the first boot of this version has applied migrations, `app_users.email` exists. Give the original login an email, using the same id already in `APEX_ACCESS_USER_ID` if that pair is still set:
 
 ```sql
-insert into app_users (user_id, auth_user_id, role, display_name, active)
-values ('REPLACE_WITH_USER_ULID', gen_random_uuid(), 'admin', 'Nick', true);
+update app_users
+set email = lower('REPLACE_WITH_STAFF_EMAIL')
+where user_id = 'REPLACE_WITH_USER_ULID';
 ```
 
-Use the same id you put in `wrangler.jsonc`.
+### Adding a staff member
+
+Do both steps. Access alone is not enough, and a database row alone is not enough.
+
+1. Zero Trust → Access → the workers.dev application → the Allow policy. Add the mailbox to the Emails include rule: `REPLACE_WITH_STAFF_EMAIL`. Add the same mailbox on the pages.dev application. Do not commit the address.
+2. Against the Neon database, after migrations have run:
+
+```sql
+insert into app_users (user_id, auth_user_id, role, display_name, active, email)
+values (
+  'user_REPLACE_WITH_26_CROCKFORD',
+  gen_random_uuid(),
+  'office',
+  'REPLACE_WITH_DISPLAY_NAME',
+  true,
+  lower('REPLACE_WITH_STAFF_EMAIL')
+);
+```
+
+`role` is one of `admin`, `office`, `superintendent`, or `field`. That value is what the app enforces. The Access token does not carry it. `user_` plus 26 Crockford characters, no I, L, O, or U. The email is stored lower-cased and must be unique. An inactive row (`active = false`) or an unknown email gets 403 even when Access let the browser through.
+
+To stop someone: remove the mailbox from the Access policy, and set `active = false` on the row. Deleting the row is not required.
 
 ## 5. Deploy Apex OS
 
@@ -194,7 +219,32 @@ bash scripts/staging-smoke.sh
 
 A passing run prints `staging smoke passed`. `/ready` must be HTTP 200 with `"status": "ready"`, `"database": true`, and `"evidence": true`. Both origins must send `X-Robots-Tag: noindex`, and both `robots.txt` files must contain `Disallow: /`.
 
-Then open the workers.dev host in a browser, complete the one-time PIN for the allowed Gmail, and confirm `/app` loads. A second Gmail must be refused by Access.
+Then open the workers.dev host in a browser, complete the one-time PIN for a mailbox that is on the Access policy and on an active `app_users` row, and confirm `/app` loads. A mailbox that is not on the policy is refused by Access. A mailbox that passes Access but has no active row is refused by the app with 403.
+
+## 8. Demo project
+
+One fictional job, labelled DEMO, for a made-up homeowner in Lubbock. It is not a real customer. Run it from the repository root against the staging database. `pnpm typecheck` first, so `dist` exists for the script to import. Use the Neon string, `sslmode=require`. That string is `DATABASE_URL` in this shell. It is the same value as the Worker secret `CONTAINER_DATABASE_URL`. Do not commit it.
+
+```bash
+pnpm typecheck
+export DATABASE_URL='postgres://REPLACE_WITH_NEON_USER:REPLACE_WITH_NEON_PASSWORD@REPLACE_WITH_NEON_POOLER_HOST/REPLACE_WITH_NEON_DATABASE?sslmode=require'
+node scripts/seed-demo-project.mjs
+```
+
+A successful run prints:
+
+```text
+job id: job_…
+customer link: /c/…
+```
+
+Open `/app` as staff for Today and the job page. Open the customer path on the workers.dev host. The customer path is an Access bypass. Running the command again prints the same job and the same path and does not insert a second job.
+
+Remove only that demo data:
+
+```bash
+node scripts/seed-demo-project.mjs --remove
+```
 
 ## Crawlers
 
