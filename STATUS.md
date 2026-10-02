@@ -68,7 +68,7 @@ The 2026-08-13 GitHub Actions run `31735048854` is historical. It is not the cur
 
 ## Deployment status
 
-Staging is not ready. Hosting is Cloudflare only, never Vercel. [`docs/runbooks/deployment.md`](docs/runbooks/deployment.md) is a Render procedure and is superseded until a Cloudflare plan exists. `render.yaml` is still in the tree. Production has not been touched.
+Staging is not ready. Hosting is Cloudflare only, never Render, Vercel, or GitHub Actions. [`docs/runbooks/deployment.md`](docs/runbooks/deployment.md) is a Render procedure and is superseded until a Cloudflare plan exists. `render.yaml` and the GitHub Actions workflows have been removed. Production has not been touched.
 
 Required staging configuration:
 
@@ -83,7 +83,7 @@ Migrations run forward on application startup under a PostgreSQL advisory lock. 
 
 ## Remaining operational work
 
-1. Write the Cloudflare staging plan (website on Cloudflare, Apex OS off Render). Then configure that environment. Do not deploy from `render.yaml`.
+1. Write the Cloudflare staging plan (website on Cloudflare Pages, Apex OS on Cloudflare, Neon Postgres, R2 evidence). Do not deploy to Render.
 2. Execute the staging acceptance flow in [`NEXT.md`](NEXT.md).
 3. Exercise and document a backup restore before the pilot carries real money.
 4. Obtain the brochure/reference inputs before implementing the deferred equipment-catalog and excavator-specific dig-sheet work.

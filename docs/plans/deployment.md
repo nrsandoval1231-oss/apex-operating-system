@@ -1,6 +1,6 @@
 # Apex OS — Deployment Plan
 
-> **Historical implementation plan:** The deployable image and safeguards are built. Current operator procedure is [`docs/runbooks/deployment.md`](../runbooks/deployment.md), and current staging acceptance is root [`NEXT.md`](../../NEXT.md).
+> **Historical implementation plan:** The deployable image and safeguards are built. The Render procedure in [`docs/runbooks/deployment.md`](../runbooks/deployment.md) is superseded. `render.yaml` has been removed. Current next work is root [`NEXT.md`](../../NEXT.md). Hosting is Cloudflare only. Verification is `scripts/ci.sh`, not GitHub Actions.
 
 **Written:** 2026-08-03
 **Status:** All nine slices complete, plus slice 10 (staff sign-in), which was
