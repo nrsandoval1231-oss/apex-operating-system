@@ -8,7 +8,7 @@ Apex is the operating system for Apex Designer Pools. It carries one durable pro
 
 ## Current state
 
-The non-Website product path is implemented, pushed, and CI-verified:
+The non-Website product path is implemented on `main`. Verification is the local script [`scripts/ci.sh`](scripts/ci.sh) (or [`scripts/ci.ps1`](scripts/ci.ps1) on Windows, which runs the same script through bash). This repository does not use GitHub Actions for CI.
 
 ```text
 Opportunity
@@ -95,25 +95,21 @@ Closeout requires authoritative reconciliation. After close:
 
 ## Local verification
 
-Root workspace:
+[`scripts/ci.sh`](scripts/ci.sh) is the full check: frozen install, typecheck, Apex OS / Designer / website builds, unit tests (workspace, Designer, and the legacy proposal engine), and the website Playwright specs. It also runs the integration tests when `DATABASE_URL`, `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, and `S3_SECRET_ACCESS_KEY` are set. Without those, it skips the integration suite and says so. That skip is not a pass of the Postgres adapter or evidence storage tests.
 
 ```bash
-pnpm install
-pnpm run typecheck
-pnpm --filter @apex/os build
-pnpm run test
-pnpm audit --prod --audit-level high
+bash scripts/ci.sh
 ```
 
-Designer repository:
+On Windows, from the repository root:
 
-```bash
-npm install
-npm test
-npm run build
+```powershell
+powershell -File scripts/ci.ps1
 ```
 
-The latest verified baseline is in [`STATUS.md`](STATUS.md). CI also runs the container against real PostgreSQL and MinIO-compatible storage, tests the no-object-storage warning path, and proves a deployed image cannot enable the local authentication bypass.
+A production website build with `PUBLIC_ENV=production` and no `PUBLIC_LEAD_WEBHOOK_URL` is expected to fail. `scripts/ci.sh` checks that refusal.
+
+The latest verified baseline is in [`STATUS.md`](STATUS.md).
 
 ## Documentation map
 

@@ -31,13 +31,13 @@ export default function App() {
       {/* Outside the shell: the shell renders sign-in whenever the API is
           refusing, and during the callback it is — there is no token yet. */}
       <Route path="callback" element={<AuthCallback />} />
-      <Route path="designer" element={
-        <Suspense fallback={<main className="designer-loading" aria-live="polite">Opening Designer…</main>}>
-          <DesignerApp />
-        </Suspense>
-      } />
       <Route path="/" element={<Layout />}>
         <Route index element={<Navigate to="/today" replace />} />
+        <Route path="designer" element={
+          <Suspense fallback={<main className="designer-loading" aria-live="polite">Opening Designer…</main>}>
+            <DesignerApp />
+          </Suspense>
+        } />
         <Route path="today" element={<TodayFeed />} />
         <Route path="calendar" element={<Calendar />} />
         <Route path="projects" element={<Projects />} />

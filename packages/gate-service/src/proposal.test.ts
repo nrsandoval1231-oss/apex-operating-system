@@ -70,6 +70,32 @@ describe('proposal lifecycle and Finish estimate', () => {
     }, idempotencyKey: 'finish-collision-retry' })).rejects.toThrow(/different canonical quantities/i);
   });
 
+  it('applies the first Finish prices onto the empty Designer draft', async () => {
+    // Designer creates this draft with no prices, then the estimate page's
+    // first Finish sends the amounts on the same opportunity and digest.
+    const empty = await service.finishEstimate({ leadId: ids.lead, actor, submission,
+      directLines: [], measuredLines: [], feeRateBps: 0, idempotencyKey: 'finish-designer-empty' });
+    expect(empty.proposal.status).toBe('draft');
+    expect(empty.blockers.some((blocker) => /needs/i.test(blocker.message))).toBe(true);
+
+    const priced = await service.finishEstimate({ leadId: ids.lead, actor, submission,
+      directLines: direct, measuredLines: measured, feeRateBps: 3000,
+      idempotencyKey: 'finish-designer-priced' });
+    expect(priced.proposal.proposalVersionId).toBe(empty.proposal.proposalVersionId);
+    expect(priced.takeoff.revisionId).toBe(empty.takeoff.revisionId);
+    expect(priced.blockers).toEqual([]);
+    expect(priced.proposal.status).toBe('issued');
+    expect(priced.proposal.totalCents).toBeGreaterThan(0);
+    expect((await db.query('select * from proposal_versions')).rows).toHaveLength(1);
+
+    const retry = await service.finishEstimate({ leadId: ids.lead, actor, submission,
+      directLines: direct, measuredLines: measured, feeRateBps: 3000,
+      idempotencyKey: 'finish-designer-priced-retry' });
+    expect(retry.proposal.status).toBe('issued');
+    expect(retry.proposal.proposalVersionId).toBe(priced.proposal.proposalVersionId);
+    expect(retry.proposal.totalCents).toBe(priced.proposal.totalCents);
+  });
+
   it('issues a pinned immutable version and rejects a stale expected revision', async () => {
     const finished = await service.finishEstimate({ leadId: ids.lead, actor, submission,
       directLines: direct, measuredLines: measured, feeRateBps: 3000, idempotencyKey: 'finish-issue-1' });

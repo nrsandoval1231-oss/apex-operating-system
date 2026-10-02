@@ -5,7 +5,7 @@ import {
   resolveSsl,
 } from '../packages/database/src/index.ts';
 import { GateService, InspectionService } from '../packages/gate-service/src/index.ts';
-import { createCanonicalId, type EventActor, type JobId } from '../packages/contracts/src/index.ts';
+import { type EventActor, type JobId } from '../packages/contracts/src/index.ts';
 
 /**
  * The Postgres adapter against a real server — deployment plan slice 2.
@@ -15,9 +15,9 @@ import { createCanonicalId, type EventActor, type JobId } from '../packages/cont
  * the driver boundary — type parsing, pooled transactions, advisory locks — so
  * they cannot be caught by the PGlite suite by construction.
  *
- * Runs only when DATABASE_URL is set, which in practice means CI (the workflow
- * starts a Postgres service container). Skipping locally is deliberate: needing
- * Docker to run `pnpm verify` on a laptop is a tax on every other change.
+ * Runs only when DATABASE_URL is set. `scripts/ci.sh` starts that database
+ * when it is going to run this file. Skipping locally is deliberate: needing
+ * a server to run the unit suite on a laptop is a tax on every other change.
  */
 
 const url = process.env.DATABASE_URL?.trim();
@@ -26,18 +26,24 @@ const available = Boolean(url);
 if (!available) {
   console.warn(
     '\n  !  SKIPPING the Postgres adapter tests: DATABASE_URL is not set.'
-    + '\n     These run in CI against a service container. Skipping is NOT a pass —'
-    + '\n     the adapter is simply unverified in this environment.\n',
+    + '\n     scripts/ci.sh runs them when DATABASE_URL and S3 settings are present.'
+    + '\n     Skipping is NOT a pass — the adapter is simply unverified here.\n',
   );
 }
 
 let db: PostgresDatabase;
+/*
+ * Stable ids. A rerun against the same database used to mint a fresh lead id,
+ * hit ON CONFLICT DO NOTHING on the fixed idempotency key `adapter:1`, and
+ * then fail the job insert: the new lead row was never written, so the
+ * foreign key had nothing to point at. The same rows must be inserted again.
+ */
 const ids = {
-  lead: createCanonicalId('lead'),
-  job: createCanonicalId('job'),
-  revision: createCanonicalId('revision'),
-  owner: createCanonicalId('user'),
-  sub: createCanonicalId('sub'),
+  lead: 'lead_ADAPTERDATEYARD00000000001',
+  job: 'job_ADAPTERDATETASK00000000001',
+  revision: 'revision_ADAPTERDATEREV000000000001',
+  owner: 'user_ADAPTERDATEENTRY0000000001',
+  sub: 'sub_ADAPTERDATECREW00000000001',
 };
 const owner: EventActor = { kind: 'user', userId: ids.owner, role: 'admin' };
 const jobId = ids.job as JobId;
