@@ -11,7 +11,11 @@ import { Container, getContainer } from "@cloudflare/containers";
 
 interface Env {
   APEX_OS: DurableObjectNamespace<ApexOsContainer>;
-  HYPERDRIVE: { connectionString: string };
+  /**
+   * Neon pooled connection string, `sslmode=require`. A Worker secret, not a
+   * Hyperdrive binding: Containers cannot reach Hyperdrive.
+   */
+  CONTAINER_DATABASE_URL: string;
   S3_ENDPOINT: string;
   S3_BUCKET: string;
   S3_ACCESS_KEY_ID: string;
@@ -33,6 +37,9 @@ export class ApexOsContainer extends Container<Env> {
   sleepAfter = "10m";
   // Required ports are checked on start. The image listens on 4100.
   requiredPorts = [4100];
+  // Neon and R2 are on the public internet. The library default is already
+  // true; set it here so a later default change cannot cut the container off.
+  enableInternet = true;
 }
 
 function required(value: string | undefined, name: string): string {
@@ -48,7 +55,7 @@ function containerEnv(env: Env): Record<string, string> {
     PORT: "4100",
     NODE_ENV: "production",
     APEX_STAGING_NOINDEX: "1",
-    DATABASE_URL: required(env.HYPERDRIVE?.connectionString, "HYPERDRIVE"),
+    DATABASE_URL: required(env.CONTAINER_DATABASE_URL, "CONTAINER_DATABASE_URL"),
     S3_ENDPOINT: required(env.S3_ENDPOINT, "S3_ENDPOINT"),
     S3_BUCKET: required(env.S3_BUCKET, "S3_BUCKET"),
     S3_ACCESS_KEY_ID: required(env.S3_ACCESS_KEY_ID, "S3_ACCESS_KEY_ID"),
@@ -97,7 +104,7 @@ export default {
     const container = getContainer(env.APEX_OS, "staging");
     try {
       await container.startAndWaitForPorts({
-        startOptions: { envVars: containerEnv(env) },
+        startOptions: { envVars: containerEnv(env), enableInternet: true },
         cancellationOptions: { portReadyTimeoutMS: 120_000 },
       });
     } catch (error) {
