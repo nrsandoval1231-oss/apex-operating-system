@@ -8,13 +8,16 @@
 var
 _to_delete
 
-# Retired sibling-checkout directory names. Designer source that the image
-# needs is apps/designer, which is not excluded.
-apex-decks
-apex-lead-engine
-apex-prds
-apex-proposal-engine
-apex-website
+# Retired sibling-checkout directory names, anchored to the build context root.
+# `Apex Designer` (space) is the historical CI checkout. Live Designer source
+# is apps/designer and is not excluded.
+/Apex Designer
+/apex-designer
+/apex-decks
+/apex-lead-engine
+/apex-prds
+/apex-proposal-engine
+/apex-website
 
 # Secrets must arrive as environment variables, never baked into a layer.
 **/.env

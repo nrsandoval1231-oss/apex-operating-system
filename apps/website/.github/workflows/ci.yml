@@ -102,7 +102,7 @@ jobs:
           # site.ts no longer falls back to a live n8n host. The real value is set
           # in the environment of the build that is uploaded, not in this file.
           PUBLIC_ENV=production \
-            PUBLIC_LEAD_WEBHOOK_URL=https://n8n.example.hstgr.cloud/webhook/apex-lead-intake \
+            PUBLIC_LEAD_WEBHOOK_URL=https://lead-webhook.example/webhook/apex-lead-intake \
             npm run build
           npm run preflight -- --allow-placeholders
 

@@ -45,7 +45,7 @@ These files are historical evidence, not a second copy of the live source:
 
 - The prototypes and handoffs in the table above.
 - `downloads-apex-20260729/` — budget and `designer-quantity-v4` takeoff inputs. Do not rewrite them to look like the current quantity model.
-- `desktop-apex-20260805/` — system diagram, Whitaker and other attachments, the n8n lead-engine export, workflow evidence, and Downloads inbox files that are not the deck binaries.
+- `desktop-apex-20260805/` — system diagram, Whitaker and other attachments, the lead-engine note, and Downloads inbox files that are not the deck binaries. On 2026-10-02 the n8n workflow JSON exports in `workflow-evidence/` and `Apex Lead Engine/Apex-Lead-Engine-01-Intake.json` were removed from the working tree because they carried a JWT-shaped token and the live n8n host. They remain in git history. The desktop backup itself is still here; the owner has not decided to delete it.
 - `apex-consolidation-manifest-2026-08-11.json` — the 2026-08-11 copy map. Destinations it names that are listed under "Removed" are gone from the working tree and remain in git history.
 
 Material formerly held on Desktop and in Downloads was consolidated here on 2026-08-11 after SHA-256 verification. That pass did not overwrite the then-separate source repositories.
