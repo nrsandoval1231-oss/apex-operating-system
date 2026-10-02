@@ -72,6 +72,14 @@ export default defineConfig({
     timeout: 120_000,
     // ASTRO_DEV_TOOLBAR=false: the toolbar injects its own markup (including an <h1>) into
     // every dev page, which pollutes element queries and breaks heading assertions.
-    env: { PUBLIC_ENV: 'development', ASTRO_DEV_TOOLBAR: 'false' },
+    env: {
+      PUBLIC_ENV: 'development',
+      ASTRO_DEV_TOOLBAR: 'false',
+      // No host is committed in site.ts. This placeholder contains webhook-test
+      // so the acceptance specs can assert the non-production path.
+      PUBLIC_LEAD_WEBHOOK_URL_TEST:
+        process.env.PUBLIC_LEAD_WEBHOOK_URL_TEST ??
+        'https://lead-webhook.example/webhook-test/apex-lead-intake',
+    },
   },
 });

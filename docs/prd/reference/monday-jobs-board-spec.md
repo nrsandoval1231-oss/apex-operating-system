@@ -6,8 +6,8 @@ model and its outbound event. The Schedule board, crew timeline and gunite queue
 something that gets torn out.
 
 **Consumes:** nothing. **Emits:** one event per status transition to
-`POST https://n8n.example.hstgr.cloud/webhook/apex-job-status` (replace the host with
-the n8n instance base URL; do not commit the live hostname), per
+`POST {N8N_BASE_URL}/webhook/apex-job-status` (set `N8N_BASE_URL` in the environment;
+do not commit the live hostname), per
 `workflows/lead-engine/docs/job-status-contract.md`.
 
 ---
@@ -110,7 +110,7 @@ When Job Status changes → set Status Changed to now
 
 ```
 When Job Status changes → send webhook to
-https://n8n.example.hstgr.cloud/webhook/apex-job-status
+{N8N_BASE_URL}/webhook/apex-job-status
 ```
 
 **Implementation note — Monday's native webhook is not the contract.** Monday sends its own

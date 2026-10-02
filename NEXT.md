@@ -1,9 +1,11 @@
 # Apex — Next
 
-## Immediate next milestone: staging acceptance
+## Immediate next milestone: a Cloudflare staging plan, then acceptance
 
-1. Configure the staging dependencies and secrets in [`docs/runbooks/deployment.md`](docs/runbooks/deployment.md).
-2. Deploy the CI-green root commit to staging. Confirm `/ready` reports database and evidence readiness.
+[`docs/runbooks/deployment.md`](docs/runbooks/deployment.md) is superseded. It describes Render. Hosting is Cloudflare only, never Vercel. Do not deploy until a Cloudflare plan exists and the owner approves it.
+
+1. Write that Cloudflare plan (static website, the Apex OS image, Postgres, evidence storage, staff identity). `render.yaml` and the GitHub Actions workflows are still in the tree until the owner removes them.
+2. After that plan is approved, deploy the verified commit to staging. Confirm `/ready` reports database and evidence readiness.
 3. Run this controlled lifecycle with non-production customer data:
 
 ```text
@@ -40,22 +42,10 @@ The legacy takeoff-to-proposal chain reads `apps/designer` and `archive/proposal
 
 ## Verification commands
 
-Root:
-
 ```bash
-pnpm run typecheck
-pnpm --filter @apex/os build
-pnpm run test
-pnpm audit --prod --audit-level high
-git diff --check
+scripts/ci.sh
 ```
 
-Designer:
+That runs install, typecheck, the Apex OS build, the Designer build, the website production-webhook refusal, the website check and build, core unit tests, Designer unit tests, the legacy proposal-engine scripts, and website Playwright. Integration tests run only when `DATABASE_URL`, `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, and `S3_SECRET_ACCESS_KEY` are set. Otherwise the script says it skipped them. That skip is not a pass.
 
-```bash
-npm test
-npm run build
-git diff --check
-```
-
-The completed implementation baseline is recorded in [`STATUS.md`](STATUS.md).
+The 2026-10-02 run of that script is recorded in [`STATUS.md`](STATUS.md).
