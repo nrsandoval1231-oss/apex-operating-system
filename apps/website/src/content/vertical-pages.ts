@@ -41,6 +41,11 @@ export interface VerticalPage {
   readonly lead: string;
   /** Hero image slot for this page (image manifest — D-20 / AC-9). */
   readonly image: ImageSlotId;
+  /**
+   * Optional second photograph. Only Designer Pools has one today: the hero
+   * stays the LCP image, and this one sits beside the service list, lazy.
+   */
+  readonly secondaryImage?: ImageSlotId;
   /** Three short proof points rendered as a stat strip. Values come from site-copy/pools. */
   readonly proof: readonly { readonly value: string; readonly label: string }[];
   /** Label on the page's primary CTA. Reused from the vertical's existing CTA where one exists. */
@@ -63,6 +68,7 @@ export const VERTICAL_PAGES: Readonly<Record<Vertical, VerticalPage>> = {
       "we're still here years later to keep them running. From the first dig to the first " +
       'swim, one crew owns the whole build.',
     image: 'pools-hero',
+    secondaryImage: 'pools-backyard',
     proof: [
       { value: '7-Yr', label: 'Pool build warranty' },
       { value: '48-Hr', label: 'Warranty response' },

@@ -43,6 +43,7 @@ const style = `aspect-ratio:${slot.ratio};`;
       sizes={sizes}
       alt={altText}
       loading={loading}
+      fetchpriority={loading === 'eager' ? 'high' : undefined}
       decoding="async"
       data-stock={slot.stock ? 'true' : undefined}
     />

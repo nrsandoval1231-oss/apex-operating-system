@@ -26,6 +26,7 @@ import GuaranteeBand from '@components/GuaranteeBand.astro';
 import Testimonials from '@components/Testimonials.astro';
 import QuoteSection from '@components/QuoteSection.astro';
 import Footer from '@components/Footer.astro';
+import ImageSlot from '@components/ImageSlot.astro';
 
 import { VERTICAL_LIST, type VerticalConfig } from '@content/verticals';
 import { getVerticalPage, type VerticalPage } from '@content/vertical-pages';
@@ -88,17 +89,28 @@ const jsonLd = jsonLdGraph([
 
     <section class="vservices">
       <div class="wrap">
-        <div class="sec-head">
-          <p class="eyebrow" style={`color:var(${textAccent})`}>What we do</p>
-          <h2>{card ? card.heading : pools.heading}</h2>
-        </div>
-        <ul class="featlist" style={`--vt:var(${cfg.accentVar})`}>
-          {features.map((f) => <li>{f}</li>)}
-        </ul>
+        <div class:list={['vservices-body', { 'has-photo': Boolean(page.secondaryImage) }]}>
+          <div>
+            <div class="sec-head">
+              <p class="eyebrow" style={`color:var(${textAccent})`}>What we do</p>
+              <h2>{card ? card.heading : pools.heading}</h2>
+            </div>
+            <ul class="featlist" style={`--vt:var(${cfg.accentVar})`}>
+              {features.map((f) => <li>{f}</li>)}
+            </ul>
 
-        <p class="area mono">
-          Serving {SERVICE_AREA.slice(0, -1).join(' · ')} and the wider South Plains.
-        </p>
+            <p class="area mono">
+              Serving {SERVICE_AREA.slice(0, -1).join(' · ')} and the wider South Plains.
+            </p>
+          </div>
+          {page.secondaryImage && (
+            <ImageSlot
+              id={page.secondaryImage}
+              class="vservices-photo"
+              sizes="(max-width:900px) 100vw, 40vw"
+            />
+          )}
+        </div>
       </div>
     </section>
 
@@ -130,6 +142,18 @@ const jsonLd = jsonLdGraph([
     font-size: 12.5px;
     letter-spacing: 0.03em;
     color: var(--steel);
+  }
+  /* Designer Pools is the only vertical with a second photograph. It keeps the
+     same 4:5 slot as the hero and stays lazy, so it does not compete with the
+     hero for LCP. */
+  .vservices-body.has-photo {
+    display: grid;
+    grid-template-columns: 1.05fr 0.95fr;
+    gap: 40px;
+    align-items: start;
+  }
+  @media (max-width: 900px) {
+    .vservices-body.has-photo { grid-template-columns: 1fr; gap: 26px; }
   }
   @media (max-width: 700px) {
     .vservices .featlist { grid-template-columns: 1fr; }
