@@ -44,7 +44,10 @@ Thumbs.db
 
 # Retired sibling-checkout names. Canonical copies live under apps/, workflows/,
 # docs/prd, archive/, and tools/. Do not reintroduce those directories at the
-# repository root (they are not submodules).
+# repository root (they are not submodules). `Apex Designer` is the historical
+# checkout directory (space, capitals); `apex-designer` is the old repo name.
+/Apex Designer/
+/apex-designer/
 /apex-decks/
 /apex-lead-engine/
 /apex-prds/

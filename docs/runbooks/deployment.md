@@ -1,5 +1,11 @@
 # Apex OS — deployment runbook
 
+> **Superseded pending a Cloudflare plan (2026-10-02).** This runbook deploys a
+> Render web service and Render Postgres. The owner has decided hosting is
+> Cloudflare only, and never Vercel. Do not follow this runbook to deploy.
+> `render.yaml` is still in the tree until the owner removes it. A Cloudflare
+> deployment plan has not been written.
+
 **Written:** 2026-08-03 (deployment plan slice 9)
 
 **Updated:** 2026-09-30. Sections 8 and 8b no longer describe deploy keys.

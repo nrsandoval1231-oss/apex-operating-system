@@ -13,7 +13,7 @@ The single most valuable thing this system does is **respond to a new lead withi
 1. **Idempotency.** A lead webhook can fire more than once (client retries, network). Dedupe on `lead_id`. **Never text or email a lead twice** for the same submission. A double-send is a serious bug, not a rare edge case.
 2. **`lead_id` is the join key end to end.** It arrives from the website, and it must travel unchanged into the holding store, the CRM, and Meta offline conversions. Never regenerate it.
 3. **Consent gate is absolute.** Send SMS only when `consent_sms === true`. No exceptions, no "just this once." This is TCPA, not a preference. (See `docs/decisions.md` D-14 on quiet hours.)
-4. **The auto-response must not block on slow downstream steps.** Send the speed-to-lead text/email first, then do CRM writes, enrichment, and logging. If the CRM is slow or down, the lead still gets its reply. Order matters: respond, then record.
+4. **The auto-response must not block on slow downstream steps.** Send the speed-to-lead text/email first, then do CRM writes, enrichment, and logging. If the CRM is slow or down, the lead still gets its reply. Order matters: respond, then record. Speed-to-lead is not in this tree. There is no `workflows/02-speed-to-lead.ts`. Do not treat that file as present, and do not create it to satisfy this rule.
 5. **Secrets live in n8n credentials, never in committed workflow files.** Webhook URLs, API keys, SMS tokens, Meta dataset IDs — all referenced by credential name or env var. Nothing sensitive in the repo.
 6. **Test and staging never send to real people or fire real conversions.** Use sandbox SMS numbers and a test Meta dataset. (Hard rule, mirrors the website repo.)
 7. **When a step depends on a `⚠ BLOCKED` decision, stop and surface it.** Build everything upstream and around it, leave `TODO(BLOCKED: D-xx)`, do not invent the missing piece (e.g. do not pick a CRM).
@@ -22,7 +22,7 @@ The single most valuable thing this system does is **respond to a new lead withi
 
 ## Build method (decided — confirm before changing)
 
-- **Target instance:** Apex runs **self-hosted n8n on Hostinger**. The base URL is `N8N_BASE_URL` in `.env.example` (placeholder `https://n8n.example.hstgr.cloud`). Do not commit the live hostname. Workflows deploy there.
+- **Target instance:** Apex runs **self-hosted n8n**. The base URL is `N8N_BASE_URL` in the local environment (see `.env.example`). Do not commit the live hostname. Workflows deploy there.
 - **Authoring:** use the **n8n Workflow SDK** (code-defined workflows), validated before creation. The maintainer has the n8n MCP connected — use `get_sdk_reference` and `validate_workflow` / `validate_node_config` as you build, and `create_workflow_from_code` to deploy. Prefer this over hand-writing raw workflow JSON: it validates.
 - **Repo holds:** the SDK source for each workflow under `workflows/`, plus these docs. The repo is the source of truth; the live n8n instance is the deploy target. Do not treat manual UI edits as canonical — round-trip them back into `workflows/`.
 - **One workflow per file**, named by phase. Present today: `workflows/01-intake.ts` and `workflows/02-job-status.ts`. There is no `workflows/02-speed-to-lead.ts`.

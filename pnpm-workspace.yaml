@@ -3,6 +3,13 @@ packages:
   - "packages/*"
 overrides:
   nanoid: 3.3.18
+  # High-severity advisories that the parent packages have not bumped yet.
+  # Patch or same-major only: devalue stays on 5, js-yaml on 4, undici on 8.
+  devalue: 5.9.4
+  js-yaml: 4.3.2
+  undici: 8.11.2
+  brace-expansion@1: 1.1.21
+  brace-expansion@2: 2.1.7
 # esbuild is a Vite build-time dependency only. Its postinstall script merely
 # verifies the platform binary that pnpm already installs via @esbuild/<platform>,
 # so the script is denied rather than granted install-time execution.
