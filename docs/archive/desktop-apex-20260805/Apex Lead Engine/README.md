@@ -24,8 +24,8 @@ A website-lead intake pipeline for Apex Get It Done's four service verticals:
 
 - n8n workflow: `Apex Lead Engine — 01 Intake` (`CNWX9VjtK5gJJ6rG`)
 - Created 2026-07-26, never modified, **0 executions**
-- Lives on `https://n8n.srv1758862.hstgr.cloud`
-- Webhook (only live when the workflow is active):
+- The live instance hostname was removed from this note on 2026-10-02. Set `N8N_BASE_URL` locally. Do not commit it.
+- Webhook path (only live when the workflow is active):
   `POST /webhook/apex-lead-intake`
 
 **Phase 1 is built.** The flow is coherent and complete for what it claims:
@@ -75,10 +75,10 @@ is preserved as `raw_payload` on both the Leads and Quarantine records.
 
 ## Files here
 
-- `Apex-Lead-Engine-01-Intake.json` — importable n8n workflow export, taken
-  2026-07-27. Import via n8n → Workflows → Import from File. No credentials or
-  secrets are in this file; you'll reattach the Airtable credential and set the
-  env vars after import.
+- `Apex-Lead-Engine-01-Intake.json` was removed on 2026-10-02. The export named
+  the live n8n host. It is still in git history. Do not restore it into the
+  working tree. The owner must revoke the n8n API key that was committed in
+  `b325a3d`. This note does not rewrite that history.
 - `README.md` — this file.
 
 ## If you pick this back up

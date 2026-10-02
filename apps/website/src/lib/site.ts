@@ -15,13 +15,10 @@ function envOr(key: string, fallback: string): string {
   return v && v.trim() ? v.trim() : fallback;
 }
 
-/** No live-host default. Empty in production fails the build (see below). */
+/** No committed host. Empty in production fails the build (see below). */
 const leadWebhookProd = envOr('PUBLIC_LEAD_WEBHOOK_URL', '');
-/** Placeholder only. Contains `webhook-test` so non-production never matches a live path. */
-const leadWebhookTest = envOr(
-  'PUBLIC_LEAD_WEBHOOK_URL_TEST',
-  'https://n8n.example.hstgr.cloud/webhook-test/apex-lead-intake',
-);
+/** No committed host. Non-production builds read PUBLIC_LEAD_WEBHOOK_URL_TEST. */
+const leadWebhookTest = envOr('PUBLIC_LEAD_WEBHOOK_URL_TEST', '');
 
 export const site = {
   /** Canonical URL — BLOCKED on D-03; only used for absolute URLs in Phase 4. */
@@ -38,10 +35,10 @@ export const site = {
    * Astro inlines `PUBLIC_` vars at build time. A static host cannot inject them
    * after upload, so set both in the environment of the build that produces `dist/`.
    *
-   * Production has no committed default. A missing `PUBLIC_LEAD_WEBHOOK_URL` fails
-   * the production build below rather than guessing a live host. Non-production
-   * falls back to the placeholder in `.env.example`, which still contains
-   * `webhook-test`, so local and CI runs never target a live intake URL (Hard rule 6).
+   * Neither URL has a committed host. A missing `PUBLIC_LEAD_WEBHOOK_URL` fails
+   * the production build below rather than guessing one. Non-production reads
+   * `PUBLIC_LEAD_WEBHOOK_URL_TEST` and is empty when that variable is unset, so a
+   * build cannot silently target a live intake URL (Hard rule 6).
    */
   leadWebhookProd,
   leadWebhookTest,

@@ -6,6 +6,12 @@
 > 2026-07-29 split, not the current tree. Current layout: `docs/repositories.md`.
 > The build profile (platform, roles, Gate, identity) is still the record of
 > what was decided then.
+>
+> **Superseded as a hosting authorization (2026-10-02).** The Platform section
+> names a Supabase-compatible Postgres shape for local work. It is not permission
+> to deploy on Supabase, Render, or Vercel. Hosting is Cloudflare only. A
+> Cloudflare deployment plan is still pending. Do not treat this ADR, or
+> `docs/runbooks/deployment.md`, as authorization to deploy.
 
 - **Status:** Accepted for implementation; website-exclusion clause superseded by consolidation
 - **Date:** 2026-07-29

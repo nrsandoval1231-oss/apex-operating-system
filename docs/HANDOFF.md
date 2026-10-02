@@ -1,8 +1,8 @@
 # Apex OS — handoff
 
-**As of:** 2026-08-13 verification baseline. Layout notes corrected 2026-09-30: one repository, no deploy keys. The former GitHub repositories were deleted; their history lives in this repository's git history.
+**As of:** 2026-10-02, verified by `scripts/ci.sh` (exit 0). Layout: one repository, no deploy keys. The former GitHub repositories were deleted; their history lives in this repository's git history.
 
-The unified non-Website lifecycle is implemented and CI-green on that baseline. Start with [`STATUS.md`](../STATUS.md) for the verified baseline, [`NEXT.md`](../NEXT.md) for staging acceptance, and [`docs/runbooks/deployment.md`](runbooks/deployment.md) for deployment operations.
+The unified lifecycle is implemented. Local verification is `scripts/ci.sh`, not GitHub Actions. Start with [`STATUS.md`](../STATUS.md) for the verified baseline and [`NEXT.md`](../NEXT.md) for what comes next. [`docs/runbooks/deployment.md`](runbooks/deployment.md) is a Render procedure and is superseded until a Cloudflare plan exists. Do not deploy from it.
 
 ## Current authority
 
@@ -34,8 +34,8 @@ Important boundaries:
 - True 3′–5′–3′ sports profile across calculations, views, and exports.
 - Ordering-focused `.xlsx` workbook with `Order List` first.
 - Soil/excavation assumptions and JSON diagnostics under Advanced.
-- Finish Estimate handoff and export blockers.
-- 580 tests plus typecheck/build verification.
+- Finish Estimate handoff and export blockers. Staff calls send the same bearer token as Apex OS. The first Finish on an existing draft keeps the prices that were entered.
+- 585 tests passed on 2026-10-02, plus typecheck and production build.
 
 ### Estimate and Proposal
 
@@ -56,10 +56,15 @@ Important boundaries:
 
 ## Verification
 
-- Root unit suite: 514 tests passed (2026-08-13 baseline).
-- Root CI verifies real PostgreSQL, MinIO/S3, dependency audit, container build/startup, storage warning path, and authentication-bypass refusal.
-- GitHub Actions run `31735048854` passed on that baseline.
-- Designer source is `apps/designer` in this repository. There is no separate Designer `main` to keep in sync.
+`scripts/ci.sh` on 2026-10-02, Node v22.22.2, pnpm 11.18.0, PostgreSQL 16.15, moto S3. Exit 0.
+
+- Core unit suite: 36 files, 518 tests passed.
+- Designer: 26 files, 585 tests passed.
+- Website Playwright: 122 passed.
+- Integration: 24 passed, 2 skipped. The skips are the missing-engine guards (`APEX_REQUIRE_DESIGNER_CONTRACT`, `APEX_REQUIRE_TAKEOFF_CHAIN`). Postgres, S3, the Designer contract, and the takeoff chain ran.
+- `pnpm audit --prod`: critical 0, high 0, one moderate (`uuid` via `exceljs`).
+
+GitHub Actions run `31735048854` is the 2026-08-13 historical run. It is not current CI. Designer source is `apps/designer` in this repository. There is no separate Designer `main` to keep in sync.
 
 The legacy Designer → proposal-engine chain reads `archive/proposal-engine` here. No deploy key. That chain is not the production Proposal path (`packages/pricing-engine`).
 
@@ -67,7 +72,7 @@ The legacy Designer → proposal-engine chain reads `archive/proposal-engine` he
 
 This is now operational, not broad product implementation:
 
-1. Configure staging dependencies and deploy manually.
+1. Write a Cloudflare staging plan and get the owner's approval before any deploy. Do not use the Render runbook or `render.yaml`.
 2. Execute the full staged lifecycle in [`NEXT.md`](../NEXT.md).
 3. Run and document a backup restore.
 4. Use a final HTTPS origin before issuing real customer links.
