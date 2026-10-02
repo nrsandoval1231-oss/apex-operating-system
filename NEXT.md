@@ -1,11 +1,11 @@
 # Apex — Next
 
-## Immediate next milestone: a Cloudflare staging plan, then acceptance
+## Immediate next milestone: stand up Cloudflare staging, then acceptance
 
-[`docs/runbooks/deployment.md`](docs/runbooks/deployment.md) is superseded. It describes Render. Hosting is Cloudflare only, never Vercel. Do not deploy until a Cloudflare plan exists and the owner approves it.
+[`docs/runbooks/cloudflare-staging.md`](docs/runbooks/cloudflare-staging.md) is the staging procedure. [`docs/runbooks/deployment.md`](docs/runbooks/deployment.md) describes Render and is historical. Hosting is Cloudflare only, never Vercel. Do not deploy until Nick runs that runbook from his machine. CI remains `scripts/ci.sh`.
 
-1. Write that Cloudflare plan (static website, the Apex OS service, Neon Postgres, R2 evidence, staff identity). `render.yaml` and the GitHub Actions workflows have been removed. CI remains `scripts/ci.sh`.
-2. After that plan is approved, deploy the verified commit to staging. Confirm `/ready` reports database and evidence readiness.
+1. Supply the Cloudflare, Neon, R2, and Access values the runbook lists, then deploy to `*.workers.dev` and `*.pages.dev` only.
+2. Confirm `/ready` reports database and evidence readiness, and that `scripts/staging-smoke.sh` passes.
 3. Run this controlled lifecycle with non-production customer data:
 
 ```text

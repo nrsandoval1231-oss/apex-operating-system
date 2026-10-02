@@ -294,6 +294,27 @@ export interface OidcOptions {
   readonly tokenEndpoint?: string;
 }
 
+/**
+ * Cloudflare Access — staging identity.
+ *
+ * Access already answered "is this browser the allowed Gmail?" at the edge and
+ * injected `Cf-Access-Jwt-Assertion`. This server checks that assertion and
+ * then loads the role from `app_users`. It does not accept a pasted gate token
+ * at the same time: two ways in would be two doors.
+ */
+export interface AccessOptions {
+  /** Team name only, the subdomain of `<team>.cloudflareaccess.com`. */
+  readonly team: string;
+  /** Access application AUD tag. */
+  readonly audience: string;
+  /** The one email allowed to act as staff. Compared case-insensitively. */
+  readonly email: string;
+  /** `app_users.user_id` for that person. The token does not choose the role. */
+  readonly userId: string;
+  /** Defaults to the team's Access certs URL. Tests point this at a local JWKS. */
+  readonly jwksUri?: string;
+}
+
 interface GateApiOptions {
   readonly db: Database;
   /**
@@ -304,6 +325,17 @@ interface GateApiOptions {
   readonly jwtSecret?: string;
   /** Set in any deployed environment; absent on a laptop. */
   readonly oidc?: OidcOptions;
+  /**
+   * Cloudflare Access as the only staff identity. Mutually exclusive with
+   * `oidc` and `jwtSecret`. See `AccessOptions`.
+   */
+  readonly access?: AccessOptions;
+  /**
+   * Staging crawler block. Every response gets `X-Robots-Tag: noindex`, and
+   * `GET /robots.txt` disallows the whole origin. Off unless the process was
+   * started with `APEX_STAGING_NOINDEX=1`.
+   */
+  readonly disallowRobots?: boolean;
   /**
    * The origin a customer reaches this server on, e.g. https://apex.example.com
    * — deployment plan slice 7.
@@ -385,13 +417,18 @@ export function createGateApi(options: GateApiOptions) {
    * second, unaudited door into every staff endpoint — and from the outside the
    * deployment would look correctly configured.
    */
-  if (options.oidc !== undefined && options.jwtSecret !== undefined) {
+  const identityMechanisms = [
+    options.oidc !== undefined,
+    options.access !== undefined,
+    options.jwtSecret !== undefined,
+  ].filter(Boolean);
+  if (identityMechanisms.length > 1) {
     throw new Error(
       'Configure an identity provider or a shared secret, not both: accepting self-minted '
       + 'tokens alongside a real provider is a second, unaudited door.',
     );
   }
-  if (options.oidc === undefined) {
+  if (options.oidc === undefined && options.access === undefined) {
     if (!options.jwtSecret || Buffer.byteLength(options.jwtSecret) < 32) {
       throw new Error('GATE_JWT_SECRET must be at least 32 bytes when no identity provider is configured.');
     }
@@ -481,6 +518,16 @@ export function createGateApi(options: GateApiOptions) {
     if (jwksSet === null) jwksSet = createRemoteJWKSet(new URL((await providerEndpoints()).jwksUri));
     return jwksSet;
   };
+
+  let accessJwks: JWTVerifyGetKey | null = null;
+  const accessKeys = (): JWTVerifyGetKey => {
+    if (accessJwks === null) {
+      const access = options.access!;
+      const uri = access.jwksUri ?? `https://${access.team}.cloudflareaccess.com/cdn-cgi/access/certs`;
+      accessJwks = createRemoteJWKSet(new URL(uri));
+    }
+    return accessJwks;
+  };
   const maxEvidenceBytes = options.maxEvidenceBytes ?? 25_000_000;
 
   /**
@@ -507,7 +554,45 @@ export function createGateApi(options: GateApiOptions) {
     return address === '127.0.0.1' || address === '::1' || address === '::ffff:127.0.0.1';
   };
 
+  /**
+   * Staging staff identity is the Access assertion, not a bearer token.
+   *
+   * The edge already required the one-time PIN. This check is what stops a
+   * request that reached the process some other way, and what binds that
+   * browser to one `app_users` row. A role claim in the JWT is ignored.
+   */
+  const authenticateAccess = async (request: IncomingMessage): Promise<EventActor> => {
+    const access = options.access!;
+    const header = request.headers['cf-access-jwt-assertion'];
+    if (typeof header !== 'string' || header.length === 0) {
+      throw new AuthError('Cloudflare Access authentication is required.');
+    }
+    let email = '';
+    try {
+      const { payload } = await jwtVerify(header, accessKeys(), {
+        algorithms: ['RS256', 'RS384', 'RS512', 'ES256', 'ES384'],
+        issuer: `https://${access.team}.cloudflareaccess.com`,
+        audience: access.audience,
+      });
+      email = typeof payload.email === 'string' ? payload.email.trim().toLowerCase() : '';
+    } catch (error) {
+      if (error instanceof AuthError) throw error;
+      throw new AuthError('Authentication is invalid or expired.');
+    }
+    if (email !== access.email.trim().toLowerCase()) {
+      throw new AuthError('This Access identity is not allowed to use staging.');
+    }
+    const users = await options.db.query<{ role: AppRole }>(
+      `select role from app_users where user_id = $1 and active = true`,
+      [access.userId],
+    );
+    const role = users.rows[0]?.role;
+    if (role === undefined) throw new AuthError('No active Apex user is linked to this identity.');
+    return EventActorSchema.parse({ kind: 'user', userId: access.userId, role });
+  };
+
   const authenticate = async (request: IncomingMessage): Promise<EventActor> => {
+    if (options.access !== undefined) return authenticateAccess(request);
     if (options.localUserId !== undefined && !request.headers.authorization) {
       if (!isLoopback(request)) {
         throw new AuthError('Local pilot access is limited to this machine.');
@@ -631,6 +716,16 @@ export function createGateApi(options: GateApiOptions) {
           'access-control-allow-headers': 'authorization,content-type,idempotency-key',
         });
         return response.end();
+      }
+      if (options.disallowRobots && request.method === 'GET' && url.pathname === '/robots.txt') {
+        const body = 'User-agent: *\nDisallow: /\n';
+        response.writeHead(200, {
+          'content-type': 'text/plain; charset=utf-8',
+          'content-length': Buffer.byteLength(body),
+          'cache-control': 'no-store',
+          'x-robots-tag': 'noindex, nofollow, noarchive',
+        });
+        return response.end(body);
       }
       if (request.method === 'GET' && url.pathname === '/health') {
         return sendJson(response, 200, { status: 'ok' });
@@ -1505,6 +1600,7 @@ export function createGateApi(options: GateApiOptions) {
   const logged = (request: IncomingMessage, response: ServerResponse) => {
     const started = Date.now();
     const path = redactPath(new URL(request.url ?? '/', 'http://localhost').pathname);
+    if (options.disallowRobots) response.setHeader('x-robots-tag', 'noindex, nofollow, noarchive');
     if (path === '/health' || path === '/ready') return void handler(request, response);
     response.on('finish', () => {
       log.info('request', {

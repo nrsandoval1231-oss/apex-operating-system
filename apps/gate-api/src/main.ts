@@ -33,6 +33,52 @@ const oidc = oidcIssuer && oidcAudience && oidcClientId
   }
   : undefined;
 
+/**
+ * Cloudflare Access — staging only.
+ *
+ * All four variables or none. Partial configuration would boot a server that
+ * looks locked and is not. The team name is the subdomain of
+ * `<team>.cloudflareaccess.com`, not the full host.
+ */
+const accessTeam = process.env.APEX_ACCESS_TEAM?.trim();
+const accessAudience = process.env.APEX_ACCESS_AUD?.trim();
+const accessEmail = process.env.APEX_ACCESS_EMAIL?.trim();
+const accessUserId = process.env.APEX_ACCESS_USER_ID?.trim();
+const accessParts = {
+  APEX_ACCESS_TEAM: accessTeam,
+  APEX_ACCESS_AUD: accessAudience,
+  APEX_ACCESS_EMAIL: accessEmail,
+  APEX_ACCESS_USER_ID: accessUserId,
+};
+const accessSet = Object.entries(accessParts).filter(([, value]) => Boolean(value));
+if (accessSet.length > 0 && accessSet.length < 4) {
+  const missing = Object.entries(accessParts).filter(([, value]) => !value).map(([name]) => name);
+  throw new Error(`Cloudflare Access is partly configured; these are missing: ${missing.join(', ')}.`);
+}
+if (accessTeam !== undefined && !/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/i.test(accessTeam)) {
+  throw new Error('APEX_ACCESS_TEAM must be the Access team subdomain, not a full URL.');
+}
+if (accessEmail !== undefined && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(accessEmail)) {
+  throw new Error('APEX_ACCESS_EMAIL must be a single email address.');
+}
+if (accessUserId !== undefined && !/^user_[0-9A-HJKMNP-TV-Z]{26}$/.test(accessUserId)) {
+  throw new Error('APEX_ACCESS_USER_ID must be a canonical user_<ULID> identifier.');
+}
+const access = accessTeam && accessAudience && accessEmail && accessUserId
+  ? {
+    team: accessTeam.toLowerCase(),
+    audience: accessAudience,
+    email: accessEmail,
+    userId: accessUserId,
+  }
+  : undefined;
+
+const noindexFlag = process.env.APEX_STAGING_NOINDEX?.trim();
+if (noindexFlag !== undefined && noindexFlag !== '' && noindexFlag !== '1') {
+  throw new Error('APEX_STAGING_NOINDEX must be 1 or unset.');
+}
+const disallowRobots = noindexFlag === '1';
+
 // Both-configured and neither-configured are refused by `createGateApi`, which
 // is where that invariant is enforced and tested.
 const secret = process.env.GATE_JWT_SECRET;
@@ -123,7 +169,7 @@ if (localUserId !== undefined && !/^user_[0-9A-HJKMNP-TV-Z]{26}$/.test(localUser
  * indefensible anywhere a provider has been configured — and a deployed image
  * carrying it would look authenticated while being wide open.
  */
-if (localUserId !== undefined && oidc) {
+if (localUserId !== undefined && (oidc || access)) {
   throw new Error(
     'GATE_LOCAL_USER is set alongside an identity provider. It disables authentication '
     + 'entirely and must not exist in a deployed environment.',
@@ -185,10 +231,12 @@ const server = createGateApi({
   db,
   ...(secret ? { jwtSecret: secret } : {}),
   ...(oidc ? { oidc } : {}),
+  ...(access ? { access } : {}),
   ...(publicOrigin ? { publicOrigin } : {}),
   storage,
   ...(localUserId ? { localUserId } : {}),
   ...(customerContact ? { customerContact } : {}),
+  ...(disallowRobots ? { disallowRobots: true } : {}),
 });
 
 /**
@@ -209,7 +257,12 @@ for (const signal of ['SIGTERM', 'SIGINT'] as const) {
 
 server.listen(port, HOST, () => {
   console.log(`Evidence            ${storage.describe()}`);
-  console.log(`Identity            ${oidc ? `${oidc.issuer} (audience ${oidc.audience})` : 'local pilot secret'}`);
+  console.log(`Identity            ${
+    access ? `Cloudflare Access (team ${access.team}, actor ${access.userId})`
+      : oidc ? `${oidc.issuer} (audience ${oidc.audience})`
+        : 'local pilot secret'
+  }`);
+  if (disallowRobots) console.log('Crawlers            staging noindex (Disallow: /)');
   console.log(`Customer links      ${publicOrigin ? `${publicOrigin}/c/…` : 'this machine only (APEX_PUBLIC_ORIGIN unset)'}`);
   console.log(`Apex OS             http://${HOST}:${port}/app`);
 

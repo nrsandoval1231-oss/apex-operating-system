@@ -68,7 +68,7 @@ The 2026-08-13 GitHub Actions run `31735048854` is historical. It is not the cur
 
 ## Deployment status
 
-Staging is not ready. Hosting is Cloudflare only, never Render, Vercel, or GitHub Actions. [`docs/runbooks/deployment.md`](docs/runbooks/deployment.md) is a Render procedure and is superseded until a Cloudflare plan exists. `render.yaml` and the GitHub Actions workflows have been removed. Production has not been touched.
+Staging is specified and not deployed. Hosting is Cloudflare only, never Render, Vercel, or GitHub Actions. The procedure is [`docs/runbooks/cloudflare-staging.md`](docs/runbooks/cloudflare-staging.md): Apex OS as a Cloudflare Container on `*.workers.dev`, the website on Cloudflare Pages (`*.pages.dev`), Neon Postgres through Hyperdrive, and R2 evidence. [`docs/runbooks/deployment.md`](docs/runbooks/deployment.md) is the old Render procedure. `render.yaml` and the GitHub Actions workflows have been removed. Production has not been touched.
 
 Required staging configuration:
 
@@ -83,7 +83,7 @@ Migrations run forward on application startup under a PostgreSQL advisory lock. 
 
 ## Remaining operational work
 
-1. Write the Cloudflare staging plan (website on Cloudflare Pages, Apex OS on Cloudflare, Neon Postgres, R2 evidence). Do not deploy to Render.
+1. Stand up staging from [`docs/runbooks/cloudflare-staging.md`](docs/runbooks/cloudflare-staging.md) on Nick's machine. Do not deploy to Render. The runbook's placeholders are the values that still have to be supplied.
 2. Execute the staging acceptance flow in [`NEXT.md`](NEXT.md).
 3. Exercise and document a backup restore before the pilot carries real money.
 4. Obtain the brochure/reference inputs before implementing the deferred equipment-catalog and excavator-specific dig-sheet work.
@@ -94,4 +94,4 @@ The legacy takeoff-to-proposal chain reads `archive/proposal-engine` in this rep
 
 - [`docs/status.md`](docs/status.md) is the chronological engineering record. Sections dated before this update describe the system as it existed then and are intentionally preserved.
 - [`docs/archive/`](docs/archive/README.md) keeps historical artifacts that are not copies of the live trees, including the old `designer-quantity-v4` fixtures. Do not rewrite those fixtures to look current. Duplicate repo snapshots that used to sit beside them were removed; that history lives in git, and the old GitHub repositories were deleted.
-- Current active guidance is this file, [`README.md`](README.md), and [`NEXT.md`](NEXT.md). The deployment runbook is superseded pending a Cloudflare plan.
+- Current active guidance is this file, [`README.md`](README.md), [`NEXT.md`](NEXT.md), and [`docs/runbooks/cloudflare-staging.md`](docs/runbooks/cloudflare-staging.md). The Render runbook is historical.
