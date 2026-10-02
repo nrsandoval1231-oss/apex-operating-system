@@ -5,7 +5,7 @@
 > Actions. Do not follow this runbook to deploy. `render.yaml` was removed
 > from the tree. Staging is [`cloudflare-staging.md`](cloudflare-staging.md):
 > a container on `*.workers.dev`, the website on `*.pages.dev`, Neon through
-> Hyperdrive, and evidence on R2. The steps below are historical.
+> the pooled connection string, and evidence on R2. The steps below are historical.
 
 **Written:** 2026-08-03 (deployment plan slice 9)
 
