@@ -106,6 +106,23 @@ describe('Cloudflare Access as the only staging identity', () => {
     expect(await response.json()).toEqual({ error: 'No active Apex user is linked to this identity.' });
   });
 
+  it('serves the customer stylesheet and favicon without an Access assertion', async () => {
+    const css = await fetch(`${baseUrl}/customer.css`);
+    expect(css.status).toBe(200);
+    expect(css.headers.get('content-type')).toContain('text/css');
+    expect(await css.text()).toContain('--paper');
+
+    const icon = await fetch(`${baseUrl}/favicon.svg`);
+    expect(icon.status).toBe(200);
+    expect(icon.headers.get('content-type')).toContain('image/svg+xml');
+    expect(await icon.text()).toContain('<svg');
+
+    const staff = await fetch(`${baseUrl}/api/jobs`);
+    expect(staff.status).toBe(403);
+    const other = await fetch(`${baseUrl}/apps/gate-api/public/customer.css`);
+    expect(other.status).toBe(403);
+  });
+
   it('refuses a missing Access assertion, including a bearer token', async () => {
     expect((await jobs()).status).toBe(403);
     const bearer = await jobs({ authorization: 'Bearer not-a-gate-token' });
