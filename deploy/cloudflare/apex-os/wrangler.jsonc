@@ -28,12 +28,6 @@
       "new_sqlite_classes": ["ApexOsContainer"]
     }
   ],
-  "hyperdrive": [
-    {
-      "binding": "HYPERDRIVE",
-      "id": "REPLACE_WITH_HYPERDRIVE_ID"
-    }
-  ],
   "vars": {
     "S3_BUCKET": "apex-evidence-staging",
     "S3_REGION": "auto",
