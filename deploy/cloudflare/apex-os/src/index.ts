@@ -24,8 +24,10 @@ interface Env {
   APEX_PUBLIC_ORIGIN?: string;
   APEX_ACCESS_TEAM: string;
   APEX_ACCESS_AUD: string;
-  APEX_ACCESS_EMAIL: string;
-  APEX_ACCESS_USER_ID: string;
+  /** Legacy single-email fallback. Omit once that person's `app_users.email` is set. */
+  APEX_ACCESS_EMAIL?: string;
+  /** Paired with `APEX_ACCESS_EMAIL`. Omit together with it. */
+  APEX_ACCESS_USER_ID?: string;
   APEX_CUSTOMER_CONTACT_PHONE?: string;
   APEX_CUSTOMER_CONTACT_LABEL?: string;
 }
@@ -63,9 +65,9 @@ function containerEnv(env: Env): Record<string, string> {
     S3_REGION: env.S3_REGION || "auto",
     APEX_ACCESS_TEAM: required(env.APEX_ACCESS_TEAM, "APEX_ACCESS_TEAM"),
     APEX_ACCESS_AUD: required(env.APEX_ACCESS_AUD, "APEX_ACCESS_AUD"),
-    APEX_ACCESS_EMAIL: required(env.APEX_ACCESS_EMAIL, "APEX_ACCESS_EMAIL"),
-    APEX_ACCESS_USER_ID: required(env.APEX_ACCESS_USER_ID, "APEX_ACCESS_USER_ID"),
   };
+  if (env.APEX_ACCESS_EMAIL?.trim()) values.APEX_ACCESS_EMAIL = env.APEX_ACCESS_EMAIL.trim();
+  if (env.APEX_ACCESS_USER_ID?.trim()) values.APEX_ACCESS_USER_ID = env.APEX_ACCESS_USER_ID.trim();
   if (env.APEX_PUBLIC_ORIGIN?.trim()) {
     values.APEX_PUBLIC_ORIGIN = env.APEX_PUBLIC_ORIGIN.trim();
   }

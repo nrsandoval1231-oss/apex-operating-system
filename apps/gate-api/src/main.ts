@@ -6,6 +6,7 @@ import {
   type Database,
 } from '@apex/database';
 import { LocalEvidenceStorage, S3EvidenceStorage, type EvidenceStorage } from '@apex/storage';
+import { accessConfigFromEnv } from './accessConfig.js';
 import { createGateApi } from './server.js';
 
 /**
@@ -36,42 +37,11 @@ const oidc = oidcIssuer && oidcAudience && oidcClientId
 /**
  * Cloudflare Access — staging only.
  *
- * All four variables or none. Partial configuration would boot a server that
- * looks locked and is not. The team name is the subdomain of
- * `<team>.cloudflareaccess.com`, not the full host.
+ * Team and audience, together, turn it on. `APEX_ACCESS_EMAIL` and
+ * `APEX_ACCESS_USER_ID` are an optional legacy pair for the one row that
+ * predates `app_users.email`. See `accessConfigFromEnv`.
  */
-const accessTeam = process.env.APEX_ACCESS_TEAM?.trim();
-const accessAudience = process.env.APEX_ACCESS_AUD?.trim();
-const accessEmail = process.env.APEX_ACCESS_EMAIL?.trim();
-const accessUserId = process.env.APEX_ACCESS_USER_ID?.trim();
-const accessParts = {
-  APEX_ACCESS_TEAM: accessTeam,
-  APEX_ACCESS_AUD: accessAudience,
-  APEX_ACCESS_EMAIL: accessEmail,
-  APEX_ACCESS_USER_ID: accessUserId,
-};
-const accessSet = Object.entries(accessParts).filter(([, value]) => Boolean(value));
-if (accessSet.length > 0 && accessSet.length < 4) {
-  const missing = Object.entries(accessParts).filter(([, value]) => !value).map(([name]) => name);
-  throw new Error(`Cloudflare Access is partly configured; these are missing: ${missing.join(', ')}.`);
-}
-if (accessTeam !== undefined && !/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/i.test(accessTeam)) {
-  throw new Error('APEX_ACCESS_TEAM must be the Access team subdomain, not a full URL.');
-}
-if (accessEmail !== undefined && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(accessEmail)) {
-  throw new Error('APEX_ACCESS_EMAIL must be a single email address.');
-}
-if (accessUserId !== undefined && !/^user_[0-9A-HJKMNP-TV-Z]{26}$/.test(accessUserId)) {
-  throw new Error('APEX_ACCESS_USER_ID must be a canonical user_<ULID> identifier.');
-}
-const access = accessTeam && accessAudience && accessEmail && accessUserId
-  ? {
-    team: accessTeam.toLowerCase(),
-    audience: accessAudience,
-    email: accessEmail,
-    userId: accessUserId,
-  }
-  : undefined;
+const access = accessConfigFromEnv(process.env);
 
 const noindexFlag = process.env.APEX_STAGING_NOINDEX?.trim();
 if (noindexFlag !== undefined && noindexFlag !== '' && noindexFlag !== '1') {
@@ -258,7 +228,8 @@ for (const signal of ['SIGTERM', 'SIGINT'] as const) {
 server.listen(port, HOST, () => {
   console.log(`Evidence            ${storage.describe()}`);
   console.log(`Identity            ${
-    access ? `Cloudflare Access (team ${access.team}, actor ${access.userId})`
+    access
+      ? `Cloudflare Access (team ${access.team}${access.userId ? `, legacy actor ${access.userId}` : ', staff by app_users.email'})`
       : oidc ? `${oidc.issuer} (audience ${oidc.audience})`
         : 'local pilot secret'
   }`);
