@@ -1,16 +1,20 @@
+import { createHash } from 'node:crypto';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { PGlite } from '@electric-sql/pglite';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { applyOperationalMigrations } from '@apex/database';
 import {
   ApprovedTakeoffRevisionSchema,
   createCanonicalId,
 } from '@apex/contracts';
 import { priceApprovedTakeoff } from '@apex/pricing-engine';
+import { LocalEvidenceStorage } from '@apex/storage';
 import { CustomerService } from './customer.js';
 import {
   DEMO_CITY,
   DEMO_CUSTOMER_NAME,
-  DEMO_CUSTOMER_TOKEN,
   DEMO_DIRECT_LINES,
   DEMO_FEE_RATE_BPS,
   DEMO_LEAD_KEY,
@@ -18,6 +22,7 @@ import {
   DEMO_STREET,
   DEMO_USER_EMAIL,
   DEMO_USER_ID,
+  RETIRED_DEMO_CUSTOMER_TOKEN,
   removeDemoProject,
   seedDemoProject,
 } from './demoSeed.js';
@@ -29,11 +34,21 @@ import { GateService } from './index.js';
  */
 
 let db: PGlite;
+let evidenceDir: string;
+let storage: LocalEvidenceStorage;
 
 beforeEach(async () => {
   db = new PGlite();
   await applyOperationalMigrations(db);
+  evidenceDir = await mkdtemp(join(tmpdir(), 'apex-demo-'));
+  storage = new LocalEvidenceStorage(evidenceDir);
 });
+
+afterEach(async () => {
+  await rm(evidenceDir, { recursive: true, force: true });
+});
+
+const customerTokenPattern = /^\/c\/[A-Za-z0-9_-]{43}$/;
 
 const counts = async () => {
   const leads = await db.query<{ count: string }>(
@@ -75,11 +90,12 @@ describe('Lubbock DEMO project seed', () => {
       [otherLead],
     );
 
-    const first = await seedDemoProject(db);
-    const second = await seedDemoProject(db);
+    const first = await seedDemoProject(db, storage);
+    const second = await seedDemoProject(db, storage);
 
     expect(second).toEqual(first);
-    expect(first.customerPath).toBe(`/c/${DEMO_CUSTOMER_TOKEN}`);
+    expect(first.customerPath).toMatch(customerTokenPattern);
+    expect(first.customerPath).not.toBe(`/c/${RETIRED_DEMO_CUSTOMER_TOKEN}`);
     expect(await counts()).toEqual({ leads: 1, jobs: 1, links: 1 });
 
     const service = new GateService(db);
@@ -154,8 +170,20 @@ describe('Lubbock DEMO project seed', () => {
     expect(page.addressLine).toContain('Lubbock');
     expect(page.updates.length).toBeGreaterThan(0);
     expect(page.photos.length).toBe(1);
+    const photoRows = await db.query<{ storage_key: string; sha256: string; byte_size: string }>(
+      `select storage_key, sha256, byte_size::text from evidence_records
+       where job_id = $1 and kind = 'photo' and customer_visible = true`,
+      [first.jobId],
+    );
+    expect(photoRows.rows).toHaveLength(1);
+    const published = photoRows.rows[0]!;
+    const bytes = await storage.get(published.storage_key);
+    expect(bytes).not.toBeNull();
+    expect(bytes!.subarray(0, 3)).toEqual(Buffer.from([0xff, 0xd8, 0xff]));
+    expect(published.sha256).toBe(createHash('sha256').update(bytes!).digest('hex'));
+    expect(published.byte_size).toBe(String(bytes!.length));
 
-    const removed = await removeDemoProject(db);
+    const removed = await removeDemoProject(db, storage);
     expect(removed.removed).toBe(true);
     expect(await counts()).toEqual({ leads: 0, jobs: 0, links: 0 });
     const users = await db.query<{ user_id: string }>(
@@ -166,9 +194,12 @@ describe('Lubbock DEMO project seed', () => {
     const kept = await db.query('select lead_id from leads where lead_id = $1', [otherLead]);
     expect(kept.rows).toHaveLength(1);
 
-    const again = await seedDemoProject(db);
+    const again = await seedDemoProject(db, storage);
     expect(again.jobId).not.toBe(first.jobId);
-    expect(again.customerPath).toBe(first.customerPath);
+    expect(again.customerPath).toMatch(customerTokenPattern);
+    expect(again.customerPath).not.toBe(first.customerPath);
+    const keptToken = await seedDemoProject(db, storage);
+    expect(keptToken).toEqual(again);
     expect(await counts()).toEqual({ leads: 1, jobs: 1, links: 1 });
     const staff = await db.query<{ email: string }>(
       'select email from app_users where user_id = $1',
@@ -180,5 +211,65 @@ describe('Lubbock DEMO project seed', () => {
   it('remove is a no-op when the demo job was never seeded', async () => {
     const result = await removeDemoProject(db);
     expect(result.removed).toBe(false);
+  });
+
+  it('replaces the retired fixed token once and then keeps the new one', async () => {
+    const first = await seedDemoProject(db, storage);
+    const jobId = first.jobId;
+    await db.query('delete from customer_links where job_id = $1', [jobId]);
+    await db.query(
+      `insert into customer_links (link_id, job_id, token_sha256, issued_by)
+       values ($1, $2, $3, $4)`,
+      [
+        createCanonicalId('clink'),
+        jobId,
+        createHash('sha256').update(RETIRED_DEMO_CUSTOMER_TOKEN, 'utf8').digest('hex'),
+        DEMO_USER_ID,
+      ],
+    );
+    await db.query(
+      `update leads set accepted_payload = accepted_payload - 'demoLinkToken' where idempotency_key = $1`,
+      [DEMO_LEAD_KEY],
+    );
+
+    const rotated = await seedDemoProject(db, storage);
+    expect(rotated.jobId).toBe(first.jobId);
+    expect(rotated.customerPath).toMatch(customerTokenPattern);
+    expect(rotated.customerPath).not.toBe(`/c/${RETIRED_DEMO_CUSTOMER_TOKEN}`);
+    expect(rotated.customerPath).not.toBe(first.customerPath);
+    const again = await seedDemoProject(db, storage);
+    expect(again.customerPath).toBe(rotated.customerPath);
+  });
+
+  it('leaves the photo unpublished when no evidence store is passed, then uploads it later', async () => {
+    const withoutStore = await seedDemoProject(db);
+    const hidden = await new CustomerService(db).previewPage(
+      withoutStore.jobId as Parameters<CustomerService['previewPage']>[0],
+    );
+    expect(hidden.photos).toEqual([]);
+    const keys = await db.query<{ storage_key: string }>(
+      'select storage_key from evidence_records where job_id = $1',
+      [withoutStore.jobId],
+    );
+    expect(keys.rows.length).toBeGreaterThan(0);
+    for (const row of keys.rows) {
+      expect(row.storage_key).toMatch(
+        /^[A-Za-z0-9][A-Za-z0-9_-]*(?:\/[A-Za-z0-9][A-Za-z0-9_-]*)+\.[A-Za-z0-9]{1,8}$/,
+      );
+    }
+
+    const withStore = await seedDemoProject(db, storage);
+    expect(withStore.customerPath).toBe(withoutStore.customerPath);
+    const shown = await new CustomerService(db).previewPage(
+      withStore.jobId as Parameters<CustomerService['previewPage']>[0],
+    );
+    expect(shown.photos).toHaveLength(1);
+    const published = await db.query<{ storage_key: string }>(
+      `select storage_key from evidence_records
+       where job_id = $1 and customer_visible = true`,
+      [withStore.jobId],
+    );
+    const bytes = await storage.get(published.rows[0]!.storage_key);
+    expect(bytes?.subarray(0, 3)).toEqual(Buffer.from([0xff, 0xd8, 0xff]));
   });
 });

@@ -61,6 +61,20 @@ const appDirectory = process.env.APEX_APP_DIR?.trim()
   : resolve(dirname(fileURLToPath(import.meta.url)), '../../apex-os/dist');
 
 /**
+ * Files the customer page loads. Nothing else from this directory is public.
+ *
+ * The page is unauthenticated, and Access already bypasses these two paths.
+ * They have to be answered here, ahead of staff authentication, or a homeowner
+ * gets the Access error instead of the stylesheet. Staff screens stay under
+ * `/app` and `/api`.
+ */
+const customerAssetDirectory = resolve(dirname(fileURLToPath(import.meta.url)), '../public');
+const CUSTOMER_ASSETS: Readonly<Record<string, { readonly file: string; readonly type: string }>> = {
+  '/customer.css': { file: 'customer.css', type: 'text/css; charset=utf-8' },
+  '/favicon.svg': { file: 'favicon.svg', type: 'image/svg+xml' },
+};
+
+/**
  * The staff app's policy — same as the console, plus self-hosted fonts.
  *
  * `connect-src` has to include the identity provider's origin. The PKCE token
@@ -801,15 +815,37 @@ export function createGateApi(options: GateApiOptions) {
        * The customer progress page — PRD §9.11.
        *
        * EVERYTHING BELOW THIS COMMENT AND ABOVE `authenticate` IS PUBLIC.
-       * These two routes are the only ones in Apex OS that answer a request
-       * carrying no identity at all. Authorization is the token: it names one
-       * job, it can be revoked, and every read of it is recorded.
+       * The customer page, its photo, and the two files that page loads
+       * (`/customer.css`, `/favicon.svg`) answer a request carrying no identity.
+       * Authorization for the page and the photo is the token: it names one
+       * job, it can be revoked, and every read of it is recorded. The two
+       * files are static and contain no job data.
        *
        * They are placed here, ahead of `authenticate`, deliberately — a
        * customer has no account to authenticate with, and a route that fell
        * through to the staff authenticator would either 403 the customer or,
        * worse, treat a loopback request as the local pilot user.
        * ------------------------------------------------------------------ */
+
+      const customerAsset = request.method === 'GET' || request.method === 'HEAD'
+        ? CUSTOMER_ASSETS[url.pathname]
+        : undefined;
+      if (customerAsset) {
+        const file = resolve(customerAssetDirectory, customerAsset.file);
+        const content = file.startsWith(`${customerAssetDirectory}${sep}`)
+          ? await readFile(file).catch(() => null)
+          : null;
+        if (content === null) return sendJson(response, 404, { error: 'Route not found.' });
+        response.writeHead(200, {
+          'content-type': customerAsset.type,
+          'content-length': content.length,
+          'x-content-type-options': 'nosniff',
+          'referrer-policy': 'no-referrer',
+          'cache-control': 'public, max-age=300',
+        });
+        if (request.method === 'HEAD') return response.end();
+        return response.end(content);
+      }
 
       const customerPhotoMatch = url.pathname.match(
         /^\/c\/([A-Za-z0-9_-]{43})\/photo\/(evidence_[0-9A-HJKMNP-TV-Z]{26})$/,
