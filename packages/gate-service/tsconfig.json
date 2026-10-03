@@ -11,7 +11,8 @@
     { "path": "../contracts" },
     { "path": "../pricing-engine" },
     { "path": "../database" },
-    { "path": "../domain" }
+    { "path": "../domain" },
+    { "path": "../storage" }
   ],
   "include": ["src/**/*.ts"]
 }

@@ -1,4 +1,6 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import type { Database } from '@apex/database';
 import {
   AUTHORITATIVE_QUANTITY_UNITS,
@@ -15,15 +17,18 @@ import {
   type DirectPriceInput,
   type MeasuredPriceInput,
 } from '@apex/pricing-engine';
+import { assertStorageKey, StorageKeyError, type EvidenceStorage } from '@apex/storage';
 import { CustomerService } from './customer.js';
 import { GateService } from './index.js';
 
 /**
  * One fictional Lubbock job for staging screenshots.
  *
- * The ids and the customer token are fixed so a second run finds the same
- * rows. The token is not a staff credential. It is the link for a made-up
- * homeowner, and `--remove` deletes that job.
+ * A second run finds the same rows. The customer token is random the first
+ * time and saved on the demo lead so a later run can print the same path.
+ * `customer_links` keeps only the hash, which is why the plaintext lives on
+ * this fictional lead and nowhere else. It is not a staff credential.
+ * `--remove` deletes that job.
  */
 
 /** `user_` plus 26 Crockford characters. No I, L, O, or U. */
@@ -40,10 +45,12 @@ export const DEMO_STATE = 'TX';
 export const DEMO_POSTAL = '79401';
 
 /**
- * 43 URL-safe characters. The same value every run, so the printed `/c/` path
- * does not rotate. `customer.ts` stores only the SHA-256 of this string.
+ * The first demo seed used this fixed token. A later run replaces it once.
+ * Do not issue it again.
  */
-export const DEMO_CUSTOMER_TOKEN = 'demo_lubbock_pool_link_token_00000000000000';
+export const RETIRED_DEMO_CUSTOMER_TOKEN = 'demo_lubbock_pool_link_token_00000000000000';
+const DEMO_LINK_FIELD = 'demoLinkToken';
+const DEMO_TOKEN_PATTERN = /^[A-Za-z0-9_-]{43}$/;
 export const DEMO_FEE_RATE_BPS = 3000;
 const DEMO_AT = '2026-09-15T15:00:00.000Z';
 const COMPLETED_GATES = ['permit', 'excavation'] as const;
@@ -54,9 +61,22 @@ const hashToken = (token: string): string =>
 if (!/^user_[0-9A-HJKMNP-TV-Z]{26}$/.test(DEMO_USER_ID)) {
   throw new Error('DEMO_USER_ID is not a canonical user id.');
 }
-if (!/^[A-Za-z0-9_-]{43}$/.test(DEMO_CUSTOMER_TOKEN)) {
-  throw new Error('DEMO_CUSTOMER_TOKEN must be 43 URL-safe characters.');
+if (!DEMO_TOKEN_PATTERN.test(RETIRED_DEMO_CUSTOMER_TOKEN)) {
+  throw new Error('RETIRED_DEMO_CUSTOMER_TOKEN must be 43 URL-safe characters.');
 }
+
+/**
+ * Geometric excavation drawing shipped with the seed. CC0. See the license
+ * file beside the JPEG. Small on purpose: it is a placeholder, not a gallery.
+ */
+const demoPhotoBytes = readFileSync(fileURLToPath(new URL('../assets/demo-pool-excavation.jpg', import.meta.url)));
+const demoPhotoSha256 = createHash('sha256').update(demoPhotoBytes).digest('hex');
+
+const photoStorageKey = (jobId: string, gateInstanceId: string, evidenceId: string): string => {
+  const key = `${jobId}/${gateInstanceId}/${evidenceId}.jpg`;
+  assertStorageKey(key);
+  return key;
+};
 
 /**
  * Extended amounts for a 16 by 32 foot gunite pool in Lubbock.
@@ -288,7 +308,13 @@ const releaseGate = async (
     const kind: EvidenceKind = requirement.acceptedEvidenceKinds.includes('photo')
       ? 'photo'
       : requirement.acceptedEvidenceKinds[0]!;
+    if (kind !== 'photo') {
+      throw new Error(
+        `DEMO evidence for ${definitionKey}/${requirement.key} is ${kind}; the seed uploads a JPEG.`,
+      );
+    }
     const evidenceId = createCanonicalId('evidence');
+    const storageKey = photoStorageKey(jobId, gateInstanceId, evidenceId);
     await service.execute(gateInstanceId, {
       type: 'add-evidence',
       actor,
@@ -302,11 +328,11 @@ const releaseGate = async (
         evidenceId,
         requirementKey: requirement.key,
         kind,
-        storageKey: `${jobId}/demo/${definitionKey}/${requirement.key}`,
-        sha256: 'd'.repeat(64),
+        storageKey,
+        sha256: demoPhotoSha256,
         capturedAt: DEMO_AT,
         mimeType: 'image/jpeg',
-        byteSize: 128,
+        byteSize: demoPhotoBytes.length,
         caption: `DEMO ${definitionKey} — ${requirement.key}`,
         metadata: {},
       },
@@ -344,29 +370,150 @@ const publishOnePhoto = async (db: Database, jobId: JobId, actor: EventActor): P
   });
 };
 
-const ensureCustomerLink = async (db: Database, jobId: JobId): Promise<string> => {
-  const digest = hashToken(DEMO_CUSTOMER_TOKEN);
+const readDemoToken = (payload: unknown): string | null => {
+  if (typeof payload !== 'object' || payload === null || Array.isArray(payload)) return null;
+  const value = (payload as Record<string, unknown>)[DEMO_LINK_FIELD];
+  return typeof value === 'string' && DEMO_TOKEN_PATTERN.test(value) ? value : null;
+};
+
+const rememberDemoToken = async (
+  db: Database,
+  leadId: string,
+  payload: unknown,
+  token: string,
+): Promise<void> => {
+  const current = typeof payload === 'object' && payload !== null && !Array.isArray(payload)
+    ? payload as Record<string, unknown>
+    : {};
+  await db.query(
+    'update leads set accepted_payload = $2::jsonb where lead_id = $1',
+    [leadId, JSON.stringify({ ...current, [DEMO_LINK_FIELD]: token })],
+  );
+};
+
+const tokenFromIssued = (url: string): string => {
+  const token = url.split('/').pop() ?? '';
+  if (!DEMO_TOKEN_PATTERN.test(token)) {
+    throw new Error('Issued DEMO link was not a 43-character token.');
+  }
+  return token;
+};
+
+/**
+ * Print the same path on a rerun.
+ *
+ * The link table stores a hash, so the plaintext is kept on the demo lead.
+ * The retired fixed token is rotated once; a link this seed cannot read is
+ * left alone and reported, rather than replaced by guesswork.
+ */
+const ensureCustomerLink = async (db: Database, leadId: string, jobId: JobId): Promise<string> => {
+  const lead = await db.query<{ accepted_payload: unknown }>(
+    'select accepted_payload from leads where lead_id = $1',
+    [leadId],
+  );
+  const payload = lead.rows[0]?.accepted_payload;
+  const stored = readDemoToken(payload);
   const live = await db.query<{ token_sha256: string }>(
     'select token_sha256 from customer_links where job_id = $1 and revoked_at is null',
     [jobId],
   );
-  const current = live.rows[0];
-  if (!current) {
-    await db.query(
-      `insert into customer_links (link_id, job_id, token_sha256, issued_by)
-       values ($1, $2, $3, $4)`,
-      [createCanonicalId('clink'), jobId, digest, DEMO_USER_ID],
-    );
-  } else if (current.token_sha256 !== digest) {
-    throw new Error(
-      'This DEMO job already has a different customer link. Run with --remove, then seed again.',
-    );
+  const current = live.rows[0]?.token_sha256 ?? null;
+  if (stored && current === hashToken(stored)) return `/c/${stored}`;
+
+  const customers = new CustomerService(db);
+  const actor = actorFor();
+  if (current === null) {
+    const issued = await customers.issueLink({ jobId, actor });
+    const token = tokenFromIssued(issued.url);
+    await rememberDemoToken(db, leadId, payload, token);
+    return `/c/${token}`;
   }
-  return `/c/${DEMO_CUSTOMER_TOKEN}`;
+  if (current === hashToken(RETIRED_DEMO_CUSTOMER_TOKEN)) {
+    const issued = await customers.rotateLink({
+      jobId,
+      actor,
+      reason: 'Replace the fixed DEMO customer link with a random one.',
+    });
+    const token = tokenFromIssued(issued.url);
+    await rememberDemoToken(db, leadId, payload, token);
+    return `/c/${token}`;
+  }
+  throw new Error(
+    'This DEMO job already has a customer link whose token this seed cannot read. Run with --remove, then seed again.',
+  );
 };
 
-/** Create the Lubbock DEMO job, or return the one that already exists. */
-export async function seedDemoProject(db: Database): Promise<DemoSeedResult> {
+/**
+ * Point every demo photo at the bundled JPEG and, when a store is passed,
+ * put those bytes under the key. Without a store the photo is unpublished,
+ * so the customer page does not request an object that is not there.
+ */
+const syncDemoPhotos = async (
+  db: Database,
+  jobId: JobId,
+  storage: EvidenceStorage | undefined,
+): Promise<void> => {
+  const photos = await db.query<{
+    evidence_id: string;
+    gate_instance_id: string;
+    storage_key: string;
+    sha256: string;
+    byte_size: string | number;
+    customer_visible: boolean;
+  }>(
+    `select evidence_id, gate_instance_id, storage_key, sha256, byte_size, customer_visible
+     from evidence_records
+     where job_id = $1 and kind = 'photo'`,
+    [jobId],
+  );
+  for (const photo of photos.rows) {
+    const key = photoStorageKey(jobId, photo.gate_instance_id, photo.evidence_id);
+    if (
+      photo.storage_key !== key
+      || photo.sha256 !== demoPhotoSha256
+      || Number(photo.byte_size) !== demoPhotoBytes.length
+    ) {
+      await db.query(
+        `update evidence_records
+         set storage_key = $2, sha256 = $3, byte_size = $4, mime_type = 'image/jpeg'
+         where evidence_id = $1`,
+        [photo.evidence_id, key, demoPhotoSha256, demoPhotoBytes.length],
+      );
+    }
+    if (!storage) continue;
+    const existing = await storage.get(key);
+    if (existing !== null && existing.equals(demoPhotoBytes)) continue;
+    if (existing !== null) await storage.remove(key);
+    await storage.put(key, demoPhotoBytes, 'image/jpeg');
+  }
+
+  const actor = actorFor();
+  const customers = new CustomerService(db);
+  if (!storage) {
+    for (const photo of photos.rows) {
+      if (!photo.customer_visible) continue;
+      await customers.setPhotoVisibility({
+        evidenceId: photo.evidence_id as Parameters<CustomerService['setPhotoVisibility']>[0]['evidenceId'],
+        visible: false,
+        actor,
+      });
+    }
+    return;
+  }
+  await publishOnePhoto(db, jobId, actor);
+};
+
+/**
+ * Create the Lubbock DEMO job, or return the one that already exists.
+ *
+ * Pass the same evidence store the server reads. The bundled JPEG is uploaded
+ * there under a job-scoped key. Omit it only when that store is unreachable:
+ * the photo is then left unpublished instead of pointing at missing bytes.
+ */
+export async function seedDemoProject(
+  db: Database,
+  storage?: EvidenceStorage,
+): Promise<DemoSeedResult> {
   const actor = await ensureActor(db);
   const leadId = await ensureLead(db);
   const service = new GateService(db);
@@ -399,8 +546,8 @@ export async function seedDemoProject(db: Database): Promise<DemoSeedResult> {
   for (const definitionKey of COMPLETED_GATES) {
     await releaseGate(service, jobId, definitionKey, actor);
   }
-  await publishOnePhoto(db, jobId, actor);
-  const customerPath = await ensureCustomerLink(db, jobId);
+  await syncDemoPhotos(db, jobId, storage);
+  const customerPath = await ensureCustomerLink(db, leadId, jobId);
   return { jobId, leadId, customerPath };
 }
 
@@ -421,18 +568,28 @@ const PAUSED_TRIGGERS = [
  * it commits. A failure rolls the pause back with the deletes. Rows that do
  * not belong to this lead are left alone.
  */
-export async function removeDemoProject(db: Database): Promise<{ readonly removed: boolean }> {
+export async function removeDemoProject(
+  db: Database,
+  storage?: EvidenceStorage,
+): Promise<{ readonly removed: boolean }> {
   const leads = await db.query<{ lead_id: string }>(
     'select lead_id from leads where idempotency_key = $1',
     [DEMO_LEAD_KEY],
   );
   const leadId = leads.rows[0]?.lead_id;
+  let storedKeys: string[] = [];
   if (leadId) {
     const jobs = await db.query<{ job_id: string }>(
       'select job_id from jobs where lead_id = $1',
       [leadId],
     );
     const jobId = jobs.rows[0]?.job_id ?? null;
+    storedKeys = jobId === null || storage === undefined
+      ? []
+      : (await db.query<{ storage_key: string }>(
+        'select storage_key from evidence_records where job_id = $1',
+        [jobId],
+      )).rows.map((row) => row.storage_key);
     await db.transaction(async (tx) => {
       for (const [table, trigger] of PAUSED_TRIGGERS) {
         await tx.query(`alter table ${table} disable trigger ${trigger}`);
@@ -502,5 +659,16 @@ export async function removeDemoProject(db: Database): Promise<{ readonly remove
     'delete from app_users where user_id = $1 and email = $2',
     [DEMO_USER_ID, DEMO_USER_EMAIL],
   );
+  if (storage && leadId) {
+    for (const key of storedKeys) {
+      try {
+        assertStorageKey(key);
+      } catch (error) {
+        if (error instanceof StorageKeyError) continue;
+        throw error;
+      }
+      await storage.remove(key);
+    }
+  }
   return { removed: leadId !== undefined };
 }
