@@ -1,41 +1,59 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { z } from 'zod';
+import { civilDay } from '@apex/contracts';
 import { apiSend } from '../api/client';
 import { useCalendar } from '../api/useJobs';
 import QueryState from '../components/QueryState';
 import { needsScheduling } from '../lib/calendarDisplay';
 
-const monthLabel = (month: Date) => month.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
-const iso = (date: Date) => date.toISOString().slice(0, 10);
-const startOfGrid = (month: Date) => {
-  const first = new Date(month.getFullYear(), month.getMonth(), 1);
-  return new Date(first.getFullYear(), first.getMonth(), 1 - first.getDay());
+/** Add calendar days to a YYYY-MM-DD string. UTC noon keeps the civil day stable. */
+const addDays = (iso: string, days: number): string => {
+  const [year, month, day] = iso.split('-').map(Number);
+  const next = new Date(Date.UTC(year!, (month! - 1), day! + days, 12));
+  const y = next.getUTCFullYear();
+  const m = String(next.getUTCMonth() + 1).padStart(2, '0');
+  const d = String(next.getUTCDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 };
-const addDays = (date: Date, days: number) => new Date(date.getFullYear(), date.getMonth(), date.getDate() + days);
-const daySpan = (entry: { startsOn: string; endsOn: string }) => Math.round((new Date(`${entry.endsOn}T00:00:00`).getTime() - new Date(`${entry.startsOn}T00:00:00`).getTime()) / 86400000);
+const weekday = (iso: string): number => new Date(`${iso}T12:00:00Z`).getUTCDay();
+const monthLabel = (cursor: string) => {
+  const [year, month] = cursor.split('-').map(Number);
+  return new Date(Date.UTC(year!, month! - 1, 1)).toLocaleDateString('en-US', {
+    month: 'long', year: 'numeric', timeZone: 'UTC',
+  });
+};
+const shiftMonth = (cursor: string, delta: number): string => {
+  const [year, month] = cursor.split('-').map(Number);
+  const next = new Date(Date.UTC(year!, month! - 1 + delta, 1));
+  return `${next.getUTCFullYear()}-${String(next.getUTCMonth() + 1).padStart(2, '0')}`;
+};
+const daySpan = (entry: { startsOn: string; endsOn: string }) => Math.round(
+  (Date.parse(`${entry.endsOn}T12:00:00Z`) - Date.parse(`${entry.startsOn}T12:00:00Z`)) / 86400000,
+);
 
 type CalendarEntry = ReturnType<typeof useCalendar>['data'] extends readonly (infer Entry)[] | null ? Entry : never;
 
 export default function Calendar() {
   const calendar = useCalendar();
-  const [month, setMonth] = useState(() => new Date());
+  const [month, setMonth] = useState(() => civilDay().slice(0, 7));
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const gridStart = startOfGrid(month);
+  const firstOfMonth = `${month}-01`;
+  const gridStart = addDays(firstOfMonth, -weekday(firstOfMonth));
   const days = Array.from({ length: 42 }, (_, index) => addDays(gridStart, index));
   const entries = calendar.data ?? [];
   const unscheduledEntries = entries.filter(needsScheduling);
-  const monthPrefix = `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, '0')}`;
+  const monthPrefix = month;
 
   const datedEntries = entries.filter((entry): entry is CalendarEntry & { startsOn: string; endsOn: string } => entry.startsOn !== null && entry.endsOn !== null);
   const monthEntries = datedEntries.filter((entry) => entry.startsOn.startsWith(monthPrefix));
   const byDay = useMemo(() => {
     const map = new Map<string, readonly (CalendarEntry & { startsOn: string; endsOn: string })[]>();
     for (const entry of datedEntries) {
-      for (let day = new Date(`${entry.startsOn}T00:00:00`); iso(day) <= entry.endsOn; day = addDays(day, 1)) {
-        const key = iso(day);
+      for (let day = entry.startsOn; day <= entry.endsOn; day = addDays(day, 1)) {
+        const key = day;
         map.set(key, [...(map.get(key) ?? []), entry]);
       }
     }
@@ -45,7 +63,7 @@ export default function Calendar() {
   const moveEntry = async (entry: CalendarEntry & { startsOn: string; endsOn: string }, targetDay: string) => {
     if (!entry.movable || entry.visitId === null) return;
     const span = daySpan(entry);
-    const ends = iso(addDays(new Date(`${targetDay}T00:00:00`), span));
+    const ends = addDays(targetDay, span);
     if (entry.startsOn === targetDay) return;
     setSavingId(entry.visitId);
     setMessage(null);
@@ -72,9 +90,9 @@ export default function Calendar() {
           <p className="dek">Move scheduled work once; Projects and Today stay aligned · conflicts stay visible</p>
         </div>
         <div className="calendar-controls">
-          <button className="btn ghost" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))}>Previous</button>
+          <button className="btn ghost" onClick={() => setMonth(shiftMonth(month, -1))}>Previous</button>
           <strong>{monthLabel(month)}</strong>
-          <button className="btn ghost" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))}>Next</button>
+          <button className="btn ghost" onClick={() => setMonth(shiftMonth(month, 1))}>Next</button>
         </div>
       </header>
 
@@ -104,9 +122,9 @@ export default function Calendar() {
         <div className="calendar-grid" aria-label={`${monthLabel(month)} operational calendar`}>
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => <div className="calendar-weekday" key={day}>{day}</div>)}
           {days.map((day) => {
-            const dayKey = iso(day);
+            const dayKey = day;
             const dayEntries = byDay.get(dayKey) ?? [];
-            const inMonth = day.getMonth() === month.getMonth();
+            const inMonth = day.startsWith(monthPrefix);
             return <div
               className={`calendar-day ${inMonth ? '' : 'outside'} ${draggedId !== null ? 'drop-target' : ''}`}
               key={dayKey}
@@ -117,7 +135,7 @@ export default function Calendar() {
                 if (entry !== undefined) void moveEntry(entry, dayKey);
               }}
             >
-              <div className="calendar-date">{day.getDate()}</div>
+              <div className="calendar-date">{Number(day.slice(8, 10))}</div>
               {dayEntries.map((entry) => <Link
                 draggable={entry.movable && savingId === null}
                 onDragStart={(event) => { if (!entry.movable || entry.visitId === null) return; event.dataTransfer.setData('text/plain', entry.visitId); event.dataTransfer.effectAllowed = 'move'; setDraggedId(entry.visitId); }}
@@ -138,7 +156,7 @@ export default function Calendar() {
           {monthEntries.length === 0
             ? <p className="state-quiet">No dated work this month.</p>
             : monthEntries.map((entry) => <Link className="calendar-agenda-entry" to={`/projects/${entry.jobId}`} key={entry.taskId}>
-                <time dateTime={entry.startsOn}>{new Date(`${entry.startsOn}T00:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</time>
+                <time dateTime={entry.startsOn}>{new Date(`${entry.startsOn}T12:00:00Z`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })}</time>
                 <span><b>{entry.customerName} · {entry.title}</b><small>{entry.taskType} · {entry.status}</small></span>
                 {entry.conflict && <strong>Conflict</strong>}
               </Link>)}

@@ -231,6 +231,13 @@ describe('recording an inspection', () => {
     expect(waived.status).toBe('waived');
   });
 
+  it('rejects a pass that carries corrections', async () => {
+    await expect(inspections.recordResult({
+      jobId, inspectionKey: 'pool-steel-structural', outcome: 'passed',
+      occurredOn: '2026-08-06', corrections: 'Nothing was wrong', actor: owner,
+    })).rejects.toThrow(/cannot carry corrections/i);
+  });
+
   it('is closed to a customer', async () => {
     await expect(inspections.requestInspection({
       jobId, inspectionKey: 'pool-steel-structural', requestedOn: '2026-08-04', actor: customer,

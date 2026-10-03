@@ -1,4 +1,8 @@
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { PGlite } from '@electric-sql/pglite';
+import { LocalEvidenceStorage } from '@apex/storage';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { applyOperationalMigrations } from '@apex/database';
 import {
@@ -11,6 +15,7 @@ import {
   DEMO_CITY,
   DEMO_CUSTOMER_NAME,
   DEMO_CUSTOMER_TOKEN,
+  DEMO_JOB_ID,
   DEMO_DIRECT_LINES,
   DEMO_FEE_RATE_BPS,
   DEMO_LEAD_KEY,
@@ -79,6 +84,7 @@ describe('Lubbock DEMO project seed', () => {
     const second = await seedDemoProject(db);
 
     expect(second).toEqual(first);
+    expect(first.jobId).toBe(DEMO_JOB_ID);
     expect(first.customerPath).toBe(`/c/${DEMO_CUSTOMER_TOKEN}`);
     expect(await counts()).toEqual({ leads: 1, jobs: 1, links: 1 });
 
@@ -145,6 +151,8 @@ describe('Lubbock DEMO project seed', () => {
     expect(gates.find((gate) => gate.definitionKey === 'excavation')?.status).toBe('released');
     expect(gates.find((gate) => gate.definitionKey === 'pre-gunite')?.status).toBeNull();
     expect(gates.find((gate) => gate.definitionKey === 'shell')?.status).toBeNull();
+    expect(gates.find((gate) => gate.definitionKey === 'cover-install')).toBeUndefined();
+    expect(gates.find((gate) => gate.definitionKey === 'automation-programming-complete')).toBeUndefined();
 
     const cards = await service.getActionCards('2026-10-02');
     expect(cards.some((card) => card.jobId === first.jobId && card.customerName === DEMO_CUSTOMER_NAME)).toBe(true);
@@ -154,6 +162,15 @@ describe('Lubbock DEMO project seed', () => {
     expect(page.addressLine).toContain('Lubbock');
     expect(page.updates.length).toBeGreaterThan(0);
     expect(page.photos.length).toBe(1);
+    expect(page.photos[0]?.caption).toMatch(/hole is dug/i);
+    const published = await db.query<{ definition_key: string }>(
+      `select gi.definition_key
+       from evidence_records er
+       join gate_instances gi on gi.gate_instance_id = er.gate_instance_id
+       where er.job_id = $1 and er.customer_visible = true`,
+      [first.jobId],
+    );
+    expect(published.rows.map((row) => row.definition_key)).toEqual(['excavation']);
 
     const removed = await removeDemoProject(db);
     expect(removed.removed).toBe(true);
@@ -167,7 +184,7 @@ describe('Lubbock DEMO project seed', () => {
     expect(kept.rows).toHaveLength(1);
 
     const again = await seedDemoProject(db);
-    expect(again.jobId).not.toBe(first.jobId);
+    expect(again.jobId).toBe(DEMO_JOB_ID);
     expect(again.customerPath).toBe(first.customerPath);
     expect(await counts()).toEqual({ leads: 1, jobs: 1, links: 1 });
     const staff = await db.query<{ email: string }>(
@@ -175,6 +192,30 @@ describe('Lubbock DEMO project seed', () => {
       [DEMO_USER_ID],
     );
     expect(staff.rows[0]?.email).toBe(DEMO_USER_EMAIL);
+  });
+
+  it('deletes stored demo objects on remove and skips keys that were never valid', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'apex-demo-objects-'));
+    const storage = new LocalEvidenceStorage(directory);
+    try {
+      const seeded = await seedDemoProject(db);
+      const validKey = `${seeded.jobId}/demo/excavation/hole.jpg`;
+      await storage.put(validKey, Buffer.from('jpeg'), 'image/jpeg');
+      await db.query(
+        `update evidence_records set storage_key = $2
+         where evidence_id = (
+           select er.evidence_id from evidence_records er
+           join gate_instances gi on gi.gate_instance_id = er.gate_instance_id
+           where er.job_id = $1 and gi.definition_key = 'excavation'
+           limit 1
+         )`,
+        [seeded.jobId, validKey],
+      );
+      await removeDemoProject(db, storage);
+      expect(await storage.get(validKey)).toBeNull();
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
   });
 
   it('remove is a no-op when the demo job was never seeded', async () => {

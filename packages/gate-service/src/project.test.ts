@@ -2,7 +2,8 @@ import { PGlite } from '@electric-sql/pglite';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { applyOperationalMigrations } from '@apex/database';
 import { DRAW_SCHEDULE_TEMPLATE, createCanonicalId, type EventActor } from '@apex/contracts';
-import { PhaseRuleError } from '@apex/domain';
+import { DomainRuleError, PhaseRuleError, RoleRefusalError } from '@apex/domain';
+import { CustomerService } from './customer.js';
 import { GateService } from './index.js';
 import { InspectionService } from './inspections.js';
 
@@ -145,6 +146,7 @@ describe('opening a construction project', () => {
   });
 
   it('refuses a field user and a customer', async () => {
+    await expect(open({ actor: fieldActor })).rejects.toBeInstanceOf(DomainRuleError);
     await expect(open({ actor: fieldActor })).rejects.toThrow(/may not open a construction project/i);
     await expect(open({ actor: { kind: 'user', userId: ids.field, role: 'customer' } }))
       .rejects.toThrow(/may not open a construction project/i);
@@ -197,7 +199,7 @@ describe('changing phase', () => {
   });
 
   it('refuses a field user', async () => {
-    await expect(advance('layout-excavation', { actor: fieldActor })).rejects.toThrow(PhaseRuleError);
+    await expect(advance('layout-excavation', { actor: fieldActor })).rejects.toThrow(RoleRefusalError);
   });
 
   it('is idempotent under a repeated command key', async () => {
@@ -298,6 +300,21 @@ describe('closing a completed job', () => {
       `select event_id from events where job_id = $1 and event_type = 'job.closed'`,
       [ids.job],
     )).rows).toHaveLength(1);
+  });
+
+  it('marks the job complete from the final phase and the customer page reaches handover', async () => {
+    await open({ initialPhaseKey: 'plaster-fill' });
+    await expect(service.completeJob({ jobId: ids.job, actor: fieldActor, idempotencyKey: 'field-complete' }))
+      .rejects.toThrow(RoleRefusalError);
+    const completed = await service.completeJob({
+      jobId: ids.job, actor: owner, idempotencyKey: 'mark-complete',
+    });
+    expect(completed.status).toBe('complete');
+    expect(completed.project?.customerMilestone).toBe('handover');
+    const page = await new CustomerService(db).previewPage(ids.job);
+    expect(page.milestones.find((step) => step.key === 'handover')?.state).toBe('current');
+    await expect(service.completeJob({ jobId: ids.job, actor: owner, idempotencyKey: 'mark-complete-again' }))
+      .resolves.toMatchObject({ status: 'complete' });
   });
 
   it('refuses field closure', async () => {

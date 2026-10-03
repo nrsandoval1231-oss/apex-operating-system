@@ -52,7 +52,16 @@ export const CustomerProposalPayloadSchema = z.strictObject({
     revisionId: z.string(), quantityPayloadSha256: z.string(), quantityModelVersion: z.string(),
   }),
   pricingLibraryVersion: z.string(),
-  scope: z.array(z.strictObject({ name: z.string(), resolved: z.boolean() })),
+  scope: z.array(z.strictObject({
+    name: z.string(),
+    resolved: z.boolean(),
+    /**
+     * Present on estimates finished after scope decisions were stored.
+     * `not-applicable` is a decision to leave the line out, not a resolved price.
+     */
+    scopeStatus: z.enum(['quoted', 'not-applicable', 'unresolved']).optional(),
+    code: z.number().int().optional(),
+  })),
   totalCents: z.number().int().nonnegative().nullable(),
   blockers: z.array(ProposalPricingBlockerSchema),
   email: z.strictObject({ subject: z.string(), body: z.string() }).nullable(),

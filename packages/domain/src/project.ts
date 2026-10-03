@@ -7,7 +7,7 @@ import {
   type JobId,
   type UserId,
 } from '@apex/contracts';
-import { DomainRuleError } from './errors.js';
+import { DomainRuleError, RoleRefusalError } from './errors.js';
 
 /**
  * Pure construction-phase rules. No database, no clock, no I/O.
@@ -92,7 +92,7 @@ export function decidePhaseChange(
     throw new PhaseRuleError('A phase change requires an authenticated human actor.');
   }
   if (!PHASE_AUTHORITY.includes(command.actor.role as (typeof PHASE_AUTHORITY)[number])) {
-    throw new PhaseRuleError(`Role ${command.actor.role} may not change a project phase.`);
+    throw new RoleRefusalError(`Role ${command.actor.role} may not change a project phase.`);
   }
   if (state.jobComplete) {
     throw new PhaseRuleError('A completed job has no remaining construction phases.');

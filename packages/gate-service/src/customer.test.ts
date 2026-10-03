@@ -165,7 +165,7 @@ describe('issuing a link', () => {
 
   it('is closed to the field lead', async () => {
     await expect(customers.issueLink({ jobId: ids.job, actor: fieldActor }))
-      .rejects.toThrow(/may not issuing a customer link|may not/i);
+      .rejects.toThrow(/may not issue a customer link/i);
   });
 });
 
@@ -269,8 +269,12 @@ describe('the access log', () => {
     const issued = await customers.issueLink({ jobId: ids.job, actor: owner });
     const token = tokenOf(issued.url);
     await customers.getPage(token);
-    await customers.getPhoto(token, photo);
-    await customers.getPhoto(token, photo);
+    const beforeBytes = await customers.getPhoto(token, photo);
+    expect(beforeBytes.outcome).toBe('served');
+    expect((await customers.getLinkStatus(ids.job)).recentAccesses).toHaveLength(1);
+    if (beforeBytes.outcome === 'served') await customers.confirmPhotoServed(beforeBytes.linkId);
+    const again = await customers.getPhoto(token, photo);
+    if (again.outcome === 'served') await customers.confirmPhotoServed(again.linkId);
     const status = await customers.getLinkStatus(ids.job);
     // Otherwise "has the customer opened this" gets swamped by however many
     // photos happen to be published.

@@ -196,7 +196,7 @@ describe('mapping an identity to an Apex user', () => {
       headers: { authorization: `Bearer ${escalated}`, 'content-type': 'application/json', 'idempotency-key': 'oidc-draw-0001' },
       body: '{}',
     });
-    expect(response.status).toBe(409);
+    expect(response.status).toBe(403);
     expect(await response.text()).toMatch(/may not|not authorized|role/i);
   });
 

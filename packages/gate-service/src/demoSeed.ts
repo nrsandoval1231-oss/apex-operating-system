@@ -15,6 +15,7 @@ import {
   type DirectPriceInput,
   type MeasuredPriceInput,
 } from '@apex/pricing-engine';
+import { StorageKeyError, assertStorageKey } from '@apex/storage';
 import { CustomerService } from './customer.js';
 import { GateService } from './index.js';
 
@@ -28,6 +29,8 @@ import { GateService } from './index.js';
 
 /** `user_` plus 26 Crockford characters. No I, L, O, or U. */
 export const DEMO_USER_ID = 'user_7ZZZZZZZZZZZZZZZZZZZZZZZZZ';
+/** Same job on every seed, including after `--remove` and a fresh run. */
+export const DEMO_JOB_ID = 'job_7ZZZZZZZZZZZZZZZZZZZZZZZZZ';
 export const DEMO_USER_EMAIL = 'demo.staff@example.com';
 const DEMO_AUTH_USER_ID = '00000000-0000-4000-8000-0000000000d1';
 export const DEMO_LEAD_KEY = 'demo:lubbock-sports-pool';
@@ -53,6 +56,9 @@ const hashToken = (token: string): string =>
 
 if (!/^user_[0-9A-HJKMNP-TV-Z]{26}$/.test(DEMO_USER_ID)) {
   throw new Error('DEMO_USER_ID is not a canonical user id.');
+}
+if (!/^job_[0-9A-HJKMNP-TV-Z]{26}$/.test(DEMO_JOB_ID)) {
+  throw new Error('DEMO_JOB_ID is not a canonical job id.');
 }
 if (!/^[A-Za-z0-9_-]{43}$/.test(DEMO_CUSTOMER_TOKEN)) {
   throw new Error('DEMO_CUSTOMER_TOKEN must be 43 URL-safe characters.');
@@ -328,9 +334,12 @@ const releaseGate = async (
 
 const publishOnePhoto = async (db: Database, jobId: JobId, actor: EventActor): Promise<void> => {
   const photos = await db.query<{ evidence_id: string; customer_visible: boolean }>(
-    `select evidence_id, customer_visible from evidence_records
-     where job_id = $1 and kind = 'photo'
-     order by evidence_id limit 1`,
+    `select er.evidence_id, er.customer_visible
+     from evidence_records er
+     join gate_instances gi on gi.gate_instance_id = er.gate_instance_id
+     where er.job_id = $1 and er.kind = 'photo' and gi.definition_key = 'excavation'
+     order by er.evidence_id
+     limit 1`,
     [jobId],
   );
   const photo = photos.rows[0];
@@ -370,27 +379,35 @@ export async function seedDemoProject(db: Database): Promise<DemoSeedResult> {
   const actor = await ensureActor(db);
   const leadId = await ensureLead(db);
   const service = new GateService(db);
-  const finished = await service.finishEstimate({
-    leadId: leadId as Parameters<GateService['finishEstimate']>[0]['leadId'],
-    actor,
-    submission: demoSubmission(),
-    directLines: DEMO_DIRECT_LINES,
-    measuredLines: DEMO_MEASURED_LINES,
-    feeRateBps: DEMO_FEE_RATE_BPS,
-    idempotencyKey: 'demo:lubbock:finish',
-  });
-  if (finished.blockers.length > 0) {
-    throw new Error(`Demo pricing did not issue: ${finished.blockers.map((blocker) => blocker.message).join(' ')}`);
+  const existingJob = await db.query<{ job_id: string }>(
+    'select job_id from jobs where lead_id = $1',
+    [leadId],
+  );
+  let jobId = existingJob.rows[0]?.job_id as JobId | undefined;
+  if (jobId === undefined) {
+    const finished = await service.finishEstimate({
+      leadId: leadId as Parameters<GateService['finishEstimate']>[0]['leadId'],
+      actor,
+      submission: demoSubmission(),
+      directLines: DEMO_DIRECT_LINES,
+      measuredLines: DEMO_MEASURED_LINES,
+      feeRateBps: DEMO_FEE_RATE_BPS,
+      idempotencyKey: 'demo:lubbock:finish',
+    });
+    if (finished.blockers.length > 0) {
+      throw new Error(`Demo pricing did not issue: ${finished.blockers.map((blocker) => blocker.message).join(' ')}`);
+    }
+    const signed = await service.signProposal({
+      proposalVersionId: finished.proposal.proposalVersionId,
+      expectedVersionNumber: finished.proposal.versionNumber,
+      expectedDraftRevision: finished.proposal.draftRevision,
+      actor,
+      customerAcceptanceConfirmed: true,
+      idempotencyKey: 'demo:lubbock:sign',
+      jobId: DEMO_JOB_ID,
+    });
+    jobId = signed.jobId as JobId;
   }
-  const signed = await service.signProposal({
-    proposalVersionId: finished.proposal.proposalVersionId,
-    expectedVersionNumber: finished.proposal.versionNumber,
-    expectedDraftRevision: finished.proposal.draftRevision,
-    actor,
-    customerAcceptanceConfirmed: true,
-    idempotencyKey: 'demo:lubbock:sign',
-  });
-  const jobId = signed.jobId as JobId;
   await service.createDrawSchedule({
     jobId,
     actor,
@@ -421,7 +438,10 @@ const PAUSED_TRIGGERS = [
  * it commits. A failure rolls the pause back with the deletes. Rows that do
  * not belong to this lead are left alone.
  */
-export async function removeDemoProject(db: Database): Promise<{ readonly removed: boolean }> {
+export async function removeDemoProject(
+  db: Database,
+  storage?: { remove(key: string): Promise<void> },
+): Promise<{ readonly removed: boolean }> {
   const leads = await db.query<{ lead_id: string }>(
     'select lead_id from leads where idempotency_key = $1',
     [DEMO_LEAD_KEY],
@@ -433,6 +453,10 @@ export async function removeDemoProject(db: Database): Promise<{ readonly remove
       [leadId],
     );
     const jobId = jobs.rows[0]?.job_id ?? null;
+    const storedKeys = jobId === null ? [] : (await db.query<{ storage_key: string }>(
+      'select storage_key from evidence_records where job_id = $1',
+      [jobId],
+    )).rows.map((row) => row.storage_key);
     await db.transaction(async (tx) => {
       for (const [table, trigger] of PAUSED_TRIGGERS) {
         await tx.query(`alter table ${table} disable trigger ${trigger}`);
@@ -496,6 +520,17 @@ export async function removeDemoProject(db: Database): Promise<{ readonly remove
         await tx.query(`alter table ${table} enable trigger ${trigger}`);
       }
     });
+    if (storage) {
+      for (const key of storedKeys) {
+        try {
+          assertStorageKey(key);
+        } catch (error) {
+          if (error instanceof StorageKeyError) continue;
+          throw error;
+        }
+        await storage.remove(key);
+      }
+    }
   }
 
   await db.query(

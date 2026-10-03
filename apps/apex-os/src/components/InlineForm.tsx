@@ -17,6 +17,8 @@ export interface InlineField {
   readonly placeholder?: string;
   readonly multiline?: boolean;
   readonly initial?: string;
+  /** When set, the field is a picker instead of free text. */
+  readonly options?: readonly { readonly value: string; readonly label: string }[];
 }
 
 export default function InlineForm({
@@ -57,7 +59,16 @@ export default function InlineForm({
       {fields.map((field) => (
         <label key={field.name} className="field">
           <span>{field.label}{field.required === true ? '' : ' (optional)'}</span>
-          {field.multiline === true ? (
+          {field.options !== undefined ? (
+            <select
+              value={values[field.name] ?? ''}
+              onChange={(event) => setValues((previous) => ({ ...previous, [field.name]: event.target.value }))}
+            >
+              {field.options.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+          ) : field.multiline === true ? (
             <textarea
               value={values[field.name] ?? ''}
               placeholder={field.placeholder ?? ''}

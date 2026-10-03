@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { z } from 'zod';
 import { Link, Navigate, useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
-import { CONSTRUCTION_PHASES, type DrawStatus, type VisitStatus } from '@apex/contracts';
-import { useDrawSchedule, useJob, useJobCloseout, useJobGates, useJobInspections, useJobSchedule } from '../api/useJobs';
+import { CONSTRUCTION_PHASES, civilDay, type DrawStatus, type VisitStatus } from '@apex/contracts';
+import { useDrawSchedule, useJob, useJobCloseout, useJobGates, useJobInspections, useJobSchedule, useMe } from '../api/useJobs';
 import AttachTakeoff from '../components/AttachTakeoff';
 import AssignSuperintendent from '../components/AssignSuperintendent';
 import ConfirmInvoice from '../components/ConfirmInvoice';
@@ -72,9 +72,18 @@ export default function ProjectDetail({ historical = false }: { historical?: boo
   const [moveStartsOn, setMoveStartsOn] = useState('');
   const [moveEndsOn, setMoveEndsOn] = useState('');
   const [targetEnd, setTargetEnd] = useState('');
+  const [nextPhase, setNextPhase] = useState('');
+  const [phaseReason, setPhaseReason] = useState('');
+  const [phaseBusy, setPhaseBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const { data: job, error, loading, reload } = useJob(id);
-  const closeout = useJobCloseout(job?.status === 'complete' || job?.status === 'closed' ? id : undefined);
+  const me = useMe();
+  const showCloseout = job !== null && (
+    job.status === 'complete'
+    || job.status === 'closed'
+    || job.project?.currentPhaseKey === 'plaster-fill'
+  );
+  const closeout = useJobCloseout(showCloseout ? id : undefined);
   const gates = useJobGates(id);
   const gatePlan = gates.data ?? [];
   const draws = useDrawSchedule(id);
@@ -84,7 +93,7 @@ export default function ProjectDetail({ historical = false }: { historical?: boo
   // One clock for the whole screen, read once. The inspection rules take today
   // as an argument for the same reason the card engine does: the same state has
   // to produce the same answer every time it is asked.
-  const today = new Date().toISOString().slice(0, 10);
+  const today = civilDay();
   const visits = schedule.data?.visits ?? [];
   const conflicts = schedule.data?.conflicts ?? [];
   const phase = job?.project ?? null;
@@ -98,6 +107,24 @@ export default function ProjectDetail({ historical = false }: { historical?: boo
       setMovingVisitId(null);
       schedule.reload();
     } catch (error) { setActionError(error instanceof Error ? error.message : 'Visit could not be moved.'); }
+  };
+
+  const changePhase = async () => {
+    if (id === undefined || nextPhase === '') return;
+    setActionError(null);
+    setPhaseBusy(true);
+    try {
+      await apiSend(`/api/jobs/${id}/project/phase`, z.unknown(), {
+        method: 'POST',
+        body: { toPhaseKey: nextPhase, ...(phaseReason.trim() ? { reason: phaseReason.trim() } : {}) },
+      });
+      setPhaseReason('');
+      reload();
+    } catch (cause) {
+      setActionError(cause instanceof Error ? cause.message : 'Phase could not be changed.');
+    } finally {
+      setPhaseBusy(false);
+    }
   };
 
   const updateTarget = async () => {
@@ -222,8 +249,33 @@ export default function ProjectDetail({ historical = false }: { historical?: boo
           </div>
 
           <p className="notice" style={{ marginTop: '14px' }}>
-            Gates, inspections, and evidence control progression through the build. Releasing the active Gate advances this project to the next applicable construction phase; the phase cannot be skipped from this screen.
+            Releasing a Gate moves the project onto that Gate&apos;s phase, or one step past it when the project is already there. Steel, rough-in, and tile can also be set here. A skip or a step backward needs a reason, and the progress bar follows the same history.
           </p>
+          {!readOnly && me.data !== null && ['admin', 'office', 'superintendent'].includes(me.data.role) && (
+            <form
+              className="state"
+              style={{ textAlign: 'left', marginTop: '12px' }}
+              onSubmit={(event) => { event.preventDefault(); void changePhase(); }}
+            >
+              <h3>Set construction phase</h3>
+              <label className="field">
+                <span>Phase</span>
+                <select value={nextPhase} onChange={(event) => setNextPhase(event.target.value)} aria-label="Construction phase">
+                  <option value="">Choose a phase</option>
+                  {CONSTRUCTION_PHASES.filter((step) => step.key !== phase.currentPhaseKey).map((step) => (
+                    <option key={step.key} value={step.key}>{step.sequence}. {step.title}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="field">
+                <span>Reason (required to skip or go back)</span>
+                <input value={phaseReason} onChange={(event) => setPhaseReason(event.target.value)} />
+              </label>
+              <button type="submit" className="action" disabled={phaseBusy || nextPhase === ''}>
+                {phaseBusy ? 'Saving…' : 'Set phase'}
+              </button>
+            </form>
+          )}
 
           <dl className="facts">
             <dt>Super</dt>
@@ -310,7 +362,14 @@ export default function ProjectDetail({ historical = false }: { historical?: boo
                 </div>
               </div>
               {openGate === entry.definitionKey && id !== undefined && (
-                <GateWorkflow jobId={id} entry={entry} readOnly={readOnly} onChanged={() => { gates.reload(); reload(); }} />
+                <GateWorkflow
+                  jobId={id}
+                  entry={entry}
+                  customerName={job.customerName ?? 'this customer'}
+                  role={me.data?.role ?? null}
+                  readOnly={readOnly}
+                  onChanged={() => { gates.reload(); reload(); }}
+                />
               )}
             </li>
           ))}
@@ -493,14 +552,27 @@ export default function ProjectDetail({ historical = false }: { historical?: boo
 
       {/* ----------------------------------------------------- inspections */}
 
-      {id !== undefined && <div id="inspections"><Inspections jobId={id} query={inspections} today={today} readOnly={readOnly} focus={new URLSearchParams(window.location.search).get('focus')} /></div>}
+      {id !== undefined && (
+        <Inspections
+          jobId={id}
+          query={inspections}
+          today={today}
+          readOnly={readOnly}
+          focus={new URLSearchParams(window.location.search).get('focus')}
+        />
+      )}
 
       <div className="section-rule" id="completion"><h2>Completion</h2></div>
       {!readOnly && (
         <CloseJob
           job={job}
           closeout={closeout.data}
-          onClosed={() => navigate(`/historical/${job.jobId}`, { replace: true, state: { archived: true } })}
+          phaseKey={phase?.currentPhaseKey ?? null}
+          role={me.data?.role ?? null}
+          onChanged={(archived) => {
+            if (archived) navigate(`/historical/${job.jobId}`, { replace: true, state: { archived: true } });
+            else reload();
+          }}
         />
       )}
 
