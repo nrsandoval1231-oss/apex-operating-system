@@ -10,7 +10,7 @@ import {
   type JobId,
   type JobInspection,
 } from '@apex/contracts';
-import { DomainRuleError, blockingInspections, lastSafeRequestOn } from '@apex/domain';
+import { DomainRuleError, RoleRefusalError, blockingInspections, lastSafeRequestOn } from '@apex/domain';
 import { assertJobMutable } from './jobState.js';
 
 /**
@@ -119,7 +119,7 @@ const toInspection = (jobId: JobId, row: InspectionRow): JobInspection => {
 const requireInspectionRole = (actor: EventActor, action: string): { userId: string } => {
   if (actor.kind !== 'user') throw new DomainRuleError(`${action} requires an authenticated human actor.`);
   if (!(INSPECTION_AUTHORITY as readonly string[]).includes(actor.role)) {
-    throw new DomainRuleError(`Role ${actor.role} may not record an inspection.`);
+    throw new RoleRefusalError(`Role ${actor.role} may not record an inspection.`);
   }
   return { userId: actor.userId };
 };
@@ -258,6 +258,9 @@ export class InspectionService {
     }
     if (input.outcome === 'waived' && !input.note?.trim()) {
       throw new DomainRuleError('Waiving an inspection has to record why it does not apply.');
+    }
+    if (input.outcome === 'passed' && input.corrections?.trim()) {
+      throw new DomainRuleError('A passed inspection cannot carry corrections.');
     }
 
     const existing = await this.db.query<{ inspection_id: string }>(

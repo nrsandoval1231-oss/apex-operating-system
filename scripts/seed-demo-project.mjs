@@ -12,6 +12,22 @@
 
 import { applyOperationalMigrations, PostgresDatabase } from '../packages/database/dist/index.js';
 import { removeDemoProject, seedDemoProject } from '../packages/gate-service/dist/demoSeed.js';
+import { S3EvidenceStorage } from '../packages/storage/dist/index.js';
+
+const storageFromEnv = () => {
+  const endpoint = process.env.S3_ENDPOINT?.trim();
+  const bucket = process.env.S3_BUCKET?.trim();
+  const accessKeyId = process.env.S3_ACCESS_KEY_ID?.trim();
+  const secretAccessKey = process.env.S3_SECRET_ACCESS_KEY?.trim();
+  if (!endpoint || !bucket || !accessKeyId || !secretAccessKey) return undefined;
+  return new S3EvidenceStorage({
+    endpoint,
+    bucket,
+    accessKeyId,
+    secretAccessKey,
+    region: process.env.S3_REGION?.trim() || 'auto',
+  });
+};
 
 const url = process.env.DATABASE_URL?.trim();
 if (!url) {
@@ -25,7 +41,7 @@ const db = PostgresDatabase.create({ url, applicationName: 'apex-demo-seed' });
 try {
   await db.withMigrationLock((client) => applyOperationalMigrations(client));
   if (remove) {
-    const result = await removeDemoProject(db);
+    const result = await removeDemoProject(db, storageFromEnv());
     console.log(result.removed
       ? 'Removed the Lubbock DEMO project.'
       : 'No Lubbock DEMO project was present.');

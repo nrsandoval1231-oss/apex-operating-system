@@ -94,6 +94,10 @@ afterEach(async () => {
 });
 
 describe('Cloudflare Access as the only staging identity', () => {
+  it('tells the staff app this deployment uses Access', async () => {
+    expect(await (await fetch(`${baseUrl}/api/auth/config`)).json()).toEqual({ mode: 'access' });
+  });
+
   it('accepts the allowed email and uses the configured app_users role', async () => {
     const response = await jobs({ 'cf-access-jwt-assertion': await sign() });
     expect(response.status).toBe(200);
@@ -218,6 +222,11 @@ describe('Access email maps to app_users', () => {
     const ownerToken = await sign({ email: 'Owner@Example.com', role: 'field' });
     const ownerJobs = await jobs({ 'cf-access-jwt-assertion': ownerToken });
     expect(ownerJobs.status).toBe(200);
+    const today = await fetch(`${baseUrl}/api/today`, { headers: { 'cf-access-jwt-assertion': ownerToken } });
+    expect(today.status).toBe(200);
+    const me = await fetch(`${baseUrl}/api/me`, { headers: { 'cf-access-jwt-assertion': ownerToken } });
+    expect(me.status).toBe(200);
+    expect(await me.json()).toMatchObject({ displayName: 'Owner', role: 'admin' });
     const ownerIntake = await intake(ownerToken);
     expect(ownerIntake.status).not.toBe(403);
 

@@ -16,6 +16,7 @@ import {
   SubcontractorSchema,
   calculateQuantityPayloadSha256,
   constructionPhase,
+  nextConstructionPhase,
   createCanonicalId,
   readLeadIdentity,
   type ActionCard,
@@ -47,6 +48,7 @@ import {
 } from '@apex/contracts';
 import {
   DomainRuleError,
+  RoleRefusalError,
   allocateDrawAmounts,
   buildDailyBrief,
   customerMilestoneFor,
@@ -186,6 +188,7 @@ export interface JobGateEntry {
   readonly phaseKey: ConstructionPhaseKey | null;
   readonly drawCode: string | null;
   readonly requiresCountersign: boolean;
+  readonly releaseRoles: readonly GateReleaseRole[];
   readonly gateInstanceId: GateInstanceId | null;
   readonly status: 'not-started' | 'in-progress' | 'blocked' | 'awaiting-countersign' | 'released' | null;
 }
@@ -376,7 +379,61 @@ const commandKey = (value: string) => {
   return `gate:${createHash('sha256').update(value).digest('hex')}`;
 };
 
+/**
+ * Cover and automation are optional direct lines. Their Gates are required
+ * only when the signed proposal quoted them.
+ */
+const SCOPE_GATED_LINES: Readonly<Record<string, { readonly code: number; readonly name: string }>> = {
+  'cover-install': { code: 900, name: 'Cover' },
+  'automation-programming-complete': { code: 1200, name: 'Automation' },
+};
+
+interface SignedScopeLine {
+  readonly name?: string;
+  readonly resolved?: boolean;
+  readonly scopeStatus?: string;
+  readonly code?: number;
+}
+
+const signedScopeLines = async (db: Queryable, jobId: JobId): Promise<readonly SignedScopeLine[] | null> => {
+  const result = await db.query<{ proposal_payload: { scope?: unknown } | null }>(
+    `select pv.proposal_payload
+     from jobs j
+     join proposal_versions pv
+       on pv.lead_id = j.lead_id
+      and pv.version_number = j.signed_proposal_version
+      and pv.status = 'signed'
+     where j.job_id = $1`,
+    [jobId],
+  );
+  const scope = result.rows[0]?.proposal_payload?.scope;
+  if (!Array.isArray(scope)) return null;
+  return scope.filter((line): line is SignedScopeLine => typeof line === 'object' && line !== null);
+};
+
+/** No signed proposal keeps every active template. A signed one drops lines left out of scope. */
+const gateRequiredByScope = (definitionKey: string, scope: readonly SignedScopeLine[] | null): boolean => {
+  const optional = SCOPE_GATED_LINES[definitionKey];
+  if (optional === undefined || scope === null) return true;
+  const line = scope.find((item) => item.code === optional.code || item.name === optional.name);
+  if (!line) return false;
+  if (line.scopeStatus === 'not-applicable' || line.scopeStatus === 'unresolved') return false;
+  if (line.scopeStatus === 'quoted') return true;
+  return line.resolved === true;
+};
+
+const requiredGateKeys = async (db: Queryable, jobId: JobId): Promise<readonly string[]> => {
+  const definitions = await db.query<{ definition_key: string }>(
+    'select definition_key from gate_definitions where active',
+  );
+  const scope = await signedScopeLines(db, jobId);
+  return definitions.rows
+    .map((row) => row.definition_key)
+    .filter((key) => gateRequiredByScope(key, scope));
+};
+
 const summarizeCloseout = async (db: Queryable, jobId: JobId): Promise<JobCloseout> => {
+  const requiredKeys = await requiredGateKeys(db, jobId);
   const result = await db.query<{
     status: string;
     current_phase_key: string | null;
@@ -392,11 +449,13 @@ const summarizeCloseout = async (db: Queryable, jobId: JobId): Promise<JobCloseo
   }>(`
     select j.status, p.current_phase_key, j.closed_at, j.closed_by,
       closer.display_name as closed_by_name,
-      (select count(*)::text from gate_definitions where active) as required_gates,
+      (select count(*)::text from gate_definitions
+        where active and definition_key = any($3::text[])) as required_gates,
       (select count(*)::text from gate_instances gi
         join gate_definitions gd on gd.definition_key = gi.definition_key
           and gd.version = gi.definition_version and gd.active
-        where gi.job_id = j.job_id and gi.status = 'released') as released_gates,
+        where gi.job_id = j.job_id and gi.status = 'released'
+          and gi.definition_key = any($3::text[])) as released_gates,
       (select count(*)::text from inspection_types) as required_inspections,
       (select count(*)::text from job_inspections
         where job_id = j.job_id and status in ('passed', 'waived')) as cleared_inspections,
@@ -410,7 +469,7 @@ const summarizeCloseout = async (db: Queryable, jobId: JobId): Promise<JobCloseo
     left join projects p on p.job_id = j.job_id
     left join app_users closer on closer.user_id = j.closed_by
     where j.job_id = $1
-  `, [jobId, [...DRAW_CODES]]);
+  `, [jobId, [...DRAW_CODES], [...requiredKeys]]);
   const row = result.rows[0];
   if (!row) throw new DomainRuleError(`Unknown Job: ${jobId}.`);
   const requiredGates = Number(row.required_gates);
@@ -527,12 +586,13 @@ export class GateService {
       sequence: number | null;
       phase_key: string | null;
       draw_code: string | null;
+      release_roles: GateReleaseRole[];
       countersign_roles: GateReleaseRole[];
       gate_instance_id: string | null;
       status: string | null;
     }>(
       `select gd.definition_key, gd.title, gd.sequence, gd.phase_key, gd.draw_code,
-              gd.countersign_roles, gi.gate_instance_id, gi.status
+              gd.release_roles, gd.countersign_roles, gi.gate_instance_id, gi.status
        from gate_definitions gd
        left join gate_instances gi
          on gi.definition_key = gd.definition_key and gi.job_id = $1
@@ -540,13 +600,15 @@ export class GateService {
        order by gd.sequence nulls last, gd.definition_key`,
       [jobId],
     );
-    return result.rows.map((row) => ({
+    const scope = await signedScopeLines(this.db, jobId);
+    return result.rows.filter((row) => gateRequiredByScope(row.definition_key, scope)).map((row) => ({
       definitionKey: row.definition_key,
       title: row.title,
       sequence: row.sequence,
       phaseKey: row.phase_key as ConstructionPhaseKey | null,
       drawCode: row.draw_code,
       requiresCountersign: false,
+      releaseRoles: row.release_roles,
       gateInstanceId: row.gate_instance_id as GateInstanceId | null,
       status: row.status as JobGateEntry['status'],
     }));
@@ -757,7 +819,7 @@ export class GateService {
   async closeJob(input: { jobId: JobId; actor: EventActor; idempotencyKey: string }): Promise<JobSummary> {
     if (input.actor.kind !== 'user') throw new DomainRuleError('Closing a job requires an authenticated human actor.');
     if (!['admin', 'office'].includes(input.actor.role)) {
-      throw new DomainRuleError(`Role ${input.actor.role} may not close a job.`);
+      throw new RoleRefusalError(`Role ${input.actor.role} may not close a job.`);
     }
     const actorUserId = input.actor.userId;
     await this.db.transaction(async (tx) => {
@@ -799,6 +861,53 @@ export class GateService {
   }
 
   /**
+   * Mark the build finished and hand it to the customer.
+   *
+   * Close still requires this status. Nothing else set it, so the close
+   * checklist and the customer Handover milestone were unreachable.
+   */
+  async completeJob(input: { jobId: JobId; actor: EventActor; idempotencyKey: string }): Promise<JobSummary> {
+    if (input.actor.kind !== 'user') {
+      throw new RoleRefusalError('Marking a job complete requires an authenticated human actor.');
+    }
+    if (!PROJECT_AUTHORITY.includes(input.actor.role as (typeof PROJECT_AUTHORITY)[number])) {
+      throw new RoleRefusalError(`Role ${input.actor.role} may not mark a job complete.`);
+    }
+    const actorUserId = input.actor.userId;
+    await this.db.transaction(async (tx) => {
+      const current = await tx.query<{ status: string; current_phase_key: string | null }>(
+        `select j.status, p.current_phase_key
+         from jobs j
+         left join projects p on p.job_id = j.job_id
+         where j.job_id = $1
+         for update of j`,
+        [input.jobId],
+      );
+      const row = current.rows[0];
+      if (!row) throw new DomainRuleError(`Unknown Job: ${input.jobId}.`);
+      if (row.status === 'complete' || row.status === 'closed') return;
+      if (row.status !== 'active' && row.status !== 'on-hold') {
+        throw new DomainRuleError('Only an active job can be marked complete.');
+      }
+      const finalPhase = CONSTRUCTION_PHASES.at(-1)?.key;
+      if (row.current_phase_key !== finalPhase) {
+        throw new DomainRuleError('Mark the job complete from the final construction phase.');
+      }
+      const baseKey = commandKey(input.idempotencyKey);
+      const at = new Date().toISOString();
+      const event = await this.writeEvent(tx, {
+        eventType: 'job.completed', jobId: input.jobId, actor: input.actor, at,
+        correlationId: createCanonicalId('event'), idempotencyKey: `${baseKey}:job.completed`,
+        payload: { completedBy: actorUserId },
+      });
+      await this.projectEvent(tx, event);
+    });
+    const completed = await this.getJob(input.jobId);
+    if (!completed) throw new Error('Job disappeared after completion.');
+    return completed;
+  }
+
+  /**
    * Open a Job as a construction project (PRD §9.3).
    *
    * Idempotent: opening an existing project returns it untouched rather than
@@ -812,9 +921,9 @@ export class GateService {
     superintendentUserId?: UserId | null;
     idempotencyKey: string;
   }): Promise<ProjectSnapshot> {
-    if (input.actor.kind !== 'user') throw new Error('Opening a project requires an authenticated human actor.');
+    if (input.actor.kind !== 'user') throw new RoleRefusalError('Opening a project requires an authenticated human actor.');
     if (!PROJECT_AUTHORITY.includes(input.actor.role as (typeof PROJECT_AUTHORITY)[number])) {
-      throw new Error(`Role ${input.actor.role} may not open a construction project.`);
+      throw new RoleRefusalError(`Role ${input.actor.role} may not open a construction project.`);
     }
     await assertJobMutable(this.db, input.jobId);
     const existing = await this.getProject(input.jobId);
@@ -915,7 +1024,7 @@ export class GateService {
     await assertJobMutable(this.db, jobId);
     if (context.actor.kind !== 'user') throw new DomainRuleError('Updating a project target requires an authenticated human actor.');
     if (!PROJECT_AUTHORITY.includes(context.actor.role as (typeof PROJECT_AUTHORITY)[number])) {
-      throw new DomainRuleError(`Role ${context.actor.role} may not update a project target.`);
+      throw new RoleRefusalError(`Role ${context.actor.role} may not update a project target.`);
     }
     if (target.targetCompletionStart !== null && target.targetCompletionEnd !== null
       && target.targetCompletionStart > target.targetCompletionEnd) {
@@ -1098,7 +1207,7 @@ export class GateService {
       throw new Error('Approving a takeoff requires an authenticated human actor.');
     }
     if (!TAKEOFF_APPROVAL_AUTHORITY.includes(input.actor.role as (typeof TAKEOFF_APPROVAL_AUTHORITY)[number])) {
-      throw new DomainRuleError(`Role ${input.actor.role} may not approve a Designer takeoff.`);
+      throw new RoleRefusalError(`Role ${input.actor.role} may not approve a Designer takeoff.`);
     }
     const actor = input.actor;
 
@@ -1266,7 +1375,7 @@ export class GateService {
       throw new DomainRuleError('Assigning a superintendent requires an authenticated human actor.');
     }
     if (!PROJECT_AUTHORITY.includes(input.actor.role as (typeof PROJECT_AUTHORITY)[number])) {
-      throw new DomainRuleError(`Role ${input.actor.role} may not assign a superintendent.`);
+      throw new RoleRefusalError(`Role ${input.actor.role} may not assign a superintendent.`);
     }
 
     const project = await this.getProject(input.jobId);
@@ -1379,17 +1488,24 @@ export class GateService {
       const project = await this.getProject(state.jobId);
       // A job nobody has opened as a project has no phase to carry.
       if (project === null) return;
-      if (project.currentPhaseKey === gatePhase) return;
 
       const target = gatePhase as ConstructionPhaseKey;
-      if (constructionPhase(target).sequence <= constructionPhase(project.currentPhaseKey).sequence) {
-        return;
-      }
+      const currentSequence = constructionPhase(project.currentPhaseKey).sequence;
+      const gateSequence = constructionPhase(target).sequence;
+      // A later Gate must not drag an imported job backwards.
+      if (currentSequence > gateSequence) return;
+
+      // Behind the Gate's phase: jump to that phase (pre-gunite lands on gunite).
+      // Already in the Gate's phase: the release is the end of it, so step forward.
+      const toPhaseKey = currentSequence < gateSequence
+        ? target
+        : nextConstructionPhase(project.currentPhaseKey);
+      if (toPhaseKey === null || toPhaseKey === project.currentPhaseKey) return;
 
       await this.changeProjectPhase(
         state.jobId,
         {
-          toPhaseKey: target,
+          toPhaseKey,
           actor,
           at: new Date().toISOString(),
           reason: `${definition.rows[0]!.title} Gate released.`,
@@ -1410,6 +1526,7 @@ export class GateService {
       | 'takeoff_revision.created'
       | 'takeoff_revision.approved'
       | 'takeoff_revision.superseded'
+      | 'job.completed'
       | 'job.closed';
     jobId: JobId;
     actor: EventActor;
@@ -1451,7 +1568,7 @@ export class GateService {
     await assertJobMutable(this.db, input.jobId);
     if (input.actor.kind !== 'user') throw new DomainRuleError('Creating a draw schedule requires an authenticated human actor.');
     if (!DRAW_SCHEDULE_AUTHORITY.includes(input.actor.role as (typeof DRAW_SCHEDULE_AUTHORITY)[number])) {
-      throw new DomainRuleError(`Role ${input.actor.role} may not create a draw schedule.`);
+      throw new RoleRefusalError(`Role ${input.actor.role} may not create a draw schedule.`);
     }
 
     const summary = await this.getJob(input.jobId);
@@ -1599,7 +1716,7 @@ export class GateService {
     await assertJobMutable(this.db, input.jobId);
     if (input.actor.kind !== 'user') throw new DomainRuleError('Confirming an invoice requires an authenticated human actor.');
     if (!DRAW_SCHEDULE_AUTHORITY.includes(input.actor.role as (typeof DRAW_SCHEDULE_AUTHORITY)[number])) {
-      throw new DomainRuleError(`Role ${input.actor.role} may not confirm an invoice.`);
+      throw new RoleRefusalError(`Role ${input.actor.role} may not confirm an invoice.`);
     }
     const reference = input.invoiceReference.trim();
     if (reference.length === 0) throw new DomainRuleError('An invoice confirmation needs the accounting system reference.');
@@ -1653,7 +1770,7 @@ export class GateService {
     await assertJobMutable(this.db, input.jobId);
     if (input.actor.kind !== 'user') throw new DomainRuleError('Scheduling a visit requires an authenticated human actor.');
     if (!SCHEDULE_AUTHORITY.includes(input.actor.role as (typeof SCHEDULE_AUTHORITY)[number])) {
-      throw new DomainRuleError(`Role ${input.actor.role} may not schedule a subcontractor visit.`);
+      throw new RoleRefusalError(`Role ${input.actor.role} may not schedule a subcontractor visit.`);
     }
     if (input.endsOn < input.startsOn) {
       throw new DomainRuleError('A visit cannot end before it starts.');
@@ -1698,7 +1815,7 @@ export class GateService {
 
     if (input.actor.kind !== 'user') throw new DomainRuleError('Moving a visit requires an authenticated human actor.');
     if (!SCHEDULE_AUTHORITY.includes(input.actor.role as (typeof SCHEDULE_AUTHORITY)[number])) {
-      throw new DomainRuleError(`Role ${input.actor.role} may not move a subcontractor visit.`);
+      throw new RoleRefusalError(`Role ${input.actor.role} may not move a subcontractor visit.`);
     }
     if (input.endsOn < input.startsOn) throw new DomainRuleError('A visit cannot end before it starts.');
 
@@ -2210,6 +2327,13 @@ export class GateService {
     gate: { definitionKey: string; definitionVersion: number } | null = null,
   ) {
     switch (event.eventType) {
+      case 'job.completed':
+        await tx.query(
+          `update jobs set status = 'complete', updated_at = now()
+           where job_id = $1 and status in ('active', 'on-hold')`,
+          [event.jobId],
+        );
+        break;
       case 'job.closed':
         await tx.query(
           `update jobs

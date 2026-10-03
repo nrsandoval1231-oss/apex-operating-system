@@ -1,7 +1,15 @@
 import { Outlet, NavLink } from 'react-router';
 import { setToken } from '../api/session';
-import { useActionCards, useToken } from '../api/useJobs';
+import { useActionCards, useMe, useToken } from '../api/useJobs';
 import SignIn from './SignIn';
+
+const ROLE_LABEL: Readonly<Record<string, string>> = {
+  admin: 'Admin',
+  office: 'Office',
+  superintendent: 'Superintendent',
+  field: 'Field',
+  customer: 'Customer',
+};
 
 // Designer is an Apex OS workspace, served at the same origin under /app/designer.
 
@@ -15,6 +23,7 @@ import SignIn from './SignIn';
 export default function Layout() {
   const token = useToken();
   const { data, error } = useActionCards();
+  const me = useMe();
 
   // Sign-in appears only when the server actually refuses. On a single-machine
   // pilot it never does, so there is nothing to paste and nothing in the way.
@@ -58,18 +67,18 @@ export default function Layout() {
         {/* Only worth a strip when there is a session to end. A single-machine
             pilot with GATE_LOCAL_USER has no credential at all, so showing
             "sign out" there would offer to undo nothing. */}
-        {signedInWithToken && (
+        {me.data !== null && (
           <div className="session">
             <span className="who">
               <span className="dot" aria-hidden="true" />
-              {/* Not "pilot session": the same bar shows after a real provider
-                  sign-in, and a label that names the wrong mechanism is the
-                  kind of small untruth that makes people distrust the rest. */}
-              Signed in
+              {me.data.displayName}
+              <span className="role">{ROLE_LABEL[me.data.role] ?? me.data.role}</span>
             </span>
-            <button type="button" className="link-quiet" onClick={() => setToken('')}>
-              Sign out
-            </button>
+            {signedInWithToken && (
+              <button type="button" className="link-quiet" onClick={() => setToken('')}>
+                Sign out
+              </button>
+            )}
           </div>
         )}
         <Outlet />

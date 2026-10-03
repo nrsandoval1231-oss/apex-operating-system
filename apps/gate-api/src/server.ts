@@ -8,6 +8,7 @@ import { z } from 'zod';
 import type { Database } from '@apex/database';
 import { StorageKeyError, type EvidenceStorage } from '@apex/storage';
 import {
+  civilDay,
   ConstructionPhaseKeySchema,
   DesignerTakeoffSubmissionSchema,
   EventActorSchema,
@@ -21,7 +22,7 @@ import {
   type GateInstanceId,
   type JobId,
 } from '@apex/contracts';
-import { DomainRuleError } from '@apex/domain';
+import { DomainRuleError, RoleRefusalError } from '@apex/domain';
 import { CustomerService, GateService, InspectionService } from '@apex/gate-service';
 import { renderClosedPage, renderCustomerPage } from './customerPage.js';
 import { log, redactPath } from './log.js';
@@ -815,22 +816,23 @@ export function createGateApi(options: GateApiOptions) {
         /^\/c\/([A-Za-z0-9_-]{43})\/photo\/(evidence_[0-9A-HJKMNP-TV-Z]{26})$/,
       );
       if (request.method === 'GET' && customerPhotoMatch) {
+        const notFound = () => {
+          response.writeHead(404, { ...CUSTOMER_HEADERS, 'content-type': 'text/plain; charset=utf-8' });
+          return response.end('Not found');
+        };
+        try {
         const result = await customers.getPhoto(
           CustomerTokenSchema.parse(customerPhotoMatch[1]),
           idSchemas.evidence.parse(customerPhotoMatch[2]),
           accessContext(request),
         );
-        if (result.outcome !== 'served') {
-          response.writeHead(404, { ...CUSTOMER_HEADERS, 'content-type': 'text/plain; charset=utf-8' });
-          return response.end('Not found');
-        }
+        if (result.outcome !== 'served') return notFound();
         const content = await storage.get(result.storageKey);
         // A row can outlive its bytes if a restore was partial. The customer
-        // gets the same "not found" as an unpublished photo rather than a 500.
-        if (content === null) {
-          response.writeHead(404, { ...CUSTOMER_HEADERS, 'content-type': 'text/plain; charset=utf-8' });
-          return response.end('Not found');
-        }
+        // gets the same "not found" as an unpublished photo rather than a 500,
+        // and a bad storage key must not be written into the response.
+        if (content === null) return notFound();
+        await customers.confirmPhotoServed(result.linkId, accessContext(request));
         response.writeHead(200, {
           ...CUSTOMER_HEADERS,
           'content-type': result.mimeType,
@@ -842,6 +844,9 @@ export function createGateApi(options: GateApiOptions) {
           'cache-control': 'private, max-age=600',
         });
         return response.end(content);
+        } catch {
+          return notFound();
+        }
       }
 
       const customerPageMatch = url.pathname.match(/^\/c\/([A-Za-z0-9_-]{43})$/);
@@ -875,6 +880,11 @@ export function createGateApi(options: GateApiOptions) {
        * secret exists to leak, because a browser client cannot hold one.
        */
       if (request.method === 'GET' && url.pathname === '/api/auth/config') {
+        if (options.access !== undefined) {
+          // Access already authenticated the browser. Pasting a token here
+          // cannot link an identity that the directory does not know.
+          return sendJson(response, 200, { mode: 'access' });
+        }
         if (options.oidc === undefined) {
           // Local development: the paste-a-token screen is still the way in.
           return sendJson(response, 200, { mode: 'pilot' });
@@ -891,6 +901,21 @@ export function createGateApi(options: GateApiOptions) {
       }
 
       const actor = await authenticate(request);
+
+      if (request.method === 'GET' && url.pathname === '/api/me') {
+        if (actor.kind !== 'user') throw new AuthError('User authentication is required.');
+        const me = await options.db.query<{ display_name: string; role: AppRole }>(
+          `select display_name, role from app_users where user_id = $1 and active = true`,
+          [actor.userId],
+        );
+        const row = me.rows[0];
+        if (!row) throw new AuthError('No active Apex user is linked to this identity.');
+        return sendJson(response, 200, {
+          userId: actor.userId,
+          displayName: row.display_name,
+          role: row.role,
+        });
+      }
 
       if (request.method === 'GET' && url.pathname === '/api/opportunities') {
         requireStaff(actor);
@@ -1041,14 +1066,14 @@ export function createGateApi(options: GateApiOptions) {
         // The caller may pin the day for a reproducible feed; otherwise the
         // server's date is used. The derivation itself never reads a clock.
         const requested = url.searchParams.get('today');
-        const today = requested === null ? new Date().toISOString().slice(0, 10) : DaySchema.parse(requested);
+        const today = requested === null ? civilDay() : DaySchema.parse(requested);
         return sendJson(response, 200, await service.getActionCards(today));
       }
 
       if (request.method === 'GET' && url.pathname === '/api/brief') {
         requireStaff(actor);
         const requested = url.searchParams.get('date');
-        const briefDate = requested === null ? new Date().toISOString().slice(0, 10) : DaySchema.parse(requested);
+        const briefDate = requested === null ? civilDay() : DaySchema.parse(requested);
         // Generates the day's brief on first read and returns the stored one
         // afterwards, so repeating this request is safe and always returns the
         // brief that was actually delivered that morning.
@@ -1297,6 +1322,16 @@ export function createGateApi(options: GateApiOptions) {
         requireStaff(actor);
         return sendJson(response, 200, await service.closeJob({
           jobId: idSchemas.job.parse(closeJobMatch[1]),
+          actor,
+          idempotencyKey: idempotency(request),
+        }));
+      }
+
+      const completeJobMatch = url.pathname.match(/^\/api\/jobs\/(job_[0-9A-HJKMNP-TV-Z]{26})\/complete$/);
+      if (request.method === 'POST' && completeJobMatch) {
+        requireStaff(actor);
+        return sendJson(response, 200, await service.completeJob({
+          jobId: idSchemas.job.parse(completeJobMatch[1]),
           actor,
           idempotencyKey: idempotency(request),
         }));
@@ -1596,7 +1631,7 @@ export function createGateApi(options: GateApiOptions) {
 
       return sendJson(response, 404, { error: 'Route not found.' });
     } catch (error) {
-      if (error instanceof AuthError) return sendJson(response, 403, { error: error.message });
+      if (error instanceof AuthError || error instanceof RoleRefusalError) return sendJson(response, 403, { error: error.message });
       if (error instanceof StorageKeyError) return sendJson(response, 422, { error: error.message });
       if (error instanceof InputError || error instanceof z.ZodError) return sendJson(response, 422, { error: error instanceof Error ? error.message : 'Invalid input.' });
       if (error instanceof DomainRuleError) return sendJson(response, 409, { error: error.message });

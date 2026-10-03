@@ -27,11 +27,15 @@ const fileAsBase64 = (file: File) => new Promise<string>((resolve, reject) => {
 export default function GateWorkflow({
   jobId,
   entry,
+  customerName,
+  role,
   onChanged,
   readOnly,
 }: {
   jobId: string;
   entry: JobGatePlanEntry;
+  customerName: string;
+  role: string | null;
   onChanged: () => void;
   readOnly: boolean;
 }) {
@@ -71,7 +75,7 @@ export default function GateWorkflow({
     });
   });
   const release = () => run(async () => {
-    if (!window.confirm(`Release ${entry.title} for ${jobId}? This is irreversible.`)) return;
+    if (!window.confirm(`Release ${entry.title} for ${customerName}? This is irreversible.`)) return;
     await apiSend(`/api/gates/${gate?.gateInstanceId}/release`, z.unknown(), { method: 'POST', body: {} });
   });
   const upload = (requirementKey: string, file: File) => run(async () => {
@@ -83,10 +87,11 @@ export default function GateWorkflow({
     });
   });
 
-  if (error) return <p className="error" role="alert">{error}</p>;
+  const errorNotice = error !== null ? <p className="error" role="alert">{error}</p> : null;
   if (gate === null) {
     return (
       <div className="panel">
+        {errorNotice}
         <p className="state-quiet">{entry.title} is not open.</p>
         {!readOnly && <button type="button" className="action" disabled={busy} onClick={() => void open()}>Open {entry.title}</button>}
       </div>
@@ -94,7 +99,9 @@ export default function GateWorkflow({
   }
 
   const complete = gate.requirements.every((item) => item.status === 'passed' || item.status === 'overridden');
+  const canRelease = role !== null && entry.releaseRoles.includes(role as JobGatePlanEntry['releaseRoles'][number]);
   return <div className="gate-workflow">
+    {errorNotice}
     <div className="row-foot"><span className="due">{entry.title} · {gate.status}</span><span className="tag tag-dim">{gate.requirements.filter((item) => item.status === 'passed' || item.status === 'overridden').length} / {gate.requirements.length} clear</span></div>
       {gate.status === 'not-started' && !readOnly && <button type="button" className="action" disabled={busy} onClick={() => void start()}>Start {entry.title}</button>}
       {gate.requirements.map((requirement) => <article className="gate-requirement" key={requirement.key}>
@@ -107,7 +114,7 @@ export default function GateWorkflow({
         <button className="action action-quiet" disabled={busy} onClick={() => void evaluate(requirement.key, 'failed')}>Fail</button>
       </>}
     </article>)}
-    {gate.status !== 'released' && gate.status !== 'not-started' && !readOnly
+    {canRelease && gate.status !== 'released' && gate.status !== 'not-started' && !readOnly
       && <button type="button" className="action" disabled={busy || !complete} onClick={() => void release()}>{complete ? `Release ${entry.title}` : 'Complete requirements to release'}</button>}
   </div>;
 }
