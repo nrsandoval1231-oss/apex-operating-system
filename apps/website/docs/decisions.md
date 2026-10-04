@@ -56,3 +56,6 @@ These came from the PRD conversation and belong to the maintainer, not the agent
 - Who answers the phone, and how fast (speed-to-lead is a staffing question the site can't solve).
 - Pool service account count, monthly rate, retention — needed to compute LTV and set acquisition budget.
 - Revenue split across the four verticals — sets content priority.
+
+
+**D-22 · Cinematic scroll homepage is the canonical next-generation website direction.** The approved experience is a scroll-controlled luxury brand film centered on a father and his two sons running and jumping into a completed Apex pool, transitioning through the splash into underwater craftsmanship and then into the broader website journey. The build strategy is image-sequence/canvas first, not a full real-time 3D implementation. Emotional storytelling leads; craftsmanship proves the promise; conversion remains explicit. The canonical specification is `apps/website/docs/cinematic-homepage-vision.md`. Builders must preserve that intent unless Nick explicitly changes it.
