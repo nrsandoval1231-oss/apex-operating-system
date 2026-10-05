@@ -1,9 +1,9 @@
 # Current State
 
-- Repository: Apex apex-operating-system; worktree pr24-repair; branch feature/cinematic-v1-asset-package. Entry head da781d0818ff0f6d28ef00e3d87efbe930960744; current checker repair uncommitted. Prior builder-state bytes archived under archive/da781d0-builder-handoff/.
+- Repository: Apex apex-operating-system; worktree pr24-repair; branch feature/cinematic-v1-asset-package. Entry head da781d0818ff0f6d28ef00e3d87efbe930960744; checker repair integrated and validated at b8297c9d1e61b797b4856f16d587f1205b7cb853. This state correction is awaiting independent review on its own final commit. Prior builder-state bytes archived under archive/da781d0-builder-handoff/.
 - Approved design inputs remain the four cinematic vision/storyboard/bible/prompt documents under apps/website/docs/. No homepage implementation or concept redesign.
 - Accepted checkpoint: Sol PASS for packaging at da781d0; overall visual HOLD. Desktop62 WebP1920x1080;12,759,798bytes. Source/hash-bound QA present. GitHub review at da781d0 completed with two new P2 findings: output provenance bytes/codec unchecked; contact-sheet font Windows-only.
-- Current READY packet PR24-PKG-03: Luna repairs only checker metadata/font preflight; root revalidates, freezes, independently reviews and publishes. Assets and QA remain unchanged.
+- PR24-PKG-03 implementation is integrated: output bytes/codec validated; portable-font preflight and negative checks passed. Sol independently reran focused gates at b8297c9 and found only stale state wording, corrected here. Final independent review remains pending for this changed candidate. Assets and QA remain unchanged.
 - Visual recovery decision: no coherent motion source exists in supplied package. Opening1→2→3 already cuts; flight/impact/underwater swap camera, house, pose and geometry. Four generated41–44 candidates cannot bridge locked anchors. No rejected generation retry or alternative-provider routing.
 - Next visual action: obtain a coherent approved-source motion take opening through full splash occlusion anchored to KF-080, plus same-pool underwater glide ending at KF-140. See PACKET-PR24-VISUAL-RECOVERY.md. Owner source-path question pending. Anchor joins remain UNKNOWN; no visual success asserted.
 - Timing/model-call tokens/cost UNKNOWN except retained command measurements. No merge or deployment.
