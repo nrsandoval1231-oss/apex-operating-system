@@ -16,11 +16,12 @@ import {
   buildLeadObject,
   detectDevice,
   emptyAttribution,
-  isRejectedByIntake,
   isValidEmail,
   isValidPhone,
   type LeadPayload,
 } from '../lib/lead';
+import { isIntakeResponseAccepted } from '../lib/intake-response';
+import { isProduction } from '../lib/site';
 
 interface Props {
   initialVertical?: Vertical;
@@ -122,11 +123,12 @@ export default function QuoteForm({ initialVertical, webhookUrl, phoneDisplay, p
       });
       if (!res.ok) throw new Error(`Webhook responded ${res.status}`);
 
-      // A 200 is not proof the lead was routed — intake answers 200 for a quarantined lead
-      // too, and the outcome is in the body (AC-4.4). Showing "captured & routed" for one of
-      // those tells the customer to stop chasing us when no crew has been notified.
+      // Production requires an explicit acknowledgement for this lead, not merely 2xx.
+      // Unknown outcomes retain the lead ID and fields for a deduplicated retry.
       const outcome: unknown = await res.json().catch(() => null);
-      if (isRejectedByIntake(outcome)) throw new Error('Lead was quarantined by intake');
+      if (!isIntakeResponseAccepted(outcome, payload.lead_id, isProduction)) {
+        throw new Error('Intake did not confirm this lead');
+      }
 
       // GA4 / GTM: lead_submit with vertical + source (AC-5.5). No-op if no dataLayer.
       const w = window as unknown as { dataLayer?: unknown[] };

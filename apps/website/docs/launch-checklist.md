@@ -2,7 +2,7 @@
 
 The cutover runbook. Ordered so that **nothing irreversible happens before the thing that makes it reversible**.
 
-Everything in the repo is built. What remains is not code — it is access, one domain decision, and photography. Three of the steps below are `⚠ BLOCKED` and cannot be closed by an agent.
+The current implementation is the four-vertical Astro site with quote capture. The cinematic homepage is a separate planned direction: its storyboard is not an implemented sequence, and its reviewed asset package is still a prerequisite. This checklist governs the current site cutover; it does not certify either experience as production-qualified. Access, canonical-domain and photography decisions remain open.
 
 **Owner: Nick (maintainer). Client: Travis.**
 
@@ -14,9 +14,9 @@ Everything in the repo is built. What remains is not code — it is access, one 
 |---|---|---|
 | **D-01** access transfer from Monsoon | Everything after Step 2 | You cannot repoint DNS you don't control, and you cannot verify search impact through a Search Console you can't open. |
 | **D-03** canonical domain | The redirect map, the sitemap, every absolute URL | Three domains are in play. Picking wrong and correcting later means migrating twice and losing equity twice. |
-| **D-20** photography | Whether the site is *worth* launching, not whether it *can* | 13 image slots ship as labeled placeholders. Pools is the highest-ticket vertical and the least documented. |
+| **D-20** photography | Whether the site is *worth* launching, not whether it *can* | The manifest includes licensed stock imagery and owner/brand assets; stock is not evidence of Apex project work. Pools needs approved project photography. |
 
-D-01 and D-03 are hard blocks. D-20 is a judgement call — the site is launchable with placeholders (`npm run preflight -- --allow-placeholders`), it just converts worse, and the pools vertical is where that costs the most.
+D-01 and D-03 are hard blocks. The maintainer must decide whether to launch the current site with its remaining licensed stock. `preflight` warns about stock imagery; `--allow-placeholders` only permits explicitly empty image slots and does not qualify the cinematic asset package.
 
 ---
 
@@ -59,7 +59,7 @@ Once decided:
 2. Set `PUBLIC_SITE_URL` in the production `.env`.
 3. Both must match. If they don't, the canonical tags and the sitemap disagree, which is a duplicate-content signal.
 
-**Legal-page interaction:** `apexcoatinglbk.com` currently hosts the privacy policy and terms, and the footer links there (`PUBLIC_PRIVACY_URL` / `PUBLIC_TERMS_URL`). The redirect map wildcards that whole domain to `/coating`. If you do nothing, the privacy policy 301s into a sales page — and A2P 10DLC registration fails on a policy that doesn't resolve. Either exclude the legal paths from the wildcard, or rebuild the policies on the canonical domain and repoint the two env vars.
+**Legal-page interaction:** the site now serves `/privacy` and `/terms`, and the footer defaults to those internal routes. Confirm any `PUBLIC_PRIVACY_URL` / `PUBLIC_TERMS_URL` overrides resolve to the intended documents. Inventory old legal URLs before applying legacy-domain wildcards so those links redirect to the corresponding policy, not a service page.
 
 ---
 
@@ -91,7 +91,7 @@ Then, without exception:
 npm run preflight
 ```
 
-This is the gate. It fails the build if `robots.txt` says `Disallow: /`, if the output still points at the test webhook, or if image slots are unfilled. It warns — but does not fail — on a missing analytics container or `og:image`, because those are your call.
+This is the gate. It fails the build if `robots.txt` says `Disallow: /`, if the output still points at the test webhook, if image slots are unfilled, or if SEO heads are inconsistent. Licensed stock produces warnings. It warns — but does not fail — on a missing analytics container or `og:image`, because those are your call.
 
 Add `-- --allow-placeholders` only if you have consciously decided to launch before D-20 photography.
 
@@ -107,10 +107,11 @@ npm run redirects:verify -- --base https://STAGING-URL --skip-legacy
 
 Then walk the manual list that no script can check:
 
+- ☐ Run `npm run test:unit` and `npm run test:production` against the reserved-domain mocked intake before any live submission. Production must reject empty, malformed, unknown or mismatched acknowledgements without emitting `lead_submit`; retry must reuse the original lead ID.
 - ☐ Submit a real lead from each of the four verticals. Confirm each arrives in n8n with the correct `vertical`, a unique `lead_id`, and the attribution set (AC-1).
 - ☐ Confirm the consent text on each submission names the **matching** brand. A pool lead consenting to "Apex Concrete Coating" is the specific bug this rebuild exists to fix (AC-3.4).
 - ☐ Land on `/pools` with `?utm_source=facebook&utm_medium=paid&utm_campaign=test` and confirm the payload carries it through (AC-1.4, AC-1.5).
-- ☐ **AC-8.2:** open `/coating` in a real browser and confirm the form arrives with Concrete Coating pre-selected. *(This one is genuinely unverified — the headless preview pane cannot hydrate `client:visible` islands, so it has never been exercised end-to-end. A Playwright test is drafted in `acceptance-criteria.md`.)*
+- ☐ **AC-8.2:** run the checked-in browser acceptance suite and open `/coating` in a real browser to confirm Concrete Coating pre-selection. Record the exact candidate and result; the presence of a Playwright test is not a passing run.
 - ☐ Open the site on an actual phone. The maintainer and the client will both do this first.
 - ☐ Confirm `lead_submit` reaches GTM Preview with `vertical` and `source` (AC-5.5).
 - ☐ Click both footer legal links. They must return 200.
@@ -165,3 +166,4 @@ If leads stop arriving or traffic collapses:
 1. Point DNS back at the old host. This is why the TTL was lowered and the old host kept alive.
 2. Leads are the emergency, not rankings — rankings survive a few days of churn, a lost lead is gone. If the form is the only broken thing, fix the webhook rather than rolling back the whole site.
 3. Re-run `preflight` and `redirects:verify` against the restored state before diagnosing anything else.
+

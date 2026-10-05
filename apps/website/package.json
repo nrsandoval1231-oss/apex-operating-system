@@ -15,6 +15,8 @@
     "stock:fetch": "node scripts/fetch-stock-images.mjs",
     "preflight": "node scripts/preflight.mjs",
     "test": "playwright test",
+    "test:unit": "node --test scripts/tests/*.test.mjs",
+    "test:production": "playwright test --config playwright.production.config.ts",
     "test:ui": "playwright test --ui",
     "redirects:generate": "node scripts/generate-redirects.mjs",
     "redirects:verify": "node scripts/verify-redirects.mjs"
