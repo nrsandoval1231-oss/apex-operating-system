@@ -2,8 +2,10 @@
 
 | Node | Status | Scope | Dependency |
 |---|---|---|---|
-| PR24-PKG-01 | BUILDER_COMPLETE | Manifest semantics, immutable Git-source q75 optimization, reproducible QA media, actual inventory/provenance checker, package docs and HOLD evidence | None |
-| PR24-PKG-02 | READY_FOR_CONTROLLER | Re-run repository-level gates and bind review to the exact candidate | PR24-PKG-01 |
-| PR24-VISUAL-01 | BLOCKED_EXTERNAL | Produce and review a complete replacement visual chain | Image service must allow safe generation of all needed frames; next impact request was blocked |
+| PR24-PKG-01/02 | ACCEPTED_PACKAGING_CHECKPOINT | Delivery, manifest, QA, source hash checker; Sol PASS at da781d0 | Base1dfd2db |
+| PR24-PKG-03 | BUILDING | Hosted P2 metadata validation and portable-font preflight repair | da781d0 hosted review |
+| PR24-VISUAL-SOURCE | BLOCKED_SOURCE | Obtain coherent approved-family/environment motion source; current stills insufficient | Owner source availability |
+| PR24-VISUAL-REPAIR | NOT_READY | Extract bounded source-mapped replacement spans; preserve approved masters/anchors | PR24-VISUAL-SOURCE |
+| PR24-VISUAL-ACCEPT | NOT_READY | All adjacent forward/reverse checks; final-tier QA, exact-head review | PR24-VISUAL-REPAIR |
 
-No parallel nodes were selected because all package assets share one candidate and mutable media state. PR24-PKG-01 is a delivery optimization checkpoint only; visual acceptance remains HOLD.
+One Luna builder owns checker mutations. Sol visual recovery is read-only. No parallel media mutation, homepage implementation, generation retry or merge.

@@ -4,6 +4,7 @@ import { createHash } from 'node:crypto';
 import { mkdir, readdir, readFile, rm, stat, writeFile, rename } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
 import { dirname, join, resolve, sep } from 'node:path';
+import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
@@ -40,6 +41,51 @@ const probe = (file) => JSON.parse(run('ffprobe', ['-v', 'error', '-select_strea
 const probeVideo = (file) => JSON.parse(run('ffprobe', ['-v', 'error', '-count_frames', '-select_streams', 'v:0', '-show_entries', 'stream=codec_name,width,height,avg_frame_rate,nb_read_frames', '-show_entries', 'format=duration,size', '-of', 'json', file], true));
 const packagePath = (file) => rel(file.slice(root.length + 1));
 const exists = async (file) => { try { return (await stat(file)).isFile(); } catch { return false; } };
+const fontCandidates = (platform, env, home) => {
+  if (platform === 'win32') return [
+    ...(env.WINDIR ? [join(env.WINDIR, 'Fonts', 'arial.ttf')] : []),
+    ...(env.SystemRoot && env.SystemRoot !== env.WINDIR ? [join(env.SystemRoot, 'Fonts', 'arial.ttf')] : []),
+    ...(env.LOCALAPPDATA ? [join(env.LOCALAPPDATA, 'Microsoft', 'Windows', 'Fonts', 'Arial.ttf')] : []),
+  ];
+  if (platform === 'darwin') return [
+    '/System/Library/Fonts/Supplemental/Arial.ttf',
+    '/System/Library/Fonts/Supplemental/Arial Unicode.ttf',
+    '/Library/Fonts/Arial.ttf',
+    join(home, 'Library', 'Fonts', 'Arial.ttf'),
+  ];
+  if (platform === 'linux') return [
+    '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
+    '/usr/share/fonts/truetype/liberation2/LiberationSans-Regular.ttf',
+    '/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf',
+    '/usr/share/fonts/truetype/freefont/FreeSans.ttf',
+    '/usr/share/fonts/TTF/DejaVuSans.ttf',
+    '/usr/local/share/fonts/DejaVuSans.ttf',
+    join(home, '.local', 'share', 'fonts', 'DejaVuSans.ttf'),
+    join(home, '.fonts', 'DejaVuSans.ttf'),
+  ];
+  return [];
+};
+const findFontFile = async (platform = process.platform, env = process.env, home = homedir(), canRead = exists) => {
+  for (const candidate of fontCandidates(platform, env, home)) if (await canRead(candidate)) return candidate;
+  throw new Error(`No supported TrueType font file found for ${platform}. Checked: ${fontCandidates(platform, env, home).join(', ') || '(no platform candidates)'}. Install a supported font or configure the platform font directory before --write.`);
+};
+const ffmpegFontPath = (fontPath) => fontPath.replaceAll('\\', '/').replaceAll(':', '\\:').replaceAll("'", "\\'");
+
+if (args.has('--font-self-test')) {
+  const linuxFont = '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf';
+  const selected = await findFontFile('linux', {}, '/simulated/home', async (candidate) => candidate === linuxFont);
+  if (selected !== linuxFont) throw new Error(`Simulated Linux font selection returned ${selected}`);
+  let missingFontRejected = false;
+  try { await findFontFile('win32', {}, '/simulated/home', async () => false); }
+  catch (error) { missingFontRejected = error.message.includes('No supported TrueType font file found for win32'); }
+  if (!missingFontRejected) throw new Error('Missing-font preflight did not fail clearly before package mutation.');
+  const windowsWithoutRoot = fontCandidates('win32', {}, '/simulated/home');
+  if (windowsWithoutRoot.some((candidate) => /(^|[\\/])Windows([\\/]|$)/i.test(candidate))) throw new Error('Windows font selection assumed a default Windows directory');
+  const macCandidates = fontCandidates('darwin', {}, '/simulated/home');
+  if (!macCandidates.includes('/System/Library/Fonts/Supplemental/Arial.ttf')) throw new Error('macOS font candidate selection is incomplete');
+  console.log('Portable font selection passed: simulated Linux selection uses an explicit file path without fontconfig; missing-font preflight fails clearly; Windows requires WINDIR/SystemRoot or user font location; macOS candidates are registered.');
+  process.exit(0);
+}
 
 let manifest;
 try { manifest = JSON.parse(await readFile(manifestPath, 'utf8')); }
@@ -106,7 +152,7 @@ for (const [i, file] of desktop.entries()) {
     if (info.codec_name !== 'webp') failures.push(`${rel(file)} codec=${info.codec_name}; expected webp`);
     if (checkOnly && (info.width > 1920 || info.height > 1080)) failures.push(`${rel(file)} is ${info.width}x${info.height}; maximum is 1920x1080`);
     if (checkOnly && info.width * 9 !== info.height * 16) failures.push(`${rel(file)} is ${info.width}x${info.height}; expected exact 16:9`);
-    frameInfo.push({ n: i + 1, file, width: info.width, height: info.height });
+    frameInfo.push({ n: i + 1, file, width: info.width, height: info.height, codec_name: info.codec_name, bytes: (await stat(file)).size });
   } catch (error) { failures.push(`${rel(file)} probe failed: ${error.message}`); }
 }
 for (const item of [...(manifest.fallback_assets ?? []), ...(manifest.mobile_variants ?? [])]) {
@@ -178,6 +224,8 @@ if (checkOnly) {
       const output = provenance.sequence?.[i];
       const source = provenance.source_frames?.[i];
       if (output?.n !== i + 1 || output?.path !== item.file || output?.width !== 1920 || output?.height !== 1080 || output?.sha256 !== await hash(resolve(root, item.file))) failures.push(`package provenance output frame ${i + 1} is missing, stale, or out of sequence`);
+      if (output?.bytes !== frameInfo[i]?.bytes) failures.push(`package provenance output frame ${i + 1} byte count mismatch (recorded ${output?.bytes}, actual ${frameInfo[i]?.bytes})`);
+      if (output?.codec_name !== frameInfo[i]?.codec_name) failures.push(`package provenance output frame ${i + 1} codec mismatch (recorded ${output?.codec_name}, ffprobe ${frameInfo[i]?.codec_name})`);
       if (source?.n !== i + 1 || source?.git_path !== `apps/website/public/cinematic/v1/${item.file}` || !/^[a-f0-9]{64}$/.test(source?.sha256 ?? '')) failures.push(`package provenance source frame ${i + 1} is missing or out of sequence`);
       else {
         const blob = spawnSync('git', ['-C', repoRoot, 'show', `${sourceRevision}:${source.git_path}`], { encoding: null, windowsHide: true, maxBuffer: 64 * 1024 * 1024 });
@@ -208,6 +256,12 @@ if (checkOnly) {
   } catch (error) { failures.push(`package provenance validation failed: ${error.message}`); }
 }
 
+let selectedFontFile;
+if (write && failures.length === 0) {
+  try { selectedFontFile = await findFontFile(); }
+  catch (error) { failures.push(error.message); }
+}
+
 if (write && failures.length === 0) {
   // Explicit --write is the only image mutation path; originals remain recoverable from Git history.
   const stagedDir = resolve(root, '.frame-optimization-staging');
@@ -234,7 +288,7 @@ if (write && failures.length === 0) {
   video(join(review, 'sequence-preview-normal.mp4'), 24);
   video(join(review, 'sequence-preview-slow.mp4'), 4);
   video(join(review, 'sequence-preview-reverse.mp4'), 4, ['-vf', 'reverse']);
-  const fontfile = `${process.env.WINDIR ?? 'C:/Windows'}/Fonts/arial.ttf`.replaceAll('\\', '/').replace(':', '\\:');
+  const fontfile = ffmpegFontPath(selectedFontFile);
   const frameLabel = (startNumber = 1) => `drawtext=fontfile='${fontfile}':text='%{eif\\:n+${startNumber}\\:d}':fontcolor=white:fontsize=16:box=1:boxcolor=black@0.7:x=5:y=5`;
   run('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-y', '-framerate', '1', '-start_number', '1', '-i', pattern, '-vf', `scale=240:135:flags=lanczos,${frameLabel()},tile=8x8`, '-frames:v', '1', '-q:v', '3', join(review, 'full-sequence-contact-sheet.jpg')]);
   const sheets = [
