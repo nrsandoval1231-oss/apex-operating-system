@@ -105,7 +105,7 @@ Deploy to a staging URL **before** touching DNS.
 npm run redirects:verify -- --base https://STAGING-URL --skip-legacy
 ```
 
-Then walk the manual list that no script can check:
+Run the automated checks, then walk the manual delivery and cutover checks:
 
 - ☐ Run `npm run test:unit` and `npm run test:production` against the reserved-domain mocked intake before any live submission. Production must reject empty, malformed, unknown or mismatched acknowledgements without emitting `lead_submit`; retry must reuse the original lead ID.
 - ☐ Submit a real lead from each of the four verticals. Confirm each arrives in n8n with the correct `vertical`, a unique `lead_id`, and the attribution set (AC-1).
