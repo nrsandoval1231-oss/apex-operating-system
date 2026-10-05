@@ -179,6 +179,16 @@ if (checkOnly) {
       const source = provenance.source_frames?.[i];
       if (output?.n !== i + 1 || output?.path !== item.file || output?.width !== 1920 || output?.height !== 1080 || output?.sha256 !== await hash(resolve(root, item.file))) failures.push(`package provenance output frame ${i + 1} is missing, stale, or out of sequence`);
       if (source?.n !== i + 1 || source?.git_path !== `apps/website/public/cinematic/v1/${item.file}` || !/^[a-f0-9]{64}$/.test(source?.sha256 ?? '')) failures.push(`package provenance source frame ${i + 1} is missing or out of sequence`);
+      else {
+        const blob = spawnSync('git', ['-C', repoRoot, 'show', `${sourceRevision}:${source.git_path}`], { encoding: null, windowsHide: true, maxBuffer: 64 * 1024 * 1024 });
+        if (blob.status !== 0) {
+          const detail = blob.error?.message ?? blob.stderr?.toString().trim() ?? `exit ${blob.status}`;
+          failures.push(`package provenance source frame ${i + 1} cannot read pinned Git blob ${sourceRevision}:${source.git_path}: ${detail}`);
+        } else {
+          const sourceHash = createHash('sha256').update(blob.stdout).digest('hex');
+          if (source.sha256 !== sourceHash) failures.push(`package provenance source frame ${i + 1} SHA-256 mismatch for pinned Git blob ${sourceRevision}:${source.git_path} (recorded ${source.sha256}, actual ${sourceHash})`);
+        }
+      }
     }
     const reviewFiles = provenance.review_files ?? [];
     const currentReview = inventory.review_artifacts.filter((p) => p !== 'review/package-provenance.json').sort();
