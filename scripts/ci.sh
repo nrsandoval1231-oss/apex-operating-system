@@ -72,6 +72,12 @@ log "unit tests (legacy proposal engine)"
   node quantity-ownership.test.mjs
 )
 
+log "website unit tests"
+(
+  cd apps/website
+  pnpm run test:unit
+)
+
 log "website Playwright"
 (
   cd apps/website
@@ -83,6 +89,13 @@ log "website Playwright"
     PUBLIC_ENV=development \
     PUBLIC_LEAD_WEBHOOK_URL_TEST="$WEBHOOK_TEST" \
     pnpm exec playwright test
+)
+
+log "website production intake Playwright"
+(
+  cd apps/website
+  env -u CLAUDECODE -u CURSOR_TRACE_ID -u GEMINI_CLI \
+    pnpm run test:production
 )
 
 missing=""
