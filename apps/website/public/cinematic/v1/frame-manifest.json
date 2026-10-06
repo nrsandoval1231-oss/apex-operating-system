@@ -1,0 +1,1012 @@
+{
+  "package": "apex-cinematic-v1",
+  "recorded": "2026-10-04",
+  "phase": "delivery-optimized / visual-repair-pending",
+  "status": "delivery_optimized_visual_repair_pending",
+  "owner": "Nick Sandoval",
+  "source_documents": [
+    "apps/website/docs/cinematic-homepage-vision.md",
+    "apps/website/docs/cinematic-homepage-storyboard.md",
+    "apps/website/docs/cinematic-visual-bible.md",
+    "apps/website/docs/cinematic-generation-prompts.md",
+    "apps/website/docs/design-direction.md"
+  ],
+  "aspect_ratio_desktop": "16:9",
+  "aspect_ratio_mobile": "9:16",
+  "min_master_dimension_px": 1920,
+  "naming_pattern": "frame-NNNN.webp (sequential)",
+  "canonical_lineage": {
+    "environment_lock": "REF-001",
+    "pool_lock": "REF-002",
+    "father_character": "REF-003",
+    "son_a_character": "REF-004",
+    "son_b_character": "REF-005",
+    "family_unit": "REF-006",
+    "pre_action_start": "REF-007",
+    "underwater_geometry": "REF-008",
+    "materials_lock": "REF-009",
+    "lighting_lock": "REF-010",
+    "kf001_canonical_hero": "KF-001 Candidate C",
+    "kf080_hero_image": "Candidate A (used downstream for all flight/peak frames)",
+    "kf140_underwater_hero": "KF-140 Candidate A"
+  },
+  "totals": {
+    "reference_images": 10,
+    "keyframes": 14,
+    "production_frames_desktop_sequential": 62,
+    "runtime_mobile_variants": 3,
+    "runtime_fallback_webp": 3,
+    "runtime_asset_files": 68,
+    "source_reference_images": 10,
+    "source_keyframe_masters": 14,
+    "derived_keyframe_webp": 14,
+    "source_fallback_jpegs": 3,
+    "review_artifacts": "enumerated from review/ at validation time; excluded from runtime/source asset totals"
+  },
+  "playback_sequence": [
+    { "n": 1,  "file": "frames/desktop/frame-0001.webp",  "scene": "establish",        "type": "keyframe",     "id": "KF-001", "notes": "Master visual source. Family secondary to environment. Architecture + pool + lighting locked here." },
+    { "n": 2,  "file": "frames/desktop/frame-0002.webp",  "scene": "approach",         "type": "intermediate",  "id": "INT-005", "between": "KF-001 → KF-020", "lineage": "REF-001, REF-006" },
+    { "n": 3,  "file": "frames/desktop/frame-0003.webp",  "scene": "approach",         "type": "intermediate",  "id": "INT-009", "between": "KF-001 → KF-020", "lineage": "REF-001, REF-006" },
+    { "n": 4,  "file": "frames/desktop/frame-0004.webp",  "scene": "approach",         "type": "intermediate",  "id": "INT-013", "between": "KF-001 → KF-020", "lineage": "REF-001, REF-006" },
+    { "n": 5,  "file": "frames/desktop/frame-0005.webp",  "scene": "approach",         "type": "intermediate",  "id": "INT-016", "between": "KF-001 → KF-020", "lineage": "REF-001, REF-006" },
+    { "n": 6,  "file": "frames/desktop/frame-0006.webp",  "scene": "approach",         "type": "intermediate",  "id": "INT-019", "between": "KF-001 → KF-020", "lineage": "REF-001, REF-006" },
+    { "n": 7,  "file": "frames/desktop/frame-0007.webp",  "scene": "acceleration",     "type": "keyframe",     "id": "KF-020", "notes": "Boys begin playful acceleration, dad joins." },
+    { "n": 8,  "file": "frames/desktop/frame-0008.webp",  "scene": "acceleration",     "type": "intermediate",  "id": "INT-022", "between": "KF-020 → KF-040", "lineage": "KF-020, REF-006" },
+    { "n": 9,  "file": "frames/desktop/frame-0009.webp",  "scene": "acceleration",     "type": "intermediate",  "id": "INT-025", "between": "KF-020 → KF-040", "lineage": "KF-020, REF-006" },
+    { "n": 10, "file": "frames/desktop/frame-0010.webp",  "scene": "acceleration",     "type": "intermediate",  "id": "INT-028", "between": "KF-020 → KF-040", "lineage": "KF-020, REF-006" },
+    { "n": 11, "file": "frames/desktop/frame-0011.webp",  "scene": "acceleration",     "type": "intermediate",  "id": "INT-031", "between": "KF-020 → KF-040", "lineage": "KF-020, REF-006" },
+    { "n": 12, "file": "frames/desktop/frame-0012.webp",  "scene": "acceleration",     "type": "intermediate",  "id": "INT-034", "between": "KF-020 → KF-040", "lineage": "KF-040, REF-006" },
+    { "n": 13, "file": "frames/desktop/frame-0013.webp",  "scene": "acceleration",     "type": "intermediate",  "id": "INT-036", "between": "KF-020 → KF-040", "lineage": "KF-040, REF-006" },
+    { "n": 14, "file": "frames/desktop/frame-0014.webp",  "scene": "final-stride",     "type": "keyframe",     "id": "KF-040", "notes": "FIXED — bluish artifact on Son B's foot removed; deck is empty; only canonical band-aid on right knee." },
+    { "n": 15, "file": "frames/desktop/frame-0015.webp",  "scene": "takeoff",          "type": "intermediate",  "id": "INT-038", "between": "KF-040 → KF-055", "lineage": "KF-055, REF-006" },
+    { "n": 16, "file": "frames/desktop/frame-0016.webp",  "scene": "takeoff",          "type": "intermediate",  "id": "INT-040", "between": "KF-040 → KF-055", "lineage": "KF-055, REF-006" },
+    { "n": 17, "file": "frames/desktop/frame-0017.webp",  "scene": "takeoff",          "type": "intermediate",  "id": "INT-042", "between": "KF-040 → KF-055", "lineage": "KF-055, REF-006" },
+    { "n": 18, "file": "frames/desktop/frame-0018.webp",  "scene": "takeoff",          "type": "intermediate",  "id": "INT-044", "between": "KF-040 → KF-055", "lineage": "KF-070, REF-006" },
+    { "n": 19, "file": "frames/desktop/frame-0019.webp",  "scene": "takeoff",          "type": "intermediate",  "id": "INT-046", "between": "KF-040 → KF-055", "lineage": "KF-070, REF-006" },
+    { "n": 20, "file": "frames/desktop/frame-0020.webp",  "scene": "takeoff",          "type": "intermediate",  "id": "INT-048", "between": "KF-040 → KF-055", "lineage": "KF-070, REF-006" },
+    { "n": 21, "file": "frames/desktop/frame-0021.webp",  "scene": "first-airborne",   "type": "keyframe",     "id": "KF-055", "notes": "Feet just off the deck. Father + Son A aloft, Son B mid-launch." },
+    { "n": 22, "file": "frames/desktop/frame-0022.webp",  "scene": "flight",           "type": "intermediate",  "id": "INT-FZ-56", "between": "KF-055 → KF-070", "lineage": "KF-055, KF-070, REF-006" },
+    { "n": 23, "file": "frames/desktop/frame-0023.webp",  "scene": "flight",           "type": "intermediate",  "id": "INT-FZ-62", "between": "KF-055 → KF-070", "lineage": "KF-055, KF-070, REF-006" },
+    { "n": 24, "file": "frames/desktop/frame-0024.webp",  "scene": "flight",           "type": "intermediate",  "id": "INT-FZ-68", "between": "KF-070 → KF-080", "lineage": "KF-070, REF-006" },
+    { "n": 25, "file": "frames/desktop/frame-0025.webp",  "scene": "flight",           "type": "intermediate",  "id": "INT-FZ-74", "between": "KF-070 → KF-080", "lineage": "KF-070, REF-006" },
+    { "n": 26, "file": "frames/desktop/frame-0026.webp",  "scene": "flight",           "type": "intermediate",  "id": "INT-FZ-82", "between": "KF-080 → KF-090", "lineage": "KF-080, REF-006" },
+    { "n": 27, "file": "frames/desktop/frame-0027.webp",  "scene": "flight",           "type": "intermediate",  "id": "INT-FZ-86", "between": "KF-080 → KF-090", "lineage": "KF-080, REF-006" },
+    { "n": 28, "file": "frames/desktop/frame-0028.webp",  "scene": "early-flight",     "type": "keyframe",     "id": "KF-070", "notes": "All three airborne, bodies separating. Architecture preserved." },
+    { "n": 29, "file": "frames/desktop/frame-0029.webp",  "scene": "peak-flight",      "type": "keyframe",     "id": "KF-080", "hero_image": true, "notes": "HERO IMAGE. Father center, arms-spread joyful. Son A and Son B naturally offset. Architecture preserved (charcoal standing-seam hip roof). Pool interior muted deep blue per color grade." },
+    { "n": 30, "file": "frames/desktop/frame-0030.webp",  "scene": "flight",           "type": "intermediate",  "id": "INT-050", "between": "KF-080 → KF-090", "lineage": "KF-080, REF-006" },
+    { "n": 31, "file": "frames/desktop/frame-0031.webp",  "scene": "flight",           "type": "intermediate",  "id": "INT-052", "between": "KF-080 → KF-090", "lineage": "KF-080, REF-006" },
+    { "n": 32, "file": "frames/desktop/frame-0032.webp",  "scene": "flight",           "type": "intermediate",  "id": "INT-054", "between": "KF-080 → KF-090", "lineage": "KF-080, REF-006" },
+    { "n": 33, "file": "frames/desktop/frame-0033.webp",  "scene": "flight",           "type": "intermediate",  "id": "INT-056", "between": "KF-080 → KF-090", "lineage": "KF-080, REF-006" },
+    { "n": 34, "file": "frames/desktop/frame-0034.webp",  "scene": "descent",          "type": "keyframe",     "id": "KF-090", "notes": "Bodies beginning downward motion, pool clearly visible below." },
+    { "n": 35, "file": "frames/desktop/frame-0035.webp",  "scene": "descent",          "type": "intermediate",  "id": "INT-058", "between": "KF-090 → KF-100", "lineage": "KF-090, REF-006" },
+    { "n": 36, "file": "frames/desktop/frame-0036.webp",  "scene": "descent",          "type": "intermediate",  "id": "INT-060", "between": "KF-090 → KF-100", "lineage": "KF-090, REF-006" },
+    { "n": 37, "file": "frames/desktop/frame-0037.webp",  "scene": "descent",          "type": "intermediate",  "id": "INT-062", "between": "KF-090 → KF-100", "lineage": "KF-090, REF-006" },
+    { "n": 38, "file": "frames/desktop/frame-0038.webp",  "scene": "descent",          "type": "intermediate",  "id": "INT-064", "between": "KF-090 → KF-100", "lineage": "KF-090, REF-006" },
+    { "n": 39, "file": "frames/desktop/frame-0039.webp",  "scene": "descent",          "type": "intermediate",  "id": "INT-066", "between": "KF-090 → KF-100", "lineage": "KF-090, REF-006" },
+    { "n": 40, "file": "frames/desktop/frame-0040.webp",  "scene": "pre-impact",       "type": "keyframe",     "id": "KF-100", "notes": "FIXED — Son A now joyful, mouth open in excitement (was previously serious). Feet just above water." },
+    { "n": 41, "file": "frames/desktop/frame-0041.webp",  "scene": "impact",           "type": "intermediate",  "id": "INT-068", "between": "KF-100 → KF-108", "lineage": "KF-100, REF-006" },
+    { "n": 42, "file": "frames/desktop/frame-0042.webp",  "scene": "impact",           "type": "intermediate",  "id": "INT-070", "between": "KF-100 → KF-108", "lineage": "KF-100, REF-006" },
+    { "n": 43, "file": "frames/desktop/frame-0043.webp",  "scene": "impact",           "type": "intermediate",  "id": "INT-072", "between": "KF-100 → KF-112", "lineage": "KF-108, REF-006" },
+    { "n": 44, "file": "frames/desktop/frame-0044.webp",  "scene": "impact",           "type": "intermediate",  "id": "INT-074", "between": "KF-100 → KF-112", "lineage": "KF-108, REF-006" },
+    { "n": 45, "file": "frames/desktop/frame-0045.webp",  "scene": "impact",           "type": "intermediate",  "id": "INT-076", "between": "KF-100 → KF-112", "lineage": "KF-108, REF-006" },
+    { "n": 46, "file": "frames/desktop/frame-0046.webp",  "scene": "impact",           "type": "intermediate",  "id": "INT-078", "between": "KF-100 → KF-112", "lineage": "KF-108, REF-006" },
+    { "n": 47, "file": "frames/desktop/frame-0047.webp",  "scene": "water-contact",    "type": "keyframe",     "id": "KF-108", "notes": "First contact with natural splash." },
+    { "n": 48, "file": "frames/desktop/frame-0048.webp",  "scene": "splash",           "type": "keyframe",     "id": "KF-112", "notes": "Splash erupting, droplets everywhere." },
+    { "n": 49, "file": "frames/desktop/frame-0049.webp",  "scene": "splash",           "type": "intermediate",  "id": "INT-080", "between": "KF-112 → KF-116", "lineage": "KF-112, KF-116" },
+    { "n": 50, "file": "frames/desktop/frame-0050.webp",  "scene": "splash",           "type": "intermediate",  "id": "INT-082", "between": "KF-112 → KF-116", "lineage": "KF-112, KF-116" },
+    { "n": 51, "file": "frames/desktop/frame-0051.webp",  "scene": "splash",           "type": "intermediate",  "id": "INT-084", "between": "KF-116 → KF-120", "lineage": "KF-116, KF-120" },
+    { "n": 52, "file": "frames/desktop/frame-0052.webp",  "scene": "water-dominates",  "type": "keyframe",     "id": "KF-116", "notes": "Water dominates lower 2/3, house partially visible." },
+    { "n": 53, "file": "frames/desktop/frame-0053.webp",  "scene": "transition",       "type": "keyframe",     "id": "KF-120", "notes": "Full-screen water. Safest hidden edit point between above-water and underwater." },
+    { "n": 54, "file": "frames/desktop/frame-0054.webp",  "scene": "underwater",       "type": "intermediate",  "id": "INT-086", "between": "KF-120 → KF-140", "lineage": "KF-120, KF-140, REF-008" },
+    { "n": 55, "file": "frames/desktop/frame-0055.webp",  "scene": "underwater",       "type": "intermediate",  "id": "INT-088", "between": "KF-120 → KF-140", "lineage": "KF-120, KF-140, REF-008" },
+    { "n": 56, "file": "frames/desktop/frame-0056.webp",  "scene": "underwater",       "type": "intermediate",  "id": "INT-090", "between": "KF-120 → KF-140", "lineage": "KF-140, REF-008" },
+    { "n": 57, "file": "frames/desktop/frame-0057.webp",  "scene": "underwater",       "type": "intermediate",  "id": "INT-092", "between": "KF-120 → KF-140", "lineage": "KF-140, REF-008" },
+    { "n": 58, "file": "frames/desktop/frame-0058.webp",  "scene": "underwater",       "type": "intermediate",  "id": "INT-094", "between": "KF-120 → KF-140", "lineage": "KF-140, REF-008" },
+    { "n": 59, "file": "frames/desktop/frame-0059.webp",  "scene": "underwater",       "type": "intermediate",  "id": "INT-096", "between": "KF-120 → KF-140", "lineage": "KF-140, REF-008" },
+    { "n": 60, "file": "frames/desktop/frame-0060.webp",  "scene": "underwater",       "type": "intermediate",  "id": "INT-098", "between": "KF-120 → KF-140", "lineage": "KF-140, REF-008" },
+    { "n": 61, "file": "frames/desktop/frame-0061.webp",  "scene": "underwater",       "type": "intermediate",  "id": "INT-100", "between": "KF-120 → KF-140", "lineage": "KF-140, REF-008" },
+    { "n": 62, "file": "frames/desktop/frame-0062.webp",  "scene": "underwater",       "type": "keyframe",     "id": "KF-140", "notes": "Underwater craftsmanship hero. Pool interior, mosaic tile, four Pentair lights, caustics, drain, family wrist in foreground." }
+  ],
+  "scene_distribution": {
+    "establish":        { "count": 1,  "frame_range": "0001" },
+    "approach":         { "count": 5,  "frame_range": "0002-0006" },
+    "acceleration":     { "count": 7,  "frame_range": "0007-0013" },
+    "final-stride":     { "count": 1,  "frame_range": "0014" },
+    "takeoff":          { "count": 6,  "frame_range": "0015-0020" },
+    "first-airborne":   { "count": 1,  "frame_range": "0021" },
+    "flight":           { "count": 10, "frame_range": "0022-0027,0030-0033" },
+    "early-flight":     { "count": 1,  "frame_range": "0028" },
+    "peak-flight":      { "count": 1,  "frame_range": "0029" },
+    "descent":          { "count": 6,  "frame_range": "0034-0039" },
+    "pre-impact":       { "count": 1,  "frame_range": "0040" },
+    "impact":           { "count": 6,  "frame_range": "0041-0046" },
+    "water-contact":    { "count": 1,  "frame_range": "0047" },
+    "splash":           { "count": 4,  "frame_range": "0048-0051" },
+    "water-dominates":  { "count": 1,  "frame_range": "0052" },
+    "transition":       { "count": 1,  "frame_range": "0053" },
+    "underwater":       { "count": 9,  "frame_range": "0054-0062" }
+  },
+  "fallback_assets": [
+    { "id": "fallback-hero",      "file": "fallback/hero.webp",      "source": "KF-001 establish",   "purpose": "reduced motion / static poster / OG social" },
+    { "id": "fallback-flight",    "file": "fallback/flight.webp",    "source": "KF-080 peak flight", "purpose": "campaign hero / advertising / social" },
+    { "id": "fallback-underwater", "file": "fallback/underwater.webp", "source": "KF-140 underwater hero", "purpose": "craftsmanship state / next-section handoff" }
+  ],
+  "mobile_variants": [
+    { "id": "KF-001-mobile",  "file": "mobile/KF-001-establish-mobile.webp",  "aspect": "9:16", "purpose": "portrait establish (with negative space for headline copy)" },
+    { "id": "KF-080-mobile",  "file": "mobile/KF-080-peak-flight-mobile.webp", "aspect": "9:16", "purpose": "portrait flight hero" },
+    { "id": "KF-140-mobile",  "file": "mobile/KF-140-underwater-hero-mobile.webp", "aspect": "9:16", "purpose": "portrait craftsmanship hero" }
+  ],
+  "review_artifacts": {
+    "full_sequence_contact_sheet": "review/full-sequence-contact-sheet.jpg",
+    "normal_playback_preview":      "review/sequence-preview-normal.mp4",
+    "slow_playback_preview":        "review/sequence-preview-slow.mp4",
+    "reverse_playback_preview":     "review/sequence-preview-reverse.mp4",
+    "package_provenance":           "review/package-provenance.json",
+    "splash_contact_sheet":          "review/splash-contact-sheet.webp",
+    "sample_frames_normal":         "review/sample-frames/normal-t*.jpg (extracted for QA review, not part of playback)",
+    "sample_frames_slow":           "review/sample-slow/slow-t*.jpg (extracted for QA review, not part of playback)",
+    "keyframe_contact_sheet":       "review/keyframes-contact-sheet.webp",
+    "reference_contact_sheet":      "review/reference-contact-sheet.webp",
+    "flight_contact_sheet":         "review/flight-contact-sheet.webp",
+    "impact_contact_sheet":         "review/impact-contact-sheet.webp",
+    "underwater_contact_sheet":     "review/underwater-contact-sheet.webp"
+  },
+  "preview_video_metadata": "Generated-file hashes, sizes, dimensions, and encoder provenance are recorded in review/package-provenance.json.",
+  "prior_manifest_claims_not_revalidated": [
+    "KF-040: regenerated as 'kf040-fixed-b' to remove the bluish object near Son B's foot. Deck is now empty except for the canonical band-aid on Son B's right knee.",
+    "KF-100: regenerated as 'kf100-fixed-a' so Son A shows genuine joy (mouth open in excitement). Previously he appeared serious.",
+    "Water color: applied controlled color grading pass across all 12 above-water keyframes + 6 flight intermediates. Pulled aqua/cyan dominance toward muted deep blue (premium residential Texas pool, not tropical). Golden-hour reflections preserved."
+  ],
+  "package_inventory": {
+    "generated_at_utc": "2026-10-05T17:13:16.556Z",
+    "source_revision": "1dfd2db2e25118f9662c836b2e05d9a1a45fe284",
+    "counts": {
+      "runtime_desktop_frames": 62,
+      "runtime_mobile_variants": 3,
+      "runtime_fallback_webp": 3,
+      "source_reference_jpg": 10,
+      "source_keyframe_jpg": 14,
+      "keyframe_webp_derivatives": 14,
+      "source_fallback_jpg": 3,
+      "review_artifacts": 25,
+      "total_repository_asset_files": 134,
+      "repository_media_files": 133,
+      "package_file_count": 135
+    },
+    "bytes": {
+      "production_payload_bytes": 12759798,
+      "runtime_asset_bytes": 16785614,
+      "repository_media_bytes": 139205642,
+      "total_repository_asset_bytes": 139239325
+    },
+    "inventory": {
+      "runtime_desktop_frames": [
+        "frames/desktop/frame-0001.webp",
+        "frames/desktop/frame-0002.webp",
+        "frames/desktop/frame-0003.webp",
+        "frames/desktop/frame-0004.webp",
+        "frames/desktop/frame-0005.webp",
+        "frames/desktop/frame-0006.webp",
+        "frames/desktop/frame-0007.webp",
+        "frames/desktop/frame-0008.webp",
+        "frames/desktop/frame-0009.webp",
+        "frames/desktop/frame-0010.webp",
+        "frames/desktop/frame-0011.webp",
+        "frames/desktop/frame-0012.webp",
+        "frames/desktop/frame-0013.webp",
+        "frames/desktop/frame-0014.webp",
+        "frames/desktop/frame-0015.webp",
+        "frames/desktop/frame-0016.webp",
+        "frames/desktop/frame-0017.webp",
+        "frames/desktop/frame-0018.webp",
+        "frames/desktop/frame-0019.webp",
+        "frames/desktop/frame-0020.webp",
+        "frames/desktop/frame-0021.webp",
+        "frames/desktop/frame-0022.webp",
+        "frames/desktop/frame-0023.webp",
+        "frames/desktop/frame-0024.webp",
+        "frames/desktop/frame-0025.webp",
+        "frames/desktop/frame-0026.webp",
+        "frames/desktop/frame-0027.webp",
+        "frames/desktop/frame-0028.webp",
+        "frames/desktop/frame-0029.webp",
+        "frames/desktop/frame-0030.webp",
+        "frames/desktop/frame-0031.webp",
+        "frames/desktop/frame-0032.webp",
+        "frames/desktop/frame-0033.webp",
+        "frames/desktop/frame-0034.webp",
+        "frames/desktop/frame-0035.webp",
+        "frames/desktop/frame-0036.webp",
+        "frames/desktop/frame-0037.webp",
+        "frames/desktop/frame-0038.webp",
+        "frames/desktop/frame-0039.webp",
+        "frames/desktop/frame-0040.webp",
+        "frames/desktop/frame-0041.webp",
+        "frames/desktop/frame-0042.webp",
+        "frames/desktop/frame-0043.webp",
+        "frames/desktop/frame-0044.webp",
+        "frames/desktop/frame-0045.webp",
+        "frames/desktop/frame-0046.webp",
+        "frames/desktop/frame-0047.webp",
+        "frames/desktop/frame-0048.webp",
+        "frames/desktop/frame-0049.webp",
+        "frames/desktop/frame-0050.webp",
+        "frames/desktop/frame-0051.webp",
+        "frames/desktop/frame-0052.webp",
+        "frames/desktop/frame-0053.webp",
+        "frames/desktop/frame-0054.webp",
+        "frames/desktop/frame-0055.webp",
+        "frames/desktop/frame-0056.webp",
+        "frames/desktop/frame-0057.webp",
+        "frames/desktop/frame-0058.webp",
+        "frames/desktop/frame-0059.webp",
+        "frames/desktop/frame-0060.webp",
+        "frames/desktop/frame-0061.webp",
+        "frames/desktop/frame-0062.webp"
+      ],
+      "runtime_mobile_variants": [
+        "mobile/KF-001-establish-mobile.webp",
+        "mobile/KF-080-peak-flight-mobile.webp",
+        "mobile/KF-140-underwater-hero-mobile.webp"
+      ],
+      "runtime_fallback_webp": [
+        "fallback/flight.webp",
+        "fallback/hero.webp",
+        "fallback/underwater.webp"
+      ],
+      "source_reference_jpg": [
+        "reference/REF-001-backyard-wide.jpg",
+        "reference/REF-002-pool-geometry.jpg",
+        "reference/REF-003-father.jpg",
+        "reference/REF-004-older-son.jpg",
+        "reference/REF-005-younger-son.jpg",
+        "reference/REF-006-family.jpg",
+        "reference/REF-007-family-walking.jpg",
+        "reference/REF-008-underwater-pool.jpg",
+        "reference/REF-009-materials.jpg",
+        "reference/REF-010-lighting.jpg"
+      ],
+      "source_keyframe_jpg": [
+        "keyframes/KF-001-establish.jpg",
+        "keyframes/KF-020-acceleration.jpg",
+        "keyframes/KF-040-final-stride.jpg",
+        "keyframes/KF-055-first-airborne.jpg",
+        "keyframes/KF-070-early-flight.jpg",
+        "keyframes/KF-080-peak-flight.jpg",
+        "keyframes/KF-090-descent.jpg",
+        "keyframes/KF-100-pre-impact.jpg",
+        "keyframes/KF-108-water-contact.jpg",
+        "keyframes/KF-112-splash-expansion.jpg",
+        "keyframes/KF-116-water-dominates.jpg",
+        "keyframes/KF-120-transition-cover.jpg",
+        "keyframes/KF-126-surface-crossing.jpg",
+        "keyframes/KF-140-underwater-hero.jpg"
+      ],
+      "keyframe_webp_derivatives": [
+        "keyframes/KF-001-establish.webp",
+        "keyframes/KF-020-acceleration.webp",
+        "keyframes/KF-040-final-stride.webp",
+        "keyframes/KF-055-first-airborne.webp",
+        "keyframes/KF-070-early-flight.webp",
+        "keyframes/KF-080-peak-flight.webp",
+        "keyframes/KF-090-descent.webp",
+        "keyframes/KF-100-pre-impact.webp",
+        "keyframes/KF-108-water-contact.webp",
+        "keyframes/KF-112-splash-expansion.webp",
+        "keyframes/KF-116-water-dominates.webp",
+        "keyframes/KF-120-transition-cover.webp",
+        "keyframes/KF-126-surface-crossing.webp",
+        "keyframes/KF-140-underwater-hero.webp"
+      ],
+      "source_fallback_jpg": [
+        "fallback/flight.jpg",
+        "fallback/hero.jpg",
+        "fallback/underwater.jpg"
+      ],
+      "review_artifacts": [
+        "review/flight-contact-sheet.webp",
+        "review/full-sequence-contact-sheet.jpg",
+        "review/impact-contact-sheet.webp",
+        "review/keyframes-contact-sheet.webp",
+        "review/package-provenance.json",
+        "review/reference-contact-sheet.webp",
+        "review/sample-frames/normal-t0.5.jpg",
+        "review/sample-frames/normal-t1.0.jpg",
+        "review/sample-frames/normal-t1.5.jpg",
+        "review/sample-frames/normal-t1.7.jpg",
+        "review/sample-frames/normal-t1.9.jpg",
+        "review/sample-frames/normal-t2.0.jpg",
+        "review/sample-frames/normal-t2.1.jpg",
+        "review/sample-frames/normal-t2.3.jpg",
+        "review/sample-frames/normal-t2.5.jpg",
+        "review/sample-frames/reverse-t1.0.jpg",
+        "review/sample-slow/slow-t1.0.jpg",
+        "review/sample-slow/slow-t3.0.jpg",
+        "review/sample-slow/slow-t5.0.jpg",
+        "review/sample-slow/slow-t5.5.jpg",
+        "review/sequence-preview-normal.mp4",
+        "review/sequence-preview-reverse.mp4",
+        "review/sequence-preview-slow.mp4",
+        "review/splash-contact-sheet.webp",
+        "review/underwater-contact-sheet.webp"
+      ]
+    },
+    "files": [
+      {
+        "path": "fallback/flight.jpg",
+        "bytes": 3188812,
+        "kind": "media"
+      },
+      {
+        "path": "fallback/flight.webp",
+        "bytes": 841902,
+        "kind": "media"
+      },
+      {
+        "path": "fallback/hero.jpg",
+        "bytes": 3248690,
+        "kind": "media"
+      },
+      {
+        "path": "fallback/hero.webp",
+        "bytes": 877082,
+        "kind": "media"
+      },
+      {
+        "path": "fallback/underwater.jpg",
+        "bytes": 3039256,
+        "kind": "media"
+      },
+      {
+        "path": "fallback/underwater.webp",
+        "bytes": 744794,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0001.webp",
+        "bytes": 260652,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0002.webp",
+        "bytes": 120106,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0003.webp",
+        "bytes": 178508,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0004.webp",
+        "bytes": 251046,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0005.webp",
+        "bytes": 179806,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0006.webp",
+        "bytes": 149136,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0007.webp",
+        "bytes": 177808,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0008.webp",
+        "bytes": 242886,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0009.webp",
+        "bytes": 123826,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0010.webp",
+        "bytes": 182852,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0011.webp",
+        "bytes": 181688,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0012.webp",
+        "bytes": 247330,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0013.webp",
+        "bytes": 161666,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0014.webp",
+        "bytes": 238066,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0015.webp",
+        "bytes": 159204,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0016.webp",
+        "bytes": 123570,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0017.webp",
+        "bytes": 219158,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0018.webp",
+        "bytes": 113910,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0019.webp",
+        "bytes": 239798,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0020.webp",
+        "bytes": 236068,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0021.webp",
+        "bytes": 237046,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0022.webp",
+        "bytes": 125862,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0023.webp",
+        "bytes": 106580,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0024.webp",
+        "bytes": 237996,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0025.webp",
+        "bytes": 221862,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0026.webp",
+        "bytes": 226904,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0027.webp",
+        "bytes": 217758,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0028.webp",
+        "bytes": 121166,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0029.webp",
+        "bytes": 234276,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0030.webp",
+        "bytes": 237660,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0031.webp",
+        "bytes": 228776,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0032.webp",
+        "bytes": 232596,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0033.webp",
+        "bytes": 154394,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0034.webp",
+        "bytes": 225242,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0035.webp",
+        "bytes": 135724,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0036.webp",
+        "bytes": 177480,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0037.webp",
+        "bytes": 128656,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0038.webp",
+        "bytes": 221234,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0039.webp",
+        "bytes": 212304,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0040.webp",
+        "bytes": 169450,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0041.webp",
+        "bytes": 220512,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0042.webp",
+        "bytes": 204722,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0043.webp",
+        "bytes": 317720,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0044.webp",
+        "bytes": 445858,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0045.webp",
+        "bytes": 344518,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0046.webp",
+        "bytes": 362408,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0047.webp",
+        "bytes": 214788,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0048.webp",
+        "bytes": 335154,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0049.webp",
+        "bytes": 243770,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0050.webp",
+        "bytes": 261532,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0051.webp",
+        "bytes": 171738,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0052.webp",
+        "bytes": 123816,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0053.webp",
+        "bytes": 203946,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0054.webp",
+        "bytes": 202074,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0055.webp",
+        "bytes": 242168,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0056.webp",
+        "bytes": 166330,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0057.webp",
+        "bytes": 203894,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0058.webp",
+        "bytes": 151990,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0059.webp",
+        "bytes": 177004,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0060.webp",
+        "bytes": 197348,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0061.webp",
+        "bytes": 171792,
+        "kind": "media"
+      },
+      {
+        "path": "frames/desktop/frame-0062.webp",
+        "bytes": 156666,
+        "kind": "media"
+      },
+      {
+        "path": "keyframes/KF-001-establish.jpg",
+        "bytes": 1288431,
+        "kind": "media"
+      },
+      {
+        "path": "keyframes/KF-001-establish.webp",
+        "bytes": 877900,
+        "kind": "media"
+      },
+      {
+        "path": "keyframes/KF-020-acceleration.jpg",
+        "bytes": 1088197,
+        "kind": "media"
+      },
+      {
+        "path": "keyframes/KF-020-acceleration.webp",
+        "bytes": 681144,
+        "kind": "media"
+      },
+      {
+        "path": "keyframes/KF-040-final-stride.jpg",
+        "bytes": 1231988,
+        "kind": "media"
+      },
+      {
+        "path": "keyframes/KF-040-final-stride.webp",
+        "bytes": 836332,
+        "kind": "media"
+      },
+      {
+        "path": "keyframes/KF-055-first-airborne.jpg",
+        "bytes": 1218685,
+        "kind": "media"
+      },
+      {
+        "path": "keyframes/KF-055-first-airborne.webp",
+        "bytes": 821290,
+        "kind": "media"
+      },
+      {
+        "path": "keyframes/KF-070-early-flight.jpg",
+        "bytes": 902597,
+        "kind": "media"
+      },
+      {
+        "path": "keyframes/KF-070-early-flight.webp",
+        "bytes": 513424,
+        "kind": "media"
+      },
+      {
+        "path": "keyframes/KF-080-peak-flight.jpg",
+        "bytes": 1245151,
+        "kind": "media"
+      },
+      {
+        "path": "keyframes/KF-080-peak-flight.webp",
+        "bytes": 840870,
+        "kind": "media"
+      },
+      {
+        "path": "keyframes/KF-090-descent.jpg",
+        "bytes": 1219272,
+        "kind": "media"
+      },
+      {
+        "path": "keyframes/KF-090-descent.webp",
+        "bytes": 810556,
+        "kind": "media"
+      },
+      {
+        "path": "keyframes/KF-100-pre-impact.jpg",
+        "bytes": 1034260,
+        "kind": "media"
+      },
+      {
+        "path": "keyframes/KF-100-pre-impact.webp",
+        "bytes": 603480,
+        "kind": "media"
+      },
+      {
+        "path": "keyframes/KF-108-water-contact.jpg",
+        "bytes": 1172276,
+        "kind": "media"
+      },
+      {
+        "path": "keyframes/KF-108-water-contact.webp",
+        "bytes": 755110,
+        "kind": "media"
+      },
+      {
+        "path": "keyframes/KF-112-splash-expansion.jpg",
+        "bytes": 1512657,
+        "kind": "media"
+      },
+      {
+        "path": "keyframes/KF-112-splash-expansion.webp",
+        "bytes": 1080554,
+        "kind": "media"
+      },
+      {
+        "path": "keyframes/KF-116-water-dominates.jpg",
+        "bytes": 840489,
+        "kind": "media"
+      },
+      {
+        "path": "keyframes/KF-116-water-dominates.webp",
+        "bytes": 415070,
+        "kind": "media"
+      },
+      {
+        "path": "keyframes/KF-120-transition-cover.jpg",
+        "bytes": 1067385,
+        "kind": "media"
+      },
+      {
+        "path": "keyframes/KF-120-transition-cover.webp",
+        "bytes": 618752,
+        "kind": "media"
+      },
+      {
+        "path": "keyframes/KF-126-surface-crossing.jpg",
+        "bytes": 2957091,
+        "kind": "media"
+      },
+      {
+        "path": "keyframes/KF-126-surface-crossing.webp",
+        "bytes": 694784,
+        "kind": "media"
+      },
+      {
+        "path": "keyframes/KF-140-underwater-hero.jpg",
+        "bytes": 3039256,
+        "kind": "media"
+      },
+      {
+        "path": "keyframes/KF-140-underwater-hero.webp",
+        "bytes": 744794,
+        "kind": "media"
+      },
+      {
+        "path": "mobile/KF-001-establish-mobile.webp",
+        "bytes": 464936,
+        "kind": "media"
+      },
+      {
+        "path": "mobile/KF-080-peak-flight-mobile.webp",
+        "bytes": 393270,
+        "kind": "media"
+      },
+      {
+        "path": "mobile/KF-140-underwater-hero-mobile.webp",
+        "bytes": 703832,
+        "kind": "media"
+      },
+      {
+        "path": "reference/REF-001-backyard-wide.jpg",
+        "bytes": 3696498,
+        "kind": "media"
+      },
+      {
+        "path": "reference/REF-002-pool-geometry.jpg",
+        "bytes": 3277360,
+        "kind": "media"
+      },
+      {
+        "path": "reference/REF-003-father.jpg",
+        "bytes": 2356229,
+        "kind": "media"
+      },
+      {
+        "path": "reference/REF-004-older-son.jpg",
+        "bytes": 2287593,
+        "kind": "media"
+      },
+      {
+        "path": "reference/REF-005-younger-son.jpg",
+        "bytes": 2255770,
+        "kind": "media"
+      },
+      {
+        "path": "reference/REF-006-family.jpg",
+        "bytes": 2670468,
+        "kind": "media"
+      },
+      {
+        "path": "reference/REF-007-family-walking.jpg",
+        "bytes": 3193147,
+        "kind": "media"
+      },
+      {
+        "path": "reference/REF-008-underwater-pool.jpg",
+        "bytes": 2987523,
+        "kind": "media"
+      },
+      {
+        "path": "reference/REF-009-materials.jpg",
+        "bytes": 3136629,
+        "kind": "media"
+      },
+      {
+        "path": "reference/REF-010-lighting.jpg",
+        "bytes": 3270813,
+        "kind": "media"
+      },
+      {
+        "path": "review/flight-contact-sheet.webp",
+        "bytes": 226812,
+        "kind": "media"
+      },
+      {
+        "path": "review/full-sequence-contact-sheet.jpg",
+        "bytes": 708095,
+        "kind": "media"
+      },
+      {
+        "path": "review/impact-contact-sheet.webp",
+        "bytes": 249950,
+        "kind": "media"
+      },
+      {
+        "path": "review/keyframes-contact-sheet.webp",
+        "bytes": 601920,
+        "kind": "media"
+      },
+      {
+        "path": "review/package-provenance.json",
+        "bytes": 33683,
+        "kind": "json"
+      },
+      {
+        "path": "review/reference-contact-sheet.webp",
+        "bytes": 348926,
+        "kind": "media"
+      },
+      {
+        "path": "review/sample-frames/normal-t0.5.jpg",
+        "bytes": 265845,
+        "kind": "media"
+      },
+      {
+        "path": "review/sample-frames/normal-t1.0.jpg",
+        "bytes": 360981,
+        "kind": "media"
+      },
+      {
+        "path": "review/sample-frames/normal-t1.5.jpg",
+        "bytes": 219683,
+        "kind": "media"
+      },
+      {
+        "path": "review/sample-frames/normal-t1.7.jpg",
+        "bytes": 324537,
+        "kind": "media"
+      },
+      {
+        "path": "review/sample-frames/normal-t1.9.jpg",
+        "bytes": 351332,
+        "kind": "media"
+      },
+      {
+        "path": "review/sample-frames/normal-t2.0.jpg",
+        "bytes": 371124,
+        "kind": "media"
+      },
+      {
+        "path": "review/sample-frames/normal-t2.1.jpg",
+        "bytes": 213916,
+        "kind": "media"
+      },
+      {
+        "path": "review/sample-frames/normal-t2.3.jpg",
+        "bytes": 296463,
+        "kind": "media"
+      },
+      {
+        "path": "review/sample-frames/normal-t2.5.jpg",
+        "bytes": 255463,
+        "kind": "media"
+      },
+      {
+        "path": "review/sample-frames/reverse-t1.0.jpg",
+        "bytes": 241503,
+        "kind": "media"
+      },
+      {
+        "path": "review/sample-slow/slow-t1.0.jpg",
+        "bytes": 308376,
+        "kind": "media"
+      },
+      {
+        "path": "review/sample-slow/slow-t3.0.jpg",
+        "bytes": 278377,
+        "kind": "media"
+      },
+      {
+        "path": "review/sample-slow/slow-t5.0.jpg",
+        "bytes": 384241,
+        "kind": "media"
+      },
+      {
+        "path": "review/sample-slow/slow-t5.5.jpg",
+        "bytes": 203376,
+        "kind": "media"
+      },
+      {
+        "path": "review/sequence-preview-normal.mp4",
+        "bytes": 11413150,
+        "kind": "media"
+      },
+      {
+        "path": "review/sequence-preview-reverse.mp4",
+        "bytes": 17871007,
+        "kind": "media"
+      },
+      {
+        "path": "review/sequence-preview-slow.mp4",
+        "bytes": 17905024,
+        "kind": "media"
+      },
+      {
+        "path": "review/splash-contact-sheet.webp",
+        "bytes": 133802,
+        "kind": "media"
+      },
+      {
+        "path": "review/underwater-contact-sheet.webp",
+        "bytes": 165542,
+        "kind": "media"
+      }
+    ]
+  },
+  "open_weak_spots": [
+    "Visual acceptance is HOLD. The original sequence has unresolved visual discontinuities, including the impact section. The resized package preserves the original sequence and does not claim visual acceptance.",
+    "Partial impact candidates exist outside runtime package; they do not form a complete approved replacement chain."
+  ],
+  "next_action": "Repair the complete visual sequence, then replace production frames and rerun package validation and visual review before any prototype integration."
+}

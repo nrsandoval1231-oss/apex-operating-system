@@ -1,0 +1,1060 @@
+{
+  "generated_at_utc": "2026-10-05T17:13:10.263Z",
+  "source_revision": "1dfd2db2e25118f9662c836b2e05d9a1a45fe284",
+  "source_frames": [
+    {
+      "n": 1,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0001.webp",
+      "sha256": "76d476436863934a1afb05531fd2054a9ad4c2781b4786943f46c936e115e847"
+    },
+    {
+      "n": 2,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0002.webp",
+      "sha256": "85a0494e39993eadc3dea2d05ef3fcaa8be7cbacdb92ea2528f3c014629a10f6"
+    },
+    {
+      "n": 3,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0003.webp",
+      "sha256": "28c54adef78b74f18b3e10de12594f4383090cd0475251e910ae30a9d3af5f58"
+    },
+    {
+      "n": 4,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0004.webp",
+      "sha256": "a5da6a96375a7ef23fa64fb5e21144b3203da68d0c05fe23d4f43f63cab439c5"
+    },
+    {
+      "n": 5,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0005.webp",
+      "sha256": "230d9fdb215c021ecd9cce15c90d4bf4713ff9ccd4dc49b6a20a77ececcd88ef"
+    },
+    {
+      "n": 6,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0006.webp",
+      "sha256": "f778dd0e537f9e2b7f00382d6fca830c9d623a6b927af7b0cefa38ad474e0d73"
+    },
+    {
+      "n": 7,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0007.webp",
+      "sha256": "962d14c312698b73226159a75b1151612f791a2fecdd859b090041a05f3cc64a"
+    },
+    {
+      "n": 8,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0008.webp",
+      "sha256": "d8d36780058411fe391056734fc5ea139863f85ca3d86f78c40d34ca582088c9"
+    },
+    {
+      "n": 9,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0009.webp",
+      "sha256": "d13846edb4bd7f8ec219110e9473515fd8210e30001475cea0ede9cfad21c2b8"
+    },
+    {
+      "n": 10,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0010.webp",
+      "sha256": "29df525fa96157e506dcbc8e5e4c0889ba3943a81f93ce4493fa386edc52f2ae"
+    },
+    {
+      "n": 11,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0011.webp",
+      "sha256": "247384ac9bf43cc31d9fca96105726107a165341924cbde29cc35bb3bfdd7764"
+    },
+    {
+      "n": 12,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0012.webp",
+      "sha256": "d78c9c9892fdf0d28d4e57d3b8a917beeba85dba3ee96460860eb27a6d276c1d"
+    },
+    {
+      "n": 13,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0013.webp",
+      "sha256": "277154b3b44510516a32f5c0bdc265033f09ed268c4c6ab9c942f80d215304a2"
+    },
+    {
+      "n": 14,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0014.webp",
+      "sha256": "d18efca581f9c3fe009293a73837c4decce1d0e1c63e02b3df1a898a504a5481"
+    },
+    {
+      "n": 15,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0015.webp",
+      "sha256": "b3cfeff1702ef6b3092270fd42357810c91330899ebc68764c3b7f0145f6454f"
+    },
+    {
+      "n": 16,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0016.webp",
+      "sha256": "2365c68beeb7bb92a7ae5483cdf1d71e0d38933b00b77755cd54fb7d9c58ec5e"
+    },
+    {
+      "n": 17,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0017.webp",
+      "sha256": "a219bbfe0a2eecd32131eccb193eb82ba59a4485ac22f79175f35c3f4dc2997c"
+    },
+    {
+      "n": 18,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0018.webp",
+      "sha256": "0c24aa154bc8678d4be8fe746b99a88f4a49f9867f35f177459558aca72fd9e0"
+    },
+    {
+      "n": 19,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0019.webp",
+      "sha256": "6d97a4e389544aeeed2ef3246c3d015fc62252a08bf3612ff2ea97aeb0c4bdfc"
+    },
+    {
+      "n": 20,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0020.webp",
+      "sha256": "b9950e62d12a123a7ab39b9e94dd5fec500e7e9d21b695680cc4a9f871459f92"
+    },
+    {
+      "n": 21,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0021.webp",
+      "sha256": "79f27c452f17484d9f705d594531a0396e1092068557f18362cdb9501ea6cf45"
+    },
+    {
+      "n": 22,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0022.webp",
+      "sha256": "300f1fd924eb2021a6dc704025026eb4b2007371808df4c3a054301e9c710ea6"
+    },
+    {
+      "n": 23,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0023.webp",
+      "sha256": "2d4325b31cb76ce6fb2d4b838b42c2f1558136de75d7eb9ca5933166cbb134bc"
+    },
+    {
+      "n": 24,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0024.webp",
+      "sha256": "9e925aa570547a2aed8359cf402375f44f9e7d6e065ab8e541406cd8f2c5a824"
+    },
+    {
+      "n": 25,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0025.webp",
+      "sha256": "b8f6abf89fd0964284c2e28144e6cb3ccab453b417fc4accc8eed9db4cbeb857"
+    },
+    {
+      "n": 26,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0026.webp",
+      "sha256": "c60e6a5e1f7b6160e6dbdb128538ecdc3d20ebec5acd324af997f334b751129d"
+    },
+    {
+      "n": 27,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0027.webp",
+      "sha256": "1e631441145b21606db2dbc3b42a0dfa663513f7610f9e5371cc4b07bb9bf93f"
+    },
+    {
+      "n": 28,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0028.webp",
+      "sha256": "adba62170b6597b437f3bb5601ed955a02235fc31c78a25dd6140c6216000051"
+    },
+    {
+      "n": 29,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0029.webp",
+      "sha256": "0dedb0d9c82ac851e2e4abd2006dea8061a9d9d0488acad2bbeb6b4e8855c055"
+    },
+    {
+      "n": 30,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0030.webp",
+      "sha256": "ddf13206d1fe8ec879cc8b4fe0de941cc8025a57593e10632ced856ba6936078"
+    },
+    {
+      "n": 31,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0031.webp",
+      "sha256": "ee84e5ac70b0e1bcf13cbc253647dfd694b96413a8c4826fe406266c3b69b01c"
+    },
+    {
+      "n": 32,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0032.webp",
+      "sha256": "f823962a76df12bcca78415b3a1e0f24581ead79455a9c22e382e930e48bdde5"
+    },
+    {
+      "n": 33,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0033.webp",
+      "sha256": "2233305755351ba574f7dc8ce4dc7d1ec076bf023b2464eaa85a927fa66bd9e1"
+    },
+    {
+      "n": 34,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0034.webp",
+      "sha256": "4eca9c3ed4f6eb5860faf765ae7f097ef6d7d07887c586b613b04a5e386f850b"
+    },
+    {
+      "n": 35,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0035.webp",
+      "sha256": "9b3139a665872ba94636e48beec4891228d7150a9a828d5adc45de1a5867a27f"
+    },
+    {
+      "n": 36,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0036.webp",
+      "sha256": "9f4512cad25a06e1607d1377e5ac8e0a7507d99ff5ff1adc8da7708cdbacd8ce"
+    },
+    {
+      "n": 37,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0037.webp",
+      "sha256": "e19f22ebded43cbc3020045a13f33841fa68d743e1be99a99e6b5df5be684611"
+    },
+    {
+      "n": 38,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0038.webp",
+      "sha256": "23301abf36a4c78734a750214a7b9c706cf653ed636d1a1c361686f1e8ad78af"
+    },
+    {
+      "n": 39,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0039.webp",
+      "sha256": "d1a2e626b9c2b9f68e8b08e50f02a71e47ee0e925af18003a84bed156a08ab58"
+    },
+    {
+      "n": 40,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0040.webp",
+      "sha256": "ba18fa55bd780417085f03b535a668d115acf886c49eb3bf78840f1e4a134975"
+    },
+    {
+      "n": 41,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0041.webp",
+      "sha256": "5fe38743c474e8a7b1ac351b416f47e24daa122ef289bd230cda7283f9803897"
+    },
+    {
+      "n": 42,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0042.webp",
+      "sha256": "544768fa704915c76b7f1e98fc54355187642657677780687387763ce78283da"
+    },
+    {
+      "n": 43,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0043.webp",
+      "sha256": "679076d9144c4acf263a8c16b549829202f7528fc6f5a2fbabb53b04fa7c6794"
+    },
+    {
+      "n": 44,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0044.webp",
+      "sha256": "ff95ea67daa4c802a74f0ae99466fb0822e18021c007cc7e582019bab5321c3e"
+    },
+    {
+      "n": 45,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0045.webp",
+      "sha256": "0a7abd21b5e2f0d82449678db377a8603676d8786261a7b0df153b4cfe79180a"
+    },
+    {
+      "n": 46,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0046.webp",
+      "sha256": "2fc462fa7f1a24e48ed4aa2030716fbd82f22c7762f734a7f60f71e57ea09578"
+    },
+    {
+      "n": 47,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0047.webp",
+      "sha256": "989bc653b6607f8315d61c38d6db2737e14bbdcaf56a32a00850ed9208d2ca9e"
+    },
+    {
+      "n": 48,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0048.webp",
+      "sha256": "5d2d4a64be6679034b35f1677478342163372c338490e96c559f90a263a02ae5"
+    },
+    {
+      "n": 49,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0049.webp",
+      "sha256": "e93f6f78c3942bafcb5cae3baffc418eda3da3a757403a8bd7b71d539c6a0bfe"
+    },
+    {
+      "n": 50,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0050.webp",
+      "sha256": "02472f3c00cc8cb0d706c05dba68aa6edc961b963906cc82cffa91b54940d89a"
+    },
+    {
+      "n": 51,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0051.webp",
+      "sha256": "3e95d87277863ec28143868f46a3697056fb772d46baba6665bc0ed97c5b3dd4"
+    },
+    {
+      "n": 52,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0052.webp",
+      "sha256": "d2d5359d7be8a8f5eaadad8d6bedea5907987ca2446aa9790881ba5c00ff377e"
+    },
+    {
+      "n": 53,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0053.webp",
+      "sha256": "9e0e77d6e03430b0bc7b7c9129954160abecabce8f028634034dda8223b85a67"
+    },
+    {
+      "n": 54,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0054.webp",
+      "sha256": "43a20f574b78ffcd0dd79af81f00f5169d25dd842878a3834c79cdbe0bde1b07"
+    },
+    {
+      "n": 55,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0055.webp",
+      "sha256": "56a40fd3e23d7c66648b943986bf071f8fc8350d0b3c3cab97e2306a6c6c9b22"
+    },
+    {
+      "n": 56,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0056.webp",
+      "sha256": "daac20aefb15b1563253c2c9c2fa4d017bbec3759dc351fbb29ba4dad448f29d"
+    },
+    {
+      "n": 57,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0057.webp",
+      "sha256": "e192c7fb51bb1bc8e2a1438bdaab50b1f119e3b7f8ae89060fb68f0e58736463"
+    },
+    {
+      "n": 58,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0058.webp",
+      "sha256": "a4c803cc104a36ec9c031a4871afdeef02ade3c29427d9467d5ff6dae2df2976"
+    },
+    {
+      "n": 59,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0059.webp",
+      "sha256": "36d7ef74970d2c25740f7b50b27630f2da140f7b735e45523c26f168b3512277"
+    },
+    {
+      "n": 60,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0060.webp",
+      "sha256": "532534ab110bf6be66e8df0d69a0d986cca09fbef742de77f7b5430edecd9dee"
+    },
+    {
+      "n": 61,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0061.webp",
+      "sha256": "e36fc6ae2723a4e41020edc7a82f63bfa18b0216549323e3e7ef3e33a373950c"
+    },
+    {
+      "n": 62,
+      "git_path": "apps/website/public/cinematic/v1/frames/desktop/frame-0062.webp",
+      "sha256": "5302546a0e3a54ce77d19357207ad30674ef8ea64d7c455356d33253df79a028"
+    }
+  ],
+  "encoder": {
+    "ffmpeg": "ffmpeg version 9.0-full_build-www.gyan.dev Copyright (c) 2000-2026 the FFmpeg developers\r",
+    "desktop_filter": "crop=2730x1536 center, then Lanczos scale=1920x1080",
+    "webp": "libwebp quality=75 compression_level=6",
+    "video": "libx264 crf=20 yuv420p",
+    "playback_fps": {
+      "normal": 24,
+      "slow": 4,
+      "reverse": 4
+    }
+  },
+  "sequence": [
+    {
+      "n": 1,
+      "path": "frames/desktop/frame-0001.webp",
+      "sha256": "7b310bcf9a3a9393881919858985c49bd328d4aecb1d3af76c14bc8012c7fa56",
+      "bytes": 260652,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 2,
+      "path": "frames/desktop/frame-0002.webp",
+      "sha256": "80fb3173e6b604a9e65668f0d871cd4b07cdf1109f9e4d4b0ebde51501244cb4",
+      "bytes": 120106,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 3,
+      "path": "frames/desktop/frame-0003.webp",
+      "sha256": "b09a9edd9609d59fa8a009f6083c22af1f9f8fdd860a1e93e18bdaad8f4c592b",
+      "bytes": 178508,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 4,
+      "path": "frames/desktop/frame-0004.webp",
+      "sha256": "3cf1fe87a9fde31f39d302d4359d6edb4f126136ccedeeb4e36e37789a7726e7",
+      "bytes": 251046,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 5,
+      "path": "frames/desktop/frame-0005.webp",
+      "sha256": "5cd4f43b9ad841613c658a8f85e763b9029b115edad30cc6cc2b4280b6d6c0fa",
+      "bytes": 179806,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 6,
+      "path": "frames/desktop/frame-0006.webp",
+      "sha256": "80575ca749855435537740b08351352acc2a4457ff4ce799350912fb9f060d39",
+      "bytes": 149136,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 7,
+      "path": "frames/desktop/frame-0007.webp",
+      "sha256": "3b09c073394951eb3562b52f66de6f79caec01b43e339c67a5a3736048afb2f1",
+      "bytes": 177808,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 8,
+      "path": "frames/desktop/frame-0008.webp",
+      "sha256": "8911134b98ac2e3aa3f3601d0bc1fb044472aa728b848276944fe4b5a466dce4",
+      "bytes": 242886,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 9,
+      "path": "frames/desktop/frame-0009.webp",
+      "sha256": "2b1fe72a5e4bb2db6e754101a9c6f185f882b6455400248794ca148f68af74f9",
+      "bytes": 123826,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 10,
+      "path": "frames/desktop/frame-0010.webp",
+      "sha256": "9b21f63166e94b127b32a1a72b85d49e15aa72c705483f57d9366dddd57cc3c7",
+      "bytes": 182852,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 11,
+      "path": "frames/desktop/frame-0011.webp",
+      "sha256": "d7312b380b4833e999b4df649dc5233fcdf39daf60737301ccf6195a22113ee4",
+      "bytes": 181688,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 12,
+      "path": "frames/desktop/frame-0012.webp",
+      "sha256": "99b2b49ca07852d187d4e271559da7d3a8c98e5f8a97cef47ba80a8efd741c8d",
+      "bytes": 247330,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 13,
+      "path": "frames/desktop/frame-0013.webp",
+      "sha256": "4920b60fa82f8b38b5b0efa69c70967a99c066e12aa331889cf8b6d3b9d1677a",
+      "bytes": 161666,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 14,
+      "path": "frames/desktop/frame-0014.webp",
+      "sha256": "c979d38e1c7639f80ef330deccfeb86dc8c822210b10e045d74eb06b22f7c0b7",
+      "bytes": 238066,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 15,
+      "path": "frames/desktop/frame-0015.webp",
+      "sha256": "911306e1906d8603bb4a2b0b3598ff9331fefa2e1f7baaa4f99ddc276ec6cf09",
+      "bytes": 159204,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 16,
+      "path": "frames/desktop/frame-0016.webp",
+      "sha256": "94f9fa75f231e88cb60aee5e61a35498b743158ca85a6b9836b08b6183260497",
+      "bytes": 123570,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 17,
+      "path": "frames/desktop/frame-0017.webp",
+      "sha256": "a0b347adb693430e4d087cab170a501e0dd293a3f8ca0a918b1dff1fabe14a9d",
+      "bytes": 219158,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 18,
+      "path": "frames/desktop/frame-0018.webp",
+      "sha256": "5edd1b5e11b8369a3a910c0946fac91d576b4a27d04c66efbed1f616e278dca2",
+      "bytes": 113910,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 19,
+      "path": "frames/desktop/frame-0019.webp",
+      "sha256": "f135ae542d7d7dc414aff06dbb8e2c8ae45fc631f2592ef6b74163b6b2997f33",
+      "bytes": 239798,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 20,
+      "path": "frames/desktop/frame-0020.webp",
+      "sha256": "d94f11d9dba5986fdf20216163cfc7db75e297a353beed66351ad838b48430b0",
+      "bytes": 236068,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 21,
+      "path": "frames/desktop/frame-0021.webp",
+      "sha256": "4f1820a5da610b1ae58f75e80ee5d254dd0b133ba380c57dafd89499520def87",
+      "bytes": 237046,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 22,
+      "path": "frames/desktop/frame-0022.webp",
+      "sha256": "767f0bacb664e947cf40b83f48450ccc169f81de717cb5a62de90fb85124b70a",
+      "bytes": 125862,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 23,
+      "path": "frames/desktop/frame-0023.webp",
+      "sha256": "a52d4dcca0a3d137cb6470ed79279f459257373c79d6acf7047f53bcc01467df",
+      "bytes": 106580,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 24,
+      "path": "frames/desktop/frame-0024.webp",
+      "sha256": "361bde55987c9cd38331289acf893948d2e173002f34593c77c3a8eae2b2ae7d",
+      "bytes": 237996,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 25,
+      "path": "frames/desktop/frame-0025.webp",
+      "sha256": "47fc190febeadd020151c8c01db46a180bff5f3f45f1a19741bbd36287fac5ac",
+      "bytes": 221862,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 26,
+      "path": "frames/desktop/frame-0026.webp",
+      "sha256": "99b475a10c6af050c599ebb0375db8fc32ec44c63be0393f9dcf44746db4726d",
+      "bytes": 226904,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 27,
+      "path": "frames/desktop/frame-0027.webp",
+      "sha256": "daa6325002d081e052ade52aa57c4015d9758872693d697405a13de0b46717a1",
+      "bytes": 217758,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 28,
+      "path": "frames/desktop/frame-0028.webp",
+      "sha256": "8f2ad2158da57c44fb8562a2f0848203ed78250dd37e5706aa9fee74db81d548",
+      "bytes": 121166,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 29,
+      "path": "frames/desktop/frame-0029.webp",
+      "sha256": "cb1d7e038e0d1afa9f034bc1918607ed310b2e1467fd30af0903a18f3b869670",
+      "bytes": 234276,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 30,
+      "path": "frames/desktop/frame-0030.webp",
+      "sha256": "eb694c602e5dda867b3cc545cd441d9b07fe3fe562cefdc1dde4e5dab944345e",
+      "bytes": 237660,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 31,
+      "path": "frames/desktop/frame-0031.webp",
+      "sha256": "5132829aaaeaed4d5618c97b86d41cb7da7e6dbd5c0b852f6a7c8e85767f2c2b",
+      "bytes": 228776,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 32,
+      "path": "frames/desktop/frame-0032.webp",
+      "sha256": "6f86eff1daa22b2bcdaddb7401aed6b60864044473f1c7a2736798379b0ac343",
+      "bytes": 232596,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 33,
+      "path": "frames/desktop/frame-0033.webp",
+      "sha256": "a91844f663d4638aafdf3c33ba95203e8a8361567eb33c7d1adef433bf437a15",
+      "bytes": 154394,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 34,
+      "path": "frames/desktop/frame-0034.webp",
+      "sha256": "f128aa770fa88bed74c28772363dd3ddd2945308638987db5dd70b540f6c8242",
+      "bytes": 225242,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 35,
+      "path": "frames/desktop/frame-0035.webp",
+      "sha256": "65d387e7269854702b5212c0c968a1810c26dc8d14d281199921859e1b0a284b",
+      "bytes": 135724,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 36,
+      "path": "frames/desktop/frame-0036.webp",
+      "sha256": "e120a62c442286d873691d4e0e75ec94b589b0c2c09e139230aecaece322e9c7",
+      "bytes": 177480,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 37,
+      "path": "frames/desktop/frame-0037.webp",
+      "sha256": "760a9779945896bbd1f9383d20ef9aa2924e2270014bd733284a344953b48526",
+      "bytes": 128656,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 38,
+      "path": "frames/desktop/frame-0038.webp",
+      "sha256": "0297ed484316091e3990dae3da5a4a0bbbc700e470c556e1f5d6baa3f746d690",
+      "bytes": 221234,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 39,
+      "path": "frames/desktop/frame-0039.webp",
+      "sha256": "911202b4224232ccd5c9a1b7f796bf43ad2f4c6862b23d21e5de0415777c48cd",
+      "bytes": 212304,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 40,
+      "path": "frames/desktop/frame-0040.webp",
+      "sha256": "64d8416a525fbde5b853cfa46e8ee0593282e2be718d1dc445c133d68b8f8b00",
+      "bytes": 169450,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 41,
+      "path": "frames/desktop/frame-0041.webp",
+      "sha256": "ddd612d6e3e0c25d0ce611f5d135eaa87e6af763954624eddc1a8d7e6b1acbc4",
+      "bytes": 220512,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 42,
+      "path": "frames/desktop/frame-0042.webp",
+      "sha256": "77cc3a39d0a889461643228ed11dc3d56410b4f91feda7a91029d157c4d8cc30",
+      "bytes": 204722,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 43,
+      "path": "frames/desktop/frame-0043.webp",
+      "sha256": "e9168d19b1b25007f9c9d4923011a30d1f34a86599de69c440b7be815b4013dd",
+      "bytes": 317720,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 44,
+      "path": "frames/desktop/frame-0044.webp",
+      "sha256": "32fcb7e46a83cac2c98d2dc112459b4edbd6d514275cbd273ae4510ab5cc3cd7",
+      "bytes": 445858,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 45,
+      "path": "frames/desktop/frame-0045.webp",
+      "sha256": "7777837420691546fb0d727b14bddd77f347a35234d9dc7420a940dbfb86bc6a",
+      "bytes": 344518,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 46,
+      "path": "frames/desktop/frame-0046.webp",
+      "sha256": "82c17eb627a2e1fddcc909b7e31d1a311e671c112618d610e4fc14b080c0d0c3",
+      "bytes": 362408,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 47,
+      "path": "frames/desktop/frame-0047.webp",
+      "sha256": "63163f7ea073bffa8233ebb1d6c4ba5f963c0287d9edcb1c0c169af2ee3fe063",
+      "bytes": 214788,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 48,
+      "path": "frames/desktop/frame-0048.webp",
+      "sha256": "e6027df10e809dd94ca03372c1ad94c1c8450c6a8d0e2259f9e0f8cbd604f3c8",
+      "bytes": 335154,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 49,
+      "path": "frames/desktop/frame-0049.webp",
+      "sha256": "4a1794adeb92bee1ae7cd2a4728700148517d38eaee881e27d5fec226d0d24e8",
+      "bytes": 243770,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 50,
+      "path": "frames/desktop/frame-0050.webp",
+      "sha256": "fe782fb3edaf21f8a8e7d45a5c8d316d7b7c1ec7580988494fe8ba037fb9eec7",
+      "bytes": 261532,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 51,
+      "path": "frames/desktop/frame-0051.webp",
+      "sha256": "613a6bba03fbd78b359e65ee23c4b638355f5bbaf661ea4ed487dd528419d867",
+      "bytes": 171738,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 52,
+      "path": "frames/desktop/frame-0052.webp",
+      "sha256": "69fa29861c3a57211cdebc72f90839b76516cd8c22aadee68298eb5f2a95620f",
+      "bytes": 123816,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 53,
+      "path": "frames/desktop/frame-0053.webp",
+      "sha256": "a2a41a75113d3929aaf40122c3b21689a5a6b5b0a09c1b3ce544d349a64b0766",
+      "bytes": 203946,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 54,
+      "path": "frames/desktop/frame-0054.webp",
+      "sha256": "1b5c3bce73c2437b84a0d99dad40a94a639f2e3989ee6e84d37528e38785f782",
+      "bytes": 202074,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 55,
+      "path": "frames/desktop/frame-0055.webp",
+      "sha256": "1080890092bae0c44b23e20eea432121788bf88b80155d797c2f137cf82db78a",
+      "bytes": 242168,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 56,
+      "path": "frames/desktop/frame-0056.webp",
+      "sha256": "42d281c76ac1bd13f262c4a3f90aae5599ee16af66145995bbaf3a7b90d4d388",
+      "bytes": 166330,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 57,
+      "path": "frames/desktop/frame-0057.webp",
+      "sha256": "f1e31266087cd38a3204892a0999b5637e37a46ef538c28c9672302100f077a2",
+      "bytes": 203894,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 58,
+      "path": "frames/desktop/frame-0058.webp",
+      "sha256": "3f585ea50597f7f4d3ce9b29f2d950f02bce25babeb1f982eb02a4bbfbc82414",
+      "bytes": 151990,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 59,
+      "path": "frames/desktop/frame-0059.webp",
+      "sha256": "40242318e243ff0f53922ade4cfbd8fb669d886873005a5a977a42d32b710423",
+      "bytes": 177004,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 60,
+      "path": "frames/desktop/frame-0060.webp",
+      "sha256": "9fde506569df2164b9b2e2aaf166d7fbe6f06fd5deb4bd293134dd207bd8556d",
+      "bytes": 197348,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 61,
+      "path": "frames/desktop/frame-0061.webp",
+      "sha256": "a11c14951d1b578818adb67a8cf223411d254895ccbb5765231ea8397d6a5407",
+      "bytes": 171792,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "n": 62,
+      "path": "frames/desktop/frame-0062.webp",
+      "sha256": "8f8718a3b184341b2844da8d03b65eef0eeecec79616778b997debc3ee800869",
+      "bytes": 156666,
+      "codec_name": "webp",
+      "width": 1920,
+      "height": 1080
+    }
+  ],
+  "review_files": [
+    {
+      "path": "review/flight-contact-sheet.webp",
+      "sha256": "e08059093e3c27cfe5a7e59929d99f6bf5692e4ddc498908b689c42b72c5b943",
+      "bytes": 226812
+    },
+    {
+      "path": "review/full-sequence-contact-sheet.jpg",
+      "sha256": "7524e5f010e1ee55a051e35fa1f800fc570748562accde717cc48523cfe23417",
+      "bytes": 708095
+    },
+    {
+      "path": "review/impact-contact-sheet.webp",
+      "sha256": "d2a887038c141dd5e044913b9ff0a6123a7a1dd04325c1a290d6d084c52da0fe",
+      "bytes": 249950
+    },
+    {
+      "path": "review/keyframes-contact-sheet.webp",
+      "sha256": "04beaebf06a8b0d226b588c7b98243f15d0453de3e983e3d8ed915bd262a1589",
+      "bytes": 601920
+    },
+    {
+      "path": "review/reference-contact-sheet.webp",
+      "sha256": "aa1616233d9e6efda039e99d7dac6ce6a12d66fc5f13ccdc53e1a5f08da55e82",
+      "bytes": 348926
+    },
+    {
+      "path": "review/sample-frames/normal-t0.5.jpg",
+      "sha256": "4819ddb90b489ed65c4d4576761d387c53834a87788c63c31e3bda3c25328aca",
+      "bytes": 265845
+    },
+    {
+      "path": "review/sample-frames/normal-t1.0.jpg",
+      "sha256": "756c99bab86d719d5609695b3938a9e3e84c803319fb91bd53a27286d095a401",
+      "bytes": 360981
+    },
+    {
+      "path": "review/sample-frames/normal-t1.5.jpg",
+      "sha256": "14dddf6d06c82946dc28521d47841022e60b5861780b604a82f998419f8ea056",
+      "bytes": 219683
+    },
+    {
+      "path": "review/sample-frames/normal-t1.7.jpg",
+      "sha256": "aca1c306d30015520c0d8586695741e830d600556e86b32337980723b64833bb",
+      "bytes": 324537
+    },
+    {
+      "path": "review/sample-frames/normal-t1.9.jpg",
+      "sha256": "0294379b59f92d6aae8efab7cad02aa984e8c96c2caa2b496076d5b47cf2426f",
+      "bytes": 351332
+    },
+    {
+      "path": "review/sample-frames/normal-t2.0.jpg",
+      "sha256": "3df34bb3e9aae19888fc5b0e31f09d4b12451de689656fe25796b8934b5f6d30",
+      "bytes": 371124
+    },
+    {
+      "path": "review/sample-frames/normal-t2.1.jpg",
+      "sha256": "547baedd330a2a67f818f27ea0b43702b6a66d14debecba0ecf7dbadbc2d9bf1",
+      "bytes": 213916
+    },
+    {
+      "path": "review/sample-frames/normal-t2.3.jpg",
+      "sha256": "ab6d29994fdb58937bcfdb487a70f2ee7c2132b4623704b14dba85ebaadbe5b8",
+      "bytes": 296463
+    },
+    {
+      "path": "review/sample-frames/normal-t2.5.jpg",
+      "sha256": "dbbf03b013ac841a73598dfa14af43e29b5644c72f971c6fa89b5f4ae66e0247",
+      "bytes": 255463
+    },
+    {
+      "path": "review/sample-frames/reverse-t1.0.jpg",
+      "sha256": "8759c652975bae6714163c95f4a6e84a198ec33601de2a0799b47d190fa619ea",
+      "bytes": 241503
+    },
+    {
+      "path": "review/sample-slow/slow-t1.0.jpg",
+      "sha256": "1bbf8a031a679bb55cd71046adb02cbb2b1bac3d68f656b10c854baf2cdac1d1",
+      "bytes": 308376
+    },
+    {
+      "path": "review/sample-slow/slow-t3.0.jpg",
+      "sha256": "92db1bdca140fa8812beafc25b213a4b11ca81bbe2bdc848a612d641c5d97c82",
+      "bytes": 278377
+    },
+    {
+      "path": "review/sample-slow/slow-t5.0.jpg",
+      "sha256": "ef98691bbb43682e09eecaf7dabc4093c2a6ba4ac81b64830ee2e1b4f5af02be",
+      "bytes": 384241
+    },
+    {
+      "path": "review/sample-slow/slow-t5.5.jpg",
+      "sha256": "3571ec997c7f93ef97c1e3a2be9d790c81bbd1894d44f51f412e96f4bcb2c95c",
+      "bytes": 203376
+    },
+    {
+      "path": "review/sequence-preview-normal.mp4",
+      "sha256": "ca280fd6c3632e8dec0c324cfd3349880bfbaaaceba19d4fb48f3d39d3b1c12d",
+      "bytes": 11413150,
+      "video": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "width": 1920,
+            "height": 1080,
+            "avg_frame_rate": "24/1",
+            "nb_read_frames": "62"
+          }
+        ],
+        "format": {
+          "duration": "2.583333",
+          "size": "11413150"
+        }
+      }
+    },
+    {
+      "path": "review/sequence-preview-reverse.mp4",
+      "sha256": "4e76a4bee5dfd09862534698f09e3921c189f5c1c00002b0c638cbc4ca5c955b",
+      "bytes": 17871007,
+      "video": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "width": 1920,
+            "height": 1080,
+            "avg_frame_rate": "4/1",
+            "nb_read_frames": "62"
+          }
+        ],
+        "format": {
+          "duration": "15.500000",
+          "size": "17871007"
+        }
+      }
+    },
+    {
+      "path": "review/sequence-preview-slow.mp4",
+      "sha256": "2e4b693c620a543c6a38ed2296602b9f4b4c4619584c0ba9d86075d25e884801",
+      "bytes": 17905024,
+      "video": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "width": 1920,
+            "height": 1080,
+            "avg_frame_rate": "4/1",
+            "nb_read_frames": "62"
+          }
+        ],
+        "format": {
+          "duration": "15.500000",
+          "size": "17905024"
+        }
+      }
+    },
+    {
+      "path": "review/splash-contact-sheet.webp",
+      "sha256": "3015b2f72a715c4e4afe6d6b239f6f68177db8fbc5b90a0131ae733e33dacde7",
+      "bytes": 133802
+    },
+    {
+      "path": "review/underwater-contact-sheet.webp",
+      "sha256": "7f382b3be6d7984d56ad6c83c5374dc84010dd9044cd9e374b438af142ff5058",
+      "bytes": 165542
+    }
+  ]
+}

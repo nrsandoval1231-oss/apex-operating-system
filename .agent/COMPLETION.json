@@ -1,0 +1,51 @@
+{
+  "packet": "PACKET-PR24-PACKAGE",
+  "node": "PR24-PKG-01",
+  "builder_result": "PASS",
+  "product_visual_status": "HOLD",
+  "candidate": {
+    "repository": "Apex",
+    "branch": "feature/cinematic-v1-asset-package",
+    "base_sha": "1dfd2db2e25118f9662c836b2e05d9a1a45fe284",
+    "commit_created": false
+  },
+  "changed_scope": [
+    "apps/website/public/cinematic/v1/frame-manifest.json",
+    "apps/website/public/cinematic/v1/frames/desktop/frame-0001.webp through frame-0062.webp",
+    "apps/website/public/cinematic/v1/review/*",
+    "apps/website/scripts/cinematic-v1-package.mjs",
+    "apps/website/docs/cinematic-v1-package.md",
+    ".agent/CURRENT_STATE.md",
+    ".agent/WORK_GRAPH.md",
+    ".agent/PACKET-PR24-PACKAGE.md",
+    ".agent/PR24-VISUAL-HOLD.md"
+  ],
+  "package_evidence": {
+    "source_revision": "1dfd2db2e25118f9662c836b2e05d9a1a45fe284",
+    "desktop_frames": 62,
+    "dimensions": "1920x1080 exact 16:9",
+    "webp_quality": 75,
+    "production_payload_bytes": 12759798,
+    "average_frame_bytes": 205803.1935,
+    "minimum_frame_bytes": 106580,
+    "maximum_frame_bytes": 445858,
+    "source_and_output_sha256_records": 62,
+    "runtime_asset_bytes": 16785614,
+    "total_repository_asset_files": 134,
+    "repository_media_files": 133,
+    "package_file_count_including_manifest": 135,
+    "review_artifacts": 25,
+    "preview_fps": { "normal": 24, "slow": 4, "reverse": 4 },
+    "scene_ownership": "unique owner per frame; splash 0048-0051, water-dominates 0052, transition 0053, underwater 0054-0062"
+  },
+  "validation": [
+    { "command": "node --check apps/website/scripts/cinematic-v1-package.mjs", "exit_code": 0 },
+    { "command": "node apps/website/scripts/cinematic-v1-package.mjs --check --inventory", "exit_code": 0 }
+  ],
+  "visual_disposition": "HOLD: original sequence has unresolved cross-frame discontinuities; compression review passed but does not accept sequence continuity.",
+  "external_repair": "Four impact candidates outside runtime; next frame request blocked by image-service safety filter. No bypass, substitute, or partial production integration.",
+  "limitations": [
+    "Root must rerun final repository gates and review the exact uncommitted candidate.",
+    "Visual completion needs a complete approved replacement chain and new continuity review."
+  ]
+}

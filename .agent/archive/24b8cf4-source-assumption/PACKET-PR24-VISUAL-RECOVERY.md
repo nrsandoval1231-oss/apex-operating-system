@@ -1,0 +1,15 @@
+# PR24 visual recovery packet — NOT READY until source exists
+
+Objective: coherent62-frame runtime sequence preserving approved concept, family, environment, KF-080 hero and KF-140 handoff. Repository/branch: Apex apex-operating-system / feature/cinematic-v1-asset-package; recovery decision base da781d0818ff0f6d28ef00e3d87efbe930960744.
+
+Evidence: independent Sol inspected opening, above-water and underwater.1→2→3 cuts immediately;8→12 nearly repeat poses. Alternating houses/poses through flight and contact cannot be made continuous by reordering, optical-flow morphing or crossfade. Generated41–44 follow B-house water entry but cannot bridge locked runtime29/KF-080 and incompatible contact masters. Full water only covers a legitimate edit after coherent contact. See PR24-VISUAL-HOLD.md.
+
+Required input: continuous opening/approach/run/jump/hero/descent/contact/splash take using approved family/environment/KF-080, plus continuous same-pool underwater glide toward KF-140. Existing approved keyframes remain preserved masters; pixel-level anchor joins require verification. Known replacement slots2–28 and30–61, with1/29/62 retained only if their joins prove coherent. This is a minimum known scope, not approval to replace all frames unnecessarily.
+
+Allowed future files: explicit source map, source provenance, selected frames/desktop slots, manifest, generated QA and packaging source-map handling. Exclusions: canonical four design documents, mobile expansion, website/homepage/GSAP, unrelated operating-system code, production deployment, merge. Current script --write reads original1dfd2db frames; it MUST NOT run over repaired frames until a distinct approved source mapping is implemented.
+
+Source map per runtime slot: KEEP/REPLACE, actual source path/revision, SHA256, source time/frame index, scene, locked-anchor relationship. Do not invent timestamps for isolated stills. Preserve canonical masters. Do not retry rejected frame45 request/references or send it through another provider.
+
+Acceptance: natural progressive motion for every adjacent pair, forward/reverse; stable identities/wardrobe/pool/architecture/light; physically correct contact and splash; KF080 strongest airborne anchor; full-frame occlusion before underwater edit; KF140 craftsmanship destination.62 sequential1920x1080 optimized WebP, manifest unique ownership, all refs/inventory/provenance exact. New QA generated from final production, package/build/check/tests/runtime checks, independent exact-head review. No partial chain enters production.
+
+Retry budget: two materially distinct safe repairs per coherent span. Missing source or incompatible locked anchors require explicit owner-source resolution; never lower finish contract. Current product remains HOLD.
