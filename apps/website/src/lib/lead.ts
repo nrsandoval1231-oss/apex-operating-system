@@ -141,23 +141,3 @@ export function isValidEmail(email: string): boolean {
 export function isValidPhone(phone: string): boolean {
   return normalizePhone(phone).length >= 10;
 }
-
-/**
- * Did intake refuse to route this lead?
- *
- * The intake endpoint answers HTTP 200 for every outcome it has — `accepted`, `duplicate`,
- * and `quarantined` — and puts the real one in the body (apex-lead-engine
- * `docs/data-contract.md`). So a 2xx on its own does not mean a crew was told, and reading
- * only the status code let the form show "Lead captured & routed" to someone whose request
- * had been set aside. That is the worst failure this form has: the customer stops chasing,
- * and nobody is coming.
- *
- * Only an explicit `quarantined` counts as a refusal. A body that is not the intake contract
- * means the endpoint is not the lead engine — a test webhook during development, which is
- * what every non-production build points at — and treating those as failures would show a
- * false error on every submission before launch.
- */
-export function isRejectedByIntake(body: unknown): boolean {
-  if (typeof body !== 'object' || body === null) return false;
-  return (body as { status?: unknown }).status === 'quarantined';
-}
