@@ -1,0 +1,214 @@
+---
+/**
+ * Showcase.astro — Section 03 of 07. PROOF.
+ *
+ * Projects treated editorially: one strong presentation at a time, very little text, the kind
+ * of pacing an architectural publication uses. Not a thumbnail gallery.
+ *
+ * On metadata honesty: with no documented Apex projects (D-20), `label` and `type` describe
+ * the IMAGE rather than a job — "Dusk environment", not "The Hendricks Residence, Lubbock".
+ * When real projects are documented, those strings become names and locations, which is a
+ * content edit in home-v2.ts and nothing else. The `features` list is written as capability
+ * language for the same reason: it is not a claim that a specific photographed pool has them.
+ */
+import { showcaseV2 } from '@content/home-v2';
+import { testimonials } from '@content/testimonials';
+import ImageSlot from '@components/ImageSlot.astro';
+
+// Two projects; the third testimonial is held back so the proof block reads as a considered
+// pull-quote rather than a carousel. Data is untouched — only how much of it is shown changed.
+const [primary, secondary] = showcaseV2.projects;
+const [quote] = testimonials;
+---
+<section class="showcase" id="work">
+  <div class="wrap">
+    <header class="sec-head">
+      <p class="eyebrow">{showcaseV2.eyebrow}</p>
+      <h2 class="sec-title">{showcaseV2.heading}</h2>
+      <p class="lead">{showcaseV2.lead}</p>
+    </header>
+
+    {/*
+      Alternating full-bleed presentations rather than a two-up grid. Each project gets a full
+      viewport width of room on one side, which is what makes the photograph feel large; a grid
+      would halve it and put us straight back in card territory.
+    */}
+    <article class="proj proj--a">
+      <div class="proj-fig">
+        <ImageSlot id={primary.image} sizes="(max-width:900px) 100vw, 58vw" />
+      </div>
+      <div class="proj-meta">
+        <p class="proj-label mono">{primary.label}</p>
+        <h3 class="proj-type">{primary.type}</h3>
+        <ul class="proj-feats">
+          {primary.features.map((f) => <li>{f}</li>)}
+        </ul>
+      </div>
+    </article>
+
+    <article class="proj proj--b">
+      <div class="proj-fig">
+        <ImageSlot id={secondary.image} sizes="(max-width:900px) 100vw, 58vw" />
+      </div>
+      <div class="proj-meta">
+        <p class="proj-label mono">{secondary.label}</p>
+        <h3 class="proj-type">{secondary.type}</h3>
+        <ul class="proj-feats">
+          {secondary.features.map((f) => <li>{f}</li>)}
+        </ul>
+      </div>
+    </article>
+  </div>
+
+  {/*
+    The proof beat. A single large pull-quote, set in the display face at a size that makes it
+    read as a statement rather than as a review widget. Testimonials are real, attributed, and
+    from the approved mockup — so this is genuine proof, not decoration.
+  */}
+  <div class="wrap">
+    <figure class="quote">
+      {/*
+        The rating. The glyphs are decorative and hidden from assistive tech; the score is
+        carried as real text beside them.
+
+        Why: brand amber on the concrete ground measures 2.05:1, which is below both the 4.5:1
+        needed for small text and the 3:1 needed to call the glyphs meaningful graphics. Amber
+        is kept for the glyphs because gold stars are a review convention and recolouring them
+        to sage reads as broken — but that decision is only defensible if the information
+        survives somewhere compliant, so the numeric score sits next to them in --steel at
+        roughly 6:1. Putting the quote on the lighter --concrete ground is a hair worse than
+        the --paper the old testimonial band used, so this is a small regression of an
+        existing issue, not a new class of one.
+      */}
+      <p class="rating">
+        <span class="stars" aria-hidden="true">{'★'.repeat(quote.stars)}</span>
+        <span class="rating-num">{quote.stars.toFixed(1)} out of 5</span>
+      </p>
+      <blockquote>{quote.quote}</blockquote>
+      <figcaption>
+        <span class="who">{quote.name}</span>
+        <span class="mono ctx">{quote.context}</span>
+      </figcaption>
+    </figure>
+  </div>
+</section>
+
+<style>
+  .showcase { background: var(--concrete); }
+
+  .proj {
+    display: grid;
+    grid-template-columns: 1.35fr 1fr;
+    gap: clamp(24px, 5vw, 72px);
+    align-items: center;
+    margin-top: clamp(40px, 6vw, 88px);
+  }
+  /* Alternating: the second project puts its image on the right, so the page has a rhythm
+     instead of two identical rows. */
+  .proj--b { grid-template-columns: 1fr 1.35fr; }
+  .proj--b .proj-fig { order: 2; }
+  .proj--b .proj-meta { order: 1; }
+
+  @media (max-width: 900px) {
+    .proj, .proj--b { grid-template-columns: 1fr; gap: 20px; align-items: start; }
+    .proj--b .proj-fig, .proj--b .proj-meta { order: 0; }
+  }
+
+  .proj-fig { margin: 0; }
+  .proj-fig :global(.img-slot) { border-radius: 0; border: 0; }
+
+  .proj-meta { max-width: 40ch; }
+
+  .proj-label {
+    font-size: 10.5px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--steel);
+    margin: 0 0 14px;
+  }
+
+  .proj-type {
+    font-size: clamp(24px, 3.2vw, 38px);
+    line-height: 1.06;
+    /* Editorial restraint: the type is the heading, but the feature list underneath is quiet
+       enough that the block never competes with the photograph. */
+    text-transform: none;
+    letter-spacing: -0.005em;
+    margin: 0;
+  }
+
+  .proj-feats {
+    list-style: none;
+    margin: 22px 0 0;
+    padding: 0;
+    border-top: 1px solid var(--line);
+  }
+  .proj-feats li {
+    padding: 10px 0 10px 18px;
+    border-bottom: 1px solid var(--line);
+    font-size: 14.5px;
+    color: var(--steel);
+    position: relative;
+  }
+  .proj-feats li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 18px;
+    width: 7px;
+    height: 7px;
+    background: var(--sage-ink);
+    transform: rotate(45deg);
+  }
+
+  /* --- the pull-quote --- */
+  .quote {
+    margin: clamp(56px, 8vw, 120px) auto 0;
+    padding: clamp(32px, 5vw, 64px) 0 0;
+    border-top: 1px solid var(--line);
+    /*
+      A measure in ch on the FIGURE, while the type size inside it is set in vw — those two
+      fight each other, because `ch` scales with the figure's inherited font-size but the
+      blockquote overrides it. The first version used `max-width: 20ch` and rendered a ~250px
+      column of 44px type, nine words to a line, reading as a newspaper sidebar rather than a
+      statement. The measure has to be expressed against the DISPLAY size instead: 18ch of the
+      blockquote's own clamp, capped in absolute terms so it stays sane at both ends.
+    */
+    max-width: min(100%, 34rem);
+    text-align: center;
+  }
+  /* Stars stay amber deliberately — see the note on the rating markup. The score beside them
+     is what actually carries the information at a compliant contrast. */
+  .rating {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+  .rating .stars { color: var(--amber); letter-spacing: 4px; font-size: 14px; line-height: 1; }
+  .rating-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--steel);
+  }
+
+  .quote blockquote {
+    margin: 22px 0 0;
+    font-family: Oswald, sans-serif;
+    font-weight: 400;
+    font-size: clamp(24px, 4vw, 44px);
+    line-height: 1.18;
+    letter-spacing: -0.005em;
+    text-wrap: balance;
+  }
+  .quote figcaption { margin-top: 26px; display: flex; flex-direction: column; gap: 4px; }
+  .quote .who { font-family: Oswald, sans-serif; text-transform: uppercase; letter-spacing: 0.06em; font-size: 15px; }
+  .quote .ctx { font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--steel); }
+
+  @media (max-width: 900px) {
+    .quote { max-width: none; text-align: left; }
+  }
+</style>

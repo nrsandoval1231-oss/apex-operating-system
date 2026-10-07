@@ -2,9 +2,14 @@
 
 The cutover runbook. Ordered so that **nothing irreversible happens before the thing that makes it reversible**.
 
-The current implementation is the four-vertical Astro site with quote capture. The cinematic homepage is a separate planned direction: its storyboard is not an implemented sequence, and its reviewed asset package is still a prerequisite. This checklist governs the current site cutover; it does not certify either experience as production-qualified. Access, canonical-domain and photography decisions remain open.
+The current implementation is the four-vertical Astro site with quote capture. **Homepage V2 shipped 2026-10-06** — a static, cinematic-feeling home page replacing the old four-tile router hero. It is **design/code complete with stock placeholder photography** (D-20): the layout, typography and motion are finished, the imagery is not, and it is **not launch-ready until real Apex photography is in place**. The brand film remains a separate workstream and does not block launch. This checklist governs the site cutover; it does not certify the experience as production-qualified. Access, canonical-domain and photography decisions remain open.
 
 **Owner: Nick (maintainer). Client: Travis.**
+
+> **Note on D-22 / the cinematic homepage.** The cinematic scroll experience was *not* built. No
+> frame sequence, canvas, or scrub logic was produced, and none was fabricated from unrelated AI
+> images. What shipped is a static home page built to the bar that it stands on its own without
+> the film, with a hero media interface that accepts the film later. See `docs/homepage-v2.md`.
 
 ---
 

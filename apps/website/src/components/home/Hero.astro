@@ -1,0 +1,179 @@
+---
+/**
+ * Hero.astro (V2) — Section 01 of 07. DESIRE.
+ *
+ * Full viewport, extremely restrained UI: an eyebrow, a headline, one line of support, and a
+ * single primary CTA. The previous hero carried a subhead, a three-up warranty stat strip, a
+ * router question and four tiles — i.e. the entire site hierarchy crammed above the fold. The
+ * V2 hero's whole job is to make a visitor feel something and give them exactly one way
+ * forward.
+ *
+ * The background is delegated entirely to <HeroMedia>, which is where the poster→video
+ * interface lives. Nothing about the film should ever require this component to change.
+ */
+import { site } from '@lib/site';
+import { heroV2 } from '@content/home-v2';
+import HeroMedia from './HeroMedia.astro';
+---
+{/*
+  `id="top"` is load-bearing: BaseLayout's skip link targets it. Do not remove it.
+*/}
+<section class="hero" id="top">
+  <HeroMedia />
+
+  <div class="wrap hero-in">
+    <p class="eyebrow anim">{heroV2.eyebrow}</p>
+
+    <h1 class="hero-h1 anim a2">
+      <span class="l1">{heroV2.headingLines[0]}</span>
+      <span class="l2">{heroV2.headingLines[1]}</span>
+    </h1>
+
+    <p class="hero-sub anim a3">{heroV2.sub}</p>
+
+    <div class="hero-cta anim a4">
+      <a class="btn btn-lg" href={heroV2.ctaHref}>{heroV2.cta}</a>
+      {/*
+        A real second path, not a decorative one. A considered purchase like a custom pool is
+        researched for weeks; a lot of that research happens on mobile over several sessions, and
+        on a screen where the form is six fields the phone is the honest primary action.
+      */}
+      <a class="btn btn-lg ghost" href={`tel:${site.phoneE164}`}>
+        {heroV2.secondaryCta} {site.phoneDisplay}
+      </a>
+    </div>
+  </div>
+
+  {/*
+    A quiet scroll cue. It is `aria-hidden` because it conveys no information a screen reader
+    user doesn't already have from the page order, and it never gates anything — the page is
+    fully usable if it never animates.
+  */}
+  <div class="hero-cue" aria-hidden="true">
+    <span class="mono">Scroll</span>
+    <span class="rule"></span>
+  </div>
+</section>
+
+<style>
+  .hero {
+    position: relative;
+    /* 100svh, not 100vh: on mobile browsers `vh` excludes the URL bar, so a 100vh hero either
+       overflows (causing a horizontal scrollbar on some Android builds) or gets clipped when
+       the bar hides. `svh` is the smallest viewport and is the honest fit for a full-bleed
+       hero. Falls back to vh, then to a fixed height, for older engines. */
+    min-height: 100vh;
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    background: var(--char);
+    color: #f4f2ee;
+    overflow: hidden;
+    isolation: isolate;
+  }
+
+  .hero-in {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    padding: 0 22px clamp(72px, 11vh, 132px);
+  }
+
+  /*
+    The headline is the largest type on the site by a wide margin, and the line height sits
+    TIGHT (0.92) rather than at the global 0.98. Large display type needs its leading pulled in
+    or it reads as four separate lines instead of one sentence — the single biggest lever on
+    making this look like a brand campaign instead of a template.
+  */
+  .hero-h1 {
+    font-size: clamp(46px, 10.5vw, 148px);
+    line-height: 0.92;
+    letter-spacing: -0.015em;
+    margin: 18px 0 0;
+    display: flex;
+    flex-direction: column;
+    /* Cap the measure so the line breaks are the art director's, not the viewport's. */
+    max-width: 15ch;
+  }
+  .hero-h1 .l2 { color: var(--sage); }
+
+  @media (max-width: 720px) {
+    /*
+      Mobile is not the desktop hero shrunk. The measure widens (15ch is too narrow at this
+      size and would force an ugly four-line break), the leading loosens slightly because
+      Oswald's caps need air at small sizes, and the CTA block goes full-width so the tap
+      targets are thumb-first rather than thumb-adjacent.
+    */
+    .hero-h1 {
+      line-height: 0.98;
+      letter-spacing: -0.005em;
+      max-width: 100%;
+    }
+    .hero-in { padding: 0 20px clamp(56px, 8vh, 96px); }
+  }
+
+  .hero-sub {
+    margin: 22px 0 0;
+    max-width: 34ch;
+    color: #d8d3ca;
+    font-size: clamp(16px, 1.9vw, 20px);
+    line-height: 1.5;
+    text-wrap: balance;
+  }
+
+  .hero-cta {
+    margin-top: 34px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  /* Larger than the global button. The hero CTA is the page's single most important
+     interactive element and should not be the same size as a footer link. */
+  :global(.btn-lg) {
+    font-size: 16px;
+    padding: 16px 26px;
+    min-height: 52px;
+  }
+
+  @media (max-width: 520px) {
+    .hero-cta { flex-direction: column; align-items: stretch; }
+    .hero-cta :global(.btn) { justify-content: center; }
+  }
+
+  .hero-cue {
+    position: absolute;
+    left: 50%;
+    bottom: 26px;
+    transform: translateX(-50%);
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    color: rgba(244, 242, 238, 0.55);
+  }
+  .hero-cue .mono {
+    font-size: 9.5px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+  }
+  .hero-cue .rule {
+    width: 1px;
+    height: 40px;
+    background: linear-gradient(180deg, rgba(161, 204, 202, 0.7), transparent);
+  }
+  /* No cue on a short viewport — it would collide with the CTA. */
+  @media (max-height: 620px), (max-width: 720px) {
+    .hero-cue { display: none; }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .hero-cue .rule { animation: cuePulse 2.6s ease-in-out infinite; }
+  }
+  @keyframes cuePulse {
+    0%, 100% { opacity: 0.35; transform: scaleY(0.7); transform-origin: top; }
+    50%      { opacity: 1;    transform: scaleY(1);   transform-origin: top; }
+  }
+</style>

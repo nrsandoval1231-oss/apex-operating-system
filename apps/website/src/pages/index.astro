@@ -1,20 +1,45 @@
 ---
 /**
- * index.astro — the Apex home page. Assembles the sections in the mockup order:
- * header · hero+router · pools (deep) · three shallow verticals · guarantee band ·
- * testimonials · owner · quote (Phase 3 placeholder) · footer.
+ * index.astro — the Apex home page, Homepage V2.
  *
- * All copy/content comes from content/ data files; contact details from env; images from
- * the manifest via <ImageSlot>. No lead form or webhook here — that's Phase 3.
+ * Seven sections, one narrative:
+ *
+ *   01 DESIRE        Hero                    components/home/Hero.astro
+ *   02 CRAFTSMANSHIP Beauty above / beneath  components/home/Craft.astro
+ *   03 PROOF         The work                components/home/Showcase.astro
+ *   04 (world)       Outdoor living          components/home/Living.astro
+ *   05 TRUST         The Apex Standard       components/home/Standard.astro
+ *   06 CAPABILITY    Four specialties         components/home/Capability.astro
+ *   07 CONVERSION    Process + close         components/home/Close.astro
+ *
+ * then the existing quote form island, then the footer.
+ *
+ * WHAT CHANGED AND WHY — Homepage V2 replaced the previous home page rather than being
+ * restyled. The old one put the site's entire hierarchy above the fold (subhead, three-up
+ * warranty strip, a router question, and four tiles) and stacked seven more sections of similar
+ * weight below it, so the page had one flat register and no pacing. V2 leads with one emotional
+ * promise, proves it, and only then converts.
+ *
+ * The four verticals are NOT gone. They lost the hero because a pool brand-led page cannot also
+ * be a four-way router, and they are reached from Section 06 (Capability), from the header, and
+ * from the footer. Nothing that pointed at /coating, /renovation or /service from the home page
+ * stopped pointing there.
+ *
+ * All copy comes from content/home-v2.ts; images from content/images.ts via <ImageSlot>. No
+ * lead form or webhook here — that is QuoteSection's job, unchanged.
+ *
+ * See docs/homepage-v2.md for the full architecture, what was retired, and the photography
+ * workstream this page is waiting on.
  */
 import BaseLayout from '@layouts/BaseLayout.astro';
 import Header from '@components/Header.astro';
-import Hero from '@components/Hero.astro';
-import PoolsSection from '@components/PoolsSection.astro';
-import MoreVerticals from '@components/MoreVerticals.astro';
-import GuaranteeBand from '@components/GuaranteeBand.astro';
-import Testimonials from '@components/Testimonials.astro';
-import Owner from '@components/Owner.astro';
+import Hero from '@components/home/Hero.astro';
+import Craft from '@components/home/Craft.astro';
+import Showcase from '@components/home/Showcase.astro';
+import Living from '@components/home/Living.astro';
+import Standard from '@components/home/Standard.astro';
+import Capability from '@components/home/Capability.astro';
+import Close from '@components/home/Close.astro';
 import QuoteSection from '@components/QuoteSection.astro';
 import Footer from '@components/Footer.astro';
 import { jsonLdGraph, organizationSchema, websiteSchema } from '@lib/seo';
@@ -29,6 +54,10 @@ const description =
  * rather than four competing copies of the same business.
  * TODO(BLOCKED: D-09): the node is missing a postal address until the verified NAP / Google
  * Business Profile structure is settled — see lib/seo.ts.
+ *
+ * UNCHANGED by Homepage V2. The home page's SEO head, canonical, and structured data are not
+ * part of the rebuild: the page narrative changed, the business did not, and the two should not
+ * have been entangled.
  */
 const jsonLd = jsonLdGraph([organizationSchema(), websiteSchema()]);
 ---
@@ -36,11 +65,12 @@ const jsonLd = jsonLdGraph([organizationSchema(), websiteSchema()]);
   <Header />
   <main>
     <Hero />
-    <PoolsSection />
-    <MoreVerticals />
-    <GuaranteeBand />
-    <Testimonials />
-    <Owner />
+    <Craft />
+    <Showcase />
+    <Living />
+    <Standard />
+    <Capability />
+    <Close />
     <QuoteSection />
   </main>
   <Footer />
