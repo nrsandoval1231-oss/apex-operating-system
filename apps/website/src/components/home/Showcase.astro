@@ -67,9 +67,23 @@ const [quote] = testimonials;
   */}
   <div class="wrap">
     <figure class="quote">
-      <div class="stars" aria-label={`${quote.stars} out of 5 stars`}>
-        {'★'.repeat(quote.stars)}
-      </div>
+      {/*
+        The rating. The glyphs are decorative and hidden from assistive tech; the score is
+        carried as real text beside them.
+
+        Why: brand amber on the concrete ground measures 2.05:1, which is below both the 4.5:1
+        needed for small text and the 3:1 needed to call the glyphs meaningful graphics. Amber
+        is kept for the glyphs because gold stars are a review convention and recolouring them
+        to sage reads as broken — but that decision is only defensible if the information
+        survives somewhere compliant, so the numeric score sits next to them in --steel at
+        roughly 6:1. Putting the quote on the lighter --concrete ground is a hair worse than
+        the --paper the old testimonial band used, so this is a small regression of an
+        existing issue, not a new class of one.
+      */}
+      <p class="rating">
+        <span class="stars" aria-hidden="true">{'★'.repeat(quote.stars)}</span>
+        <span class="rating-num">{quote.stars.toFixed(1)} out of 5</span>
+      </p>
       <blockquote>{quote.quote}</blockquote>
       <figcaption>
         <span class="who">{quote.name}</span>
@@ -163,7 +177,23 @@ const [quote] = testimonials;
     max-width: min(100%, 34rem);
     text-align: center;
   }
-  .quote .stars { color: var(--amber); letter-spacing: 4px; font-size: 14px; }
+  /* Stars stay amber deliberately — see the note on the rating markup. The score beside them
+     is what actually carries the information at a compliant contrast. */
+  .rating {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+  .rating .stars { color: var(--amber); letter-spacing: 4px; font-size: 14px; line-height: 1; }
+  .rating-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--steel);
+  }
 
   .quote blockquote {
     margin: 22px 0 0;

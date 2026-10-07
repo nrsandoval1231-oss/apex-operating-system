@@ -55,9 +55,29 @@ test.describe('Homepage V2 · structure', () => {
      * future redesign of that section can keep the same links.
      */
     for (const slug of ['pools', 'coating', 'renovation', 'service']) {
-      const link = page.locator(`main a[href="/${slug}"]`).first();
+      /*
+       * Counted, not `.first()`. An earlier version of this read
+       * `locator(...).first()` and then asserted `toHaveCount(1)`, which is a tautology — the
+       * locator resolves to one element by construction, so it would have passed even if the
+       * page had linked to /coating eleven times. Asserting on the un-narrowed locator makes the
+       * duplicate-link problem visible, which is exactly how it was caught: an early build
+       * linked every vertical twice (the index row AND an "Explore" link), doubling keyboard
+       * stops for no added reachability.
+       */
+      const link = page.locator(`main a[href="/${slug}"]`);
       await expect(link, `/${slug} is not reachable from the home page`).toHaveCount(1);
     }
+  });
+
+  test('each vertical is reached by ONE link, not several', async ({ page }) => {
+    await page.goto('/');
+    // Guards the specific regression above: a vertical must not be linked more than once from
+    // the main content, or keyboard users tab through duplicate destinations for nothing.
+    const hrefs = await page.evaluate(() =>
+      [...document.querySelectorAll('main a[href^="/"]')].map((a) => a.getAttribute('href')),
+    );
+    const dupes = hrefs.filter((h, i) => hrefs.indexOf(h) !== i);
+    expect(dupes, `duplicated destinations in main: ${dupes.join(', ')}`).toEqual([]);
   });
 
   test('each vertical keeps a preselect link into the quote form (AC-2.2)', async ({ page }) => {

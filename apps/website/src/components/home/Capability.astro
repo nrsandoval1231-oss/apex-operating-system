@@ -79,6 +79,13 @@ const entries: CapabilityEntry[] = VERTICAL_LIST.map((cfg) => {
               sibling anchor, not nested — nesting an interactive element inside another one is
               an accessibility failure (two links, one target, no predictable behaviour), and
               this markup is load-bearing for keyboard and screen-reader users.
+
+              There is deliberately NO second "Explore" link. An earlier version had one, and
+              the result was that every vertical exposed its own landing page twice — the row
+              and the Explore link both pointing at /pools — so a keyboard user tabbed through
+              twelve stops to reach four destinations, hitting the same URL twice each. The row
+              headline is a large, obviously interactive target; the row link covers it, and
+              "Start a project" is the genuinely distinct second action (AC-2.2).
             */}
             <a class="index-main" href={`/${e.slug}`}>
               <span class="vname">{e.name}</span>
@@ -87,9 +94,6 @@ const entries: CapabilityEntry[] = VERTICAL_LIST.map((cfg) => {
             <div class="index-side">
               <span class="vnote mono">{e.note}</span>
               <span class="vlinks">
-                <a class="tlink" href={`/${e.slug}`}>
-                  Explore<span class="sr-only"> {e.vertical}</span>
-                </a>
                 <a class="tlink" href="#quote" data-preselect={e.vertical}>
                   Start a project<span class="sr-only"> — {e.vertical}</span>
                 </a>
@@ -176,15 +180,11 @@ const entries: CapabilityEntry[] = VERTICAL_LIST.map((cfg) => {
   .tlink:hover { color: var(--sage-ink); }
 
   @media (max-width: 760px) {
-    /* Stack, and bring the actions BELOW the copy rather than squeezing them beside it. The
+    /* Stack, and bring the action BELOW the copy rather than squeezing it beside it. The
        global .tlink grows upward via padding-top so the underline stays tight under the text
-       — keep that intact or the links will read as floating. */
+       — keep that intact or the link will read as floating. */
     .index-row { grid-template-columns: 1fr; align-items: start; }
     .index-side { flex-direction: row; align-items: center; justify-content: space-between; width: 100%; }
     .index-main:hover .vname { transform: none; }
-  }
-
-  @media (max-width: 400px) {
-    .vlinks { gap: 14px; }
   }
 </style>
