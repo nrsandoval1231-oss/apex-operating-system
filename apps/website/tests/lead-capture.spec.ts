@@ -49,6 +49,15 @@ test.describe('AC-1 · lead object completeness', () => {
   });
 
   test('AC-1.2 · vertical is never empty and is always an exact enum string', async ({ page }) => {
+    /*
+     * This test does FOUR full page loads and four island hydrations in one body, so it needs a
+     * budget that fits that — the 30s default does not once the home page carries seven
+     * sections, and it was failing on total elapsed time rather than on any assertion about the
+     * payload. The per-assertion timeout (10s, from playwright.config.ts) is unchanged, so a
+     * genuinely stuck element still fails fast; this only relaxes the total for the loop.
+     */
+    test.setTimeout(120_000);
+
     for (const vertical of VERTICALS) {
       const hook = await mockWebhook(page);
       await page.goto('/');
@@ -165,11 +174,27 @@ test.describe('AC-1 · lead object completeness', () => {
 });
 
 test.describe('AC-2 · vertical routing and selection', () => {
-  test('AC-2.1 · the home router shows exactly four tiles in enum order', async ({ page }) => {
+  /*
+   * AC-2.1 · the home page offers all four verticals, in enum order.
+   *
+   * Homepage V2 moved these off the hero: the four-tile router (`.tiles .tile`) is gone,
+   * because a brand-led, pools-led page cannot also be a four-way router above the fold. The
+   * requirement AC-2.1 encodes — all four verticals are offered on the home page, in the exact
+   * enum order — is unchanged and is now asserted against the capability index.
+   *
+   * The names are the horizontal rule: they must be the exact enum strings, in the order
+   * VERTICAL_LIST produces, because those strings are what a lead is tagged with downstream
+   * (AC-2.4). The index displays each vertical's own headline from the content modules rather
+   * than the enum string, so the enum is read from the data-preselect attributes instead.
+   */
+  test('AC-2.1 · the home page offers exactly four verticals in enum order', async ({ page }) => {
     await page.goto('/');
-    const tiles = page.locator('.tiles .tile h3');
-    await expect(tiles).toHaveCount(4);
-    await expect(tiles).toHaveText([...VERTICALS]);
+    const preselects = page.locator('.index [data-preselect]');
+    await expect(preselects).toHaveCount(4);
+    const order = await preselects.evaluateAll((els) =>
+      els.map((el) => el.getAttribute('data-preselect')),
+    );
+    expect(order).toEqual([...VERTICALS]);
   });
 
   test('AC-2.2 · a vertical CTA pre-selects that vertical in the form', async ({ page }) => {
@@ -226,23 +251,37 @@ test.describe('AC-8.2 · vertical landing pages arrive pre-selected', () => {
 });
 
 /**
- * The proof section should distribute cards in a predictable centered grid, not newspaper-style
- * columns that make the section appear horizontally unbalanced at desktop widths.
+ * Homepage V2 replaced the three-up testimonial CARD grid with a single large pull-quote in the
+ * showcase section — the brief rules out card grids, and three boxed reviews is exactly that
+ * pattern. The evidence is still on the page and still real, so the test now asserts the
+ * quote is present, attributed, and readable, rather than asserting a grid it no longer uses.
  */
-test('testimonial cards use the centered grid layout', async ({ page }) => {
+test('the proof section presents testimonials as an attributed pull-quote', async ({ page }) => {
   await page.goto('/');
-  await expect(page.locator('.quotes')).toHaveCSS('display', 'grid');
-  const columnCount = await page.locator('.quotes').evaluate((el) =>
-    getComputedStyle(el).gridTemplateColumns.split(' ').length,
-  );
-  expect([1, 3]).toContain(columnCount);
+  const quote = page.locator('.quote');
+  await expect(quote).toHaveCount(1);
+  await expect(quote.locator('blockquote')).toBeVisible();
+  // A pull-quote with no attribution is an unattributed claim, which is worse than no quote.
+  await expect(quote.locator('.who')).not.toBeEmpty();
+  // And it must be a real blockquote, so assistive tech announces it as a quotation.
+  await expect(quote.locator('blockquote')).toHaveJSProperty('tagName', 'BLOCKQUOTE');
 });
 
-/** The financing partner is represented by its official logo and remains a real external link. */
+/**
+ * The financing partner is represented by its official logo and remains a real external link.
+ *
+ * Homepage V2 removed the pools-section badge that used to carry a second copy of this link
+ * (the retired PoolsSection.astro). One clear link in the footer is correct; the assertion is
+ * now about it being a real, attributed, external link rather than about a count that was
+ * really counting a component that no longer exists.
+ */
 test('Lyon Financial logo is a clickable external link', async ({ page }) => {
   await page.goto('/');
-  const links = page.locator('.fin-link').filter({ has: page.locator('img[alt="Lyon Financial"]') });
-  await expect(links).toHaveCount(2);
+  const links = page.locator('footer a.fin-link').filter({
+    has: page.locator('img[alt="Lyon Financial"]'),
+  });
+  await expect(links).toHaveCount(1);
   await expect(links.first()).toHaveAttribute('href', /lyonfinancial\.net/);
+  await expect(links.first()).toHaveAttribute('rel', /noopener/);
   await expect(links.first().locator('img')).toHaveAttribute('alt', 'Lyon Financial');
 });

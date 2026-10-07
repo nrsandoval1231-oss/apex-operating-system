@@ -1,0 +1,170 @@
+---
+/**
+ * HeroMedia.astro — the hero's single background layer.
+ *
+ * ONE component, three states, selected by HERO_MEDIA.mode (content/hero-media.ts):
+ *
+ *   poster   (shipped) — an <img>, eager, fetchpriority=high. Zero JavaScript.
+ *   playback (future)  — a <video> carrying the same poster as its poster attribute.
+ *   scrub    (future)  — the same video, driven by scroll. NOT BUILT, and deliberately not
+ *                        stubbed: see the note in content/hero-media.ts.
+ *
+ * The design rule this encodes: the poster is always the LCP element, in every state. When a
+ * film is added later it layers on top of an image the browser is already fetching, so adding
+ * video cannot regress the metric that was just optimised.
+ *
+ * `mode` is switched on an explicit union, so adding a mode is a type error until the branch
+ * exists — you cannot silently ship a mode that does nothing.
+ *
+ * Reduced motion: the poster IS the reduced-motion experience. Motion here is a single slow
+ * scale, applied only under prefers-reduced-motion: no-preference, and it never affects whether
+ * content is visible (the bug this repo has a regression test for — tests/reduced-motion.spec.ts).
+ */
+import { HERO_MEDIA } from '@content/hero-media';
+import { getImageSlot } from '@content/images';
+
+const { mode, poster, film, focal } = HERO_MEDIA;
+const slot = getImageSlot(poster as Parameters<typeof getImageSlot>[0]);
+
+// A film is only meaningful in a mode that plays one. If someone flips mode to playback before
+// the film exists, fail loud at BUILD time rather than shipping a hero that silently renders a
+// poster forever and looks like the change didn't take.
+if ((mode === 'playback' || mode === 'scrub') && !film) {
+  throw new Error(
+    `hero-media: mode is "${mode}" but HERO_MEDIA.film is null. The brand film has not been produced yet — set mode: 'poster', or provide a master clip.`,
+  );
+}
+---
+<div
+  class="hero-media"
+  data-hero-mode={mode}
+  style={`--focal:${focal.desktop};--focal-m:${focal.mobile};`}
+>
+  {/*
+    The hero is the LCP candidate. Eager + high priority is correct HERE and nowhere else on the
+    page — every other slot stays lazy (AC-9.5).
+  */}
+  {
+    mode === 'poster' ? (
+      <img
+        class="hero-media-img"
+        src={slot.src ?? undefined}
+        srcset={slot.srcset}
+        sizes="100vw"
+        alt={slot.decorative ? '' : slot.alt}
+        loading="eager"
+        fetchpriority="high"
+        decoding="async"
+        data-stock={slot.stock ? 'true' : undefined}
+      />
+    ) : (
+      <video
+        class="hero-media-img"
+        poster={slot.src ?? undefined}
+        src={film?.src}
+        muted
+        autoplay
+        loop
+        playsinline
+        preload="metadata"
+        aria-label={slot.alt}
+      />
+    )
+  }
+  {/*
+    Two stacked scrims, not one. A single gradient either washes the photograph out or leaves
+    the headline sitting on top of a bright sky; splitting it lets the top stay dark enough for
+    the header and the bottom stay dark enough for the CTA, with the middle of the photograph
+    left at full contrast. Both are token-driven, so the whole treatment retunes from one place.
+  */}
+  <div class="hero-media-scrim" aria-hidden="true"></div>
+  <div class="hero-media-grain" aria-hidden="true"></div>
+</div>
+
+<style>
+  .hero-media {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    background: var(--char);
+  }
+
+  .hero-media-img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    /* Per-viewport art direction, set by the manifest. See HERO_MEDIA.focal. */
+    object-position: var(--focal);
+  }
+
+  @media (max-width: 720px) {
+    .hero-media-img { object-position: var(--focal-m); }
+  }
+
+  /*
+    Scrim, retuned after looking at the rendered result rather than the maths.
+
+    The first version ran 0.72 → 0.12 → 0.18 → 0.88 top to bottom. That final 0.88 stop held
+    across the bottom 42% of the hero, and on the 4:5 poster that is precisely where the water
+    is — so the photograph was being crushed to near-black in its most important region, and
+    the hero read as a dark house instead of a lit pool. Legibility and the picture want
+    different things here, and the fix is to spend the darkening where the TEXT is rather than
+    across a wide band.
+
+    So the curve now stays light (0.10) through the middle where nothing is written, and only
+    darkens over the last fifth, under the CTA. The top is lighter than before too: the header
+    is charcoal chrome and needs separation from the photograph, not a black bar.
+  */
+  .hero-media-scrim {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(
+      180deg,
+      rgba(20, 21, 23, 0.55) 0%,
+      rgba(20, 21, 23, 0.10) 22%,
+      rgba(20, 21, 23, 0.06) 52%,
+      rgba(20, 21, 23, 0.30) 76%,
+      rgba(20, 21, 23, 0.78) 100%
+    );
+  }
+
+  /*
+    A second, horizontal wash on wide viewports only. The headline is a block of type sitting on
+    the left of a photograph, and its legibility depends on the image being darker THERE rather
+    than uniformly darker. Fading it out below the tablet breakpoint keeps the phone — where the
+    type spans the full width and a side wash would do nothing useful — from carrying a
+    gradient it does not need.
+  */
+  @media (min-width: 900px) {
+    .hero-media-scrim {
+      background:
+        linear-gradient(90deg, rgba(20, 21, 23, 0.52) 0%, rgba(20, 21, 23, 0.16) 42%, rgba(20, 21, 23, 0) 68%),
+        linear-gradient(180deg, rgba(20, 21, 23, 0.5) 0%, rgba(20, 21, 23, 0.08) 20%, rgba(20, 21, 23, 0.06) 52%, rgba(20, 21, 23, 0.3) 76%, rgba(20, 21, 23, 0.78) 100%);
+    }
+  }
+
+  /* A whisper of grain over the photograph. The hero used to render a full-bleed SVG
+     <feTurbulence> filter for this; a static inline SVG data URI costs nothing at runtime and
+     survives as pure CSS, so the hero keeps the same texture with no extra DOM node. */
+  .hero-media-grain {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.16;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* A slow push, the only motion in the hero. Progressive enhancement in the strict sense: the
+     image is fully rendered before this rule is ever evaluated, so there is no state in which
+     disabling it hides anything. That is the invariant tests/reduced-motion.spec.ts guards. */
+  @media (prefers-reduced-motion: no-preference) {
+    .hero-media-img { animation: heroPush 22s ease-out both; }
+  }
+  @keyframes heroPush {
+    from { transform: scale(1.06); }
+    to   { transform: scale(1); }
+  }
+</style>

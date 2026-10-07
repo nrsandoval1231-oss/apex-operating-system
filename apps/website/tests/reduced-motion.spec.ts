@@ -67,14 +67,56 @@ test.describe('AC-6.3 · prefers-reduced-motion', () => {
     });
   }
 
-  test('/ · the four router tiles are readable with reduced motion', async ({ page }) => {
+  /*
+   * HOMEPAGE V2. This assertion used to be "the four router tiles are readable with reduced
+   * motion" — an exact count against the retired four-vertical tile router. The tiles are gone
+   * by design (a brand-led pools page cannot also be a four-way router), so the count was
+   * replaced rather than preserved.
+   *
+   * What actually has to keep working is the underlying requirement, which is NOT "there are
+   * four of something": it is that every primary action on the home page survives reduced
+   * motion, visible and hit-testable. That is asserted below, against the elements the V2
+   * page actually renders.
+   */
+  test('/ · every home page CTA is visible and sized with reduced motion', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto('/');
-    const tiles = page.locator('.tiles .tile');
-    await expect(tiles).toHaveCount(4);
-    for (let i = 0; i < 4; i++) {
-      await expect(tiles.nth(i)).toBeVisible();
+
+    // The two hero CTAs and the closing CTA are the page's conversion surface. All three must
+    // be present and opaque.
+    const ctas = page.locator('.hero-cta a, .close-actions a');
+    const count = await ctas.count();
+    expect(count, 'home page lost its primary CTAs').toBeGreaterThanOrEqual(3);
+
+    for (let i = 0; i < count; i++) {
+      const cta = ctas.nth(i);
+      await expect(cta).toBeVisible();
+      const box = await cta.boundingBox();
+      expect(box, `CTA #${i} has no box`).not.toBeNull();
+      expect(box!.height, `CTA #${i} is under the 44px touch floor`).toBeGreaterThanOrEqual(44);
     }
+
+    // The capability index is the home page's only path to the non-pools verticals. If reduced
+    // motion hid or collapsed it, three of the four verticals would become unreachable for
+    // exactly the users least served by a broken layout.
+    const links = page.locator('.index-main');
+    await expect(links).toHaveCount(4);
+    for (let i = 0; i < 4; i++) {
+      await expect(links.nth(i)).toBeVisible();
+    }
+  });
+
+  /*
+   * The hero poster is the LCP element AND the reduced-motion experience: with no film in
+   * place there is no motion to fall back from, so the still has to be there and opaque.
+   */
+  test('/ · the hero poster renders with reduced motion', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto('/');
+    const poster = page.locator('.hero-media-img');
+    await expect(poster).toBeVisible();
+    await expect(poster).toHaveJSProperty('complete', true);
+    expect(await poster.evaluate((el) => parseFloat(getComputedStyle(el).opacity))).toBe(1);
   });
 });
 
@@ -89,9 +131,14 @@ test.describe('AC-6 · touch targets', () => {
      * and email, the legal links) sit in generous line-height and are not thumb-first targets;
      * padding them to 44px would visibly break an approved layout for little real gain. The
      * things a visitor actually taps to convert are what must clear the floor.
+     *
+     * The selectors were updated with Homepage V2: `.tile` and `.pool-more` belonged to the
+     * retired router and pools card. `.index-main` is the V2 capability link — it is a large
+     * text block rather than a button, so it is easy to forget it is the only way to reach
+     * /coating, /renovation and /service from the home page.
      */
     const undersized = await page.evaluate(() =>
-      [...document.querySelectorAll('.btn, .tlink, .pool-more, .tile')]
+      [...document.querySelectorAll('.btn, .tlink, .index-main')]
         .map((el) => {
           const r = el.getBoundingClientRect();
           return {

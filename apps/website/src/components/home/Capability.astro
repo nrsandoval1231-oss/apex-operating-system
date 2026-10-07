@@ -1,0 +1,190 @@
+---
+/**
+ * Capability.astro — Section 06 of 07. CAPABILITY.
+ *
+ * The four verticals, as a typographic contents page rather than four cards.
+ *
+ * WHY THIS EXISTS: the V2 homepage is brand-first and pools-led, but Apex has four real
+ * verticals with four real landing pages that have live SEO. Restoring the old four-tile router
+ * as the hero's primary device was explicitly ruled out, so the other three would have lost the
+ * only internal links pointing at them from the home page. This section is that replacement:
+ * four entries, four links, discoverable and crawlable, presented as an index.
+ *
+ * It deliberately keeps BOTH actions per vertical that the old cards had:
+ *   · a link to the vertical's own landing page  (reachability + SEO)
+ *   · a link to #quote carrying data-preselect  (the AC-2.2 contract, so the form opens with
+ *     the right vertical already chosen)
+ * The data-preselect wiring is read by QuoteSection's inline script at click time — it is not
+ * build-time — so this works exactly as it did on the old tiles.
+ */
+import { capabilityV2 } from '@content/home-v2';
+import { serviceCards } from '@content/service-cards';
+import { pools } from '@content/pools';
+import { VERTICAL_LIST } from '@content/verticals';
+
+interface CapabilityEntry {
+  readonly vertical: (typeof VERTICAL_LIST)[number]['vertical'];
+  readonly slug: string;
+  readonly name: string;
+  readonly blurb: string;
+  readonly note: string;
+}
+
+// Built from the existing content modules and the vertical enum, not from a new hardcoded
+// list — so a vertical can never appear here with copy that disagrees with its own page.
+const byVertical = new Map(serviceCards.map((c) => [c.vertical, c]));
+
+const entries: CapabilityEntry[] = VERTICAL_LIST.map((cfg) => {
+  if (cfg.vertical === 'Designer Pools') {
+    return {
+      vertical: cfg.vertical,
+      slug: cfg.slug,
+      // pools.ts exposes `lead` (the other three verticals expose `description` — the two
+      // content modules predate each other). The service cards' `minibadge` maps to the pools
+      // module's `warrantyBadge`, which is the same kind of short trust signal.
+      name: pools.heading,
+      blurb: pools.lead,
+      note: pools.warrantyBadge,
+    };
+  }
+  const card = byVertical.get(cfg.vertical);
+  if (!card) {
+    // Loud rather than silent: a vertical with no copy would otherwise just vanish from the
+    // page, which is the exact "orphaned vertical" failure this section exists to prevent.
+    throw new Error(`capability: no content for vertical ${JSON.stringify(cfg.vertical)}`);
+  }
+  return {
+    vertical: cfg.vertical,
+    slug: cfg.slug,
+    name: card.heading,
+    blurb: card.description,
+    note: card.minibadge,
+  };
+});
+---
+<section class="cap" id="capabilities">
+  <div class="wrap">
+    <header class="sec-head">
+      <p class="eyebrow">{capabilityV2.eyebrow}</p>
+      <h2 class="sec-title">{capabilityV2.heading}</h2>
+      <p class="lead">{capabilityV2.lead}</p>
+    </header>
+
+    <ol class="index">
+      {
+        entries.map((e) => (
+          <li class="index-row">
+            {/*
+              The whole row is ONE link to the vertical's page. The secondary quote CTA is a
+              sibling anchor, not nested — nesting an interactive element inside another one is
+              an accessibility failure (two links, one target, no predictable behaviour), and
+              this markup is load-bearing for keyboard and screen-reader users.
+            */}
+            <a class="index-main" href={`/${e.slug}`}>
+              <span class="vname">{e.name}</span>
+              <span class="vblurb">{e.blurb}</span>
+            </a>
+            <div class="index-side">
+              <span class="vnote mono">{e.note}</span>
+              <span class="vlinks">
+                <a class="tlink" href={`/${e.slug}`}>
+                  Explore<span class="sr-only"> {e.vertical}</span>
+                </a>
+                <a class="tlink" href="#quote" data-preselect={e.vertical}>
+                  Start a project<span class="sr-only"> — {e.vertical}</span>
+                </a>
+              </span>
+            </div>
+          </li>
+        ))
+      }
+    </ol>
+  </div>
+</section>
+
+<style>
+  .cap { background: var(--concrete); }
+
+  .sec-title { max-width: 16ch; }
+
+  .index {
+    list-style: none;
+    margin: clamp(34px, 5vw, 64px) 0 0;
+    padding: 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .index-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: clamp(16px, 3vw, 48px);
+    align-items: center;
+    padding: clamp(20px, 2.6vw, 34px) 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  /*
+    The name is the link and the hover state is a shift, not a colour change or a lift. A lift
+    would reintroduce the card metaphor this section exists to avoid; a colour change alone
+    gives no positional cue on a long index.
+  */
+  .index-main {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 44px;
+    justify-content: center;
+  }
+  .vname {
+    font-family: Oswald, sans-serif;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.005em;
+    font-size: clamp(23px, 3.1vw, 40px);
+    line-height: 1.04;
+    transition: transform 0.2s cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+  .vblurb { color: var(--steel); font-size: 15px; line-height: 1.55; max-width: 58ch; }
+
+  .index-main:hover .vname,
+  .index-main:focus-visible .vname { transform: translateX(8px); }
+  .index-main:hover .vname { color: var(--sage-ink); }
+
+  .index-side {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 14px;
+    flex: none;
+  }
+
+  .vnote {
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--steel);
+  }
+
+  .vlinks { display: flex; align-items: center; gap: 20px; }
+
+  /*
+    Reuses the global .tlink, which already carries the 44px touch-target floor. The accent
+    underline needs a value here (the vertical cards set one via --vt); the section is
+    deliberately monochrome, so it inherits the brand ink.
+  */
+  .tlink { border-bottom-color: var(--sage-ink); }
+  .tlink:hover { color: var(--sage-ink); }
+
+  @media (max-width: 760px) {
+    /* Stack, and bring the actions BELOW the copy rather than squeezing them beside it. The
+       global .tlink grows upward via padding-top so the underline stays tight under the text
+       — keep that intact or the links will read as floating. */
+    .index-row { grid-template-columns: 1fr; align-items: start; }
+    .index-side { flex-direction: row; align-items: center; justify-content: space-between; width: 100%; }
+    .index-main:hover .vname { transform: none; }
+  }
+
+  @media (max-width: 400px) {
+    .vlinks { gap: 14px; }
+  }
+</style>

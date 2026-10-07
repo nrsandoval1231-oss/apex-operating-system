@@ -1,0 +1,124 @@
+---
+/**
+ * Standard.astro — Section 05 of 07. TRUST.
+ *
+ * Four principles, set as large editorial statements on a dark ground with generous rules
+ * between them. No icons, no cards, no SaaS feature grid — the brief rules that out, and the
+ * real content (real warranty figures) carries itself.
+ *
+ * The founder is folded in here rather than getting its own section: on the V2 page the owner
+ * portrait is a trust signal, not a standalone "about the owner" block, and giving it its own
+ * section would restart the page's rhythm right before the capability and close.
+ */
+import { standardV2 } from '@content/home-v2';
+import { owner } from '@content/owner';
+import ImageSlot from '@components/ImageSlot.astro';
+---
+<section class="standard" id="standard">
+  <div class="wrap">
+    <header class="sec-head">
+      <p class="eyebrow">{standardV2.eyebrow}</p>
+      <h2 class="sec-title">{standardV2.heading}</h2>
+    </header>
+
+    <ol class="principles">
+      {
+        standardV2.principles.map((p) => (
+          <li class="principle">
+            <h3>{p.title}</h3>
+            <p>{p.body}</p>
+          </li>
+        ))
+      }
+    </ol>
+
+    {/*
+      The founder. Real photograph, real attribution — the one slot on this site that is not a
+      stock placeholder, so the alt text names him (content/images.ts explains why that is only
+      correct here and nowhere else).
+    */}
+    <div class="founder">
+      <figure class="founder-fig">
+        <ImageSlot id="owner-portrait" sizes="(max-width:820px) 100vw, 30vw" />
+      </figure>
+      <div class="founder-body">
+        <p class="eyebrow">{owner.title}</p>
+        <h3 class="founder-name">{owner.name}</h3>
+        <p class="founder-bio">{owner.bio}</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .standard { background: var(--char); color: #f4f2ee; }
+
+  .sec-title {
+    max-width: 18ch;
+    text-wrap: balance;
+  }
+  .standard .eyebrow { color: var(--sage); }
+
+  .principles {
+    list-style: none;
+    margin: clamp(36px, 5vw, 68px) 0 0;
+    padding: 0;
+    border-top: 1px solid #34383d;
+  }
+
+  .principle {
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: clamp(12px, 4vw, 56px);
+    align-items: baseline;
+    padding: clamp(22px, 3vw, 38px) 0;
+    border-bottom: 1px solid #34383d;
+  }
+
+  .principle h3 {
+    font-size: clamp(21px, 2.6vw, 34px);
+    line-height: 1.1;
+    text-transform: none;
+    letter-spacing: -0.005em;
+    max-width: 22ch;
+  }
+  .principle p { margin: 0; color: #b9b3a9; font-size: 15.5px; line-height: 1.6; max-width: 46ch; }
+
+  @media (max-width: 820px) {
+    .principle { grid-template-columns: 1fr; gap: 10px; }
+  }
+
+  .founder {
+    display: grid;
+    grid-template-columns: 0.42fr 1fr;
+    gap: clamp(20px, 4vw, 48px);
+    align-items: center;
+    margin-top: clamp(44px, 6vw, 88px);
+  }
+  @media (max-width: 820px) {
+    .founder { grid-template-columns: 1fr; }
+    /* Constrain the portrait on a phone so it reads as a portrait rather than as a wide band
+       spanning the column. The slot keeps its declared 4:3 ratio and the crop is re-framed
+       with object-position instead of overriding aspect-ratio: an earlier version forced
+       `aspect-ratio: 1 / 1 !important` here, which is a visual decision that silently deletes
+       the AC-9.1 space reservation and fails tests/imagery.spec.ts on mobile — the box then
+       reserves 1:1 while the file is 4:3, so swapping in real photography WOULD shift the
+       page. Width + object-position gets the same look and keeps the guarantee. */
+    .founder-fig :global(.img-slot) { max-width: 280px; }
+    .founder-fig :global(.img-slot img) { object-position: 50% 28%; }
+  }
+
+  .founder-fig { margin: 0; }
+  .founder-fig :global(.img-slot) { border-radius: 0; border: 1px solid #34383d; }
+
+  .founder-name {
+    font-size: clamp(26px, 3.4vw, 42px);
+    margin: 10px 0 0;
+  }
+  .founder-bio {
+    margin: 16px 0 0;
+    color: #b9b3a9;
+    max-width: 52ch;
+    font-size: 16px;
+  }
+</style>
