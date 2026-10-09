@@ -1,5 +1,9 @@
 # Apex Cinematic Homepage Storyboard
 
+> **Archived:** This frame-first storyboard is retained as creative reference only. Do not build
+> the scroll sequence from disconnected frames. See `cinematic-video-handoff.md`: the approved
+> family lifestyle master video is canonical, and all later derivatives come from it.
+
 **Status:** CANONICAL STORYBOARD / BUILD INPUT  
 **Recorded:** 2026-10-04  
 **Parent vision:** `apps/website/docs/cinematic-homepage-vision.md`  
