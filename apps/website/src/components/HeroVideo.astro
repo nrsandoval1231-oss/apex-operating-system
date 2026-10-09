@@ -1,0 +1,142 @@
+---
+import ImageSlot from './ImageSlot.astro';
+import { HERO_VIDEO } from '@content/hero-video';
+
+const hasVideo = Boolean(HERO_VIDEO.master);
+const poster = HERO_VIDEO.poster ?? '/images/stock/pools-hero-1400.jpg';
+const mobilePoster = HERO_VIDEO.mobilePoster ?? poster;
+---
+<div class="hero-media">
+  {hasVideo ? (
+    <>
+      <picture class="hero-video-poster">
+        <source media="(max-width: 700px)" srcset={mobilePoster} />
+        <img src={poster} alt="" width="1920" height="1080" decoding="async" fetchpriority="high" />
+      </picture>
+      <video
+        class="hero-video"
+        aria-hidden="true"
+        autoplay
+        muted
+        loop
+        playsinline
+        preload="none"
+        poster={poster}
+        hidden
+        tabindex="-1"
+        data-video-master={HERO_VIDEO.master}
+        data-video-webm={HERO_VIDEO.webm ?? undefined}
+        data-video-mobile={HERO_VIDEO.mobile ?? undefined}
+      ></video>
+      <button class="hero-video-toggle" type="button" aria-label="Pause background video" aria-pressed="false">
+        <span class="hero-video-toggle-icon" aria-hidden="true">Ⅱ</span>
+        <span class="hero-video-toggle-label">Pause motion</span>
+      </button>
+    </>
+  ) : (
+    <ImageSlot id="pools-hero" class="hero-fallback-image" sizes="100vw" loading="eager" />
+  )}
+</div>
+
+{hasVideo && (
+  <script is:inline>
+    (() => {
+      const media = document.querySelector('.hero-video');
+      if (!(media instanceof HTMLVideoElement)) return;
+      const toggle = document.querySelector('.hero-video-toggle');
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+      const mobile = window.matchMedia('(max-width: 700px)');
+      const connection = navigator.connection;
+      let sourceLoaded = false;
+      let userPaused = false;
+      let retryTimer = 0;
+      let changingSources = false;
+
+      const canUseNetwork = () => !connection?.saveData && !['slow-2g', '2g'].includes(connection?.effectiveType || '');
+      const sourceForViewport = () => mobile.matches ? media.dataset.videoMobile : media.dataset.videoMaster;
+      const eligible = () => !reduce.matches && canUseNetwork() && Boolean(sourceForViewport());
+      const updateToggle = () => {
+        if (!(toggle instanceof HTMLButtonElement)) return;
+        const available = eligible() && sourceLoaded;
+        toggle.hidden = !available;
+        const paused = media.paused;
+        toggle.setAttribute('aria-label', paused ? 'Play background video' : 'Pause background video');
+        toggle.setAttribute('aria-pressed', String(paused));
+        const icon = toggle.querySelector('.hero-video-toggle-icon');
+        const label = toggle.querySelector('.hero-video-toggle-label');
+        if (icon) icon.textContent = paused ? '▶' : 'Ⅱ';
+        if (label) label.textContent = paused ? 'Play motion' : 'Pause motion';
+      };
+      const clearSources = () => {
+        window.clearTimeout(retryTimer);
+        retryTimer = 0;
+        changingSources = true;
+        media.pause();
+        media.replaceChildren();
+        media.load();
+        sourceLoaded = false;
+        changingSources = false;
+      };
+      const stop = () => { clearSources(); media.hidden = true; updateToggle(); };
+      const load = () => {
+        if (sourceLoaded || !eligible()) return;
+        const sourceUrl = sourceForViewport();
+        if (!sourceUrl) return;
+        const source = document.createElement('source');
+        source.src = sourceUrl;
+        source.type = source.src.endsWith('.webm') ? 'video/webm' : 'video/mp4';
+        media.append(source);
+        if (!mobile.matches && media.dataset.videoWebm && !source.src.endsWith('.webm')) {
+          const alternate = document.createElement('source');
+          alternate.src = media.dataset.videoWebm;
+          alternate.type = 'video/webm';
+          media.append(alternate);
+        }
+        sourceLoaded = true;
+        media.load();
+        updateToggle();
+        if (!userPaused) media.play().catch(() => { media.hidden = true; updateToggle(); });
+      };
+      const reconcile = () => {
+        if (!eligible()) { stop(); return; }
+        const expected = sourceForViewport();
+        if (sourceLoaded && media.querySelector('source')?.getAttribute('src') !== expected) clearSources();
+        load();
+        updateToggle();
+      };
+
+      reduce.addEventListener('change', reconcile);
+      mobile.addEventListener('change', reconcile);
+      connection?.addEventListener?.('change', reconcile);
+      media.addEventListener('playing', () => { media.hidden = false; updateToggle(); });
+      media.addEventListener('pause', updateToggle);
+      media.addEventListener('error', () => {
+        if (changingSources) return;
+        media.hidden = true;
+        clearSources();
+        updateToggle();
+      });
+      media.addEventListener('stalled', () => {
+        media.hidden = true;
+        clearSources();
+        updateToggle();
+        if (eligible() && !userPaused) retryTimer = window.setTimeout(reconcile, 1000);
+      });
+      if (toggle instanceof HTMLButtonElement) {
+        toggle.addEventListener('click', () => {
+          if (media.paused) {
+            userPaused = false;
+            load();
+            if (!sourceLoaded) return;
+            media.play().catch(() => { media.hidden = true; updateToggle(); });
+          } else {
+            userPaused = true;
+            media.pause();
+          }
+          updateToggle();
+        });
+      }
+      reconcile();
+    })();
+  </script>
+)}

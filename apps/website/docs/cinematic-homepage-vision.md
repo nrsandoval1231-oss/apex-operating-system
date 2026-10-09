@@ -1,12 +1,13 @@
 # Apex Cinematic Homepage Vision
 
-**Status:** CANONICAL / LOCKED  
+**Status:** ARCHIVED / SUPERSEDED BY `cinematic-video-handoff.md`
 **Recorded:** 2026-10-04  
 **Scope:** Apex public website — homepage experience and visual storytelling direction  
 **Owner:** Nick Sandoval  
 
-> This document freezes the approved concept for the next-generation Apex website experience.
-> Builders should preserve the intent of this document unless Nick explicitly changes the direction.
+> Historical frame-sequence concept. The family/pool creative intent remains useful, but its
+> sequence-first implementation is not active. The approved master video is now canonical;
+> future posters, mobile crops, and any scroll sequence must derive from that source.
 
 ---
 

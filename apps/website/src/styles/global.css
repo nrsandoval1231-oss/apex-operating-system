@@ -216,7 +216,16 @@ header {
 }
 
 /* --- hero --- */
-.hero { position: relative; background: var(--char); color: #f4f2ee; overflow: hidden; }
+.hero { position: relative; background: var(--char); color: #f4f2ee; overflow: hidden; min-height: min(900px, 100svh); }
+.hero-media, .hero-media-shade { position: absolute; inset: 0; pointer-events: none; }
+.hero-media { z-index: 0; background: var(--char); }
+.hero-media-shade { z-index: 1; background: linear-gradient(90deg, rgba(27,28,30,.94) 0%, rgba(27,28,30,.72) 46%, rgba(27,28,30,.38) 100%), linear-gradient(0deg, rgba(27,28,30,.9) 0%, transparent 58%); }
+.hero-video, .hero-video-poster, .hero-video-poster img, .hero-fallback-image { position: absolute; inset: 0; width: 100%; height: 100%; display: block; object-fit: cover; }
+.hero-video-poster img, .hero-fallback-image img { object-position: center; }
+.hero-video[hidden] { display: none; }
+.hero-video-toggle { position: absolute; z-index: 3; right: 22px; bottom: 22px; pointer-events: auto; border: 1px solid rgba(255,255,255,.48); border-radius: 999px; padding: 9px 13px; background: rgba(20,21,23,.62); color: #fff; font: 11px 'JetBrains Mono', monospace; letter-spacing: .04em; cursor: pointer; }
+.hero-video-toggle-icon { margin-right: 6px; }
+.hero-video-toggle:focus-visible { outline: 3px solid var(--amber); outline-offset: 3px; }
 .hero::before {
   content: '';
   position: absolute;
@@ -229,12 +238,17 @@ header {
     radial-gradient(120% 90% at 82% -10%, rgba(161, 204, 202, 0.18), transparent 55%),
     radial-gradient(90% 70% at 0% 110%, rgba(224, 144, 27, 0.1), transparent 60%);
 }
-.grain { position: absolute; inset: 0; opacity: 0.5; mix-blend-mode: overlay; pointer-events: none; }
-.hero-in { position: relative; padding: 74px 0 54px; }
+.grain { position: absolute; inset: 0; z-index: 1; opacity: 0.5; mix-blend-mode: overlay; pointer-events: none; }
+.hero-in { position: relative; z-index: 2; padding: 74px 0 54px; }
 .hero h1 { font-size: clamp(44px, 8vw, 104px); }
 /* "Apex gets it done." — the brand phrase, so brand sage, not action amber. */
 .hero h1 .accent { color: var(--sage); }
 .hero-sub { max-width: 640px; margin: 22px 0 0; color: #cfccc4; font-size: clamp(16px, 2.4vw, 20px); }
+@media (max-width: 700px) {
+  .hero-media-shade { background: linear-gradient(0deg, rgba(27,28,30,.94) 0%, rgba(27,28,30,.48) 70%, rgba(27,28,30,.38) 100%); }
+  .hero-video-toggle { right: 14px; bottom: 14px; }
+}
+@media (prefers-reduced-motion: reduce) { .hero-video, .hero-video-toggle { display: none; } }
 .hero-stats { display: flex; flex-wrap: wrap; gap: 26px; margin-top: 30px; }
 .hstat b { font-family: Oswald, sans-serif; font-size: 30px; color: #f4f2ee; display: block; line-height: 1; }
 .hstat span { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #9e968b; }

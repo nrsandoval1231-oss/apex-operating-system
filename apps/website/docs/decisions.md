@@ -59,3 +59,10 @@ These came from the PRD conversation and belong to the maintainer, not the agent
 
 
 **D-22 · Cinematic scroll homepage is the canonical next-generation website direction.** The approved experience is a scroll-controlled luxury brand film centered on a father and his two sons running and jumping into a completed Apex pool, transitioning through the splash into underwater craftsmanship and then into the broader website journey. The build strategy is image-sequence/canvas first, not a full real-time 3D implementation. Emotional storytelling leads; craftsmanship proves the promise; conversion remains explicit. The canonical specification is `apps/website/docs/cinematic-homepage-vision.md`. Builders must preserve that intent unless Nick explicitly changes it.
+
+**D-23 · Video-first homepage is the canonical production direction.** The approved cinematic
+family master video is the only source of truth. It is integrated as a progressive, accessible
+hero with a static fallback; posters, mobile crops, and any future scroll sequence are derived
+deterministically from that approved master. The prior frame-sequence plan is archived in
+`cinematic-homepage-vision.md` and `cinematic-homepage-storyboard.md`. See
+`cinematic-video-handoff.md` for asset names, approval criteria, and delivery requirements.
