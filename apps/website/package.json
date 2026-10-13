@@ -8,6 +8,7 @@
     "dev": "astro dev",
     "start": "astro dev",
     "build": "astro build",
+    "validate": "node scripts/validate.mjs",
     "preview": "astro preview",
     "astro": "astro",
     "check": "astro check",

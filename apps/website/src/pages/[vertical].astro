@@ -68,7 +68,7 @@ if (!features || features.length === 0) {
   throw new Error(`No service list found for vertical: ${cfg.vertical}`);
 }
 
-// The serv accent is too light for small text on white (AC-6.4) — same rule as MoreVerticals.
+// The serv accent is too light for small text on white (AC-6.4) — same rule as the home page capability index (home/Capability.astro).
 const textAccent = cfg.accentVar === '--serv' ? '--serv-text' : cfg.accentVar;
 
 const jsonLd = jsonLdGraph([

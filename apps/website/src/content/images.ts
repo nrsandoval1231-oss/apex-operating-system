@@ -184,6 +184,116 @@ export const IMAGE_MANIFEST = {
     stock: true,
   },
 
+  /* =============================================================================
+     HOMEPAGE V2 SLOTS.
+
+     The V2 home page renders through the same manifest as the vertical pages — deliberately.
+     This is the property that makes the page replaceable: when real Apex photography arrives,
+     this PR's work is a content edit in this file and nothing else. No component, no CSS, and
+     no aspect ratio changes, because every slot below already reserves its exact final box
+     (AC-9.1) and every file was cropped to that ratio on the way in.
+
+     ALL of these are still stock (D-20). `stock: true` is load-bearing, not cosmetic:
+     tests/imagery.spec.ts asserts that no stock image's alt text contains "apex" or "travis",
+     because a stock photo described as Apex's work is a claim to a customer about work Apex
+     did. So the alts below describe what the photograph actually SHOWS and stop there. When a
+     real photo replaces one, rewrite the alt at the same moment you drop the `stock` flag.
+
+     `label` is the shot list for the photography workstream — it names the image that should
+     replace the placeholder, and is only rendered when a slot is empty.
+     ============================================================================= */
+
+  // Section 01 — hero poster. The LCP image on the home page: loaded eager, fetchpriority
+  // high, and the first thing a visitor should see. See components/home/HeroMedia.astro for
+  // why this is a poster rather than a <video>.
+  //
+  // The slot is 4:5 rather than a landscape ratio deliberately. The hero is a full-bleed
+  // background behind text, and the two viewports it has to serve are far apart: a 16:9 source
+  // cropped to a 390×844 phone reduces to a narrow vertical sliver of whatever happened to be
+  // in the middle of a wide frame — in the first build that was a slice of patio furniture with
+  // no water in it. A 4:5 source is near-native on a phone and covers a landscape desktop by
+  // cropping top and bottom, so both viewports keep the pool. A real brand film will replace
+  // this entirely; the ratio is the right one to keep either way.
+  'v2-hero-poster': {
+    id: 'v2-hero-poster',
+    alt: 'A custom swimming pool at dusk with a raised spa and lit water features',
+    label: 'REPLACE · the canonical Apex hero — luxury West Texas backyard at golden hour',
+    ratio: '4 / 5',
+    tone: 'pool',
+    src: '/images/v2/v2-hero-poster-1120.jpg',
+    srcset: '/images/v2/v2-hero-poster-560.jpg 560w, /images/v2/v2-hero-poster-1120.jpg 1120w',
+    stock: true,
+  },
+
+  // Section 02 — craftsmanship. A tall detail crop and a wide one, read as a composition
+  // rather than a grid.
+  'v2-craft-detail': {
+    id: 'v2-craft-detail',
+    alt: 'Close view of tiled pool steps meeting the waterline, with light refracting across them',
+    label: 'REPLACE · real tile, coping and waterline detail',
+    ratio: '4 / 5',
+    tone: 'pool',
+    src: '/images/v2/v2-craft-detail-960.jpg',
+    srcset: '/images/v2/v2-craft-detail-480.jpg 480w, /images/v2/v2-craft-detail-960.jpg 960w',
+    stock: true,
+  },
+  'v2-craft-wide': {
+    id: 'v2-craft-wide',
+    alt: 'A polished concrete surface catching a low band of sunlight across it',
+    label: 'REPLACE · real finish and lighting detail',
+    ratio: '3 / 2',
+    tone: 'coat',
+    src: '/images/v2/v2-craft-wide-1500.jpg',
+    srcset: '/images/v2/v2-craft-wide-750.jpg 750w, /images/v2/v2-craft-wide-1500.jpg 1500w',
+    stock: true,
+  },
+
+  // Section 03 — architectural showcase. Two environments, presented one at a time.
+  'v2-showcase-1': {
+    id: 'v2-showcase-1',
+    alt: 'An illuminated pool with a raised spa and water spouts beside a house at dusk',
+    label: 'REPLACE · a documented Apex project — name, location and features',
+    ratio: '4 / 5',
+    tone: 'pool',
+    src: '/images/v2/v2-showcase-1-1120.jpg',
+    srcset: '/images/v2/v2-showcase-1-560.jpg 560w, /images/v2/v2-showcase-1-1120.jpg 1120w',
+    stock: true,
+  },
+  'v2-showcase-2': {
+    id: 'v2-showcase-2',
+    alt: 'A backyard pool with a raised spa beside a timber pergola and planted lawn',
+    label: 'REPLACE · a documented Apex project — name, location and features',
+    ratio: '4 / 5',
+    tone: 'pool',
+    src: '/images/v2/v2-showcase-2-1120.jpg',
+    srcset: '/images/v2/v2-showcase-2-560.jpg 560w, /images/v2/v2-showcase-2-1120.jpg 1120w',
+    stock: true,
+  },
+
+  // Section 04 — outdoor living.
+  'v2-living': {
+    id: 'v2-living',
+    alt: 'A wide view of a pool terrace with seating and shade structure beside it',
+    label: 'REPLACE · a complete outdoor environment, not a single feature',
+    ratio: '16 / 9',
+    tone: 'pool',
+    src: '/images/v2/v2-living-1600.jpg',
+    srcset: '/images/v2/v2-living-800.jpg 800w, /images/v2/v2-living-1600.jpg 1600w',
+    stock: true,
+  },
+
+  // Section 07 — the closing shot behind the final CTA.
+  'v2-close': {
+    id: 'v2-close',
+    alt: 'A pool and raised spa lit for the evening, seen across a low terrace wall',
+    label: 'REPLACE · the closing lifestyle shot for the brand film',
+    ratio: '16 / 9',
+    tone: 'pool',
+    src: '/images/v2/v2-close-1400.jpg',
+    srcset: '/images/v2/v2-close-700.jpg 700w, /images/v2/v2-close-1400.jpg 1400w',
+    stock: true,
+  },
+
   /*
    * Owner section portrait — REAL, supplied by the maintainer. The first slot on this site to
    * hold genuine Apex photography rather than a stand-in, so the naming is now restored: it

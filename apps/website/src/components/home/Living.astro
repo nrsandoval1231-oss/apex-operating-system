@@ -1,0 +1,117 @@
+---
+/**
+ * Living.astro — Section 04 of 07. The outdoor environment.
+ *
+ * The brief's rule here is precise: present pools, spas, kitchens, pergolas, fire features and
+ * landscape integration as elements of ONE place, not as six service cards. So they are set as
+ * a continuous run of large type with hairline separators — a single typographic object that
+ * reads as one sentence about a whole yard, rather than a grid that reads as six products.
+ */
+import { livingV2 } from '@content/home-v2';
+import ImageSlot from '@components/ImageSlot.astro';
+---
+<section class="living" id="living">
+  <div class="wrap living-head">
+    <header class="sec-head">
+      <p class="eyebrow">{livingV2.eyebrow}</p>
+      <h2 class="sec-title">
+        <span>{livingV2.headingLines[0]}</span>
+        <span class="accent">{livingV2.headingLines[1]}</span>
+      </h2>
+      <p class="lead">{livingV2.lead}</p>
+    </header>
+  </div>
+
+  {/*
+    Full-bleed, edge to edge. The page's one moment of a photograph running to both margins —
+    it breaks the 1180px measure that governs every other section, which is most of what makes
+    the page feel like it breathes rather than repeats.
+  */}
+  <figure class="living-fig">
+    <ImageSlot id="v2-living" sizes="100vw" />
+  </figure>
+
+  <div class="wrap">
+    <ul class="elements">
+      {
+        livingV2.elements.map((el, i) => (
+          <li class="element">
+            <span class="idx mono">{String(i + 1).padStart(2, '0')}</span>
+            <span class="name">{el}</span>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</section>
+
+<style>
+  .living { background: var(--paper); padding-bottom: 0; }
+
+  .sec-title { display: flex; flex-direction: column; max-width: 20ch; }
+  .sec-title .accent { color: var(--sage-ink); }
+
+  .living-head { padding-bottom: clamp(30px, 4vw, 52px); }
+
+  .living-fig {
+    margin: 0;
+    /* Bleed past .wrap by half its width, capped at the viewport. 100vw alone would introduce a
+       horizontal scrollbar wherever a scrollbar gutter exists, which is the classic full-bleed
+       overflow bug — the calc() subtracts the gutter so the figure lands exactly on the edge. */
+    width: min(100vw - var(--scrollbar, 0px), 2400px);
+    margin-left: 50%;
+    transform: translateX(-50%);
+  }
+  .living-fig :global(.img-slot) {
+    border-radius: 0;
+    border: 0;
+    /* The slot keeps its manifest aspect-ratio — that is the AC-9.1 guarantee that swapping in
+       real photography cannot shift the layout. `max-height` then caps how tall the band is
+       allowed to grow on a wide screen without touching that property, and `object-fit: cover`
+       absorbs the difference. An earlier version of this set `aspect-ratio: auto !important`
+       plus a fixed height to get the band shape it wanted; that reads correctly but silently
+       removes the reservation, and tests/imagery.spec.ts (AC-9.1) failed on `/` because of
+       it. The cap achieves the same visual result and keeps the guarantee. */
+    max-height: clamp(300px, 46vw, 620px);
+  }
+  .living-fig :global(.img-slot img) { object-position: 50% 55%; }
+
+  .elements {
+    list-style: none;
+    margin: clamp(30px, 4vw, 52px) 0 0;
+    padding: 0;
+    /* One continuous column, hairline between rows. No borders around each item, no cards —
+       the whole point is that these read as parts of a single place. */
+    border-top: 1px solid var(--line);
+  }
+
+  .element {
+    display: flex;
+    align-items: baseline;
+    gap: clamp(16px, 4vw, 56px);
+    padding: clamp(16px, 2.2vw, 28px) 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .element .idx {
+    font-size: 10.5px;
+    letter-spacing: 0.16em;
+    color: var(--sage-ink);
+    flex: none;
+  }
+
+  .element .name {
+    font-family: Oswald, sans-serif;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.005em;
+    /* Scale changes are the main rhythm device on this page: modest in the headings, large
+       here. That contrast is what stops the page reading as one flat register. */
+    font-size: clamp(28px, 5.4vw, 66px);
+    line-height: 1;
+  }
+
+  @media (max-width: 560px) {
+    .element { flex-direction: column; gap: 6px; }
+  }
+</style>

@@ -156,14 +156,14 @@ input:focus-visible,
 
 /* On DARK surfaces the relationship inverts: full brand sage reads at 9.75:1 against
    charcoal, and the deep variant would sink into the background instead. */
-header .btn,
+body > header .btn,
 .hero .btn,
 .vhero .btn,
 #quote .btn {
   background: var(--sage);
   color: var(--char);
 }
-header .btn:hover,
+body > header .btn:hover,
 .hero .btn:hover,
 .vhero .btn:hover,
 #quote .btn:hover {
@@ -175,14 +175,14 @@ header .btn:hover,
 .btn.ghost { background: transparent; color: var(--ink); border: 1.5px solid var(--line); }
 .btn.ghost:hover { border-color: var(--sage-ink); color: var(--sage-ink); background: transparent; }
 
-header .btn.ghost,
+body > header .btn.ghost,
 .hero .btn.ghost,
 .vhero .btn.ghost,
 #quote .btn.ghost {
   color: #f6f4ef;
   border-color: #4a4e53;
 }
-header .btn.ghost:hover,
+body > header .btn.ghost:hover,
 .hero .btn.ghost:hover,
 .vhero .btn.ghost:hover,
 #quote .btn.ghost:hover {
@@ -191,7 +191,12 @@ header .btn.ghost:hover,
 }
 
 /* --- header --- */
-header {
+body > header {
+  /* `body > header`, not `header`. Homepage V2 uses a real <header> element for each section's
+     intro block (`.sec-head`), which is correct HTML — but the old bare element selector here
+     matched those too, painting every section heading the site's charcoal chrome background
+     and knocking the body copy under it below contrast. Scoping to the direct child of <body>
+     targets the one element this rule was written for: the sticky site navigation. */
   position: sticky;
   top: 0;
   z-index: 50;
@@ -213,28 +218,41 @@ header {
   .nav-phone-sm { display: inline-flex; }
   /* Scale the lockup down on small screens so the phone/CTA keep room. */
   .brand .apex-logo { height: 32px !important; width: 134px !important; }
+  /*
+    Homepage V2 surfaced a problem the old hero had been hiding: on a 390px phone the header's
+    two actions plus the lockup did not fit, and "Get a Quote" wrapped onto two lines inside its
+    own button — a visibly broken nav bar on the first screen. Tightening the gap and the
+    button padding below this width is what keeps the CTA on one line. `white-space: nowrap`
+    is the belt-and-braces: a button that wraps is worse than one that is slightly tight, so
+    the text is never allowed to break regardless of what the font metrics do.
+  */
+  .nav { gap: 10px; }
+  .nav-r { gap: 10px; }
+  .nav-r .btn { white-space: nowrap; }
+  .nav-r .btn:not(.ghost) { padding: 12px 14px; font-size: 14px; }
+}
+@media (max-width: 380px) {
+  /* Below this the two actions plus the wordmark genuinely cannot coexist. The phone number is
+     still one tap away in the hero, the close, and the footer, so the Call ghost goes first. */
+  .nav-phone-sm { display: none; }
 }
 
-/* --- hero --- */
-.hero { position: relative; background: var(--char); color: #f4f2ee; overflow: hidden; }
-.hero::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  /* Brand sage leads from the top-right, where it meets the logo in the header; a much
-     weaker amber warms the bottom-left. The hierarchy of the two-accent system, expressed
-     literally as atmosphere. Previously this was amber-led, which tinted the whole hero the
-     one colour that is not in the identity. */
-  background:
-    radial-gradient(120% 90% at 82% -10%, rgba(161, 204, 202, 0.18), transparent 55%),
-    radial-gradient(90% 70% at 0% 110%, rgba(224, 144, 27, 0.1), transparent 60%);
-}
-.grain { position: absolute; inset: 0; opacity: 0.5; mix-blend-mode: overlay; pointer-events: none; }
-.hero-in { position: relative; padding: 74px 0 54px; }
-.hero h1 { font-size: clamp(44px, 8vw, 104px); }
-/* "Apex gets it done." — the brand phrase, so brand sage, not action amber. */
-.hero h1 .accent { color: var(--sage); }
-.hero-sub { max-width: 640px; margin: 22px 0 0; color: #cfccc4; font-size: clamp(16px, 2.4vw, 20px); }
+/* --- hero ---
+   Homepage V2 moved the home page's hero (type scale, layout, background treatment) into
+   components/home/Hero.astro, which is scoped and owns its own composition. What stays here is
+   only what the hero borrows from the shared system: the eyebrow colour on a dark ground, and
+   the light/dark button inversion.
+
+   The old `.hero { ... }` block and its `::before` gradient are gone deliberately — the `::before`
+   painted a large radial wash across the whole element, which on a photograph-backed hero sat
+   ON TOP of the image and muted it. The equivalent gradient now lives in
+   components/home/HeroMedia.astro as an explicit scrim, where it can be tuned against the
+   photograph instead of over it. */
+.hero .eyebrow { color: var(--sage); }
+
+/* Stat strip — used by the VERTICAL heroes (VerticalHero.astro), not the home page. The home
+   hero dropped its stat strip entirely: three warranty figures above the fold competed with the
+   single emotional promise the V2 hero exists to make. */
 .hero-stats { display: flex; flex-wrap: wrap; gap: 26px; margin-top: 30px; }
 .hstat b { font-family: Oswald, sans-serif; font-size: 30px; color: #f4f2ee; display: block; line-height: 1; }
 .hstat span { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #9e968b; }
@@ -262,35 +280,12 @@ header {
 }
 @keyframes rise { to { opacity: 1; transform: none; } }
 
-/* --- router --- */
-.router { position: relative; margin-top: 44px; }
-.router-q { font-size: clamp(22px, 3.4vw, 32px); color: #f4f2ee; margin-bottom: 18px; display: flex; align-items: center; gap: 14px; }
-.router-q::after { content: ''; height: 1px; flex: 1; background: #3a3d42; }
-.tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; list-style: none; margin: 0; padding: 0; }
-@media (max-width: 860px) { .tiles { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 480px) { .tiles { grid-template-columns: 1fr; } }
-.tile {
-  position: relative;
-  border-radius: var(--r);
-  overflow: hidden;
-  min-height: 190px;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  padding: 18px;
-  cursor: pointer;
-  border: 1px solid #34383d;
-  background: var(--char2);
-  transition: transform 0.18s, border-color 0.18s;
-}
-.tile:hover, .tile:focus-visible { transform: translateY(-4px); border-color: var(--tint); }
-.tile .band { position: absolute; top: 0; left: 0; right: 0; height: 5px; background: var(--tint); z-index: 3; }
-.tile h3 { position: relative; color: #fff; font-size: 23px; z-index: 2; }
-.tile .sub { position: relative; z-index: 2; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.08em; color: rgba(255, 255, 255, 0.72); margin-top: 4px; text-transform: uppercase; }
-.tile .go { position: relative; z-index: 2; margin-top: 12px; font-family: Oswald, sans-serif; text-transform: uppercase; letter-spacing: 0.05em; font-size: 13px; color: var(--tint); filter: brightness(1.5); }
-/* tile background image slot fills the whole tile */
-.tile .img-slot { position: absolute; inset: 0; border-radius: 0; }
-.tile .img-slot::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(20, 21, 23, 0.15), rgba(20, 21, 23, 0.72)); z-index: 1; }
+/* The four-vertical router (`.router`, `.tiles`, `.tile`) and the home page's card grid
+   (`.pool-grid`, `.three`, `.vcard`, `.process`, `.pstep`) were removed with Homepage V2. The
+   router moved out of the hero because a brand-led pools page cannot also be a four-way router
+   without saying two things at once; it survives as the typographic index in
+   components/home/Capability.astro, which links to the same four pages. The cards were the
+   template pattern the rebuild was for. */
 
 /* =============================================================================
    Image slot (D-20 / AC-9): fixed aspect ratio, labeled placeholder, no layout
@@ -338,40 +333,16 @@ section { padding: 78px 0; }
 .sec-head h2 { font-size: clamp(30px, 5vw, 52px); }
 .lead { font-size: 19px; color: var(--steel); max-width: 640px; }
 
-/* --- pools deep --- */
+/* --- vertical detail pages ---
+   `.featlist` is still used by src/pages/[vertical].astro. */
 #pools { background: var(--paper); }
-.pool-grid { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 40px; align-items: start; }
-@media (max-width: 900px) { .pool-grid { grid-template-columns: 1fr; gap: 26px; } }
-.vstripe { border-left: 4px solid var(--pool); padding-left: 16px; }
 .featlist { list-style: none; padding: 0; margin: 22px 0 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 22px; }
 @media (max-width: 520px) { .featlist { grid-template-columns: 1fr; } }
 .featlist li { position: relative; padding-left: 24px; font-weight: 500; }
 .featlist li::before { content: ''; position: absolute; left: 0; top: 9px; width: 11px; height: 11px; background: var(--pool); transform: rotate(45deg); }
-.process { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 30px; }
-@media (max-width: 640px) { .process { grid-template-columns: repeat(2, 1fr); } }
-.pstep { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
-.pstep .n { font-family: 'JetBrains Mono', monospace; color: var(--pool); font-size: 12px; letter-spacing: 0.1em; }
-.pstep h3 { font-family: Oswald, sans-serif; font-size: 17px; margin-top: 8px; text-transform: uppercase; }
-.pstep p { font-size: 14px; color: var(--steel); margin: 6px 0 0; }
-.badge { display: inline-flex; align-items: center; gap: 9px; background: var(--char); color: #f4f2ee; font-family: Oswald, sans-serif; text-transform: uppercase; letter-spacing: 0.05em; padding: 11px 16px; border-radius: 9px; font-size: 15px; margin-top: 26px; }
-.badge b { color: var(--sage); }
-.fin { font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: var(--steel); margin-top: 16px; letter-spacing: 0.03em; }
-
-/* --- three shallow verticals --- */
-#more { background: var(--concrete); }
-.three { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; margin-top: 8px; }
-@media (max-width: 900px) { .three { grid-template-columns: 1fr; } }
-.vcard { background: #fff; border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; display: flex; flex-direction: column; }
-.vcard .top { position: relative; }
-.vcard .body { padding: 22px; display: flex; flex-direction: column; flex: 1; }
-.vcard .eyebrow { margin-bottom: 8px; }
-.vcard h3 { font-size: 24px; }
-.vcard p { color: var(--steel); font-size: 15.5px; margin: 10px 0 0; }
-.vcard ul { list-style: none; padding: 0; margin: 16px 0 0; font-size: 14.5px; }
-.vcard ul li { padding: 5px 0 5px 20px; position: relative; border-top: 1px solid #eee; }
-.vcard ul li::before { content: ''; position: absolute; left: 0; top: 12px; width: 8px; height: 8px; background: var(--vt); transform: rotate(45deg); }
-.vcard .foot { margin-top: auto; padding-top: 20px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.minibadge { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--vt-text, var(--vt)); font-weight: 700; }
+/* --- quiet text links ---
+   `.tlink` survives the removal of the old vertical cards: it is reused by the V2 capability
+   index and still carries the 44px touch-target floor that the AC-6 phone test asserts. */
 /* The 44px min-height is a touch-target floor, not a visual choice: these are the primary CTAs
    on the three vertical cards and they measured 26px tall on a phone. The box grows UPWARD via
    padding-top, so the underline stays tight under the text and the card layout doesn't move. */
