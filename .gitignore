@@ -40,6 +40,12 @@ Thumbs.db
 /tmp/
 /_to_delete/
 
+# Agent working files for pull-request review. Not project source: PR drafts,
+# validation screenshots, and other captures dropped at the repo root.
+/PR-BODY.md
+/shots/
+/screenshots/
+
 # Hermes transient attachments (plans are intentional project records)
 .hermes/desktop-attachments/
 
