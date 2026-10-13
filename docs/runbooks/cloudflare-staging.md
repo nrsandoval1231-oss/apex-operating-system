@@ -228,8 +228,15 @@ One fictional job, labelled DEMO, for a made-up homeowner in Lubbock. It is not 
 ```bash
 pnpm typecheck
 export DATABASE_URL='postgres://REPLACE_WITH_NEON_USER:REPLACE_WITH_NEON_PASSWORD@REPLACE_WITH_NEON_POOLER_HOST/REPLACE_WITH_NEON_DATABASE?sslmode=require'
+export S3_ENDPOINT='https://REPLACE_WITH_ACCOUNT_ID.r2.cloudflarestorage.com'
+export S3_BUCKET='apex-evidence-staging'
+export S3_ACCESS_KEY_ID='REPLACE_WITH_R2_ACCESS_KEY_ID'
+export S3_SECRET_ACCESS_KEY='REPLACE_WITH_R2_SECRET_ACCESS_KEY'
+export S3_REGION='auto'
 node scripts/seed-demo-project.mjs
 ```
+
+The S3 values are the same ones stored as Worker secrets. The seed uploads one small placeholder JPEG into that bucket so the customer page can show it. Do not commit them.
 
 A successful run prints:
 
@@ -238,7 +245,9 @@ job id: job_…
 customer link: /c/…
 ```
 
-Open `/app` as staff for Today and the job page. Open the customer path on the workers.dev host. The customer path is an Access bypass. Running the command again prints the same job and the same path and does not insert a second job.
+Open `/app` as staff for Today and the job page. Open the customer path on the workers.dev host. The customer path, `/customer.css`, and `/favicon.svg` are Access bypasses. The stylesheet and icon are the only files the process serves without an Access assertion.
+
+The customer token is random. The seed saves it on the demo lead and prints the same path on a later run. A database that still has the old fixed demo token is given a new random path the first time this version runs, and that new path stays. Running the command again does not insert a second job.
 
 Remove only that demo data:
 
