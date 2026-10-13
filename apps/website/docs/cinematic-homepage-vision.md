@@ -1,43 +1,46 @@
 # Apex Cinematic Homepage Vision
 
-**Status:** CANONICAL / LOCKED — **for the brand film, not for the current home page**  
-**Recorded:** 2026-10-04 · **Scope amended:** 2026-10-06 (Homepage V2)  
-**Scope:** Apex public website — the cinematic brand film, and the optional scroll-controlled
-hero that may be built on top of that film later  
+**Status:** CREATIVE REFERENCE — **D-23 supersedes D-22 (the scroll film)**  
+**Recorded:** 2026-10-04 · **Scope amended:** 2026-10-06 (Homepage V2) · **Superseded:** 2026-10-13 (D-23)  
+**Scope:** The family/pool story for the Apex brand film. The homepage hero plays that film as video.  
 **Owner:** Nick Sandoval
 
-> This document freezes the approved concept for the next-generation Apex website experience.
-> Builders should preserve the intent of this document unless Nick explicitly changes the direction.
+> **D-23 supersedes D-22.** Nick chose the video-first hero. The scroll-controlled frame
+> sequence in this document is not the build direction. The approved family lifestyle master
+> is the only source of truth. It plays in Homepage V2's hero-media slot
+> (`src/content/hero-media.ts`, `components/home/HeroMedia.astro`). Posters, mobile crops, and
+> any later derivative come from that one clip. Delivery is `cinematic-video-handoff.md`.
 
 ---
 
 ## ⚠ SCOPE — read this before using this document
 
-**This document is no longer the specification for the home page.** It is the specification for
-the **Apex brand film**, and for the optional scroll-controlled hero that may be built on top of
-that film later.
+**D-22's scroll film is superseded.** Do not build a canvas image sequence, a pinned scroll
+scrub, or independently generated frames.
 
-**Homepage V2 shipped on 2026-10-06** and is a *static, cinematic-feeling* home page built
-without any of the machinery described below. Read `docs/homepage-v2.md` for what actually
-ships.
+**Homepage V2 is the home page.** Its other sections stay as they shipped. This decision
+changes the hero background only: `poster` until the master file is present, then `playback`.
+There is no `scrub` mode. Read `docs/homepage-v2.md` for the page and
+`docs/cinematic-video-handoff.md` for the film.
 
 What this means in practice:
 
 | This document describes | Status |
 |---|---|
 | The emotional promise — "Build the backyard they'll remember." | **Adopted.** It is the page's closing headline. |
-| The father / two sons / jump / splash sequence | **Not built.** No frames exist; the canonical hero still has not been produced. |
-| Scroll-scrubbed canvas image sequence | **Not built, and deliberately deferred.** |
+| The father / two sons / jump / splash sequence | **The brief for the master video.** Not built. No clip has been approved. |
+| Scroll-scrubbed canvas image sequence | **Superseded by D-23.** Do not build it. |
 | The water-as-transition language | **Adopted as art direction.** The section order and the surface/craftsmanship split follow it. |
-| "Do not generate 100–200 independent images" | **Still binding.** Reinforced in `src/content/hero-media.ts`. |
+| "Do not generate 100–200 independent images" | **Still binding.** One approved master, then deterministic derivatives. |
 
 The single most important line for anyone picking this up: **no frame sequence exists, and none
-was fabricated.** The home page was built to be excellent with a static hero, on the explicit
-acceptance bar that it must be launchable even if the film is never produced.
+was fabricated.** Until `public/media/cinematic/apex-hero-family-master.mp4` is delivered, the
+hero renders the V2 poster and ships no `<video>`. That still is licensed stock (D-20). It is
+not an Apex project and it is not the father-and-two-sons scene. The page was built to be
+launchable even if the film is never produced.
 
-The hero's media interface (`src/content/hero-media.ts`) already carries a
-`poster` / `playback` / `scrub` contract. When the film is produced it is dropped in there — the
-rest of this document describes what that film should be, and how it should be shot.
+Sections 6, 7, 11, and 15 below keep the old scroll-scrub plan as a shot reference for the
+master clip. They are not implementation instructions.
 
 ---
 
@@ -45,7 +48,9 @@ rest of this document describes what that film should be, and how it should be s
 
 The Apex homepage should not feel like a conventional pool-builder website.
 
-It should feel like an **interactive luxury brand film controlled by scroll**.
+The hero should feel like a **luxury brand film**. D-23 plays that film as video in the V2
+hero. The scroll-controlled sequence below is the superseded D-22 concept: its shots are the
+brief for the master clip, not a canvas to build.
 
 The defining opening sequence is a father and his two sons experiencing a completed Apex pool together. The visitor scrolls through a continuous cinematic moment:
 
@@ -277,6 +282,10 @@ Copy should remain restrained. The visual experience should carry most of the st
 
 ## 6. Technical strategy — V1
 
+> **Superseded by D-23.** Retained as the continuity rules for the master clip. Do not build a
+> scroll-scrubbed canvas. The hero plays the approved master as video. See
+> `cinematic-video-handoff.md`.
+
 The first version should **feel 3D without requiring a fully real-time 3D website**.
 
 The preferred implementation is:
@@ -316,6 +325,9 @@ Scrolling backward reverses the experience naturally.
 ---
 
 ## 7. Recommended rendering model
+
+> **Superseded by D-23.** The rendering model that shipped is poster, then one `<video>` in
+> `HeroMedia.astro`. Do not add a canvas sequence or a scroll-pinned frame player.
 
 Use a fullscreen canvas for the image sequence rather than rendering a large stack of visible `<img>` elements.
 
@@ -433,6 +445,9 @@ Target the smallest practical initial hero payload. The visitor should see the s
 
 ## 11. V1 scope — build this first
 
+> **Superseded by D-23.** Homepage V2 is already the page. The open work is the approved master
+> video, dropped into the hero-media slot. Do not build this list as a scroll prototype.
+
 V1 should prove the defining interaction before the site becomes more complex.
 
 Build:
@@ -525,6 +540,11 @@ The CTA should feel like the natural conclusion of the story rather than an inte
 
 ## 14. Non-negotiable design rules
 
+> **Read with D-23.** Rules 4 and 10 still bind the master clip: no independent frame
+> generation, and the file has to be light enough to ship. Rules 7 and 8 described scroll
+> controlling time. That mechanism is superseded. The hero plays the clip; it does not scrub it.
+> Rule 6 does not undo Homepage V2's sections.
+
 1. **Emotion before features.**
 2. **The pool stays visually premium and believable.**
 3. **Character continuity is mandatory.**
@@ -544,6 +564,10 @@ The CTA should feel like the natural conclusion of the story rather than an inte
 ---
 
 ## 15. Build order
+
+> **Superseded by D-23.** Steps A–C still describe how to make the master clip. Steps D–G, the
+> frame extraction and the scroll prototype, are not the build. Integrate the finished master
+> through `cinematic-video-handoff.md`.
 
 The approved execution sequence is:
 
@@ -618,14 +642,16 @@ The story should never exist merely to demonstrate the technology.
 
 ## 18. Canonical decision
 
-This cinematic scroll experience is the approved direction for the next-generation Apex homepage.
+**D-23 supersedes D-22.** The canonical homepage hero is video-first playback of one approved
+master clip, in Homepage V2's hero-media slot, with the V2 poster as the fallback. The
+scroll-controlled image sequence in this document is historical creative reference for what
+that clip should contain. It is not the implementation, and it must not be built alongside
+the video hero.
 
-Future design and engineering work should treat this document as the source of truth for the concept until the owner explicitly replaces or revises it.
+**Canonical asset:** one continuous approved family lifestyle master.
+**Canonical emotional promise:** Build the backyard they'll remember.
+**Delivery:** `docs/cinematic-video-handoff.md`.
 
-**Canonical sequence:**
+The story the master should carry:
 
 > **Luxury backyard → father and two sons → run → jump → splash → underwater craftsmanship → transformed Apex environment → conversion.**
-
-**Canonical emotional promise:**
-
-> **Build the backyard they'll remember.**

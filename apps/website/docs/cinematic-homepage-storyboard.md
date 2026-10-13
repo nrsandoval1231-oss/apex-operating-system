@@ -1,38 +1,40 @@
 # Apex Cinematic Homepage Storyboard
 
-**Status:** CANONICAL STORYBOARD / BUILD INPUT — for the **brand film**, not the shipped page  
-**Recorded:** 2026-10-04 · **Amended:** 2026-10-06 (Homepage V2)  
+**Status:** SHOT LIST for the master video — **not a scroll-scrub build**  
+**Recorded:** 2026-10-04 · **Amended:** 2026-10-06 (Homepage V2) · **D-23:** 2026-10-13  
 **Parent vision:** `apps/website/docs/cinematic-homepage-vision.md`  
-**Scope:** V1 hero sequence — luxury backyard → run → jump → splash → underwater reveal  
+**Scope:** Shots for the approved master — luxury backyard → run → jump → splash → underwater reveal  
 **Owner:** Nick Sandoval
 
 ---
 
-## ⚠ SCOPE — this storyboard was NOT built
+## ⚠ SCOPE — D-23 supersedes the scroll film
 
 None of the sequence below exists. No frames were generated, no scrub logic was written, and no
-AI frame sequence was fabricated from unrelated images.
+AI frame sequence was fabricated from unrelated images. **Do not build this storyboard as a
+scroll-controlled canvas.** D-23 replaced that mechanism with video-first playback.
 
-**Homepage V2 shipped on 2026-10-06** as a static, cinematic-feeling home page. The acceptance
-bar it was built to is explicit: *"we would willingly launch with the static hero image even if
-the cinematic film were delayed."* It meets that bar.
+**Homepage V2 shipped on 2026-10-06** as the home page. The acceptance bar it was built to is
+explicit: *"we would willingly launch with the static hero image even if the cinematic film were
+delayed."* It meets that bar. D-23 does not replace the other sections.
 
-This storyboard remains the **shot list for the brand film** — a separate production workstream
-with its own launch-quality gate. When that film exists it is dropped into the hero's existing
-media interface (`src/content/hero-media.ts`), which already distinguishes poster, playback and
-scroll-scrubbed modes. The home page does not need to be rebuilt to accept it.
+This storyboard is the **shot list for the master video**. When that approved file exists it is
+dropped into the hero-media slot (`src/content/hero-media.ts`). The slot is `poster` until the
+file is on disk, then `playback`. There is no scroll-scrubbed mode. The rest of the page does
+not need to be rebuilt.
 
-See `docs/homepage-v2.md` for what actually ships.
+See `docs/cinematic-video-handoff.md` for the asset contract and `docs/homepage-v2.md` for the
+page that ships.
 
 ---
 
 # 1. Objective
 
-Build one scroll-controlled cinematic sequence that establishes the new Apex website direction before expanding the rest of the site.
+> **Superseded as a build plan by D-23.** These shots describe the master video. They are not
+> instructions to pin the homepage and scrub frames. Homepage V2 is already the page.
 
-The V1 hero must create a premium, emotionally memorable first impression while proving that the underlying scroll interaction is smooth, reversible, performant, and strong enough to carry the rest of the website.
-
-The visitor should feel like they are controlling time inside a luxury brand film.
+The master should establish a premium, emotionally memorable first impression: one continuous
+clip a visitor can watch, not a scroll interaction they have to operate.
 
 The emotional story is:
 
@@ -466,6 +468,9 @@ This becomes the transition point into the next homepage section or next cinemat
 
 # 7. Scroll choreography
 
+> **Not the build.** D-23 does not map scroll position to frames. The beats below are the
+> timing reference for the master video. See `cinematic-video-handoff.md`.
+
 Initial prototype mapping:
 
 | Scroll | Beat |
@@ -558,6 +563,9 @@ If added later:
 
 # 11. Mobile adaptation
 
+> **D-23.** Mobile plays `apex-hero-family-mobile.mp4` when that crop exists, and stays on the
+> V2 poster until it does. Do not generate a separate mobile frame sequence.
+
 Do not simply crop the desktop sequence.
 
 The mobile sequence should be reframed for portrait composition.
@@ -578,6 +586,9 @@ Mobile is allowed to use a separate crop or separately generated sequence if nec
 
 # 12. Reduced-motion fallback
 
+> **The shipped fallback is the V2 poster.** `HeroMedia.astro` does not play video when
+> `prefers-reduced-motion` is set. The keyframe crossfade below is not implemented.
+
 For users with `prefers-reduced-motion`:
 
 Use:
@@ -592,6 +603,10 @@ The emotional story should still be understandable.
 ---
 
 # 13. Generation strategy
+
+> **Superseded as a production path by D-23.** Do not generate a frame sequence and do not
+> treat an independent still as the canonical asset. The approved master video is the source
+> of truth. The stages below are historical notes on how a clip can be kept consistent.
 
 Do not attempt full sequence generation in one uncontrolled prompt.
 
@@ -689,6 +704,10 @@ The sequence is ready for web implementation only when all are true:
 
 # 16. Implementation handoff assets
 
+> **Superseded by `cinematic-video-handoff.md`.** The hero does not consume a frame manifest.
+> Deliver one approved master (and the optional encodes named there). The tree below is the
+> old scroll-film package. Do not build it.
+
 Before the frontend builder starts, the asset package should contain:
 
 ```text
@@ -725,12 +744,12 @@ Before the frontend builder starts, the asset package should contain:
 
 # 17. Immediate next action
 
-Do not start frontend implementation yet.
+Homepage V2 is the page, and the hero-media slot already plays an approved master when the
+file is present. Do not start a scroll-film frontend.
 
-The next action is:
+The next action is the asset gate in `cinematic-video-handoff.md`:
 
-> **Create and approve KF-001 — the canonical hero still.**
+> **Create, review, and approve one continuous family lifestyle master, then drop it at
+> `public/media/cinematic/apex-hero-family-master.mp4`.**
 
-Once KF-001 is right, use it to establish the family, environment, pool geometry, lighting, material palette, and cinematic style for every downstream asset.
-
-That image is the source-of-truth visual decision for the entire V1 sequence.
+No generated still is the source of truth. The master is.

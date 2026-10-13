@@ -16,7 +16,8 @@
  */
 import { defineConfig, devices } from '@playwright/test';
 
-const PORT = 4329;
+// Override this in parallel/local validation so an unrelated dev server is never reused.
+const PORT = Number(process.env.PLAYWRIGHT_PORT || 4329);
 
 export default defineConfig({
   testDir: './tests',

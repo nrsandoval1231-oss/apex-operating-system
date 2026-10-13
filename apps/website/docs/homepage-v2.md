@@ -50,45 +50,50 @@ workstream is cheap when it happens.
 ### The hero media interface
 
 `src/content/hero-media.ts` is the single place that decides how the hero background behaves.
-Three states, one component:
+Two states, one component. D-23 removed the third.
 
 | Mode | State | Status |
 |---|---|---|
-| `poster` | a still `<img>` | **shipped** |
-| `playback` | one continuous approved `<video>` | designed, not built |
-| `scrub` | the same video, driven by scroll | designed, not built |
+| `poster` | a still `<img>` | **what ships today** — no master file is in the repo |
+| `playback` | that same still, with the approved master layered on it | **built.** Active only when the master file exists at build time |
 
-Promoting to video later is a config change, not a rebuild:
+There is no `scrub` mode. D-22's scroll film is superseded. A mode that is accepted and ignored
+would be a promise the code does not keep.
 
-```ts
-heroFilm.src = '/film/apex-brand-film-1080p.mp4';   // mode: 'playback'
-```
+Drop the approved master at `public/media/cinematic/apex-hero-family-master.mp4` and rebuild.
+`HERO_MEDIA.mode` becomes `playback` because the file is there. No component edit, and no
+change to the other six sections. The asset names, the approval bar, and the network rules are
+in `cinematic-video-handoff.md`.
 
 **Rules that make this hold, and that are enforced in code:**
 
-- The poster is the LCP element in *every* state. Adding video layers onto an image the browser
-  is already fetching cannot regress the metric.
-- `mode` is an explicit union. Setting a mode whose film is `null` **throws at build time**
-  rather than silently rendering a poster forever.
-- `scrub` is deliberately **not stubbed**. A `mode` that is accepted but ignored is a promise
-  the code does not keep, and a half-built scrub path is exactly the accumulated complexity this
-  rebuild exists to remove.
+- The poster is the LCP element in both states. The film layers onto an image the browser is
+  already fetching, so it cannot regress the metric.
+- Setting `playback` while `film` is null **throws at build time**.
+- With no master on disk, the built page has no `<video>` and no hero controller. `validate`
+  asserts both.
+- Playback defers the file. Reduced motion, save-data, slow-2G/2G, a missing mobile crop, a
+  playback error, and a stall keep the poster. The pause control is a sibling of `.hero-media`
+  so the hero copy cannot cover it.
 
-**One video, not a frame sequence.** D-22 originally specified scroll-scrubbed canvas frames.
-That is still the right mechanism, but frames are only coherent if they come from ONE approved
-master clip — independently generated frames drift in faces, wardrobe, pool geometry, lighting
-and camera. So the source of truth is `film.src`, a single continuous clip. If scrubbing is
-wanted later, frames are extracted **deterministically from that file** by a build step.
+**One video, not a frame sequence.** D-22 specified scroll-scrubbed canvas frames. D-23
+replaced that mechanism. The source of truth is still one continuous approved clip —
+independently generated frames drift in faces, wardrobe, pool geometry, lighting and camera.
+Derivatives, if any, come from that file. They are not a second hero.
 
-### Zero client JavaScript
+### Client JavaScript
 
-The visual system ships no JS. The only script bundles on the home page are the pre-existing
-ones: the attribution capture, analytics, and the quote-form island. No animation library was
-added — the page's motion is one CSS keyframe on the hero image plus the existing `.anim`
-entrance, both written as progressive enhancement.
+Poster mode ships no hero JavaScript. The only script bundles on the home page are the
+pre-existing ones: the attribution capture, analytics, and the quote-form island. No animation
+library was added. The still's motion is one CSS keyframe, plus the existing `.anim` entrance,
+both written as progressive enhancement.
 
-Enforced in two places: `tests/homepage-v2.spec.ts` (browser) and `scripts/validate.mjs`
-(the production bundle).
+Playback adds one inline controller in `HeroMedia.astro`, emitted only when the master exists.
+It is not a bundled runtime, and it is absent from the artifact this repo builds today.
+
+Enforced in two places: `tests/homepage-v2.spec.ts` (browser, poster mode) and
+`scripts/validate.mjs` (the production bundle). `tests/hero-video.spec.ts` covers the
+controller.
 
 ---
 
@@ -185,8 +190,9 @@ uninlined webhook URL) that say nothing about whether the code is correct, and t
 standing blockers on the base branch. `preflight` remains the **deploy** gate.
 
 **Results at time of writing:** `astro check` 0 errors · production build 7 pages ·
-`validate` all dist assertions passing · Playwright **154/154** · no console errors at 1440 /
-820 / 390px · no horizontal overflow at any of the three widths.
+`validate` all dist assertions passing · Playwright **166/166** (154 from Homepage V2, plus
+the video-hero controller specs on both projects) · no console errors at 1440 / 820 / 390px ·
+no horizontal overflow at any of the three widths.
 
 ### Tests changed, and why
 
@@ -225,14 +231,18 @@ Required before launch:
 4. Set `PUBLIC_OG_IMAGE` (1200×630) — currently unset, so shared links render as bare text cards.
    Blocked on D-20.
 
-The brand film is a **separate workstream** and does not block this page. See
-`cinematic-homepage-vision.md` for the concept and `cinematic-homepage-storyboard.md` for shot
-planning; both remain the source of truth for the film. The homepage architecture above is
-built so the film can be dropped in without touching the page.
+The brand film is a **separate workstream** and does not block this page. D-23 is video-first
+playback of one approved master. `cinematic-homepage-vision.md` and
+`cinematic-homepage-storyboard.md` are the shot reference for that clip; they are not a scroll
+player to build. `cinematic-video-handoff.md` is the delivery contract. The other sections
+above do not change when the film arrives.
 
 ### Swapping the hero for the film, when it exists
 
-1. Produce one continuous master clip.
-2. Put it at `public/film/`, set `HERO_MEDIA.film`, set `mode: 'playback'`.
-3. `pnpm validate` — the `no <video>` assertion must be relaxed at that point, deliberately.
-4. Optional: extract frames deterministically from the same clip for a scroll-scrubbed hero.
+1. Produce one continuous approved master. Do not generate a frame sequence.
+2. Put it at `public/media/cinematic/apex-hero-family-master.mp4`, plus any optional encodes
+   named in `cinematic-video-handoff.md`.
+3. Rebuild. `hero-media.ts` flips `mode` to `playback` because the file exists.
+4. `pnpm validate` currently asserts poster mode and no `<video>`, which is correct while the
+   master is absent. Relax those two assertions in the same change that commits the master,
+   deliberately.

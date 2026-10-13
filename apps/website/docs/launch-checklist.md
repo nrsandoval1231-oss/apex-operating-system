@@ -6,10 +6,11 @@ The current implementation is the four-vertical Astro site with quote capture. *
 
 **Owner: Nick (maintainer). Client: Travis.**
 
-> **Note on D-22 / the cinematic homepage.** The cinematic scroll experience was *not* built. No
-> frame sequence, canvas, or scrub logic was produced, and none was fabricated from unrelated AI
-> images. What shipped is a static home page built to the bar that it stands on its own without
-> the film, with a hero media interface that accepts the film later. See `docs/homepage-v2.md`.
+> **Note on D-22 / D-23.** The cinematic scroll experience was not built, and D-23 superseded
+> it. No frame sequence, canvas, or scrub logic was produced, and none was fabricated from
+> unrelated AI images. Homepage V2 stands on its own without the film. When an approved master
+> exists it plays in the hero-media slot; the other sections do not change, and the film does
+> not block launch. See `docs/homepage-v2.md` and `docs/cinematic-video-handoff.md`.
 
 ---
 

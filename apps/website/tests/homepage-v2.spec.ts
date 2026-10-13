@@ -93,17 +93,18 @@ test.describe('Homepage V2 · hero media interface', () => {
     await page.goto('/');
 
     /*
-     * The architectural promise: poster, playback and scrub are three states of ONE element.
-     * If a future change adds a second stacked media layer, or swaps the poster for a <video>
-     * without going through the mode contract, this fails — which is the point. The mode is
-     * rendered as data-hero-mode so a test (and a human) can tell which state shipped.
+     * Poster and playback are two states of one hero-media slot (D-23; there is no scrub
+     * mode). This checkout has no approved master, so the built page is poster: one image,
+     * no <video>, and no pause control. Playback is covered in hero-video.spec.ts against
+     * the controller, and it must not add a second media root.
      */
     const media = page.locator('.hero-media');
     await expect(media).toHaveCount(1);
     await expect(media).toHaveAttribute('data-hero-mode', 'poster');
 
-    // In poster mode there must be no <video> at all.
+    // In poster mode there must be no <video> and no playback control at all.
     await expect(page.locator('.hero-media video')).toHaveCount(0);
+    await expect(page.locator('.hero-video-toggle')).toHaveCount(0);
 
     const img = page.locator('.hero-media img');
     await expect(img).toHaveCount(1);

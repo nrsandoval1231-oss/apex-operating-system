@@ -204,16 +204,17 @@ export const IMAGE_MANIFEST = {
      ============================================================================= */
 
   // Section 01 — hero poster. The LCP image on the home page: loaded eager, fetchpriority
-  // high, and the first thing a visitor should see. See components/home/HeroMedia.astro for
-  // why this is a poster rather than a <video>.
+  // high, and the first thing a visitor should see. Playback (D-23) layers the approved master
+  // on top of this same image; until that file exists, this still is the whole hero. See
+  // components/home/HeroMedia.astro.
   //
   // The slot is 4:5 rather than a landscape ratio deliberately. The hero is a full-bleed
   // background behind text, and the two viewports it has to serve are far apart: a 16:9 source
   // cropped to a 390×844 phone reduces to a narrow vertical sliver of whatever happened to be
   // in the middle of a wide frame — in the first build that was a slice of patio furniture with
   // no water in it. A 4:5 source is near-native on a phone and covers a landscape desktop by
-  // cropping top and bottom, so both viewports keep the pool. A real brand film will replace
-  // this entirely; the ratio is the right one to keep either way.
+  // cropping top and bottom, so both viewports keep the pool. Keep this ratio when the still
+  // is replaced. The film does not replace the slot; it plays over it.
   'v2-hero-poster': {
     id: 'v2-hero-poster',
     alt: 'A custom swimming pool at dusk with a raised spa and lit water features',
