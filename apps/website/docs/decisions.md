@@ -59,3 +59,18 @@ These came from the PRD conversation and belong to the maintainer, not the agent
 
 
 **D-22 · Cinematic scroll homepage is the canonical next-generation website direction.** The approved experience is a scroll-controlled luxury brand film centered on a father and his two sons running and jumping into a completed Apex pool, transitioning through the splash into underwater craftsmanship and then into the broader website journey. The build strategy is image-sequence/canvas first, not a full real-time 3D implementation. Emotional storytelling leads; craftsmanship proves the promise; conversion remains explicit. The canonical specification is `apps/website/docs/cinematic-homepage-vision.md`. Builders must preserve that intent unless Nick explicitly changes it.
+
+> **Superseded in scope, 2026-10-06 (Homepage V2).** D-22's *creative* direction stands and was
+> adopted — the emotional promise is the page's closing line, and the water-as-transition
+> language is the section order. Its *delivery mechanism* was deferred: **no frame sequence, no
+> canvas, and no scrub logic were built**, and none were fabricated from unrelated AI images.
+>
+> Homepage V2 shipped instead as a static, cinematic-feeling home page, against the explicit bar
+> that it must be launchable even if the film never exists. The hero now has a
+> poster → playback → scrub media contract (`src/content/hero-media.ts`), so the film drops in
+> later without the page being restructured.
+>
+> D-22's rule against independently generated frames is now **more** important, not less: the
+> film must be ONE continuous approved clip, and any future frames are extracted deterministically
+> from it. See `docs/homepage-v2.md` for the shipped architecture and
+> `docs/cinematic-homepage-vision.md` for the film concept.

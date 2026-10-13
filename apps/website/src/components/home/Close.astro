@@ -1,0 +1,177 @@
+---
+/**
+ * Close.astro — Section 07 of 07. CONVERSION.
+ *
+ * Process, then the emotional close. The brief asks the last composition to "feel like the
+ * closing shot of a premium brand film" — so the page resolves on full-bleed imagery with the
+ * CTA sitting in the image, not on a form panel.
+ *
+ * The QuoteForm island is NOT here. It stays in its own dark <section id="quote"> below this
+ * one (QuoteSection.astro), for three reasons worth keeping: the form is a React island that
+ * hydrates on visibility, `data-preselect` wiring lives in that component's inline script, and
+ * the dark form panel needs a dark ground of its own — dropping it into a photograph-backed
+ * close would wreck its contrast. This section is the invitation; the form is the answer.
+ */
+import { closeV2 } from '@content/home-v2';
+import { site } from '@lib/site';
+import ImageSlot from '@components/ImageSlot.astro';
+---
+<section class="close" id="close">
+  {/*
+    Process. Four steps, laid out as a run rather than a 2×2 of cards. The old .pstep treatment
+    was a bordered white box per step; this is an open numbered list with a single rule, which
+    is the same information at a fraction of the visual noise.
+  */}
+  <div class="wrap process-block">
+    <header class="sec-head">
+      <p class="eyebrow">{closeV2.eyebrow}</p>
+      <h2 class="sec-title">{closeV2.heading}</h2>
+    </header>
+
+    <ol class="steps">
+      {
+        closeV2.process.map((s) => (
+          <li class="step">
+            <span class="n mono">{s.n}</span>
+            <h3 class="step-title">{s.title}</h3>
+            <p class="step-body">{s.body}</p>
+          </li>
+        ))
+      }
+    </ol>
+  </div>
+
+  <div class="close-cta">
+    <figure class="close-fig">
+      <ImageSlot id="v2-close" sizes="100vw" />
+    </figure>
+
+    <div class="close-overlay">
+      <div class="wrap close-inner">
+        <h2 class="close-title">{closeV2.closeHeading}</h2>
+        <p class="close-lead">{closeV2.closeLead}</p>
+        <div class="close-actions">
+          <a class="btn btn-lg" href="#quote">{closeV2.cta}</a>
+          <a class="btn btn-lg ghost" href={`tel:${site.phoneE164}`}>
+            {site.phoneDisplay}
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .close { background: var(--paper); padding-bottom: 0; }
+
+  .sec-title { max-width: 16ch; }
+
+  .steps {
+    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: clamp(18px, 3vw, 40px);
+    margin: clamp(34px, 5vw, 60px) 0 0;
+    padding: 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .step {
+    padding: 22px 0 0;
+    /* The rule is drawn per-step rather than as a row border, so on a 2-up phone layout each
+       cell carries its own hairline instead of one continuous line that would appear to run
+       between unrelated steps. */
+    border-top: 2px solid var(--sage-ink);
+    margin-top: -1px;
+  }
+  .step .n {
+    font-size: 10.5px;
+    letter-spacing: 0.18em;
+    color: var(--sage-ink);
+  }
+  .step-title {
+    font-size: clamp(19px, 2.1vw, 26px);
+    margin: 10px 0 0;
+    text-transform: none;
+    letter-spacing: -0.005em;
+  }
+  .step-body { margin: 8px 0 0; color: var(--steel); font-size: 15px; line-height: 1.55; }
+
+  @media (max-width: 860px) { .steps { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 460px) { .steps { grid-template-columns: 1fr; } }
+
+  /* --- the close: full-bleed image, copy over it --- */
+  .close-cta { position: relative; margin-top: clamp(52px, 7vw, 100px); }
+
+  .close-fig {
+    margin: 0;
+    /* Same gutter-safe full-bleed as Living.astro. */
+    width: min(100vw - var(--scrollbar, 0px), 2400px);
+    margin-left: 50%;
+    transform: translateX(-50%);
+  }
+  .close-fig :global(.img-slot) {
+    border-radius: 0;
+    border: 0;
+    /* Same reasoning as Living.astro: cap the height, never override the declared
+       aspect-ratio. AC-9.1 reserves the space so a real photograph cannot shift the page, and
+       overriding the ratio to `auto` to force a taller band throws that away. `object-fit:
+       cover` handles the difference between the declared 16:9 and this cap. */
+    max-height: clamp(420px, 74vh, 820px);
+  }
+  .close-fig :global(.img-slot img) { object-position: 50% 62%; }
+
+  .close-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: flex-end;
+    background: linear-gradient(180deg, rgba(20, 21, 23, 0.12) 0%, rgba(20, 21, 23, 0.55) 55%, rgba(20, 21, 23, 0.9) 100%);
+  }
+
+  .close-inner {
+    width: 100%;
+    padding: 0 22px clamp(40px, 6vh, 76px);
+    color: #f4f2ee;
+  }
+
+  .close-title {
+    font-size: clamp(32px, 6.2vw, 88px);
+    line-height: 0.96;
+    letter-spacing: -0.015em;
+    max-width: 16ch;
+    text-wrap: balance;
+  }
+
+  .close-lead {
+    margin: 20px 0 0;
+    max-width: 48ch;
+    color: #d5cfc5;
+    font-size: clamp(15px, 1.7vw, 18px);
+    line-height: 1.55;
+  }
+
+  .close-actions { margin-top: 30px; display: flex; flex-wrap: wrap; gap: 12px; }
+
+  /* On the dark overlay the solid button is full brand sage and the ghost reads light — the
+     same light/dark inversion the header uses, and the reason the global .btn rules key off
+     container classes. This close section is not one of those classes, so the flip is declared
+     here explicitly rather than by widening a global selector. */
+  .close-actions :global(.btn) { background: var(--sage); color: var(--char); }
+  .close-actions :global(.btn):hover { background: var(--sage-d); }
+  .close-actions :global(.btn.ghost) {
+    background: transparent;
+    color: #f4f2ee;
+    border-color: rgba(244, 242, 238, 0.42);
+  }
+  .close-actions :global(.btn.ghost):hover {
+    color: var(--sage);
+    border-color: var(--sage);
+    background: transparent;
+  }
+
+  @media (max-width: 520px) {
+    .close-actions { flex-direction: column; align-items: stretch; }
+    .close-actions :global(.btn) { justify-content: center; }
+  }
+</style>

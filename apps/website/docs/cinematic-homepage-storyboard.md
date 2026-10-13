@@ -1,10 +1,28 @@
 # Apex Cinematic Homepage Storyboard
 
-**Status:** CANONICAL STORYBOARD / BUILD INPUT  
-**Recorded:** 2026-10-04  
+**Status:** CANONICAL STORYBOARD / BUILD INPUT — for the **brand film**, not the shipped page  
+**Recorded:** 2026-10-04 · **Amended:** 2026-10-06 (Homepage V2)  
 **Parent vision:** `apps/website/docs/cinematic-homepage-vision.md`  
 **Scope:** V1 hero sequence — luxury backyard → run → jump → splash → underwater reveal  
 **Owner:** Nick Sandoval
+
+---
+
+## ⚠ SCOPE — this storyboard was NOT built
+
+None of the sequence below exists. No frames were generated, no scrub logic was written, and no
+AI frame sequence was fabricated from unrelated images.
+
+**Homepage V2 shipped on 2026-10-06** as a static, cinematic-feeling home page. The acceptance
+bar it was built to is explicit: *"we would willingly launch with the static hero image even if
+the cinematic film were delayed."* It meets that bar.
+
+This storyboard remains the **shot list for the brand film** — a separate production workstream
+with its own launch-quality gate. When that film exists it is dropped into the hero's existing
+media interface (`src/content/hero-media.ts`), which already distinguishes poster, playback and
+scroll-scrubbed modes. The home page does not need to be rebuilt to accept it.
+
+See `docs/homepage-v2.md` for what actually ships.
 
 ---
 

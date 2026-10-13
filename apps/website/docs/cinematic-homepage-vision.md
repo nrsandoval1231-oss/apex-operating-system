@@ -1,12 +1,43 @@
 # Apex Cinematic Homepage Vision
 
-**Status:** CANONICAL / LOCKED  
-**Recorded:** 2026-10-04  
-**Scope:** Apex public website — homepage experience and visual storytelling direction  
-**Owner:** Nick Sandoval  
+**Status:** CANONICAL / LOCKED — **for the brand film, not for the current home page**  
+**Recorded:** 2026-10-04 · **Scope amended:** 2026-10-06 (Homepage V2)  
+**Scope:** Apex public website — the cinematic brand film, and the optional scroll-controlled
+hero that may be built on top of that film later  
+**Owner:** Nick Sandoval
 
 > This document freezes the approved concept for the next-generation Apex website experience.
 > Builders should preserve the intent of this document unless Nick explicitly changes the direction.
+
+---
+
+## ⚠ SCOPE — read this before using this document
+
+**This document is no longer the specification for the home page.** It is the specification for
+the **Apex brand film**, and for the optional scroll-controlled hero that may be built on top of
+that film later.
+
+**Homepage V2 shipped on 2026-10-06** and is a *static, cinematic-feeling* home page built
+without any of the machinery described below. Read `docs/homepage-v2.md` for what actually
+ships.
+
+What this means in practice:
+
+| This document describes | Status |
+|---|---|
+| The emotional promise — "Build the backyard they'll remember." | **Adopted.** It is the page's closing headline. |
+| The father / two sons / jump / splash sequence | **Not built.** No frames exist; the canonical hero still has not been produced. |
+| Scroll-scrubbed canvas image sequence | **Not built, and deliberately deferred.** |
+| The water-as-transition language | **Adopted as art direction.** The section order and the surface/craftsmanship split follow it. |
+| "Do not generate 100–200 independent images" | **Still binding.** Reinforced in `src/content/hero-media.ts`. |
+
+The single most important line for anyone picking this up: **no frame sequence exists, and none
+was fabricated.** The home page was built to be excellent with a static hero, on the explicit
+acceptance bar that it must be launchable even if the film is never produced.
+
+The hero's media interface (`src/content/hero-media.ts`) already carries a
+`poster` / `playback` / `scrub` contract. When the film is produced it is dropped in there — the
+rest of this document describes what that film should be, and how it should be shot.
 
 ---
 
