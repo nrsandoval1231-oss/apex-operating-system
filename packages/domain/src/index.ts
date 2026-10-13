@@ -11,7 +11,7 @@ import {
   type RevisionId,
 } from '@apex/contracts';
 
-import { DomainRuleError } from './errors.js';
+import { DomainRuleError, RoleRefusalError } from './errors.js';
 
 export * from './project.js';
 export * from './cards.js';
@@ -127,7 +127,7 @@ export type DomainEventDraft =
   | { readonly eventType: 'draw.eligible'; readonly jobId: JobId; readonly payload: { readonly drawId: string; readonly sourceGateInstanceId: GateInstanceId; readonly amountCents: null }; readonly at: string; readonly actor: EventActor }
   | { readonly eventType: 'customer_update.published'; readonly jobId: JobId; readonly payload: { readonly projectionId: string; readonly milestone: CustomerMilestoneKey; readonly publishedBy: string }; readonly at: string; readonly actor: EventActor };
 
-export { DomainRuleError } from './errors.js';
+export { DomainRuleError, RoleRefusalError } from './errors.js';
 
 const userActor = (actor: EventActor): Extract<EventActor, { kind: 'user' }> => {
   if (actor.kind !== 'user') throw new DomainRuleError('This command requires an authenticated human actor.');
@@ -136,7 +136,7 @@ const userActor = (actor: EventActor): Extract<EventActor, { kind: 'user' }> => 
 
 const requireRole = <Roles extends readonly AppRole[]>(actor: EventActor, allowed: Roles) => {
   const user = userActor(actor);
-  if (!allowed.includes(user.role)) throw new DomainRuleError(`Role ${user.role} is not authorized for this Gate command.`);
+  if (!allowed.includes(user.role)) throw new RoleRefusalError(`Role ${user.role} is not authorized for this Gate command.`);
   return user as typeof user & { role: Roles[number] };
 };
 

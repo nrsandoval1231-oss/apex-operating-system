@@ -15,6 +15,7 @@ import { CustomerService } from './customer.js';
 import {
   DEMO_CITY,
   DEMO_CUSTOMER_NAME,
+  DEMO_JOB_ID,
   DEMO_DIRECT_LINES,
   DEMO_FEE_RATE_BPS,
   DEMO_LEAD_KEY,
@@ -94,6 +95,7 @@ describe('Lubbock DEMO project seed', () => {
     const second = await seedDemoProject(db, storage);
 
     expect(second).toEqual(first);
+    expect(first.jobId).toBe(DEMO_JOB_ID);
     expect(first.customerPath).toMatch(customerTokenPattern);
     expect(first.customerPath).not.toBe(`/c/${RETIRED_DEMO_CUSTOMER_TOKEN}`);
     expect(await counts()).toEqual({ leads: 1, jobs: 1, links: 1 });
@@ -161,6 +163,8 @@ describe('Lubbock DEMO project seed', () => {
     expect(gates.find((gate) => gate.definitionKey === 'excavation')?.status).toBe('released');
     expect(gates.find((gate) => gate.definitionKey === 'pre-gunite')?.status).toBeNull();
     expect(gates.find((gate) => gate.definitionKey === 'shell')?.status).toBeNull();
+    expect(gates.find((gate) => gate.definitionKey === 'cover-install')).toBeUndefined();
+    expect(gates.find((gate) => gate.definitionKey === 'automation-programming-complete')).toBeUndefined();
 
     const cards = await service.getActionCards('2026-10-02');
     expect(cards.some((card) => card.jobId === first.jobId && card.customerName === DEMO_CUSTOMER_NAME)).toBe(true);
@@ -170,12 +174,21 @@ describe('Lubbock DEMO project seed', () => {
     expect(page.addressLine).toContain('Lubbock');
     expect(page.updates.length).toBeGreaterThan(0);
     expect(page.photos.length).toBe(1);
-    const photoRows = await db.query<{ storage_key: string; sha256: string; byte_size: string }>(
-      `select storage_key, sha256, byte_size::text from evidence_records
-       where job_id = $1 and kind = 'photo' and customer_visible = true`,
+    expect(page.photos[0]?.caption).toMatch(/hole is dug/i);
+    const photoRows = await db.query<{
+      storage_key: string;
+      sha256: string;
+      byte_size: string;
+      definition_key: string;
+    }>(
+      `select er.storage_key, er.sha256, er.byte_size::text, gi.definition_key
+       from evidence_records er
+       join gate_instances gi on gi.gate_instance_id = er.gate_instance_id
+       where er.job_id = $1 and er.kind = 'photo' and er.customer_visible = true`,
       [first.jobId],
     );
     expect(photoRows.rows).toHaveLength(1);
+    expect(photoRows.rows.map((row) => row.definition_key)).toEqual(['excavation']);
     const published = photoRows.rows[0]!;
     const bytes = await storage.get(published.storage_key);
     expect(bytes).not.toBeNull();
@@ -195,8 +208,9 @@ describe('Lubbock DEMO project seed', () => {
     expect(kept.rows).toHaveLength(1);
 
     const again = await seedDemoProject(db, storage);
-    expect(again.jobId).not.toBe(first.jobId);
+    expect(again.jobId).toBe(DEMO_JOB_ID);
     expect(again.customerPath).toMatch(customerTokenPattern);
+    expect(again.customerPath).not.toBe(`/c/${RETIRED_DEMO_CUSTOMER_TOKEN}`);
     expect(again.customerPath).not.toBe(first.customerPath);
     const keptToken = await seedDemoProject(db, storage);
     expect(keptToken).toEqual(again);
@@ -206,6 +220,30 @@ describe('Lubbock DEMO project seed', () => {
       [DEMO_USER_ID],
     );
     expect(staff.rows[0]?.email).toBe(DEMO_USER_EMAIL);
+  });
+
+  it('deletes stored demo objects on remove and skips keys that were never valid', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'apex-demo-objects-'));
+    const storage = new LocalEvidenceStorage(directory);
+    try {
+      const seeded = await seedDemoProject(db);
+      const validKey = `${seeded.jobId}/demo/excavation/hole.jpg`;
+      await storage.put(validKey, Buffer.from('jpeg'), 'image/jpeg');
+      await db.query(
+        `update evidence_records set storage_key = $2
+         where evidence_id = (
+           select er.evidence_id from evidence_records er
+           join gate_instances gi on gi.gate_instance_id = er.gate_instance_id
+           where er.job_id = $1 and gi.definition_key = 'excavation'
+           limit 1
+         )`,
+        [seeded.jobId, validKey],
+      );
+      await removeDemoProject(db, storage);
+      expect(await storage.get(validKey)).toBeNull();
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
   });
 
   it('remove is a no-op when the demo job was never seeded', async () => {

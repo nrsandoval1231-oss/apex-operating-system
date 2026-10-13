@@ -41,6 +41,10 @@ export default function SignIn() {
 
       {config === null && failure === null && <p className="state-quiet" aria-busy="true">Loading…</p>}
 
+      {config?.mode === 'access' && (
+        <p className="sub">Your login isn&apos;t linked to an Apex user. Ask an admin.</p>
+      )}
+
       {config?.mode === 'oidc' && (
         <>
           <p className="sub">Sign in with your Apex account.</p>

@@ -373,6 +373,22 @@ describe('a released Gate carries the construction phase with it', () => {
    * opens Shell before anyone records a Permit gate. Letting a late Gate drag
    * the phase backwards would turn that freedom into corruption.
    */
+  it('steps to the next phase when the project is already in the released Gate phase', async () => {
+    await service.openProject({
+      jobId: ids.job, actor: ownerActor, initialPhaseKey: 'gunite', idempotencyKey: 'phase-open-on-gate',
+    });
+    await releasePreGunite();
+    const project = await service.getProject(ids.job);
+    expect(project?.currentPhaseKey).toBe('tile-coping');
+    const history = await db.query<{ to_phase_key: string; reason: string | null }>(
+      `select to_phase_key, reason from project_phase_transitions
+        where job_id = $1 order by occurred_at desc limit 1`,
+      [ids.job],
+    );
+    expect(history.rows[0]?.to_phase_key).toBe('tile-coping');
+    expect(history.rows[0]?.reason).toMatch(/gate released/i);
+  });
+
   it('never moves the phase backwards', async () => {
     await service.openProject({ jobId: ids.job, actor: ownerActor, idempotencyKey: 'phase-open-back' });
     await service.changeProjectPhase(ids.job, {

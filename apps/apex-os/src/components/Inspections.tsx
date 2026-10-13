@@ -105,16 +105,17 @@ export default function Inspections({
   });
 
   const record = (inspection: JobInspection, values: Readonly<Record<string, string>>) => run(async () => {
-    const outcome = values['outcome']?.toLowerCase() === 'failed'
-      ? 'failed'
-      : values['outcome']?.toLowerCase() === 'waived' ? 'waived' : 'passed';
+    const outcome = values['outcome'];
+    if (outcome !== 'passed' && outcome !== 'failed' && outcome !== 'waived') {
+      throw new Error('Choose passed, failed, or waived.');
+    }
     await apiSend(`/api/jobs/${jobId}/inspections/${inspection.inspectionKey}/result`, JobInspectionSchema, {
       method: 'POST',
       body: {
         outcome,
         occurredOn: values['occurredOn'],
         ...(values['note'] ? { note: values['note'] } : {}),
-        ...(values['corrections'] ? { corrections: values['corrections'] } : {}),
+        ...(outcome === 'failed' && values['corrections'] ? { corrections: values['corrections'] } : {}),
       },
     });
     query.reload();
@@ -159,7 +160,17 @@ export default function Inspections({
           title={`Result — ${asking.inspection.title}`}
           note="Passed, failed, or waived. A failure has to say what must be corrected; a waiver has to say why it does not apply to this pool."
           fields={[
-            { name: 'outcome', label: 'Passed, failed, or waived', required: true, initial: 'passed' },
+            {
+              name: 'outcome',
+              label: 'Outcome',
+              required: true,
+              initial: 'passed',
+              options: [
+                { value: 'passed', label: 'Passed' },
+                { value: 'failed', label: 'Failed' },
+                { value: 'waived', label: 'Waived' },
+              ],
+            },
             { name: 'occurredOn', label: 'Date (YYYY-MM-DD)', required: true, initial: today },
             { name: 'note', label: 'Note, or why it was waived', multiline: true },
             { name: 'corrections', label: 'What must be corrected (on a failure)', multiline: true },

@@ -71,7 +71,7 @@ ${page.decisions.map((decision) => `      <article class="ask">
         <p>${escapeHtml(decision.detail)}</p>
         <p class="consequence">${escapeHtml(decision.consequence)}</p>
 ${decision.neededBy === null ? '' : `        <p class="by">Needed by ${escapeHtml(readableDay(decision.neededBy))}</p>\n`}      </article>`).join('\n')}
-      <p class="ask-how">Call or text us with your answer — we will record it and keep things moving.</p>
+${page.contact === null ? '' : '      <p class="ask-how">Call or text us with your answer — we will record it and keep things moving.</p>\n'}
     </section>`;
 };
 

@@ -56,6 +56,7 @@ export interface PricedLine {
   readonly quantity: number | null;
   readonly unit: string | null;
   readonly amountCents: number | null;
+  readonly scopeStatus?: 'quoted' | 'not-applicable' | 'unresolved';
   readonly quantityAuthority?: QuantityAuthority;
 }
 
@@ -147,7 +148,10 @@ export function priceApprovedTakeoff(input: {
         message: `${definition.name} needs a real quote or an explicit not-applicable decision.` });
     }
     return { code: definition.code, name: line?.name.trim() || definition.name,
-      quantity: null, unit: null, amountCents: validQuote ? line.amountCents : excluded ? 0 : null };
+      quantity: null, unit: null,
+      amountCents: validQuote ? line.amountCents : excluded ? 0 : null,
+      ...(line ? { scopeStatus: line.scopeStatus } : {}),
+    };
   });
   const lines = [...measured, ...direct];
   const directCostCents = lines.reduce((sum, line) => sum + (line.amountCents ?? 0), 0);

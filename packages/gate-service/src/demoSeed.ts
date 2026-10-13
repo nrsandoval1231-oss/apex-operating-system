@@ -1,4 +1,4 @@
-import { createHash, randomBytes } from 'node:crypto';
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import type { Database } from '@apex/database';
@@ -33,6 +33,8 @@ import { GateService } from './index.js';
 
 /** `user_` plus 26 Crockford characters. No I, L, O, or U. */
 export const DEMO_USER_ID = 'user_7ZZZZZZZZZZZZZZZZZZZZZZZZZ';
+/** Same job on every seed, including after `--remove` and a fresh run. */
+export const DEMO_JOB_ID = 'job_7ZZZZZZZZZZZZZZZZZZZZZZZZZ';
 export const DEMO_USER_EMAIL = 'demo.staff@example.com';
 const DEMO_AUTH_USER_ID = '00000000-0000-4000-8000-0000000000d1';
 export const DEMO_LEAD_KEY = 'demo:lubbock-sports-pool';
@@ -60,6 +62,9 @@ const hashToken = (token: string): string =>
 
 if (!/^user_[0-9A-HJKMNP-TV-Z]{26}$/.test(DEMO_USER_ID)) {
   throw new Error('DEMO_USER_ID is not a canonical user id.');
+}
+if (!/^job_[0-9A-HJKMNP-TV-Z]{26}$/.test(DEMO_JOB_ID)) {
+  throw new Error('DEMO_JOB_ID is not a canonical job id.');
 }
 if (!DEMO_TOKEN_PATTERN.test(RETIRED_DEMO_CUSTOMER_TOKEN)) {
   throw new Error('RETIRED_DEMO_CUSTOMER_TOKEN must be 43 URL-safe characters.');
@@ -354,9 +359,12 @@ const releaseGate = async (
 
 const publishOnePhoto = async (db: Database, jobId: JobId, actor: EventActor): Promise<void> => {
   const photos = await db.query<{ evidence_id: string; customer_visible: boolean }>(
-    `select evidence_id, customer_visible from evidence_records
-     where job_id = $1 and kind = 'photo'
-     order by evidence_id limit 1`,
+    `select er.evidence_id, er.customer_visible
+     from evidence_records er
+     join gate_instances gi on gi.gate_instance_id = er.gate_instance_id
+     where er.job_id = $1 and er.kind = 'photo' and gi.definition_key = 'excavation'
+     order by er.evidence_id
+     limit 1`,
     [jobId],
   );
   const photo = photos.rows[0];
@@ -517,27 +525,35 @@ export async function seedDemoProject(
   const actor = await ensureActor(db);
   const leadId = await ensureLead(db);
   const service = new GateService(db);
-  const finished = await service.finishEstimate({
-    leadId: leadId as Parameters<GateService['finishEstimate']>[0]['leadId'],
-    actor,
-    submission: demoSubmission(),
-    directLines: DEMO_DIRECT_LINES,
-    measuredLines: DEMO_MEASURED_LINES,
-    feeRateBps: DEMO_FEE_RATE_BPS,
-    idempotencyKey: 'demo:lubbock:finish',
-  });
-  if (finished.blockers.length > 0) {
-    throw new Error(`Demo pricing did not issue: ${finished.blockers.map((blocker) => blocker.message).join(' ')}`);
+  const existingJob = await db.query<{ job_id: string }>(
+    'select job_id from jobs where lead_id = $1',
+    [leadId],
+  );
+  let jobId = existingJob.rows[0]?.job_id as JobId | undefined;
+  if (jobId === undefined) {
+    const finished = await service.finishEstimate({
+      leadId: leadId as Parameters<GateService['finishEstimate']>[0]['leadId'],
+      actor,
+      submission: demoSubmission(),
+      directLines: DEMO_DIRECT_LINES,
+      measuredLines: DEMO_MEASURED_LINES,
+      feeRateBps: DEMO_FEE_RATE_BPS,
+      idempotencyKey: 'demo:lubbock:finish',
+    });
+    if (finished.blockers.length > 0) {
+      throw new Error(`Demo pricing did not issue: ${finished.blockers.map((blocker) => blocker.message).join(' ')}`);
+    }
+    const signed = await service.signProposal({
+      proposalVersionId: finished.proposal.proposalVersionId,
+      expectedVersionNumber: finished.proposal.versionNumber,
+      expectedDraftRevision: finished.proposal.draftRevision,
+      actor,
+      customerAcceptanceConfirmed: true,
+      idempotencyKey: 'demo:lubbock:sign',
+      jobId: DEMO_JOB_ID,
+    });
+    jobId = signed.jobId as JobId;
   }
-  const signed = await service.signProposal({
-    proposalVersionId: finished.proposal.proposalVersionId,
-    expectedVersionNumber: finished.proposal.versionNumber,
-    expectedDraftRevision: finished.proposal.draftRevision,
-    actor,
-    customerAcceptanceConfirmed: true,
-    idempotencyKey: 'demo:lubbock:sign',
-  });
-  const jobId = signed.jobId as JobId;
   await service.createDrawSchedule({
     jobId,
     actor,

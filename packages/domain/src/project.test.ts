@@ -8,6 +8,7 @@ import {
   nextConstructionPhase,
   type EventActor,
 } from '@apex/contracts';
+import { RoleRefusalError } from './errors.js';
 import {
   PhaseRuleError,
   classifyPhaseMove,
@@ -74,7 +75,7 @@ describe('phase change authority', () => {
   it('refuses field users and customers', () => {
     for (const actor of [fieldUser, customer]) {
       expect(() => decidePhaseChange(state(), { actor, at, toPhaseKey: 'steel-reinforcement' }))
-        .toThrow(PhaseRuleError);
+        .toThrow(RoleRefusalError);
     }
   });
 

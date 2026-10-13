@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import { z } from 'zod';
 import {
+  AppRoleSchema,
   CalendarEntryListSchema,
   ActionCardListSchema,
   CustomerLinkStatusSchema,
@@ -189,3 +190,16 @@ const loadDecisions = (path: string, signal: AbortSignal): Promise<readonly Staf
 /** What Apex is waiting on from this customer. */
 export const useJobDecisions = (jobId: string | undefined): Query<readonly StaffCustomerDecision[]> =>
   useResource(jobId === undefined ? null : `/api/jobs/${jobId}/decisions`, loadDecisions);
+
+const StaffSessionSchema = z.strictObject({
+  userId: z.string().min(1),
+  displayName: z.string().min(1),
+  role: AppRoleSchema,
+});
+export type StaffSession = z.infer<typeof StaffSessionSchema>;
+
+const loadMe = (path: string, signal: AbortSignal): Promise<StaffSession> =>
+  apiGet(path, StaffSessionSchema, signal);
+
+/** Who this browser is, from `app_users`. The role is the row, never a token claim. */
+export const useMe = (): Query<StaffSession> => useResource('/api/me', loadMe);
