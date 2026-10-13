@@ -58,19 +58,22 @@ These came from the PRD conversation and belong to the maintainer, not the agent
 - Revenue split across the four verticals — sets content priority.
 
 
-**D-22 · Cinematic scroll homepage is the canonical next-generation website direction.** The approved experience is a scroll-controlled luxury brand film centered on a father and his two sons running and jumping into a completed Apex pool, transitioning through the splash into underwater craftsmanship and then into the broader website journey. The build strategy is image-sequence/canvas first, not a full real-time 3D implementation. Emotional storytelling leads; craftsmanship proves the promise; conversion remains explicit. The canonical specification is `apps/website/docs/cinematic-homepage-vision.md`. Builders must preserve that intent unless Nick explicitly changes it.
+**D-22 · Cinematic scroll homepage is the canonical next-generation website direction.** The approved experience was a scroll-controlled luxury brand film centered on a father and his two sons running and jumping into a completed Apex pool, transitioning through the splash into underwater craftsmanship and then into the broader website journey. The build strategy was image-sequence/canvas first, not a full real-time 3D implementation. Emotional storytelling leads; craftsmanship proves the promise; conversion remains explicit. The creative write-up is `apps/website/docs/cinematic-homepage-vision.md`.
 
-> **Superseded in scope, 2026-10-06 (Homepage V2).** D-22's *creative* direction stands and was
-> adopted — the emotional promise is the page's closing line, and the water-as-transition
-> language is the section order. Its *delivery mechanism* was deferred: **no frame sequence, no
-> canvas, and no scrub logic were built**, and none were fabricated from unrelated AI images.
->
-> Homepage V2 shipped instead as a static, cinematic-feeling home page, against the explicit bar
-> that it must be launchable even if the film never exists. The hero now has a
-> poster → playback → scrub media contract (`src/content/hero-media.ts`), so the film drops in
-> later without the page being restructured.
->
-> D-22's rule against independently generated frames is now **more** important, not less: the
-> film must be ONE continuous approved clip, and any future frames are extracted deterministically
-> from it. See `docs/homepage-v2.md` for the shipped architecture and
-> `docs/cinematic-homepage-vision.md` for the film concept.
+> **Superseded by D-23 (2026-10-13).** Nick chose the video-first hero. D-22's scroll film is
+> not the build direction. Homepage V2 (2026-10-06) had already shipped the page without a
+> frame sequence, canvas, or scrub path, and none of those were fabricated. D-23 keeps that
+> page and puts the approved master in the hero-media slot as playback. The emotional promise
+> and the water-as-transition section order still stand. The rule against independently
+> generated frames still stands: one continuous approved clip, and any derivative comes from
+> that file. Do not build the scroll film.
+
+**D-23 · Video-first hero is the canonical production direction.** The approved cinematic
+family master is the only source of truth. It plays in Homepage V2's hero-media slot
+(`src/content/hero-media.ts`, `components/home/HeroMedia.astro`) as muted inline looping
+video, with the V2 poster as the LCP image and the fallback. Reduced motion, save-data,
+slow networks, a missing mobile crop, playback errors, and stalls keep the poster. The pause
+control sits outside the media layer so the hero copy cannot cover it. Posters and mobile
+crops, if produced, are derived from the approved master. The scroll-scrub mode is not part
+of the contract. See `docs/cinematic-video-handoff.md`. Until the master file is delivered,
+the hero stays on the poster and ships no `<video>`.

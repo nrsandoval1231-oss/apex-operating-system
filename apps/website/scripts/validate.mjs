@@ -115,8 +115,11 @@ for (const s of SECTIONS) {
 }
 
 check((html.match(/<h1[\s>]/g) || []).length === 1, 'exactly one <h1> on the home page', 'a second h1 breaks document outline and screen-reader navigation');
+// Poster is the mode this repo builds: no approved master is in public/media/cinematic/.
+// Committing that file flips hero-media.ts to playback; relax these three checks in that same change.
 check(html.includes('data-hero-mode="poster"'), 'hero media renders in the declared poster mode', 'the hero media interface is not emitting its contract');
 check(!/<video/.test(html), 'no <video> ships before the brand film exists', 'a video element is present but no film is configured');
+check(!/class="[^"]*\bhero-video-toggle\b/.test(html), 'no pause control ships before the brand film exists', 'the playback controller rendered without a master');
 
 // The four verticals must stay reachable from the built home page HTML. This is the specific
 // regression a pools-led redesign can cause, and it is invisible in a screenshot.

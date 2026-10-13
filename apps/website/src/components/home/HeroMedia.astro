@@ -2,23 +2,20 @@
 /**
  * HeroMedia.astro — the hero's single background layer.
  *
- * ONE component, three states, selected by HERO_MEDIA.mode (content/hero-media.ts):
+ * ONE component, two states, selected by HERO_MEDIA.mode (content/hero-media.ts):
  *
- *   poster   (shipped) — an <img>, eager, fetchpriority=high. Zero JavaScript.
- *   playback (future)  — a <video> carrying the same poster as its poster attribute.
- *   scrub    (future)  — the same video, driven by scroll. NOT BUILT, and deliberately not
- *                        stubbed: see the note in content/hero-media.ts.
+ *   poster    — an <img>, eager, fetchpriority=high. Zero JavaScript. This is what ships
+ *               until the approved master is on disk.
+ *   playback  — that master, deferred until the network and motion preferences allow it,
+ *               painted over the same poster. D-23. There is no scroll-scrub state.
  *
- * The design rule this encodes: the poster is always the LCP element, in every state. When a
- * film is added later it layers on top of an image the browser is already fetching, so adding
- * video cannot regress the metric that was just optimised.
+ * The poster is the LCP element in both states. The film layers on top of an image the
+ * browser is already fetching.
  *
- * `mode` is switched on an explicit union, so adding a mode is a type error until the branch
- * exists — you cannot silently ship a mode that does nothing.
- *
- * Reduced motion: the poster IS the reduced-motion experience. Motion here is a single slow
- * scale, applied only under prefers-reduced-motion: no-preference, and it never affects whether
- * content is visible (the bug this repo has a regression test for — tests/reduced-motion.spec.ts).
+ * Reduced motion, save-data, slow-2G/2G, a missing mobile crop, a playback error, and a
+ * stall all keep the poster. The pause control is a sibling of this layer, not a child of
+ * it: the hero copy sits at z-index 2, and a control trapped inside the media layer can be
+ * covered by that copy even when the control's own z-index looks higher.
  */
 import { HERO_MEDIA } from '@content/hero-media';
 import { getImageSlot } from '@content/images';
@@ -26,14 +23,20 @@ import { getImageSlot } from '@content/images';
 const { mode, poster, film, focal } = HERO_MEDIA;
 const slot = getImageSlot(poster as Parameters<typeof getImageSlot>[0]);
 
-// A film is only meaningful in a mode that plays one. If someone flips mode to playback before
-// the film exists, fail loud at BUILD time rather than shipping a hero that silently renders a
-// poster forever and looks like the change didn't take.
-if ((mode === 'playback' || mode === 'scrub') && !film) {
+// Playback with no file would render a poster forever and look like the switch did nothing.
+// Fail at build time instead. The config only selects playback when the master exists, so
+// this guards a later edit that sets the mode by hand.
+if (mode === 'playback' && !film) {
   throw new Error(
-    `hero-media: mode is "${mode}" but HERO_MEDIA.film is null. The brand film has not been produced yet — set mode: 'poster', or provide a master clip.`,
+    'hero-media: mode is "playback" but HERO_MEDIA.film is null. Leave mode as "poster" until public/media/cinematic/apex-hero-family-master.mp4 exists.',
   );
 }
+
+const playback = mode === 'playback' && film !== null;
+const masterSrc = film?.src;
+const webmSrc = film?.webm;
+const mobileSrc = film?.mobile;
+const videoPoster = film?.poster ?? slot.src ?? undefined;
 ---
 <div
   class="hero-media"
@@ -42,32 +45,36 @@ if ((mode === 'playback' || mode === 'scrub') && !film) {
 >
   {/*
     The hero is the LCP candidate. Eager + high priority is correct HERE and nowhere else on the
-    page — every other slot stays lazy (AC-9.5).
+    page — every other slot stays lazy (AC-9.5). Playback keeps this same image underneath the
+    film; it is also the reduced-motion and save-data experience.
   */}
+  <img
+    class:list={['hero-media-img', playback && 'hero-video-poster']}
+    src={slot.src ?? undefined}
+    srcset={slot.srcset}
+    sizes="100vw"
+    alt={slot.decorative ? '' : slot.alt}
+    loading="eager"
+    fetchpriority="high"
+    decoding="async"
+    data-stock={slot.stock ? 'true' : undefined}
+  />
   {
-    mode === 'poster' ? (
-      <img
-        class="hero-media-img"
-        src={slot.src ?? undefined}
-        srcset={slot.srcset}
-        sizes="100vw"
-        alt={slot.decorative ? '' : slot.alt}
-        loading="eager"
-        fetchpriority="high"
-        decoding="async"
-        data-stock={slot.stock ? 'true' : undefined}
-      />
-    ) : (
+    playback && (
       <video
-        class="hero-media-img"
-        poster={slot.src ?? undefined}
-        src={film?.src}
-        muted
+        class="hero-video"
+        aria-hidden="true"
         autoplay
+        muted
         loop
         playsinline
-        preload="metadata"
-        aria-label={slot.alt}
+        preload="none"
+        poster={videoPoster}
+        hidden
+        tabindex="-1"
+        data-video-master={masterSrc}
+        data-video-webm={webmSrc}
+        data-video-mobile={mobileSrc}
       />
     )
   }
@@ -80,6 +87,118 @@ if ((mode === 'playback' || mode === 'scrub') && !film) {
   <div class="hero-media-scrim" aria-hidden="true"></div>
   <div class="hero-media-grain" aria-hidden="true"></div>
 </div>
+{
+  playback && (
+    <button class="hero-video-toggle" type="button" aria-label="Pause background video" aria-pressed="false">
+      <span class="hero-video-toggle-icon" aria-hidden="true">Ⅱ</span>
+      <span class="hero-video-toggle-label">Pause motion</span>
+    </button>
+  )
+}
+{
+  playback && (
+    <script is:inline>
+      (() => {
+        const media = document.querySelector('.hero-video');
+        if (!(media instanceof HTMLVideoElement)) return;
+        const toggle = document.querySelector('.hero-video-toggle');
+        const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+        const mobile = window.matchMedia('(max-width: 720px)');
+        const connection = navigator.connection;
+        let sourceLoaded = false;
+        let userPaused = false;
+        let retryTimer = 0;
+        let changingSources = false;
+
+        const canUseNetwork = () => !connection?.saveData && !['slow-2g', '2g'].includes(connection?.effectiveType || '');
+        const sourceForViewport = () => mobile.matches ? media.dataset.videoMobile : media.dataset.videoMaster;
+        const eligible = () => !reduce.matches && canUseNetwork() && Boolean(sourceForViewport());
+        const updateToggle = () => {
+          if (!(toggle instanceof HTMLButtonElement)) return;
+          const available = eligible() && sourceLoaded;
+          toggle.hidden = !available;
+          const paused = media.paused;
+          toggle.setAttribute('aria-label', paused ? 'Play background video' : 'Pause background video');
+          toggle.setAttribute('aria-pressed', String(paused));
+          const icon = toggle.querySelector('.hero-video-toggle-icon');
+          const label = toggle.querySelector('.hero-video-toggle-label');
+          if (icon) icon.textContent = paused ? '▶' : 'Ⅱ';
+          if (label) label.textContent = paused ? 'Play motion' : 'Pause motion';
+        };
+        const clearSources = () => {
+          window.clearTimeout(retryTimer);
+          retryTimer = 0;
+          changingSources = true;
+          media.pause();
+          media.replaceChildren();
+          media.load();
+          sourceLoaded = false;
+          changingSources = false;
+        };
+        const stop = () => { clearSources(); media.hidden = true; updateToggle(); };
+        const load = () => {
+          if (sourceLoaded || !eligible()) return;
+          const sourceUrl = sourceForViewport();
+          if (!sourceUrl) return;
+          const source = document.createElement('source');
+          source.src = sourceUrl;
+          source.type = source.src.endsWith('.webm') ? 'video/webm' : 'video/mp4';
+          media.append(source);
+          if (!mobile.matches && media.dataset.videoWebm && !source.src.endsWith('.webm')) {
+            const alternate = document.createElement('source');
+            alternate.src = media.dataset.videoWebm;
+            alternate.type = 'video/webm';
+            media.append(alternate);
+          }
+          sourceLoaded = true;
+          media.load();
+          updateToggle();
+          if (!userPaused) media.play().catch(() => { media.hidden = true; updateToggle(); });
+        };
+        const reconcile = () => {
+          if (!eligible()) { stop(); return; }
+          const expected = sourceForViewport();
+          if (sourceLoaded && media.querySelector('source')?.getAttribute('src') !== expected) clearSources();
+          load();
+          updateToggle();
+        };
+
+        reduce.addEventListener('change', reconcile);
+        mobile.addEventListener('change', reconcile);
+        connection?.addEventListener?.('change', reconcile);
+        media.addEventListener('playing', () => { media.hidden = false; updateToggle(); });
+        media.addEventListener('pause', updateToggle);
+        media.addEventListener('error', () => {
+          if (changingSources) return;
+          media.hidden = true;
+          clearSources();
+          updateToggle();
+        });
+        media.addEventListener('stalled', () => {
+          media.hidden = true;
+          clearSources();
+          updateToggle();
+          if (eligible() && !userPaused) retryTimer = window.setTimeout(reconcile, 1000);
+        });
+        if (toggle instanceof HTMLButtonElement) {
+          toggle.addEventListener('click', () => {
+            if (media.paused) {
+              userPaused = false;
+              load();
+              if (!sourceLoaded) return;
+              media.play().catch(() => { media.hidden = true; updateToggle(); });
+            } else {
+              userPaused = true;
+              media.pause();
+            }
+            updateToggle();
+          });
+        }
+        reconcile();
+      })();
+    </script>
+  )
+}
 
 <style>
   .hero-media {
@@ -89,7 +208,8 @@ if ((mode === 'playback' || mode === 'scrub') && !film) {
     background: var(--char);
   }
 
-  .hero-media-img {
+  .hero-media-img,
+  .hero-video {
     display: block;
     width: 100%;
     height: 100%;
@@ -98,8 +218,20 @@ if ((mode === 'playback' || mode === 'scrub') && !film) {
     object-position: var(--focal);
   }
 
+  .hero-video {
+    position: absolute;
+    inset: 0;
+    /* Under the scrim (z-index 1) and under the hero copy (z-index 2 on .hero). */
+    z-index: 0;
+  }
+
+  /* Author `display` on .hero-video beats the user-agent [hidden] rule. Keep the
+     attribute authoritative so an empty film never covers the poster. */
+  .hero-video[hidden] { display: none !important; }
+
   @media (max-width: 720px) {
-    .hero-media-img { object-position: var(--focal-m); }
+    .hero-media-img,
+    .hero-video { object-position: var(--focal-m); }
   }
 
   /*
@@ -119,6 +251,7 @@ if ((mode === 'playback' || mode === 'scrub') && !film) {
   .hero-media-scrim {
     position: absolute;
     inset: 0;
+    z-index: 1;
     pointer-events: none;
     background: linear-gradient(
       180deg,
@@ -151,15 +284,54 @@ if ((mode === 'playback' || mode === 'scrub') && !film) {
   .hero-media-grain {
     position: absolute;
     inset: 0;
+    z-index: 1;
     pointer-events: none;
     opacity: 0.16;
     mix-blend-mode: overlay;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   }
 
-  /* A slow push, the only motion in the hero. Progressive enhancement in the strict sense: the
-     image is fully rendered before this rule is ever evaluated, so there is no state in which
-     disabling it hides anything. That is the invariant tests/reduced-motion.spec.ts guards. */
+  /*
+    The pause control is a direct child of .hero, which is the positioning context. z-index 4
+    sits above .hero-in and the scroll cue (both 2) and below the sticky site header (50).
+    V2 pins the headline and CTAs to the bottom, so the control occupies the open corner:
+    bottom-right on desktop, top-right on a phone where the CTAs go full width.
+  */
+  .hero-video-toggle {
+    position: absolute;
+    z-index: 4;
+    right: 22px;
+    bottom: 22px;
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    pointer-events: auto;
+    border: 1px solid rgba(255, 255, 255, 0.48);
+    border-radius: 999px;
+    padding: 9px 13px;
+    background: rgba(20, 21, 23, 0.62);
+    color: #fff;
+    font: 11px 'JetBrains Mono', monospace;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+  }
+  .hero-video-toggle[hidden] { display: none !important; }
+  .hero-video-toggle-icon { margin-right: 6px; }
+  .hero-video-toggle:focus-visible { outline: 3px solid var(--amber); outline-offset: 3px; }
+
+  @media (max-width: 720px) {
+    .hero-video-toggle { top: 16px; right: 14px; bottom: auto; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero-video,
+    .hero-video-toggle { display: none !important; }
+  }
+
+  /* A slow push, the only motion in the still. Progressive enhancement in the strict sense:
+     the image is fully rendered before this rule is ever evaluated, so there is no state in
+     which disabling it hides anything. That is the invariant tests/reduced-motion.spec.ts
+     guards. The film does not inherit it — playback is the motion once a master exists. */
   @media (prefers-reduced-motion: no-preference) {
     .hero-media-img { animation: heroPush 22s ease-out both; }
   }
