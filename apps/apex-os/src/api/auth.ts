@@ -30,6 +30,8 @@ import { setToken } from './session';
  */
 
 const AuthConfigSchema = z.discriminatedUnion('mode', [
+  /** Cloudflare Access already identified the browser. There is nothing to paste. */
+  z.object({ mode: z.literal('access') }),
   /** Local development: tokens are issued out of band and pasted. */
   z.object({ mode: z.literal('pilot') }),
   z.object({

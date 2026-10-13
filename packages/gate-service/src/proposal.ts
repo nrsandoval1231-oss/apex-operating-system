@@ -15,7 +15,7 @@ import {
   type ProposalId,
   type ProposalVersionId,
 } from '@apex/contracts';
-import { DomainRuleError } from '@apex/domain';
+import { DomainRuleError, RoleRefusalError } from '@apex/domain';
 import {
   priceApprovedTakeoff,
   type DirectPriceInput,
@@ -42,10 +42,18 @@ const commandKey = (value: string): string => {
 
 const requireEstimator = (actor: EventActor): Extract<EventActor, { kind: 'user' }> => {
   if (actor.kind !== 'user' || !['admin', 'office'].includes(actor.role)) {
-    throw new DomainRuleError('Admin or office authority is required for Proposal pricing.');
+    throw new RoleRefusalError('Admin or office authority is required for Proposal pricing.');
   }
   return actor;
 };
+
+const scopeLines = (lines: readonly { name: string; code: number; amountCents: number | null; scopeStatus?: 'quoted' | 'not-applicable' | 'unresolved' }[]) =>
+  lines.map((line) => ({
+    name: line.name,
+    resolved: line.scopeStatus === 'not-applicable' ? false : line.amountCents !== null,
+    code: line.code,
+    ...(line.scopeStatus ? { scopeStatus: line.scopeStatus } : {}),
+  }));
 
 interface ProposalRow {
   proposal_version_id: string;
@@ -282,7 +290,7 @@ export class ProposalService {
         customer: { name: identity.customerName, address: identity.addressLine },
         takeoff: { revisionId, quantityPayloadSha256, quantityModelVersion: submission.quantityModelVersion },
         pricingLibraryVersion: priced.pricingLibraryVersion,
-        scope: priced.lines.map((line) => ({ name: line.name, resolved: line.amountCents !== null })),
+        scope: scopeLines(priced.lines),
         totalCents: priced.canIssue ? priced.totalCents : null,
         blockers: priced.blockers,
         email: priced.canIssue ? {
@@ -418,7 +426,7 @@ export class ProposalService {
       takeoff: { revisionId: takeoff.revisionId, quantityPayloadSha256: takeoff.quantityPayloadSha256,
         quantityModelVersion: takeoff.quantityModelVersion },
       pricingLibraryVersion: priced.pricingLibraryVersion,
-      scope: priced.lines.map((line) => ({ name: line.name, resolved: line.amountCents !== null })),
+      scope: scopeLines(priced.lines),
       totalCents: priced.canIssue ? priced.totalCents : null,
       blockers: priced.blockers,
       email: priced.canIssue ? {
@@ -452,6 +460,8 @@ export class ProposalService {
     readonly actor: EventActor;
     readonly customerAcceptanceConfirmed: boolean;
     readonly idempotencyKey: string;
+    /** Used by the demo seed so a removed-and-recreated job keeps one id. */
+    readonly jobId?: string;
   }): Promise<{ readonly proposal: ProposalVersion; readonly jobId: string; readonly projectId: string }> {
     const actor = requireEstimator(input.actor);
     if (!input.customerAcceptanceConfirmed) {
@@ -468,7 +478,11 @@ export class ProposalService {
 
     const existing = await this.db.query<{ job_id: string }>('select job_id from jobs where lead_id = $1', [current.leadId]);
     if (existing.rows[0]) throw new DomainRuleError('This opportunity is already bound to a Job.');
-    const jobId = createCanonicalId('job');
+    const requestedJobId = input.jobId;
+    if (requestedJobId !== undefined && !/^job_[0-9A-HJKMNP-TV-Z]{26}$/.test(requestedJobId)) {
+      throw new DomainRuleError('Job id is not canonical.');
+    }
+    const jobId = requestedJobId ?? createCanonicalId('job');
     const now = new Date().toISOString();
     await this.db.transaction(async (tx) => {
       await tx.query(`insert into jobs (job_id, lead_id, signed_proposal_version, status)

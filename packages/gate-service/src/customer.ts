@@ -22,7 +22,7 @@ import {
   type JobPhoto,
   type StaffCustomerDecision,
 } from '@apex/contracts';
-import { DomainRuleError, buildCustomerPage } from '@apex/domain';
+import { DomainRuleError, RoleRefusalError, buildCustomerPage } from '@apex/domain';
 import { assertJobMutable } from './jobState.js';
 
 /**
@@ -59,6 +59,24 @@ const TOKEN_PATTERN = /^[A-Za-z0-9_-]{43}$/;
 const hashToken = (token: string): string =>
   createHash('sha256').update(token, 'utf8').digest('hex');
 
+/**
+ * The action strings are gerunds ("Issuing a customer link") so the
+ * unauthenticated sentence reads naturally. A refusal needs the infinitive:
+ * "may not issue", not "may not issuing".
+ */
+const refusalVerb = (action: string): string => {
+  const [first, ...rest] = action.split(' ');
+  const infinitive: Record<string, string> = {
+    Issuing: 'issue',
+    Rotating: 'rotate',
+    Revoking: 'revoke',
+    Publishing: 'publish',
+    Raising: 'raise',
+    Resolving: 'resolve',
+  };
+  return [infinitive[first ?? ''] ?? (first ?? '').toLowerCase(), ...rest].join(' ');
+};
+
 const requireRole = <T extends readonly string[]>(
   actor: EventActor,
   allowed: T,
@@ -66,7 +84,7 @@ const requireRole = <T extends readonly string[]>(
 ): { userId: string } => {
   if (actor.kind !== 'user') throw new DomainRuleError(`${action} requires an authenticated human actor.`);
   if (!(allowed as readonly string[]).includes(actor.role)) {
-    throw new DomainRuleError(`Role ${actor.role} may not ${action.toLowerCase()}.`);
+    throw new RoleRefusalError(`Role ${actor.role} may not ${refusalVerb(action)}.`);
   }
   return { userId: actor.userId };
 };
@@ -111,7 +129,7 @@ export type CustomerPageResult =
   | { readonly outcome: 'unknown' };
 
 export type CustomerPhotoResult =
-  | { readonly outcome: 'served'; readonly storageKey: string; readonly mimeType: string }
+  | { readonly outcome: 'served'; readonly linkId: string; readonly storageKey: string; readonly mimeType: string }
   | { readonly outcome: 'revoked' }
   | { readonly outcome: 'unknown' };
 
@@ -320,8 +338,14 @@ export class CustomerService {
     );
     const row = photo.rows[0];
     if (!row) return { outcome: 'unknown' };
-    await this.recordAccess(link.link_id, 'photo', 'served', context);
-    return { outcome: 'served', storageKey: row.storage_key, mimeType: row.mime_type };
+    // "served" is recorded only after the bytes are actually read. A storage
+    // failure must not look like a customer who opened the photo.
+    return { outcome: 'served', linkId: link.link_id, storageKey: row.storage_key, mimeType: row.mime_type };
+  }
+
+  /** Call after the photo bytes have been read. Not before. */
+  async confirmPhotoServed(linkId: string, context: AccessContext = {}): Promise<void> {
+    await this.recordAccess(linkId, 'photo', 'served', context);
   }
 
   /**

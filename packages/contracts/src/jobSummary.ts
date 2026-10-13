@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { idSchemas } from './ids.js';
 import { ConstructionPhaseKeySchema, CustomerMilestoneKeySchema } from './project.js';
+import { GateReleaseRoleSchema } from './records.js';
 
 /**
  * Operational read model for the Apex OS project list and Today feed.
@@ -129,6 +130,8 @@ export const JobGatePlanEntrySchema = z.strictObject({
   /** Set on the four draw-bearing Gates only. */
   drawCode: z.string().min(1).max(80).nullable(),
   requiresCountersign: z.boolean(),
+  /** Roles allowed to release this Gate. The workflow hides Release from everyone else. */
+  releaseRoles: z.array(GateReleaseRoleSchema),
   gateInstanceId: idSchemas.gate.nullable(),
   status: GateInstanceStatusSchema.nullable(),
 });

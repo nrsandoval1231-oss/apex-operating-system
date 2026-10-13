@@ -471,9 +471,9 @@ describe('Gate HTTP vertical slice', () => {
     });
 
     /** Releasing a Gate and deciding the quantities behind it are different acts. */
-    it('refuses a superintendent with 409 rather than letting the role decide quantities', async () => {
+    it('refuses a superintendent with 403 rather than letting the role decide quantities', async () => {
       const superintendent = await token(ids.superintendent, 'superintendent');
-      expect((await send(await freshJob(), superintendent, submission)).status).toBe(409);
+      expect((await send(await freshJob(), superintendent, submission)).status).toBe(403);
     });
 
     /** Replacing priced authority has to be asked for. */
@@ -611,13 +611,13 @@ describe('Gate HTTP vertical slice', () => {
     const fieldAttempt = await call(`/api/jobs/${ids.job}/draws`, field, {
       method: 'POST', body: '{}', headers: { 'idempotency-key': 'api-draws-0002' },
     });
-    expect(fieldAttempt.status).toBe(409);
+    expect(fieldAttempt.status).toBe(403);
 
     const invoiceAttempt = await call(`/api/jobs/${ids.job}/draws/deposit/invoice`, field, {
       method: 'POST',
       body: JSON.stringify({ invoiceReference: 'QB-1' }),
     });
-    expect(invoiceAttempt.status).toBe(409);
+    expect(invoiceAttempt.status).toBe(403);
 
     expect((await call(`/api/jobs/${ids.job}/draws`, customer)).status).toBe(403);
   });
@@ -815,7 +815,7 @@ describe('Gate HTTP vertical slice', () => {
     const escalation = await call(`/api/jobs/${ids.job}/draws`, claimsOffice, {
       method: 'POST', body: '{}', headers: { 'idempotency-key': 'claim-escalation-1' },
     });
-    expect(escalation.status).toBe(409);
+    expect(escalation.status).toBe(403);
     expect(await escalation.text()).toMatch(/may not/i);
     const field = await token(ids.field, 'field');
     const create = await call(`/api/jobs/${ids.job}/gates/pre-gunite`, field, { method: 'POST', body: '{}' });
@@ -928,6 +928,22 @@ describe('customer progress page', () => {
       method: 'POST', body: JSON.stringify({ visible: false }),
     });
     expect((await fetch(`${baseUrl}${url}/photo/${evidenceId}`)).status).toBe(404);
+  });
+
+  it('returns 404 for a photo storage failure without the storage path', async () => {
+    const url = await issue();
+    const evidenceId = await publishAPhoto();
+    const secretKey = 'not-a-storage-path';
+    await db.query('update evidence_records set storage_key = $2 where evidence_id = $1', [evidenceId, secretKey]);
+    const photo = await fetch(`${baseUrl}${url}/photo/${evidenceId}`);
+    expect(photo.status).toBe(404);
+    const body = await photo.text();
+    expect(body).toBe('Not found');
+    expect(body).not.toContain(secretKey);
+    const accesses = await db.query<{ outcome: string }>(
+      `select outcome from customer_link_accesses where resource = 'photo'`,
+    );
+    expect(accesses.rows.some((row) => row.outcome === 'served')).toBe(false);
   });
 
   it('answers a revoked link and an invented one identically', async () => {

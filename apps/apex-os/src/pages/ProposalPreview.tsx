@@ -61,9 +61,14 @@ export default function ProposalPreview() {
           <header><div className="proposal-mark">APEX <span>DESIGNER POOLS</span></div>
             <div><h2>{payload.customer.name ?? 'Customer not recorded'}</h2><p>{payload.customer.address ?? 'Address not recorded'}</p></div></header>
           <div className="proposal-total"><span>Estimated project total</span><b>{money(payload.totalCents)}</b></div>
-          <section><h3>Included scope</h3><ul>{payload.scope.map((line) => <li key={line.name}>
+          <section><h3>Included scope</h3><ul>{payload.scope.filter((line) => line.scopeStatus !== 'not-applicable').map((line) => <li key={line.name}>
             <span>{line.name}</span><span className={`tag ${line.resolved ? 'tag-clear' : 'tag-urgent'}`}>{line.resolved ? 'Resolved' : 'Needs price'}</span>
           </li>)}</ul></section>
+          {payload.scope.some((line) => line.scopeStatus === 'not-applicable') && (
+            <section><h3>Not included</h3><ul>{payload.scope.filter((line) => line.scopeStatus === 'not-applicable').map((line) => <li key={line.name}>
+              <span>{line.name}</span><span className="tag">Not included</span>
+            </li>)}</ul></section>
+          )}
           {payload.blockers.length > 0 && <section className="proposal-blockers"><h3>Cannot issue yet</h3>
             {payload.blockers.map((blocker) => <p key={`${blocker.code}-${blocker.lineCode ?? blocker.quantityCode}`}>{blocker.message}</p>)}</section>}
           <footer><span>Takeoff {payload.takeoff.revisionId.slice(-10)}</span><span>Model {payload.takeoff.quantityModelVersion}</span></footer>

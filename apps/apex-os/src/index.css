@@ -611,6 +611,7 @@ body {
 }
 
 .session .who { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.session .role { color: var(--ink-3); }
 
 .session .dot {
   width: 6px;

@@ -34,6 +34,7 @@ export const CANONICAL_EVENT_TYPES = [
   'quickbooks_sync.succeeded',
   'quickbooks_sync.failed',
   'customer_update.published',
+  'job.completed',
   'job.closed',
 ] as const;
 
@@ -129,6 +130,7 @@ export const ApexEventSchema = z.discriminatedUnion('eventType', [
   jobEvent('quickbooks_sync.succeeded', z.strictObject({ operation: z.enum(['customer', 'estimate', 'invoice', 'payment', 'cost']), quickbooksId: z.string().min(1).max(160) })),
   jobEvent('quickbooks_sync.failed', z.strictObject({ operation: z.enum(['customer', 'estimate', 'invoice', 'payment', 'cost']), errorCode: z.string().min(1).max(120), retryable: z.boolean() })),
   jobEvent('customer_update.published', z.strictObject({ projectionId: idSchemas.customer_update, milestone: z.string().min(1).max(120), publishedBy: idSchemas.user })),
+  jobEvent('job.completed', z.strictObject({ completedBy: idSchemas.user })),
   jobEvent('job.closed', z.strictObject({ closedBy: idSchemas.user, reconciliationComplete: z.literal(true) })),
 ]);
 
