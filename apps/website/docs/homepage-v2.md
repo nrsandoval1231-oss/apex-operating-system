@@ -54,8 +54,8 @@ Two states, one component. D-23 removed the third.
 
 | Mode | State | Status |
 |---|---|---|
-| `poster` | a still `<img>` | **what ships today** — no master file is in the repo |
-| `playback` | that same still, with the approved master layered on it | **built.** Active only when the master file exists at build time |
+| `poster` | a still `<img>` | Fallback when the master file is absent |
+| `playback` | that same still, with the approved master layered on it | **what ships** — the owner-supplied master is in the repo |
 
 There is no `scrub` mode. D-22's scroll film is superseded. A mode that is accepted and ignored
 would be a promise the code does not keep.
@@ -89,7 +89,7 @@ library was added. The still's motion is one CSS keyframe, plus the existing `.a
 both written as progressive enhancement.
 
 Playback adds one inline controller in `HeroMedia.astro`, emitted only when the master exists.
-It is not a bundled runtime, and it is absent from the artifact this repo builds today.
+It is not a bundled runtime. With the master on disk, that controller ships in the home page.
 
 Enforced in two places: `tests/homepage-v2.spec.ts` (browser, poster mode) and
 `scripts/validate.mjs` (the production bundle). `tests/hero-video.spec.ts` covers the
@@ -181,8 +181,9 @@ pnpm test            # Playwright, 154 tests
 `src/pages/index.astro` does not exist. It is not evidence that the website builds.
 `scripts/validate.mjs` runs `astro check`, then a real `astro build`, then asserts against
 `dist/`: every route built, all seven sections present, exactly one `<h1>`, the hero rendering
-in its declared mode, no `<video>` before a film exists, all four verticals linked, every
-internal link and image resolving, and the client-JS budget.
+in playback with autoplay, muted, loop, and playsinline, the poster still, the WebM and mobile
+sources, all four verticals linked, every internal link and image resolving, and the client-JS
+budget.
 
 `preflight` is deliberately a **report** inside `validate`, not a hard step: its blockers are
 environment-dependent facts about a deployable bundle (a non-production `robots.txt`, an
@@ -243,6 +244,5 @@ above do not change when the film arrives.
 2. Put it at `public/media/cinematic/apex-hero-family-master.mp4`, plus any optional encodes
    named in `cinematic-video-handoff.md`.
 3. Rebuild. `hero-media.ts` flips `mode` to `playback` because the file exists.
-4. `pnpm validate` currently asserts poster mode and no `<video>`, which is correct while the
-   master is absent. Relax those two assertions in the same change that commits the master,
-   deliberately.
+4. `pnpm validate` asserts playback, the poster still, and the WebM and mobile sources, because
+   the approved master is in the repo.

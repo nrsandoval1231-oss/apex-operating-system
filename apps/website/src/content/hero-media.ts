@@ -87,9 +87,8 @@ export const HERO_MEDIA: HeroMediaConfig = {
   mode: film ? 'playback' : 'poster',
   poster: 'v2-hero-poster',
   film,
-  // The poster is 4:5, near-native to a phone, so a phone needs almost no crop and can sit on
-  // the centre. Desktop covers a landscape viewport by trimming top and bottom, and the focal
-  // point is nudged up so the trim keeps the house and the water rather than the foreground
-  // paving. See the note on the slot in content/images.ts.
-  focal: { desktop: '50% 46%', mobile: '50% 52%' },
+  // The approved still is the same 16:9 aerial frame as the film. Poster and playback share
+  // object-fit: cover and this focal point, so the crop does not jump when the video starts.
+  // The swimmer sits in the centre of the frame.
+  focal: { desktop: '50% 50%', mobile: '50% 50%' },
 };
