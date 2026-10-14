@@ -55,6 +55,11 @@ test.describe('HeroVideo production controller', () => {
     const toggle = page.locator('.hero-video-toggle');
     await expect(video).toHaveJSProperty('loop', true);
     await expect(video.locator('source')).toHaveCount(2);
+    // WebM is offered first so browsers that can play it take the smaller encode.
+    await expect(video.locator('source').nth(0)).toHaveAttribute('src', '/hero-video-runtime.webm');
+    await expect(video.locator('source').nth(0)).toHaveAttribute('type', 'video/webm');
+    await expect(video.locator('source').nth(1)).toHaveAttribute('src', '/hero-video-runtime.mp4');
+    await expect(video.locator('source').nth(1)).toHaveAttribute('type', 'video/mp4');
     await expect(toggle).toHaveAttribute('aria-label', 'Pause background video');
     await toggle.click();
     await expect(toggle).toHaveAttribute('aria-label', 'Play background video');

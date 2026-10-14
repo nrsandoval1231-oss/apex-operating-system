@@ -205,21 +205,19 @@ export const IMAGE_MANIFEST = {
 
   // Section 01 — hero poster. The LCP image on the home page: loaded eager, fetchpriority
   // high, and the first thing a visitor should see. Playback (D-23) layers the approved master
-  // on top of this same image; until that file exists, this still is the whole hero. See
-  // components/home/HeroMedia.astro.
+  // on top of this same image. Reduced motion, save-data, and a failed play keep this still.
+  // See components/home/HeroMedia.astro.
   //
-  // The slot is 4:5 rather than a landscape ratio deliberately. The hero is a full-bleed
-  // background behind text, and the two viewports it has to serve are far apart: a 16:9 source
-  // cropped to a 390×844 phone reduces to a narrow vertical sliver of whatever happened to be
-  // in the middle of a wide frame — in the first build that was a slice of patio furniture with
-  // no water in it. A 4:5 source is near-native on a phone and covers a landscape desktop by
-  // cropping top and bottom, so both viewports keep the pool. Keep this ratio when the still
-  // is replaced. The film does not replace the slot; it plays over it.
+  // This still is the approved aerial frame, 16:9, the same framing as the film. Poster and
+  // video share object-fit: cover, so a 4:5 crop here would jump when playback started. The
+  // whole frame is water, and the swimmer is centred, so a phone's cover crop stays on the
+  // pool. Provenance: config/stock-images.json (`cinematic`). It is a Pexels still, not an
+  // Apex project — `stock: true` stays until real project photography replaces it.
   'v2-hero-poster': {
     id: 'v2-hero-poster',
-    alt: 'A custom swimming pool at dusk with a raised spa and lit water features',
-    label: 'REPLACE · the canonical Apex hero — luxury West Texas backyard at golden hour',
-    ratio: '4 / 5',
+    alt: 'An aerial view of a swimmer moving through clear blue pool water',
+    label: 'REPLACE · real Apex hero photography — this still is a Pexels swimmer, not an Apex project',
+    ratio: '16 / 9',
     tone: 'pool',
     src: '/images/v2/v2-hero-poster-1120.jpg',
     srcset: '/images/v2/v2-hero-poster-560.jpg 560w, /images/v2/v2-hero-poster-1120.jpg 1120w',

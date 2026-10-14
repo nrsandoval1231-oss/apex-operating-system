@@ -115,11 +115,27 @@ for (const s of SECTIONS) {
 }
 
 check((html.match(/<h1[\s>]/g) || []).length === 1, 'exactly one <h1> on the home page', 'a second h1 breaks document outline and screen-reader navigation');
-// Poster is the mode this repo builds: no approved master is in public/media/cinematic/.
-// Committing that file flips hero-media.ts to playback; relax these three checks in that same change.
-check(html.includes('data-hero-mode="poster"'), 'hero media renders in the declared poster mode', 'the hero media interface is not emitting its contract');
-check(!/<video/.test(html), 'no <video> ships before the brand film exists', 'a video element is present but no film is configured');
-check(!/class="[^"]*\bhero-video-toggle\b/.test(html), 'no pause control ships before the brand film exists', 'the playback controller rendered without a master');
+// The approved master is in public/media/cinematic/, so the build is playback. The poster
+// remains the visible fallback; sources are attached by the inline controller, WebM first.
+check(html.includes('data-hero-mode="playback"'), 'hero media renders in playback once the approved master is on disk', 'the hero media interface is not emitting its contract');
+check(/<video\b[\s\S]*?\bautoplay\b[\s\S]*?\bmuted\b[\s\S]*?\bloop\b[\s\S]*?\bplaysinline\b/.test(html), 'hero video keeps autoplay, muted, loop, and playsinline', 'the hero video dropped a playback attribute');
+check(html.includes('poster="/media/cinematic/apex-hero-family-poster.webp"'), 'hero video poster is the approved still', 'the video poster is not the supplied still');
+check(html.includes('data-video-master="/media/cinematic/apex-hero-family-master.mp4"'), 'hero points at the approved master', 'the master URL is missing from the hero');
+check(html.includes('data-video-webm="/media/cinematic/apex-hero-family-master.webm"'), 'hero offers the WebM alternate', 'the WebM URL is missing from the hero');
+check(html.includes('data-video-mobile="/media/cinematic/apex-hero-family-mobile.mp4"'), 'hero offers the mobile MP4', 'the mobile URL is missing from the hero');
+check(/class="[^"]*\bhero-video-toggle\b/.test(html), 'pause control ships with the master', 'playback is on but the pause control is missing');
+for (const asset of [
+  'media/cinematic/apex-hero-family-master.mp4',
+  'media/cinematic/apex-hero-family-master.webm',
+  'media/cinematic/apex-hero-family-mobile.mp4',
+  'media/cinematic/apex-hero-family-poster.webp',
+]) {
+  check(existsSync(join(dist, asset)), `cinematic asset ${asset} is in the build`, 'a hero file was not copied into dist/');
+}
+const mobileBytes = existsSync(join(dist, 'media/cinematic/apex-hero-family-mobile.mp4'))
+  ? statSync(join(dist, 'media/cinematic/apex-hero-family-mobile.mp4')).size
+  : Infinity;
+check(mobileBytes < 4 * 1024 * 1024, 'mobile hero MP4 stays under 4 MB', `mobile encode is ${mobileBytes} bytes`);
 
 // The four verticals must stay reachable from the built home page HTML. This is the specific
 // regression a pools-led redesign can cause, and it is invisible in a screenshot.

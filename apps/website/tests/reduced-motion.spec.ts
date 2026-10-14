@@ -117,6 +117,10 @@ test.describe('AC-6.3 · prefers-reduced-motion', () => {
     await expect(poster).toBeVisible();
     await expect(poster).toHaveJSProperty('complete', true);
     expect(await poster.evaluate((el) => parseFloat(getComputedStyle(el).opacity))).toBe(1);
+    // The film stays out of the way. The still is the reduced-motion experience.
+    await expect(page.locator('.hero-video')).toBeHidden();
+    await expect(page.locator('.hero-video source')).toHaveCount(0);
+    await expect(page.locator('.hero-video-toggle')).toBeHidden();
   });
 });
 

@@ -2,14 +2,17 @@
 
 **Status:** canonical hero delivery. D-23 supersedes D-22 (the scroll film).
 **Recorded:** 2026-10-13
+**Delivered:** 2026-10-14
 
-The approved family lifestyle master video is the only source of truth. Homepage V2 already
-ships the page around it. This document is how that film enters the hero-media slot. It does
-not replace the other six sections.
+The approved master video is the only source of truth. Homepage V2 plays it in the hero-media
+slot. This document is how that film enters the slot. It does not replace the other six sections.
 
-The homepage ships before the master arrives. It renders the V2 poster
-(`v2-hero-poster` in `src/content/images.ts`) and no `<video>` element. That photograph is
-licensed stock. It is not an Apex project and it is not the father-and-two-sons scene.
+The delivered master is a free, watermark-free Pexels-licensed clip supplied by the owner
+(aerial swimmer, 1080p, no audio). It is not an Apex project and it is not the
+father-and-two-sons scene. Credit is recorded in `public/media/cinematic/README.md` and
+`config/stock-images.json` (`cinematic`). The supplied still is the video poster and the
+visible LCP image (`v2-hero-poster`). `stock: true` stays on that slot until real Apex
+photography replaces it.
 
 ## Where it plays
 
@@ -18,9 +21,10 @@ licensed stock. It is not an Apex project and it is not the father-and-two-sons 
 the same poster. When it does not, the mode stays `poster` and the markup contains no video
 URL, so a production deployment cannot request media that was never delivered.
 
-Desktop playback is muted, inline, and looping. The poster stays the LCP image. Mobile stays
-on the poster until `apex-hero-family-mobile.mp4` exists. Data-saving, slow-2G/2G, reduced
-motion, playback failure, and stalls also keep the poster.
+Desktop playback is muted, inline, and looping. The poster stays the LCP image. Desktop
+`<source>` order is the WebM alternate, then the H.264 master. Mobile plays
+`apex-hero-family-mobile.mp4` when that file exists, and stays on the poster until it does.
+Data-saving, slow-2G/2G, reduced motion, playback failure, and stalls also keep the poster.
 
 The pause control is a sibling of `.hero-media`, in the hero's stacking context, above the
 copy block. On desktop it sits in the open bottom-right corner. On a phone, where the CTAs
@@ -33,15 +37,15 @@ Put approved delivery files in `public/media/cinematic/`:
 | File | Required | Use |
 | --- | --- | --- |
 | `apex-hero-family-master.mp4` | yes | 16:9 H.264, 1920×1080 minimum, 10–15 seconds, 24/30 fps |
-| `apex-hero-family-master.webm` | optional | Smaller alternate browser encoding |
-| `apex-hero-family-poster.webp` | recommended | Still extracted from the approved master, used as the video `poster` |
-| `apex-hero-family-mobile.mp4` | optional | Lightweight portrait/mobile crop |
+| `apex-hero-family-master.webm` | optional | Smaller alternate. Listed before the MP4 in `<source>` order |
+| `apex-hero-family-poster.webp` | recommended | Still from the approved master, used as the video `poster` |
+| `apex-hero-family-mobile.mp4` | optional | Lightweight mobile encode. The current file is 1280×720 and under 4 MB |
 | `apex-hero-family-mobile-poster.webp` | optional | Mobile poster crop |
 
-The visible still remains the V2 poster slot until that slot is replaced. Replacing it is a
-content edit in `src/content/images.ts`: drop the file, clear `stock`, and rewrite the alt in
-the same edit (D-20). Do not point the slot at a family still while the alt still describes
-the stock dusk photograph.
+The visible still is the V2 poster slot. It now holds the supplied aerial frame, and the alt
+describes that frame. `stock` stays set because the frame is Pexels, not Apex's work.
+Replacing it with real project photography is a content edit in `src/content/images.ts`: drop
+the file, clear `stock`, and rewrite the alt in the same edit (D-20).
 
 ## Approval brief
 
@@ -72,6 +76,6 @@ ffmpeg -i apex-hero-family-master.mp4 \
   -vf "select='not(mod(n,10))',scale=960:-2" -vsync vfr frames/frame-%04d.webp
 ```
 
-No approved father-and-two-sons master was available when this contract was written. No family
-video was generated or represented as approved. Supply the approved master under the contract
-above and rebuild. The rest of Homepage V2 does not need to change.
+No father-and-two-sons master was generated or represented as approved. The file now in
+`public/media/cinematic/` is the owner-supplied Pexels clip (1920×1080, 8.0 seconds, 23.976
+fps, no audio). The rest of Homepage V2 does not change when that film is swapped again.

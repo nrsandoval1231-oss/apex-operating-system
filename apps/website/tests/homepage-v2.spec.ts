@@ -94,17 +94,36 @@ test.describe('Homepage V2 · hero media interface', () => {
 
     /*
      * Poster and playback are two states of one hero-media slot (D-23; there is no scrub
-     * mode). This checkout has no approved master, so the built page is poster: one image,
-     * no <video>, and no pause control. Playback is covered in hero-video.spec.ts against
-     * the controller, and it must not add a second media root.
+     * mode). The approved master is on disk, so the page is playback: the poster stays the
+     * LCP image, and one muted looping video is layered on it. Source choice is covered in
+     * hero-video.spec.ts. Playback must not add a second media root.
      */
     const media = page.locator('.hero-media');
     await expect(media).toHaveCount(1);
-    await expect(media).toHaveAttribute('data-hero-mode', 'poster');
+    await expect(media).toHaveAttribute('data-hero-mode', 'playback');
 
-    // In poster mode there must be no <video> and no playback control at all.
-    await expect(page.locator('.hero-media video')).toHaveCount(0);
-    await expect(page.locator('.hero-video-toggle')).toHaveCount(0);
+    const video = page.locator('.hero-media video');
+    await expect(video).toHaveCount(1);
+    await expect(video).toHaveJSProperty('autoplay', true);
+    await expect(video).toHaveJSProperty('muted', true);
+    await expect(video).toHaveJSProperty('loop', true);
+    await expect(video).toHaveAttribute('playsinline', '');
+    await expect(video).toHaveAttribute('poster', '/media/cinematic/apex-hero-family-poster.webp');
+    await expect(page.locator('.hero-video-toggle')).toHaveCount(1);
+
+    const width = page.viewportSize()?.width ?? 1280;
+    const sources = video.locator('source');
+    if (width <= 720) {
+      await expect(sources).toHaveCount(1);
+      await expect(sources).toHaveAttribute('src', '/media/cinematic/apex-hero-family-mobile.mp4');
+      await expect(sources).toHaveAttribute('type', 'video/mp4');
+    } else {
+      await expect(sources).toHaveCount(2);
+      await expect(sources.nth(0)).toHaveAttribute('src', '/media/cinematic/apex-hero-family-master.webm');
+      await expect(sources.nth(0)).toHaveAttribute('type', 'video/webm');
+      await expect(sources.nth(1)).toHaveAttribute('src', '/media/cinematic/apex-hero-family-master.mp4');
+      await expect(sources.nth(1)).toHaveAttribute('type', 'video/mp4');
+    }
 
     const img = page.locator('.hero-media img');
     await expect(img).toHaveCount(1);
