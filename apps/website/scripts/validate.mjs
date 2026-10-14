@@ -225,4 +225,4 @@ if (failures.length) {
 }
 console.log('[32m✓ validation passed — production site builds and the artifact is correct[0m');
 console.log('[2m  Note: imagery is still licensed stock placeholders (D-20). Design/code');
-console.log('  complete — final proprietary photography and brand film pending.[0m\n');
+console.log('  complete — proprietary project photography is still pending. The hero plays the supplied Pexels clip.[0m\n');
