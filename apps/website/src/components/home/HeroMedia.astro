@@ -140,16 +140,19 @@ const videoPoster = film?.poster ?? slot.src ?? undefined;
           if (sourceLoaded || !eligible()) return;
           const sourceUrl = sourceForViewport();
           if (!sourceUrl) return;
-          const source = document.createElement('source');
-          source.src = sourceUrl;
-          source.type = source.src.endsWith('.webm') ? 'video/webm' : 'video/mp4';
-          media.append(source);
-          if (!mobile.matches && media.dataset.videoWebm && !source.src.endsWith('.webm')) {
+          // WebM is listed first. A browser that can play it selects that smaller
+          // encode; everyone else falls through to the H.264 master. Mobile ships
+          // only its own MP4.
+          if (!mobile.matches && media.dataset.videoWebm) {
             const alternate = document.createElement('source');
             alternate.src = media.dataset.videoWebm;
             alternate.type = 'video/webm';
             media.append(alternate);
           }
+          const source = document.createElement('source');
+          source.src = sourceUrl;
+          source.type = source.src.endsWith('.webm') ? 'video/webm' : 'video/mp4';
+          media.append(source);
           sourceLoaded = true;
           media.load();
           updateToggle();
@@ -158,7 +161,11 @@ const videoPoster = film?.poster ?? slot.src ?? undefined;
         const reconcile = () => {
           if (!eligible()) { stop(); return; }
           const expected = sourceForViewport();
-          if (sourceLoaded && media.querySelector('source')?.getAttribute('src') !== expected) clearSources();
+          const attached = [...media.querySelectorAll('source')].map((node) => node.getAttribute('src'));
+          // The first <source> on desktop is the WebM alternate, so the viewport
+          // file is the MP4 that follows it. Mobile has that one file only.
+          const current = mobile.matches ? attached[0] : attached.find((src) => src && !src.endsWith('.webm'));
+          if (sourceLoaded && current !== expected) clearSources();
           load();
           updateToggle();
         };

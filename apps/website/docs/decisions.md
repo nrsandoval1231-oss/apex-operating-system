@@ -75,5 +75,6 @@ video, with the V2 poster as the LCP image and the fallback. Reduced motion, sav
 slow networks, a missing mobile crop, playback errors, and stalls keep the poster. The pause
 control sits outside the media layer so the hero copy cannot cover it. Posters and mobile
 crops, if produced, are derived from the approved master. The scroll-scrub mode is not part
-of the contract. See `docs/cinematic-video-handoff.md`. Until the master file is delivered,
-the hero stays on the poster and ships no `<video>`.
+of the contract. See `docs/cinematic-video-handoff.md`. The approved master is now in
+`public/media/cinematic/`: a free Pexels-licensed clip supplied by the owner. Playback is on.
+Reduced motion, save-data, slow networks, playback errors, and stalls keep the poster.

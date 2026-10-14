@@ -23,6 +23,10 @@
     "",
     "Re-download the Unsplash slots with: npm run stock:fetch. Supplied crops are left as committed.",
     "",
+    "The homepage hero film is not one of the image slots below. It is recorded under `cinematic`:",
+    "a free Pexels-licensed clip supplied by the owner. The poster still derived from it fills",
+    "v2-hero-poster. It is not an Apex project.",
+    "",
     "TODO(D-20): every entry here is a placeholder. Replacing one with real Apex photography",
     "is a content change only - drop the file in, update src/content/images.ts, delete the",
     "entry here. No layout changes (AC-9.1, AC-9.3)."
@@ -36,6 +40,22 @@
   },
 
   "outputDir": "public/images/stock",
+
+  "cinematic": {
+    "credit": "Free Pexels-licensed clip supplied by the owner",
+    "license": "Pexels License",
+    "licenseUrl": "https://www.pexels.com/license/",
+    "watermark": false,
+    "note": "Approved hero film. Not an Apex project and not the father-and-two-sons scene. The WebM and 720p mobile MP4 are encodes of the master. The poster still was supplied with it and also fills v2-hero-poster.",
+    "files": [
+      "public/media/cinematic/apex-hero-family-master.mp4",
+      "public/media/cinematic/apex-hero-family-master.webm",
+      "public/media/cinematic/apex-hero-family-mobile.mp4",
+      "public/media/cinematic/apex-hero-family-poster.webp",
+      "public/images/v2/v2-hero-poster-1120.jpg",
+      "public/images/v2/v2-hero-poster-560.jpg"
+    ]
+  },
 
   "$imageFields": {
     "slot": "the image-manifest slot id in src/content/images.ts this fills",
