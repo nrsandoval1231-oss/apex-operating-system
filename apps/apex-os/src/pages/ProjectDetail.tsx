@@ -27,7 +27,7 @@ const DRAW_STATUS_LABEL: Readonly<Record<DrawStatus, string>> = {
   scheduled: 'Not earned',
   eligible: 'Ready to bill',
   invoiced: 'Invoiced',
-  paid: 'Paid',
+  paid: 'Paid (unverified)',
 };
 
 const DRAW_TAG: Readonly<Record<DrawStatus, string>> = {
@@ -506,17 +506,18 @@ export default function ProjectDetail({ historical = false }: { historical?: boo
             </div>
             <dt>Contract</dt>
             <dd>{formatContract(drawPlan.contractCents)}</dd>
-            <dt>Invoiced</dt>
+            <dt>Invoiced (staff recorded)</dt>
             <dd>{formatContract(drawPlan.invoicedCents)}</dd>
             <dt>Collected</dt>
-            <dd>{formatContract(drawPlan.collectedCents)}</dd>
+            <dd>{drawPlan.collectedCents === null ? 'Unavailable — QuickBooks not connected' : formatContract(drawPlan.collectedCents)}</dd>
             <dt>Remaining</dt>
-            <dd>{formatContract(drawPlan.remainingCents)}</dd>
+            <dd>{drawPlan.remainingCents === null ? 'Unavailable — QuickBooks not connected' : formatContract(drawPlan.remainingCents)}</dd>
           </dl>
 
           <p className="notice">
-            Apex OS records what a passed gate makes billable and what a person says they
-            invoiced. It does not issue invoices; QuickBooks remains the financial authority.
+            Invoice references are staff-recorded and unverified. Collections, remaining
+            balance, costs, and profitability are unavailable until connected to an
+            authoritative accounting source; QuickBooks is not connected.
           </p>
         </>
       )}

@@ -1,0 +1,69 @@
+{
+  "packet": "F001",
+  "status": "IMPLEMENTED_FOCUSED_VALIDATION_PASS",
+  "repository": "C:/Users/nrsan/Nucleus/02_Projects/Apex/business-completion",
+  "branch": "codex/apex-business-completion-20261015",
+  "base_sha": "95929b47ac550b186f986736b4be0c434f1219a1",
+  "started_utc": "2026-10-15T13:52:00Z",
+  "finished_utc": "2026-10-15T13:58:30Z",
+  "lane": "single Luna focused",
+  "model_config": "UNKNOWN",
+  "measured_tokens": "UNKNOWN",
+  "elapsed_to_accepted": "UNKNOWN; independent integrated review pending",
+  "repair_count": 1,
+  "changes": [
+    "packages/contracts/src/draws.ts: collection aggregate nullable; manual invoice reference provenance explicitly staff-recorded-unverified",
+    "packages/gate-service/src/index.ts: collected and remaining are null without an authoritative feed; removed paid amount fallback",
+    "packages/gate-service/src/draws.test.ts: null and valued paid rows, empty schedule, invoice reference provenance",
+    "apps/apex-os/src/pages/ProjectDetail.tsx: explicit unavailable labels for collection and remaining; invoice totals staff-recorded; paid status unverified; costs/profitability unavailable",
+    "apps/gate-api/src/server.test.ts: empty schedule expects unknown collection"
+  ],
+  "validation": [
+    {
+      "command": "pnpm exec vitest run apps/gate-api/src/server.test.ts -t 'refuses to create a draw schedule' --maxWorkers=1 --no-file-parallelism",
+      "exit": 0,
+      "result": "1 passed, 37 skipped"
+    },
+    {
+      "command": "pnpm exec vitest run packages/gate-service/src/draws.test.ts --maxWorkers=1 --no-file-parallelism",
+      "exit": 0,
+      "result": "21 passed"
+    },
+    {
+      "command": "pnpm exec tsc -b",
+      "exit": 0
+    },
+    {
+      "command": "pnpm exec tsc --noEmit -p apps/apex-os/tsconfig.json",
+      "exit": 0
+    },
+    {
+      "command": "git diff --check",
+      "exit": 0,
+      "result": "LF/CRLF warning on pre-existing packet newline; no whitespace errors"
+    },
+    {
+      "command": "pnpm exec tsc --noEmit -p apps/apex-os/tsconfig.json",
+      "exit": 0,
+      "result": "presentation label repair"
+    },
+    {
+      "command": "git diff --check",
+      "exit": 0,
+      "result": "no whitespace errors"
+    }
+  ],
+  "hashes_sha256": {
+    ".agent/packets/F001.md": "7FACCE8CCD8EED335687168CBDF583617D916D638AA47CE49F779BB782358DD5",
+    "apps/apex-os/src/pages/ProjectDetail.tsx": "8A2E17B3007C3B486048DF27DD7423D8B43A0F84369DC548F252AED3E7D979A1",
+    "apps/gate-api/src/server.test.ts": "A83FE862D205A93EC280215C0DAC5A3CD82F37C1FE7DEB11D9050319F206F604",
+    "packages/contracts/src/draws.ts": "F22E51976ECF0BB08DD8F53E299ABD1288DE07FD3615FD54C02B4C16B1D1018D",
+    "packages/gate-service/src/draws.test.ts": "F75652B2C6D69AECD038BD22698AC46958BE831352E58C59B66C7F93C889692F",
+    "packages/gate-service/src/index.ts": "F071B8867A238A2A8CAB9B134A4E2BD62DC9D303822E7580DCE16C56355D2143"
+  },
+  "limitations": [
+    "No QuickBooks integration or payment source exists; collection and remaining stay unknown even when database paid fields contain values.",
+    "UI built artifact/browser walkthrough belongs to controller; source checks only here.",
+    "Combined CI and independent review apply to the final integrated frozen candidate."
+  ]
+}

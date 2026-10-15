@@ -1682,6 +1682,7 @@ export class GateService {
       eligibleAt: row.eligible_at === null ? null : new Date(row.eligible_at).toISOString(),
       sourceGateInstanceId: row.source_gate_instance_id,
       invoiceReference: row.invoice_reference,
+      invoiceReferenceStatus: row.invoice_reference === null ? null : 'staff-recorded-unverified' as const,
       invoicedAt: row.invoiced_at === null ? null : new Date(row.invoiced_at).toISOString(),
       dueDate: readDate(row.due_date),
       paidAt: row.paid_at === null ? null : new Date(row.paid_at).toISOString(),
@@ -1691,10 +1692,9 @@ export class GateService {
     const sumWhere = (predicate: (draw: JobDraw) => boolean) =>
       draws.filter(predicate).reduce((sum, draw) => sum + (draw.amountCents ?? 0), 0);
 
-    const collectedCents = draws.reduce(
-      (sum, draw) => sum + (draw.paidCents ?? (draw.status === 'paid' ? draw.amountCents ?? 0 : 0)),
-      0,
-    );
+    // No verified payment feed is connected. Database paid fields have no
+    // payment-source provenance, so neither a sum nor a zero is authoritative.
+    const collectedCents = null;
 
     return DrawScheduleSchema.parse({
       jobId,
@@ -1703,9 +1703,7 @@ export class GateService {
       eligibleUnbilledCents: sumWhere((draw) => draw.status === 'eligible'),
       invoicedCents: sumWhere((draw) => draw.status === 'invoiced' || draw.status === 'paid'),
       collectedCents,
-      remainingCents: summary?.contractCents === null || summary?.contractCents === undefined
-        ? null
-        : summary.contractCents - collectedCents,
+      remainingCents: null,
     });
   }
 
