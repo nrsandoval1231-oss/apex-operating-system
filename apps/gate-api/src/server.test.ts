@@ -606,7 +606,7 @@ describe('Gate HTTP vertical slice', () => {
 
     const empty = await call(`/api/jobs/${ids.job}/draws`, office);
     expect(empty.status).toBe(200);
-    expect(await empty.json()).toMatchObject({ draws: [], collectedCents: 0 });
+    expect(await empty.json()).toMatchObject({ draws: [], collectedCents: null, remainingCents: null });
 
     // Creating a schedule and confirming an invoice are the owner's and the
     // office's, never the field's.

@@ -89,6 +89,8 @@ export const JobDrawSchema = z.strictObject({
   sourceGateInstanceId: idSchemas.gate.nullable(),
   /** The accounting system's identifier. Apex OS does not own it. */
   invoiceReference: z.string().min(1).max(160).nullable(),
+  /** Human-entered reference only; not verified against QuickBooks. */
+  invoiceReferenceStatus: z.literal('staff-recorded-unverified').nullable(),
   invoicedAt: z.string().datetime({ offset: true }).nullable(),
   dueDate: z.string().date().nullable(),
   paidAt: z.string().datetime({ offset: true }).nullable(),
@@ -99,8 +101,8 @@ export type JobDraw = z.infer<typeof JobDrawSchema>;
 /**
  * The job's draw schedule and where it stands.
  *
- * `collectedCents` is what Apex recorded as paid — not a general-ledger figure.
- * QuickBooks remains the financial authority (PRD §9.8, §11.3).
+ * Collections stay unknown until sourced from an authoritative payment feed.
+ * Apex's manual paid fields and invoice references are operational notes only.
  */
 export const DrawScheduleSchema = z.strictObject({
   jobId: idSchemas.job,
@@ -108,7 +110,7 @@ export const DrawScheduleSchema = z.strictObject({
   draws: z.array(JobDrawSchema),
   eligibleUnbilledCents: z.number().int().nonnegative(),
   invoicedCents: z.number().int().nonnegative(),
-  collectedCents: z.number().int().nonnegative(),
+  collectedCents: z.number().int().nonnegative().nullable(),
   remainingCents: z.number().int().nullable(),
 });
 export type DrawSchedule = z.infer<typeof DrawScheduleSchema>;

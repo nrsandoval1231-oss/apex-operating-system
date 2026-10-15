@@ -275,7 +275,7 @@ describe('confirming an invoice', () => {
 });
 
 describe('what the job is owed', () => {
-  it('reports collected and remaining against the contract', async () => {
+  it('keeps collections and remaining unknown without verified payment provenance', async () => {
     await signContract();
     await createSchedule();
     await service.markDrawInvoiced({ jobId: ids.job, drawCode: 'deposit', invoiceReference: 'QB-1041', actor: owner });
@@ -285,13 +285,25 @@ describe('what the job is owed', () => {
     );
 
     const schedule = await service.getDrawSchedule(ids.job);
-    expect(schedule.collectedCents).toBe(1_520_417);
-    expect(schedule.remainingCents).toBe(CONTRACT_CENTS - 1_520_417);
+    expect(schedule.collectedCents).toBeNull();
+    expect(schedule.remainingCents).toBeNull();
+    expect(schedule.draws[0]).toMatchObject({ invoiceReferenceStatus: 'staff-recorded-unverified' });
   });
 
-  it('reports nothing collected on a job with no schedule', async () => {
+  it('keeps collection unknown on a job with no schedule', async () => {
     const schedule = await service.getDrawSchedule(ids.job);
-    expect(schedule).toMatchObject({ draws: [], collectedCents: 0, contractCents: null, remainingCents: null });
+    expect(schedule).toMatchObject({ draws: [], collectedCents: null, contractCents: null, remainingCents: null });
+  });
+
+  it('does not treat a paid status with either missing or present amount as verified collection', async () => {
+    await signContract();
+    await createSchedule();
+    await releaseGate('excavation');
+    await service.markDrawInvoiced({ jobId: ids.job, drawCode: 'draw-1', invoiceReference: 'QB-1041', actor: owner });
+    await db.query(`update job_draws set status = 'paid', paid_at = now(), paid_cents = null where job_id = $1 and draw_code = 'draw-1'`, [ids.job]);
+    expect((await service.getDrawSchedule(ids.job)).collectedCents).toBeNull();
+    await db.query(`update job_draws set paid_cents = amount_cents where job_id = $1 and draw_code = 'draw-1'`, [ids.job]);
+    expect((await service.getDrawSchedule(ids.job)).collectedCents).toBeNull();
   });
 });
 
