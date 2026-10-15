@@ -218,7 +218,9 @@ export class InspectionService {
       throw new DomainRuleError('An inspection cannot be scheduled before it was requested.');
     }
 
-    await this.db.query(
+    await this.db.transaction(async (tx) => {
+      await assertJobMutable(tx, input.jobId);
+      await tx.query(
       `insert into job_inspections
        (inspection_id, job_id, inspection_key, status, requested_on, scheduled_for, needed_by, created_by)
        values ($1, $2, $3, $4, $5, $6, $7, $8)
@@ -231,7 +233,8 @@ export class InspectionService {
       [createCanonicalId('inspect'), input.jobId, input.inspectionKey,
         input.scheduledFor === undefined ? 'requested' : 'scheduled',
         input.requestedOn, input.scheduledFor ?? null, input.neededBy ?? null, userId],
-    );
+      );
+    });
     return this.readOne(input.jobId, input.inspectionKey);
   }
 
@@ -270,6 +273,7 @@ export class InspectionService {
     let inspectionId = existing.rows[0]?.inspection_id;
 
     await this.db.transaction(async (tx) => {
+      await assertJobMutable(tx, input.jobId);
       if (inspectionId === undefined) {
         // A result can arrive on an inspection nobody recorded requesting —
         // most often a waiver. Refusing it would push the fact outside the
