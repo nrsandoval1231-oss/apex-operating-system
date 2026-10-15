@@ -98,6 +98,9 @@ log "website production intake Playwright"
     pnpm run test:production
 )
 
+log "Apex OS estimate route and fee browser regression"
+node apps/apex-os/tests/estimate-navigation.e2e.mjs
+
 missing=""
 for var in DATABASE_URL S3_ENDPOINT S3_BUCKET S3_ACCESS_KEY_ID S3_SECRET_ACCESS_KEY; do
   eval "value=\${$var:-}"

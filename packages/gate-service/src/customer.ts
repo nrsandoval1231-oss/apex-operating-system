@@ -222,11 +222,14 @@ export class CustomerService {
     await assertJobMutable(this.db, input.jobId);
     const live = await this.activeLinkRow(input.jobId);
     if (live === null) throw new DomainRuleError('This job has no live customer link to revoke.');
-    await this.db.query(
+    await this.db.transaction(async (tx) => {
+      await assertJobMutable(tx, input.jobId);
+      await tx.query(
       `update customer_links set revoked_at = now(), revoked_by = $2, revoked_reason = $3
        where link_id = $1`,
       [live.link_id, userId, input.reason?.trim() || 'Revoked'],
-    );
+      );
+    });
     return this.getLinkStatus(input.jobId);
   }
 
@@ -390,7 +393,9 @@ export class CustomerService {
     }
 
     const caption = input.caption?.trim();
-    await this.db.query(
+    await this.db.transaction(async (tx) => {
+      await assertJobMutable(tx, jobId);
+      await tx.query(
       `update evidence_records
        set customer_visible = $2,
            customer_caption = case when $2 then $3 else null end,
@@ -398,7 +403,8 @@ export class CustomerService {
            visibility_set_by = case when $2 then $4 else null end
        where evidence_id = $1`,
       [input.evidenceId, input.visible, caption || null, userId],
-    );
+      );
+    });
 
     const photo = (await this.listJobPhotos(jobId))
       .find((row) => row.evidenceId === input.evidenceId);
@@ -458,13 +464,16 @@ export class CustomerService {
     const { userId } = requireRole(input.actor, PUBLISH_AUTHORITY, 'Raising a customer decision');
     await assertJobMutable(this.db, input.jobId);
     const decisionId = createCanonicalId('decision');
-    await this.db.query(
+    await this.db.transaction(async (tx) => {
+      await assertJobMutable(tx, input.jobId);
+      await tx.query(
       `insert into customer_decisions
        (decision_id, job_id, title, detail, consequence, needed_by, created_by)
        values ($1, $2, $3, $4, $5, $6, $7)`,
       [decisionId, input.jobId, input.title.trim(), input.detail.trim(),
         input.consequence.trim(), input.neededBy ?? null, userId],
-    );
+      );
+    });
     const decision = (await this.listDecisions(input.jobId)).find((row) => row.decisionId === decisionId);
     if (!decision) throw new Error('Decision was not persisted.');
     return decision;
@@ -498,13 +507,16 @@ export class CustomerService {
     }
     await assertJobMutable(this.db, jobId);
 
-    const updated = await this.db.query<{ job_id: string }>(
-      `update customer_decisions
+    const updated = await this.db.transaction(async (tx) => {
+      await assertJobMutable(tx, jobId);
+      return tx.query<{ job_id: string }>(
+        `update customer_decisions
        set status = $2, answer_note = $3, resolved_at = now(), resolved_by = $4
        where decision_id = $1 and status = 'open'
        returning job_id`,
-      [input.decisionId, input.status, note ?? null, userId],
-    );
+        [input.decisionId, input.status, note ?? null, userId],
+      );
+    });
     const updatedJobId = updated.rows[0]?.job_id;
     if (updatedJobId === undefined) {
       throw new DomainRuleError('That decision does not exist or has already been resolved.');
@@ -636,6 +648,7 @@ export class CustomerService {
     const token = randomBytes(TOKEN_BYTES).toString('base64url');
     const linkId = createCanonicalId('clink');
     await this.db.transaction(async (tx) => {
+      await assertJobMutable(tx, jobId);
       if (revoke !== null) {
         await tx.query(
           `update customer_links set revoked_at = now(), revoked_by = $2, revoked_reason = $3
