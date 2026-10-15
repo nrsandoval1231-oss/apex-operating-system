@@ -19,6 +19,7 @@ import {
   nextConstructionPhase,
   createCanonicalId,
   readLeadIdentity,
+  PROCUREMENT_LABELS,
   type ActionCard,
   type ApexEvent,
   type ApprovedTakeoffRevision,
@@ -58,6 +59,7 @@ import {
   decideGateCommand,
   decidePhaseChange,
   deriveCards,
+  sortCards,
   evolveGate,
   newGateState,
   type CardDrawSnapshot,
@@ -2044,23 +2046,27 @@ export class GateService {
    * feed is reproducible and testable.
    */
   async getActionCards(today: string, includeProcurement = true): Promise<readonly ActionCard[]> {
-    const cards = [...deriveCards(await this.readCardSnapshot(), today)];
+    const snapshot = await this.readCardSnapshot();
+    const jobsById = new Map(snapshot.map((job) => [job.jobId, job]));
+    const cards = [...deriveCards(snapshot, today)];
     if (includeProcurement) for (const line of await this.getProcurementToday(today)) {
+      const job = jobsById.get(line.jobId);
+      const displayQuantity = (quantity: number) => Number(quantity.toFixed(3));
       cards.push({
         cardId: `procurement.overdue:${line.lineId}`,
         kind: 'procurement.overdue', group: 'needs-you', urgency: 'important', jobId: line.jobId,
-        customerName: null, location: null,
-        title: `Follow up on ${line.quantityCode.replaceAll('.', ' ')}`,
+        customerName: job?.customerName ?? null, location: job?.addressLine ?? null,
+        title: `Follow up on ${PROCUREMENT_LABELS[line.quantityCode]}`,
         reason: line.staleTakeoff
           ? 'This material line belongs to an earlier approved takeoff and needs human reconciliation.'
           : line.neededByOverdue
-            ? `Received ${line.receivedQuantity} of required ${line.requiredQuantity} ${line.unit}; the required receipt is still short.`
-            : `Expected delivery ${line.expectedOn} passed; ${line.outstandingQuantity} ${line.unit} remains undelivered.`,
+            ? `Received ${displayQuantity(line.receivedQuantity)} of required ${displayQuantity(line.requiredQuantity)} ${line.unit}; the required receipt is still short.`
+            : `Expected delivery ${line.expectedOn} passed; ${displayQuantity(line.outstandingQuantity)} ${line.unit} remains undelivered.`,
         dueLabel: line.neededByOverdue ? line.neededBy : line.expectedOn, amountCents: null,
         actionLabel: 'Open procurement', actionHref: `/projects/${line.jobId}#procurement`,
       });
     }
-    return cards;
+    return sortCards(cards);
   }
 
   /**

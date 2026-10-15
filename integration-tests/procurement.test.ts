@@ -68,6 +68,9 @@ describe.skipIf(!available)('material procurement on PostgreSQL', () => {
   it('persists partial receipt, enforces optimistic retry, date boundaries, stale revisions, and closed locks', async () => {
     const { jobId, revisionId } = await makeJob();
     const blockers = async (date: string) => (await service().getProcurementToday(date)).filter((item) => item.jobId === jobId);
+    await db.query(`update leads set accepted_payload=$2 where lead_id=(select lead_id from jobs where job_id=$1)`, [
+      jobId, JSON.stringify({ customerName: 'Whitaker Oasis', streetAddress: '4502 19th St', city: 'Lubbock', state: 'TX' }),
+    ]);
     const line = await service().createProcurement({ jobId, actor, quantityCode: code, neededBy: '2026-10-15', idempotencyKey: `procurement:${jobId}:create` });
     const changes = { expectedRevision: line.revision, orderedQuantity: 120, vendor: 'Steel Yard', orderReference: 'PO-LOCAL-1', neededBy: '2026-10-15', expectedOn: '2026-10-16', receivedQuantity: 40 };
     const savedCalls = await Promise.all([
@@ -80,7 +83,16 @@ describe.skipIf(!available)('material procurement on PostgreSQL', () => {
     expect(await blockers('2026-10-14')).toHaveLength(0);
     expect((await blockers('2026-10-15')).map((item) => item.lineId)).toContain(line.lineId);
     const officeCards = await service().getActionCards('2026-10-15');
-    expect(officeCards.some((card) => card.jobId === jobId && card.kind === 'procurement.overdue')).toBe(true);
+    const procurementCard = officeCards.find((card) => card.jobId === jobId && card.kind === 'procurement.overdue');
+    expect(procurementCard).toMatchObject({
+      customerName: 'Whitaker Oasis', location: '4502 19th St, Lubbock, TX',
+      title: 'Follow up on Reinforcing steel weight',
+      reason: 'Received 40 of required 100 lb; the required receipt is still short.',
+    });
+    expect(officeCards).toEqual([...officeCards].sort((a, b) =>
+      ({ 'needs-you': 0, running: 1, 'this-week': 2 }[a.group]! - { 'needs-you': 0, running: 1, 'this-week': 2 }[b.group]!)
+      || ({ urgent: 0, important: 1, routine: 2 }[a.urgency]! - { urgent: 0, important: 1, routine: 2 }[b.urgency]!)
+      || a.cardId.localeCompare(b.cardId)));
     expect((await service().getActionCards('2026-10-15', false)).some((card) => card.kind === 'procurement.overdue')).toBe(false);
     const requiredReceived = await service().updateProcurement({
       lineId: line.lineId, actor, idempotencyKey: `procurement:${jobId}:receipt-2`,

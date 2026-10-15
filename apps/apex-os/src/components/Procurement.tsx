@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import {
   PROCUREMENT_CODES,
+  PROCUREMENT_LABELS,
   ProcurementLineSchema,
   ProcurementUpdateSchema,
   type ProcurementLine,
@@ -9,12 +10,6 @@ import { useApprovedTakeoff, useJobProcurement } from '../api/useJobs';
 import { ApiError, apiSend } from '../api/client';
 
 type Code = (typeof PROCUREMENT_CODES)[number];
-const LABEL: Readonly<Record<Code, string>> = {
-  'shell.gunite-ordered-volume': 'Gunite ordered volume',
-  'shell.reinforcing-steel-weight': 'Reinforcing steel weight',
-  'finishes.tile-ordered-area': 'Tile ordered area',
-  'finishes.coping-ordered-length': 'Coping ordered length',
-};
 const formatQuantity = new Intl.NumberFormat(undefined, { maximumFractionDigits: 3 });
 
 export default function Procurement({ jobId, readOnly, hasApprovedTakeoff }: { jobId: string; readOnly: boolean; hasApprovedTakeoff: boolean }) {
@@ -54,7 +49,7 @@ export default function Procurement({ jobId, readOnly, hasApprovedTakeoff }: { j
         <label>Approved takeoff material
           <select value={selected} onChange={(event) => setSelected(event.target.value as Code | '')}>
             <option value="">Choose a material requirement</option>
-            {available.map((item) => <option key={item.code} value={item.code}>{LABEL[item.code as Code]} · {formatQuantity.format(item.value)} {item.unit}</option>)}
+            {available.map((item) => <option key={item.code} value={item.code}>{PROCUREMENT_LABELS[item.code as Code]} · {formatQuantity.format(item.value)} {item.unit}</option>)}
           </select>
         </label>
         <button type="button" className="action" disabled={busy || selected === ''} onClick={() => void create()}>
@@ -94,7 +89,7 @@ function MaterialLine({ line, disabled, onError }: { line: ProcurementLine; disa
     } catch (cause) { onError(cause instanceof ApiError || cause instanceof Error ? cause.message : 'Material details could not be saved.'); }
   };
   return <article className="schedule procurement-line">
-    <h3>{LABEL[line.quantityCode]} <span className="tag">{line.staleTakeoff ? 'Earlier takeoff — reconcile' : `Takeoff ${line.revisionId.slice(-8)}`}</span></h3>
+    <h3>{PROCUREMENT_LABELS[line.quantityCode]} <span className="tag">{line.staleTakeoff ? 'Earlier takeoff — reconcile' : `Takeoff ${line.revisionId.slice(-8)}`}</span></h3>
     <p>Required {formatQuantity.format(line.requiredQuantity)} {line.unit} · Received {formatQuantity.format(line.receivedQuantity)} · Outstanding {formatQuantity.format(line.outstandingQuantity)} {line.unit}</p>
     <form onSubmit={(event) => void save(event)}>
       <label>Ordered quantity <input name="orderedQuantity" type="number" min="0" step="any" defaultValue={line.orderedQuantity ?? ''} disabled={disabled} /></label>
