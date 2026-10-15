@@ -8,6 +8,12 @@ export const PROCUREMENT_CODES = [
   'finishes.coping-ordered-length',
 ] as const;
 export const ProcurementCodeSchema = z.enum(PROCUREMENT_CODES);
+export const PROCUREMENT_LABELS: Readonly<Record<(typeof PROCUREMENT_CODES)[number], string>> = {
+  'shell.gunite-ordered-volume': 'Gunite ordered volume',
+  'shell.reinforcing-steel-weight': 'Reinforcing steel weight',
+  'finishes.tile-ordered-area': 'Tile ordered area',
+  'finishes.coping-ordered-length': 'Coping ordered length',
+};
 
 export const ProcurementLineSchema = z.strictObject({
   lineId: idSchemas.material,

@@ -16,3 +16,5 @@ Base/main audit anchor ab74aa333c97399004ccbdba20a7b1df58d33ab4; branch codex/ap
 Exactly one next direction: VALIDATE. Final exact SHA/tree, mandatory gates, runtime limits, independent verdict and PR live in durable ../business-completion-evidence/FINAL.json and the PR report. Source freeze records preceding evidence, not final acceptance. A changed candidate invalidates prior review; retain failed attempts and revalidate before a new review.
 
 No production/deploy/merge, real ordering, payments, or customer messages are authorized here. The user requested one focused PR; no claim of parent business completion is made.
+
+OWNER002 BUILT, controller procurement3PASS: known-identity/readable procurement cards plus shared canonical ordering. The c2215cb CI attempt was interrupted for this acceptance issue and is not a PASS. Required next: repaired exact-candidate fullCI, image build/runtime, independent review, focused PR.
