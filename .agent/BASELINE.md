@@ -1,7 +1,7 @@
 # Slice 0 — Verified baseline
 
-**Mission anchor:** `ab74aa333c97399004ccbdba20a7b1df58d33ab4`  
-**Observed:** branch `codex/apex-business-completion-20261015`, HEAD matches anchor; `git fetch origin main` returned the same SHA. Working source started clean. No code edits were made by this audit. Build outputs/dependencies were generated locally by checks.  
+**Mission anchor:** `ab74aa333c97399004ccbdba20a7b1df58d33ab4`
+**Observed:** branch `codex/apex-business-completion-20261015`, HEAD matches anchor; `git fetch origin main` returned the same SHA. Working source started clean. No code edits were made by this audit. Build outputs/dependencies were generated locally by checks.
 **UTC window:** 2026-10-15 13:08–13:27 (approx.; exact per-command duration only where reported).
 
 ## Evidence and result

@@ -1,6 +1,6 @@
 # ADR-0004: Apex operational record authority
 
-**Accepted:** 2026-10-15  
+**Accepted:** 2026-10-15
 **Scope:** Apex operational records and workflow state
 
 ## Decision
