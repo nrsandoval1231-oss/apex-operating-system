@@ -74,8 +74,34 @@ export class ProcurementService {
       if (quantity.unit !== expectedUnit || !Number.isFinite(quantity.value) || quantity.value < 0) {
         throw new DomainRuleError('The approved material quantity has an invalid unit or value.');
       }
-      const prior = await tx.query<{ line_id: MaterialId }>(`select line_id from material_procurement where job_id=$1 and revision_id=$2 and quantity_code=$3`, [input.jobId, revision.revision_id, input.quantityCode]);
-      if (prior.rows[0]) { lineId = prior.rows[0].line_id; return; }
+      const keyUse = await tx.query<{
+        line_id: MaterialId; job_id: JobId; revision_id: string; quantity_code: string;
+        snapshot: DbLine; actor_id: UserId;
+      }>(`select p.line_id,p.job_id,p.revision_id,p.quantity_code,h.snapshot,h.actor_id
+          from material_procurement p join material_procurement_history h
+            on h.line_id=p.line_id and h.idempotency_key=p.idempotency_key and h.action='created'
+         where p.idempotency_key=$1`, [input.idempotencyKey]);
+      if (keyUse.rows[0]) {
+        const prior = keyUse.rows[0];
+        const snapshot = typeof prior.snapshot === 'string' ? JSON.parse(prior.snapshot) as DbLine : prior.snapshot;
+        if (prior.job_id !== input.jobId || prior.revision_id !== revision.revision_id
+          || prior.quantity_code !== input.quantityCode || day(snapshot.needed_by) !== input.neededBy
+          || prior.actor_id !== input.actor.userId) {
+          throw new DomainRuleError('Idempotency key was already used for a different material procurement request.');
+        }
+        lineId = prior.line_id;
+        return;
+      }
+      const prior = await tx.query<{ line_id: MaterialId; needed_by: string | Date | null }>(
+        `select line_id,needed_by from material_procurement where job_id=$1 and revision_id=$2 and quantity_code=$3`,
+        [input.jobId, revision.revision_id, input.quantityCode]);
+      if (prior.rows[0]) {
+        if (day(prior.rows[0].needed_by) !== input.neededBy) {
+          throw new DomainRuleError('Material line already exists with a different required-by date; update it explicitly after reloading.');
+        }
+        lineId = prior.rows[0].line_id;
+        return;
+      }
       const inserted = await tx.query(
         `insert into material_procurement(line_id,job_id,revision_id,quantity_code,required_quantity,unit,needed_by,updated_by,idempotency_key)
          values($1,$2,$3,$4,$5,$6,$7,$8,$9) on conflict(job_id,revision_id,quantity_code) do nothing returning line_id`,
@@ -100,8 +126,27 @@ export class ProcurementService {
       const jobId = owner.rows[0]?.job_id;
       if (!jobId) throw new DomainRuleError('Unknown material line.');
       await assertJobMutable(tx, jobId);
-      const duplicate = await tx.query<{ line_id: string }>('select line_id from material_procurement_history where idempotency_key=$1', [input.idempotencyKey]);
-      if (duplicate.rows[0]) return;
+      const duplicate = await tx.query<{
+        line_id: MaterialId; actor_id: UserId; action: string; revision: number;
+        snapshot: DbLine;
+      }>('select line_id,actor_id,action,revision,snapshot from material_procurement_history where idempotency_key=$1', [input.idempotencyKey]);
+      if (duplicate.rows[0]) {
+        const prior = duplicate.rows[0];
+        const snapshot = typeof prior.snapshot === 'string' ? JSON.parse(prior.snapshot) as DbLine : prior.snapshot;
+        const sameChanges = prior.line_id === input.lineId
+          && prior.actor_id === input.actor.userId
+          && (prior.action === input.action || (input.action === 'updated' && prior.action === 'receipt'))
+          && snapshot.revision === input.changes.expectedRevision + 1
+          && (snapshot.ordered_quantity === null ? input.changes.orderedQuantity === null
+            : Number(snapshot.ordered_quantity) === input.changes.orderedQuantity)
+          && snapshot.vendor === input.changes.vendor
+          && snapshot.order_reference === input.changes.orderReference
+          && day(snapshot.needed_by) === input.changes.neededBy
+          && day(snapshot.expected_on) === input.changes.expectedOn
+          && Number(snapshot.received_quantity) === input.changes.receivedQuantity;
+        if (!sameChanges) throw new DomainRuleError('Idempotency key was already used for a different material procurement request.');
+        return;
+      }
       const current = await tx.query<{ job_id: JobId; revision: number; received_quantity: string | number }>('select job_id,revision,received_quantity from material_procurement where line_id=$1 for update', [input.lineId]);
       const row = current.rows[0];
       if (!row) throw new DomainRuleError('Unknown material line.');

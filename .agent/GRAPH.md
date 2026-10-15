@@ -18,3 +18,5 @@ Exactly one next direction: VALIDATE. Final exact SHA/tree, mandatory gates, run
 No production/deploy/merge, real ordering, payments, or customer messages are authorized here. The user requested one focused PR; no claim of parent business completion is made.
 
 OWNER002 BUILT, controller procurement3PASS: known-identity/readable procurement cards plus shared canonical ordering. The c2215cb CI attempt was interrupted for this acceptance issue and is not a PASS. Required next: repaired exact-candidate fullCI, image build/runtime, independent review, focused PR.
+
+PR-RETRY-001: CORRECT -> VALIDATE successor. Prior3b15c96 fullCI PASS but Sol found update key-collision correctness defect. Bounded service+newPGtest repair, then frozen successor fullCI/container and independent review. Companion whitespace repair is semantic-neutral. Parent PILOT stays OPEN.

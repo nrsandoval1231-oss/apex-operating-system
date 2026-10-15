@@ -132,4 +132,3 @@ describe.skipIf(!available)('material procurement on PostgreSQL', () => {
     await expect(service().updateProcurement({ lineId: line.lineId, actor, idempotencyKey: `procurement:${jobId}:closed`, changes: { ...changes, expectedRevision: requiredReceived.revision, receivedQuantity: 100 }, action: 'updated' })).rejects.toThrow(/closed or cancelled/i);
   });
 });
-

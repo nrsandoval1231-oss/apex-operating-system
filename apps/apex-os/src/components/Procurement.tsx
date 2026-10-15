@@ -103,5 +103,3 @@ function MaterialLine({ line, disabled, onError }: { line: ProcurementLine; disa
     <p className="state-quiet">Last updated by {line.updatedByName ?? line.updatedBy} · {new Date(line.updatedAt).toLocaleString()}</p>
   </article>;
 }
-
-
