@@ -183,6 +183,32 @@ describe.skipIf(!available)('closed-job mutation serialization on PostgreSQL', (
     expect((await db.query('select 1 from scheduled_visits where job_id = $1', [scheduleJob.jobId])).rows).toHaveLength(0);
   });
 
+  it('rechecks a stale preflight before assigning a superintendent or appending its event', async () => {
+    const job = await makeJob();
+    const superintendentId = createCanonicalId('user');
+    await db.query(
+      `insert into app_users (user_id, auth_user_id, role, display_name)
+       values ($1, gen_random_uuid(), 'superintendent', 'Race Test Superintendent')`, [superintendentId],
+    );
+    await db.query(
+      `insert into projects (job_id, current_phase_key, created_by)
+       values ($1, 'design-permitting', $2)`, [job.jobId, actorId],
+    );
+
+    const result = await closureWinsAfterPreflight(job.jobId, (service) => service.assignSuperintendent({
+      jobId: job.jobId, superintendentUserId: superintendentId, actor,
+      idempotencyKey: `closed-race:superintendent:${job.jobId}`,
+    }));
+
+    expect(result.status).toBe('rejected');
+    expect((await db.query<{ superintendent_user_id: string | null }>(
+      'select superintendent_user_id from projects where job_id = $1', [job.jobId],
+    )).rows[0]?.superintendent_user_id).toBeNull();
+    expect((await db.query(
+      `select 1 from events where job_id = $1 and event_type = 'project.superintendent_assigned'`, [job.jobId],
+    )).rows).toHaveLength(0);
+  });
+
   it('refuses mutations when cancellation commits first', async () => {
     const job = await makeJob();
     await db.query("update jobs set status = 'cancelled' where job_id = $1", [job.jobId]);
