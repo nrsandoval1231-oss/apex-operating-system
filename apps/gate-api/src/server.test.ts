@@ -6,6 +6,8 @@ import { PGlite } from '@electric-sql/pglite';
 import { applyOperationalMigrations } from '@apex/database';
 import {
   ActionCardListSchema,
+  LeadFollowupTodayListSchema,
+  OpportunityWorkSchema,
   DailyBriefSchema,
   calculateQuantityPayloadSha256,
   createCanonicalId,
@@ -645,6 +647,36 @@ describe('Gate HTTP vertical slice', () => {
     expect(badDay.status).toBe(422);
 
     expect((await call('/api/today', customer)).status).toBe(403);
+  });
+
+  it('keeps opportunity follow-up coverage separate, staff-only, and reloadable from persisted state', async () => {
+    const office = await token(ids.office, 'office');
+    const field = await token(ids.field, 'field');
+    const customer = await token(ids.customer, 'customer');
+    const today = await call('/api/today/opportunities?today=2026-07-31', office);
+    expect(today.status).toBe(200);
+    expect(LeadFollowupTodayListSchema.parse(await today.json()).some((row) => row.leadId === ids.proposalLead)).toBe(true);
+    expect((await call('/api/today/opportunities', field)).status).toBe(403);
+    expect((await call(`/api/opportunities/${ids.proposalLead}/work`, customer)).status).toBe(403);
+    const scheduled = await call(`/api/opportunities/${ids.proposalLead}/followups`, office, {
+      method: 'POST', body: JSON.stringify({ nextAction: 'Call to discuss the proposal', dueDate: '2026-07-31', assignedUserId: ids.office }),
+      headers: { 'idempotency-key': 'api-followup-create-1' },
+    });
+    expect(scheduled.status).toBe(201);
+    const followup = await scheduled.json() as { followupId: number };
+    const due = await call('/api/today/opportunities?today=2026-07-31', office);
+    expect(LeadFollowupTodayListSchema.parse(await due.json()).find((row) => row.leadId === ids.proposalLead)).toMatchObject({
+      kind: 'due-today', nextAction: 'Call to discuss the proposal',
+    });
+    const completed = await call(`/api/opportunities/${ids.proposalLead}/followups/${followup.followupId}/complete`, office, {
+      method: 'POST', body: '{}', headers: { 'idempotency-key': 'api-followup-complete-1' },
+    });
+    expect(completed.status).toBe(200);
+    const detail = await call(`/api/opportunities/${ids.proposalLead}/work`, office);
+    expect(OpportunityWorkSchema.parse(await detail.json()).followups[0]?.completedAt).not.toBeNull();
+    const after = await call('/api/today/opportunities?today=2026-07-31', office);
+    expect(LeadFollowupTodayListSchema.parse(await after.json()).find((row) => row.leadId === ids.proposalLead)?.kind)
+      .toBe('missing-next-action');
   });
 
   it('serves the job gate plan and opens any confirmed template', async () => {

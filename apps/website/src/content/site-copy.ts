@@ -40,7 +40,7 @@ export const sections = {
   quote: {
     eyebrow: 'Ready to get it done?',
     heading: 'Tell us which Apex you need.',
-    lead: "Pick your service and we'll text you back in minutes, not days. One form, routed to the right crew.",
+    lead: 'Pick your service and send one request to the right crew. Our team will review it.',
   },
 } as const;
 

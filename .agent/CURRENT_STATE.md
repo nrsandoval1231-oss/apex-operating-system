@@ -1,6 +1,7 @@
 # Current state
-Base: 1d22c77dbe25aaa5aa2de21c1e1f2ddddbec36d8; branch codex/apex-audit-repair-20261014.
-Remote main verified identical. Existing source checkout clean and left untouched; cinematic worktree excluded.
-Graph: REPAIR-001 READY -> exact final validation -> independent Sol review -> local handoff.
-Authority: local repair/tests only. No push/merge/deploy/spend. Integration and live state UNKNOWN until proved.
-Next action: Luna executes PACKET.md.
+Repo C:/Users/nrsan/Nucleus/02_Projects/Apex/business-completion; branch codex/apex-business-completion-20261015; base/main audit anchor ab74aa333c97399004ccbdba20a7b1df58d33ab4.
+Intent docs/vision.md and attached owner mission; scope/finish evidence .agent/BASELINE.md. Historical repair packet/notes are retained and superseded.
+Graph .agent/GRAPH.md; BIZ001 packet .agent/packets/BIZ-001.md and Sol .agent/DIRECTION.md. OPS002 built, OPS003 and BIZ001 building with disjoint ownership. F001 then P001 wait for source ownership release; .agent/SLICE2-DIRECTION.md.
+Baseline core552/Designer585, PG/S3 integration29 pass2 missing-engine guards skipped, estimate browser PASS, website166+production10 PASS. Full exact final CI OPEN; original CRLF/Corepack failures preserved. Controller evidence ../business-completion-evidence.
+Live staging read-only checks 2026-10-15: health/ready200, DB/evidence true, staff/API302 without Access. Current implementation not deployed. Signed-in lifecycle and managed Neon/R2 recovery OPEN. Local synthetic recovery drills do not prove live recovery.
+Next direction CONTINUE bounded slices, deterministic focused checks, final code/docs freeze then mandatory combined CI and independent exact candidate review. No production/deploy/merge, real orders/payments/customer messages. PR preparation authorized. Tokens/model config and unmeasured timings UNKNOWN.

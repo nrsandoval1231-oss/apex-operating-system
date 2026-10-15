@@ -6,6 +6,8 @@ import {
   ActionCardListSchema,
   CustomerLinkStatusSchema,
   DailyBriefSchema,
+  LeadFollowupTodayListSchema,
+  OpportunityWorkSchema,
   JobInspectionListSchema,
   JobCloseoutSchema,
   JobPhotoListSchema,
@@ -113,6 +115,13 @@ const loadCards = (path: string, signal: AbortSignal): Promise<readonly ActionCa
 /** The §9.5 action feed, derived server-side from stored state. */
 export const useActionCards = (): Query<readonly ActionCard[]> =>
   useResource('/api/today', loadCards);
+
+const loadLeadFollowups = (path: string, signal: AbortSignal) => apiGet(path, LeadFollowupTodayListSchema, signal);
+export const useLeadFollowupsToday = (enabled = true) =>
+  useResource(enabled ? '/api/today/opportunities' : null, loadLeadFollowups);
+const loadOpportunityWork = (path: string, signal: AbortSignal) => apiGet(path, OpportunityWorkSchema, signal);
+export const useOpportunityWork = (leadId: string | undefined) =>
+  useResource(leadId ? `/api/opportunities/${leadId}/work` : null, loadOpportunityWork);
 
 const JobScheduleSchema = z.strictObject({
   visits: ScheduledVisitListSchema,

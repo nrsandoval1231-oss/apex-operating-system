@@ -21,6 +21,7 @@ import {
   type EventActor,
   type GateInstanceId,
   type JobId,
+  ScheduleLeadFollowupSchema,
 } from '@apex/contracts';
 import { DomainRuleError, RoleRefusalError } from '@apex/domain';
 import { CustomerService, GateService, InspectionService } from '@apex/gate-service';
@@ -1023,6 +1024,46 @@ export function createGateApi(options: GateApiOptions) {
       const opportunityProposalsMatch = url.pathname.match(
         /^\/api\/opportunities\/(lead_[0-9A-HJKMNP-TV-Z]{26})\/proposals$/,
       );
+      const opportunityWorkMatch = url.pathname.match(
+        /^\/api\/opportunities\/(lead_[0-9A-HJKMNP-TV-Z]{26})\/work$/,
+      );
+      const opportunityFollowupsMatch = url.pathname.match(
+        /^\/api\/opportunities\/(lead_[0-9A-HJKMNP-TV-Z]{26})\/followups$/,
+      );
+      const opportunityCompleteMatch = url.pathname.match(
+        /^\/api\/opportunities\/(lead_[0-9A-HJKMNP-TV-Z]{26})\/followups\/(\d+)\/complete$/,
+      );
+      const requireOpportunityOffice = (candidate: EventActor) => {
+        if (candidate.kind !== 'user' || !['admin', 'office'].includes(candidate.role)) {
+          throw new AuthError('Office access is required to view or manage opportunity follow-ups.');
+        }
+      };
+      if (request.method === 'GET' && url.pathname === '/api/today/opportunities') {
+        requireOpportunityOffice(actor);
+        const requested = url.searchParams.get('today');
+        const today = requested === null ? civilDay() : DaySchema.parse(requested);
+        return sendJson(response, 200, await service.getLeadFollowupsToday(today));
+      }
+      if (request.method === 'GET' && opportunityWorkMatch) {
+        requireOpportunityOffice(actor);
+        const work = await service.getOpportunityWork(idSchemas.lead.parse(opportunityWorkMatch[1]));
+        return work ? sendJson(response, 200, work) : sendJson(response, 404, { error: 'Opportunity not found.' });
+      }
+      if (request.method === 'POST' && opportunityFollowupsMatch) {
+        requireOpportunityOffice(actor);
+        const body = ScheduleLeadFollowupSchema.parse(await readJson(request));
+        return sendJson(response, 201, await service.scheduleLeadFollowup({
+          leadId: idSchemas.lead.parse(opportunityFollowupsMatch[1]), ...body, actor, idempotencyKey: idempotency(request),
+        }));
+      }
+      if (request.method === 'POST' && opportunityCompleteMatch) {
+        requireOpportunityOffice(actor);
+        await readJson(request);
+        return sendJson(response, 200, await service.completeLeadFollowup({
+          leadId: idSchemas.lead.parse(opportunityCompleteMatch[1]),
+          followupId: Number(opportunityCompleteMatch[2]), actor, idempotencyKey: idempotency(request),
+        }));
+      }
       if (request.method === 'GET' && opportunityProposalsMatch) {
         requireStaff(actor);
         return sendJson(response, 200,
