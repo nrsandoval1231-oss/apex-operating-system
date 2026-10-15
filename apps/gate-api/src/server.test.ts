@@ -624,6 +624,22 @@ describe('Gate HTTP vertical slice', () => {
     expect((await call(`/api/jobs/${ids.job}/draws`, customer)).status).toBe(403);
   });
 
+  it('keeps internal procurement reads to admin and office roles', async () => {
+    const office = await token(ids.office, 'office');
+    const field = await token(ids.field, 'field');
+    const superintendent = await token(ids.superintendent, 'superintendent');
+    const customer = await token(ids.customer, 'customer');
+    const path = `/api/jobs/${ids.job}/procurement`;
+    expect((await call(path, office)).status).toBe(200);
+    expect((await call(path, field)).status).toBe(403);
+    expect((await call(path, superintendent)).status).toBe(403);
+    expect((await call(path, customer)).status).toBe(403);
+    expect((await call(path, field, {
+      method: 'POST', body: JSON.stringify({ quantityCode: 'shell.reinforcing-steel-weight' }),
+      headers: { 'idempotency-key': 'procurement-role-denied' },
+    })).status).toBe(403);
+  });
+
   it('serves the action feed to staff, pinned to a day, and refuses customers', async () => {
     const office = await token(ids.office, 'office');
     const customer = await token(ids.customer, 'customer');

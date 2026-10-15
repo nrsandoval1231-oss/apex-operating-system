@@ -1,0 +1,110 @@
+{
+  "schema_version": 1,
+  "packet_id": "P001",
+  "status": "BUILT_PENDING_CONTROLLER_ACCEPTANCE",
+  "repository": "C:/Users/nrsan/Nucleus/02_Projects/Apex/business-completion",
+  "branch": "codex/apex-business-completion-20261015",
+  "base_sha": "264791ee6bf36899c6c2f02821b6addc439a58cb",
+  "candidate_identity": "Uncommitted shared worktree at the stated base; per-file SHA-256 values below.",
+  "objective": "Add a bounded, staff-only, human-entered material tracking path tied to unchanged quantities from the current approved Designer takeoff, with immutable source snapshots, order/vendor/ETA, cumulative receipts, optimistic and idempotent update history, closed-job locks, and dated Today blockers.",
+  "implemented": [
+    "Migration 0035 adds one line per job/revision/material code, immutable takeoff source fields, row history, date and quantity constraints.",
+    "Contracts and service validate the current approved takeoff digest, selected supported ordered-material code, exact source unit/value, job mutability, staff authority, duplicate creation, optimistic revisions, and idempotent history.",
+    "Admin/office API routes expose internal procurement data; field, superintendent, and customer roles are refused. Today and persisted brief projections hide procurement cards from non-office roles while retaining the full canonical stored brief.",
+    "Project Detail supports four explicitly named ordered material codes, tracks vendor/order reference and recorded dates, cumulative receipt, outstanding amount, updater, source revision, and stale takeoff warnings. Untracked material state remains explicitly unknown.",
+    "LIFE001 adds an admin/office-only Create draw schedule action to the signed-contract empty Draws state, using the existing endpoint with error and reload handling."
+  ],
+  "validation": [
+    {
+      "command": "pnpm exec tsc -b packages/contracts packages/database packages/domain packages/gate-service apps/gate-api --pretty false",
+      "result": "PASS"
+    },
+    {
+      "command": "pnpm exec tsc --noEmit -p apps/apex-os/tsconfig.json",
+      "result": "PASS"
+    },
+    {
+      "command": "pnpm exec vitest run apps/gate-api/src/server.test.ts -t \"procurement reads|draw schedule\" --maxWorkers=1 --no-file-parallelism",
+      "result": "PASS: 2 tests passed, 37 skipped"
+    },
+    {
+      "command": "pnpm exec vitest run packages/database/src/migrations.test.ts --maxWorkers=1 --no-file-parallelism",
+      "result": "PASS: 16 tests passed"
+    },
+    {
+      "command": "$env:DATABASE_URL='postgresql://postgres@127.0.0.1:55435/apex_business_test'; pnpm exec vitest run integration-tests/procurement.test.ts --config integration-tests/vitest.config.ts --maxWorkers=1 --no-file-parallelism",
+      "result": "PASS: 3 real-PostgreSQL tests; synthetic records only"
+    },
+    {
+      "command": "git diff --check",
+      "result": "PASS"
+    },
+    {
+      "command": "pnpm exec tsc --noEmit -p apps/apex-os/tsconfig.json; git diff --check",
+      "result": "PASS after display-only max-3-decimal quantity formatting in Procurement.tsx; underlying source and submitted quantities unchanged."
+    },
+    {
+      "command": "$env:DATABASE_URL='postgresql://postgres@127.0.0.1:55435/apex_business_test'; pnpm exec vitest run integration-tests/procurement.test.ts --config integration-tests/vitest.config.ts --maxWorkers=1 --no-file-parallelism",
+      "result": "PASS: 3 real-PostgreSQL tests, including direct cross-job revision insert rejection after applying forward-only migration 0036."
+    },
+    {
+      "command": "pnpm exec tsc -b packages/database packages/gate-service apps/gate-api --pretty false",
+      "result": "PASS"
+    },
+    {
+      "command": "git diff --check",
+      "result": "PASS"
+    }
+  ],
+  "real_postgres_coverage": [
+    "Concurrent duplicate create returns one line and one creation history entry.",
+    "Concurrent same-key receipt retry returns the committed revision once; stale expected revision is refused.",
+    "Corrupt approved quantity digest is refused without creating a material row.",
+    "Required quantity, code, unit, revision and immutable source snapshot are preserved.",
+    "Cumulative partial receipt and outstanding quantity persist.",
+    "Needed-by inclusive civil-day boundary and expected-delivery strictly-past boundary are derived from recorded dates.",
+    "Superseded takeoff is flagged; closed Job mutation is refused.",
+    "Office Today and brief projections include derived procurement blockers; field projections omit them, and the persisted brief retains the canonical unfiltered snapshot."
+  ],
+  "known_limits": [
+    "Positive HTTP create/update flow has service-level real-PostgreSQL proof; API tests cover role refusal and the existing schedule route, not a full procurement browser interaction.",
+    "No staff-app build, full CI, commit, push, merge, deployment, real order, spend, or customer communication was performed.",
+    "Controller reports final browser/runtime acceptance for LIFE001 and P001 passed on prior build; display-only quantity formatting was applied afterward and received focused JSX typecheck/diff validation."
+  ],
+  "changed_source_sha256": {
+    ".agent/packets/LIFE001.md": "dcdc18b364512f893209eb16cdedfc3352023ee150418bda06d9fc4c31679181",
+    "apps/apex-os/src/components/CreateDrawSchedule.tsx": "6f5a61820328caa002532bf6e493b03fba37dd3e499351f278c828b0e41ac2aa",
+    "apps/apex-os/src/components/Procurement.tsx": "8e0b1a7c80a581f2d18e92e77821b2f2d397b7f9b4c59e33381f1337f5fa1cfe",
+    "apps/apex-os/src/api/useJobs.ts": "1670b06ef77a498921c9884b263229d82dd84577c50156d0ebaf4b2c37c34740",
+    "apps/apex-os/src/pages/ProjectDetail.tsx": "f24e68a3e268e51e4c3b61f48d851353b5ddda35523aedfefad82e05d43563a1",
+    "apps/apex-os/src/index.css": "e965247e75f343242f793ed8bb18d9216c5acfc0a0e4226792fcf24a1b683a0f",
+    "apps/gate-api/src/server.ts": "4dde464b06895ff7ed8300a0fe11293986bd76e9ff83e8ed8249e8c92ecf2aca",
+    "apps/gate-api/src/server.test.ts": "b66a7ec3fcca28e4d7a6a175b6720ddbb7c3050bbc9d3cbb60ceb40fd41b29ac",
+    "packages/contracts/src/actionCard.ts": "d8535857263b0078ae2f15951d2642faf9f4b3e8ad5f4c2ac9225a2687f498ff",
+    "packages/contracts/src/ids.ts": "88d9075597ffc2e6ad93d3a7ab12f58ff139c2afc18fc30bf3488cef22dae08f",
+    "packages/contracts/src/index.ts": "b5f28ed3b99230c7b27d28defbe41e7949b77e1e9d355b7c316a8aba8bead448",
+    "packages/contracts/src/procurement.ts": "e04f2cffe4f7285e7e50235ae6d8b7e3fa16b5a7f7985575c3389c8954bf1464",
+    "packages/database/migrations/0035_material_procurement.sql": "cb39a682676737007a241c2233ee47bb8a2170b7a9318fbea388013c3c3ea3fc",
+    "packages/database/src/index.ts": "6e113e053e7f25530523e358b5d7b3ce4aba71c7fb50d03a84d6acc84cbe327e",
+    "packages/gate-service/src/index.ts": "748619bb68837cf08cd900843bd93fba8e4e9351acc52879d75eb3b7eb2e4aa5",
+    "packages/gate-service/src/procurement.ts": "679e81afac3752013e9e3512ceb029571a4d08f2844d700655b67574891b7ad2",
+    "integration-tests/procurement.test.ts": "c1bb46d6db43a5f6a76c9a4cdefe167a236b954d85f295ca05a228720ca7c77b",
+    "packages/database/migrations/0036_material_procurement_job_revision_fk.sql": "16e96d54ac3fe70e8adc2a343f611b11bb598c878fce4b0531576c7ffc9ad336"
+  },
+  "metrics": {
+    "start_utc": "UNKNOWN",
+    "finish_utc": "2026-10-15T14:21:19Z",
+    "planning_duration": "UNKNOWN",
+    "build_duration": "UNKNOWN",
+    "validation_duration": "UNKNOWN",
+    "audit_duration": "UNKNOWN",
+    "repair_count": "UNKNOWN",
+    "lane": "single Luna builder",
+    "model": "UNKNOWN",
+    "config_identity": "UNKNOWN",
+    "tokens": "UNKNOWN",
+    "elapsed_to_accepted": "UNKNOWN"
+  },
+  "controller_decision": "CONTINUE: perform authorized browser acceptance for LIFE001 and P001 on the exact final candidate; then freeze and run mandatory final gates and independent review per controller direction.",
+  "self_certification": false
+}

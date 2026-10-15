@@ -55,6 +55,7 @@ export const CardKindSchema = z.enum([
   'project.overdue',
   'project.due-soon',
   'project.risk',
+  'procurement.overdue',
 ]);
 export type CardKind = z.infer<typeof CardKindSchema>;
 

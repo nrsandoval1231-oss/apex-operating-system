@@ -22,6 +22,8 @@ import {
   type GateInstanceId,
   type JobId,
   ScheduleLeadFollowupSchema,
+  ProcurementCreateSchema,
+  ProcurementUpdateSchema,
 } from '@apex/contracts';
 import { DomainRuleError, RoleRefusalError } from '@apex/domain';
 import { CustomerService, GateService, InspectionService } from '@apex/gate-service';
@@ -1144,7 +1146,8 @@ export function createGateApi(options: GateApiOptions) {
         // server's date is used. The derivation itself never reads a clock.
         const requested = url.searchParams.get('today');
         const today = requested === null ? civilDay() : DaySchema.parse(requested);
-        return sendJson(response, 200, await service.getActionCards(today));
+        const includeProcurement = actor.kind === 'user' && ['admin', 'office'].includes(actor.role);
+        return sendJson(response, 200, await service.getActionCards(today, includeProcurement));
       }
 
       if (request.method === 'GET' && url.pathname === '/api/brief') {
@@ -1154,7 +1157,8 @@ export function createGateApi(options: GateApiOptions) {
         // Generates the day's brief on first read and returns the stored one
         // afterwards, so repeating this request is safe and always returns the
         // brief that was actually delivered that morning.
-        return sendJson(response, 200, await service.getDailyBrief(briefDate));
+        const includeProcurement = actor.kind === 'user' && ['admin', 'office'].includes(actor.role);
+        return sendJson(response, 200, await service.getDailyBrief(briefDate, includeProcurement));
       }
 
       if (request.method === 'GET' && url.pathname === '/api/jobs') {
@@ -1172,6 +1176,35 @@ export function createGateApi(options: GateApiOptions) {
         const summary = await service.getJob(idSchemas.job.parse(jobMatch[1]));
         if (summary === null) return sendJson(response, 404, { error: 'Job not found.' });
         return sendJson(response, 200, summary);
+      }
+
+      const procurementJobMatch = url.pathname.match(/^\/api\/jobs\/(job_[0-9A-HJKMNP-TV-Z]{26})\/procurement$/);
+      const requireProcurementOffice = (candidate: EventActor): Extract<EventActor, { kind: 'user' }> => {
+        if (candidate.kind !== 'user' || !['admin', 'office'].includes(candidate.role)) {
+          throw new RoleRefusalError('Office access is required to view or manage procurement details.');
+        }
+        return candidate;
+      };
+      if (procurementJobMatch && request.method === 'GET') {
+        requireProcurementOffice(actor);
+        return sendJson(response, 200, await service.listProcurement(idSchemas.job.parse(procurementJobMatch[1])));
+      }
+      if (procurementJobMatch && request.method === 'POST') {
+        const officeActor = requireProcurementOffice(actor);
+        const body = ProcurementCreateSchema.parse(await readJson(request));
+        return sendJson(response, 201, await service.createProcurement({
+          jobId: idSchemas.job.parse(procurementJobMatch[1]), actor: { userId: officeActor.userId, role: officeActor.role },
+          quantityCode: body.quantityCode, neededBy: body.neededBy ?? null, idempotencyKey: idempotency(request),
+        }));
+      }
+      const procurementUpdateMatch = url.pathname.match(/^\/api\/procurement\/(material_[0-9A-HJKMNP-TV-Z]{26})$/);
+      if (procurementUpdateMatch && request.method === 'POST') {
+        const officeActor = requireProcurementOffice(actor);
+        const body = ProcurementUpdateSchema.parse(await readJson(request));
+        return sendJson(response, 200, await service.updateProcurement({
+          lineId: procurementUpdateMatch[1]!, actor: { userId: officeActor.userId, role: officeActor.role },
+          idempotencyKey: idempotency(request), changes: body, action: 'updated',
+        }));
       }
 
       /*

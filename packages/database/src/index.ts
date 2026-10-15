@@ -44,6 +44,8 @@ export const OPERATIONAL_MIGRATIONS = [
   '0032_proposal_workflow.sql',
   '0033_app_user_email.sql',
   '0034_lead_followups.sql',
+  '0035_material_procurement.sql',
+  '0036_material_procurement_job_revision_fk.sql',
 ] as const;
 
 export const STORAGE_MIGRATION = '0003_evidence_storage.sql';

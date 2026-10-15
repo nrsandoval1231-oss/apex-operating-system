@@ -75,6 +75,8 @@ import { InspectionService } from './inspections.js';
 import { assertJobMutable } from './jobState.js';
 import { ProposalService, type FinishEstimateResult } from './proposal.js';
 import { LeadFollowupService } from './leadFollowup.js';
+import { ProcurementService } from './procurement.js';
+export { ProcurementService } from './procurement.js';
 export { ProposalService, type FinishEstimateResult } from './proposal.js';
 
 export interface EvidenceWrite {
@@ -502,6 +504,11 @@ export class GateService {
 
   private proposalService(): ProposalService { return new ProposalService(this.db); }
   private leadFollowupService(): LeadFollowupService { return new LeadFollowupService(this.db); }
+  private procurementService(): ProcurementService { return new ProcurementService(this.db); }
+  listProcurement(jobId: JobId) { return this.procurementService().list(jobId); }
+  createProcurement(input: Parameters<ProcurementService['create']>[0]) { return this.procurementService().create(input); }
+  updateProcurement(input: Parameters<ProcurementService['update']>[0]) { return this.procurementService().update(input); }
+  getProcurementToday(today: string) { return this.procurementService().today(today); }
 
   getLeadFollowupsToday(today: string) { return this.leadFollowupService().getToday(today); }
   getOpportunityWork(leadId: string) { return this.leadFollowupService().getOpportunity(leadId); }
@@ -2036,8 +2043,24 @@ export class GateService {
    * this method only fetches. `today` is passed in rather than read here so the
    * feed is reproducible and testable.
    */
-  async getActionCards(today: string): Promise<readonly ActionCard[]> {
-    return deriveCards(await this.readCardSnapshot(), today);
+  async getActionCards(today: string, includeProcurement = true): Promise<readonly ActionCard[]> {
+    const cards = [...deriveCards(await this.readCardSnapshot(), today)];
+    if (includeProcurement) for (const line of await this.getProcurementToday(today)) {
+      cards.push({
+        cardId: `procurement.overdue:${line.lineId}`,
+        kind: 'procurement.overdue', group: 'needs-you', urgency: 'important', jobId: line.jobId,
+        customerName: null, location: null,
+        title: `Follow up on ${line.quantityCode.replaceAll('.', ' ')}`,
+        reason: line.staleTakeoff
+          ? 'This material line belongs to an earlier approved takeoff and needs human reconciliation.'
+          : line.neededByOverdue
+            ? `Received ${line.receivedQuantity} of required ${line.requiredQuantity} ${line.unit}; the required receipt is still short.`
+            : `Expected delivery ${line.expectedOn} passed; ${line.outstandingQuantity} ${line.unit} remains undelivered.`,
+        dueLabel: line.neededByOverdue ? line.neededBy : line.expectedOn, amountCents: null,
+        actionLabel: 'Open procurement', actionHref: `/projects/${line.jobId}#procurement`,
+      });
+    }
+    return cards;
   }
 
   /**
@@ -2048,12 +2071,12 @@ export class GateService {
    * what lets it answer "what changed since yesterday" at all. The Today feed
    * remains the live view.
    */
-  async getDailyBrief(briefDate: string): Promise<DailyBrief> {
+  async getDailyBrief(briefDate: string, includeProcurement = true): Promise<DailyBrief> {
     const existing = await this.db.query<{ payload: unknown }>(
       'select payload from daily_briefs where brief_date = $1',
       [briefDate],
     );
-    if (existing.rows[0]) return DailyBriefSchema.parse(existing.rows[0].payload);
+    if (existing.rows[0]) return this.filterProcurementBrief(DailyBriefSchema.parse(existing.rows[0].payload), includeProcurement);
 
     const previousRow = await this.db.query<{ brief_date: string | Date; payload: unknown }>(
       `select brief_date, payload from daily_briefs
@@ -2102,7 +2125,20 @@ export class GateService {
       'select payload from daily_briefs where brief_date = $1',
       [briefDate],
     );
-    return DailyBriefSchema.parse(stored.rows[0]?.payload ?? brief);
+    return this.filterProcurementBrief(DailyBriefSchema.parse(stored.rows[0]?.payload ?? brief), includeProcurement);
+  }
+
+  private filterProcurementBrief(brief: DailyBrief, includeProcurement: boolean): DailyBrief {
+    if (includeProcurement) return brief;
+    const visible = (items: DailyBrief['needsYou']) => items.filter((item) => item.card.kind !== 'procurement.overdue');
+    return DailyBriefSchema.parse({
+      ...brief,
+      needsYou: visible(brief.needsYou),
+      running: visible(brief.running),
+      thisWeek: visible(brief.thisWeek),
+      newSinceLast: visible(brief.newSinceLast),
+      cleared: brief.cleared.filter((item) => !item.cardId.startsWith('procurement.overdue:')),
+    });
   }
 
   private async readCardSnapshot(): Promise<readonly CardJobSnapshot[]> {

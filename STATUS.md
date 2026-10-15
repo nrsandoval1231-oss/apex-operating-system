@@ -1,97 +1,44 @@
 # Apex — Status
 
-**Last updated:** 2026-10-02
+**Updated:** 2026-10-15. **Pilot acceptance remains OPEN.**
 
-The counts below are from `scripts/ci.sh` on 2026-10-02 (exit 0). That script is
-the verification entry point. GitHub Actions is not the CI for this repository.
+Apex runs the business through canonical PostgreSQL operational records. Designer owns measured quantities, the pricing engine owns estimate calculations, QuickBooks owns accounting actuals, n8n owns asynchronous adapters, and Cloudflare is the approved host. [ADR-0004](docs/decisions/ADR-0004-apex-operational-record-authority.md) explicitly supersedes the historical Monday/HubSpot operational-authority assumptions while preserving their approval history. The owner-centered [vision](docs/vision.md) is unchanged.
 
-**Canonical workspace:** `nrsandoval1231-oss/apex-operating-system` (`main`)
+## This engineering candidate
 
-## Current verified state
+- Today now includes persisted, Lead-linked pre-contract next actions: overdue, due today, and missing next action. Office users can delegate, replace, complete, and inspect retained history from the authoritative opportunity. Future work is not called overdue. A failed lane cannot produce a false all-clear.
+- Proposal acceptance serializes against follow-up writes and resolves open pre-contract work while retaining the existing exactly-one Job/Project invariant. Construction cards and frozen Brief identity remain intact; Brief explicitly names its pre-contract coverage limit.
+- A newly accepted Job's empty Draws section now offers authorized staff the existing **Create draw schedule** operation. Previously Today linked to a dead end.
+- Procurement is a bounded pilot for four approved Designer material quantities: ordered gunite volume, reinforcing steel weight, ordered tile area, and ordered coping length. Staff explicitly record order quantity, vendor/reference, needed-by/expected dates, and cumulative receipt. Source quantity/unit/revision remain immutable. Concurrent updates use revisions and idempotent history; stale takeoffs are flagged. Recorded overdue shortages/deliveries produce Today actions. Untracked material status is unknown. This does not place orders or establish accounting commitments; split orders, inventory, and additional material codes are not implemented.
+- Contract value and draw eligibility remain operational facts. Invoice references are staff-recorded and unverified. Collections, remaining balance, costs, and profitability are unavailable without authoritative accounting data; a `paid` row cannot fabricate a full payment. QuickBooks is not connected.
+- Website copy no longer promises an unimplemented rapid text response. Intake acceptance is distinct from message delivery. No real customer messages were sent.
+- The Windows CI launcher selects Git Bash, checks out shell scripts with LF, and uses temporary writable Corepack shims rather than requiring Program Files writes. Mandatory gates are retained.
+- The active Cloudflare runbook now describes separate retained evidence copies and isolated database restore. It no longer instructs operators to enable unsupported R2 S3 versioning. The old Render runbook remains historical.
 
-The unified non-Website lifecycle is implemented and pushed:
+## Audit and local evidence
 
-```text
-Opportunity
-→ Designer
-→ Takeoff Excel workbook
-→ Finish estimate
-→ versioned Proposal
-→ Proposal accepted / Job created
-→ Construction
-→ close and archive
-→ read-only History
-```
+The concise capability matrix and pre-change gaps are in [.agent/BASELINE.md](.agent/BASELINE.md). Audit anchor and fetched main: `ab74aa333c97399004ccbdba20a7b1df58d33ab4`. Original checkouts and cinematic work were preserved; implementation uses an isolated worktree/branch.
 
-### Lifecycle
+Before final candidate freeze, the controller independently observed:
 
-- Manual/referral intake creates a durable Lead/opportunity without fabricating a Job or signed Proposal.
-- Designer supports a true 3′–5′–3′ sports-pool profile across geometry, plan/section views, quantities, excavation, and exports.
-- Designer quantity model authority is `designer-quantity-v5`.
-- **Takeoff (.xlsx)** produces an ordering-focused workbook with `Order List` first; metadata, excavation, and calculation/reference material are secondary.
-- Soil/excavation assumptions and raw JSON diagnostics are under **Advanced**, not in the primary workflow.
-- **Finish estimate** pins the exact approved takeoff revision and is idempotent for opportunity + design digest. A first Finish on a draft the Designer already created applies the submitted prices and issues the proposal when nothing is missing. An issued or signed version is left unchanged.
-- Pricing uses `manual-approved-pricing-v1` and fails closed: missing estimates or unresolved direct scope become structured blockers; no amount is inferred.
-- Proposal drafts are server-backed and optimistically versioned. Issued and signed versions are immutable.
-- Recording acceptance of the exact issued Proposal idempotently creates one Job and one construction Project.
-- Proposal preview supports print/save-as-PDF, copy-email, and `mailto:` preparation without claiming that an email was sent.
-- Construction uses 11 phases and nine active Gate definitions. Active Gates use one authorized release signature; historical countersign records remain preserved.
-- Closing a project requires authoritative reconciliation, is idempotent, has no reopen path, and moves the project to searchable read-only History.
-- Closed jobs reject Gate, takeoff, assignment, schedule, inspection, draw, and customer-page mutations while retaining artifact reads.
+- Baseline core: 552 tests passed; Designer: 585 passed; real PostgreSQL/S3 adapter suite: 29 passed with two missing-engine guard skips. Website desktop/mobile: 166 passed; production intake: 10 passed; estimate-navigation browser regression passed.
+- Follow-up/Proposal/API affected checks: 52 passed, including real PostgreSQL races. Financial draw checks: 21 passed.
+- New operational tests: three real-PostgreSQL procurement cases and one complete backend business-lifecycle case passed together. The lifecycle case passed again against the same database, without clearing prior synthetic records. It uses service commands for transitions and fixture evidence metadata; it is not live-provider or browser acceptance.
+- Actual local browser: Sports Pool 3′–5′–3′, Order List-first workbook, missing-fee refusal, explicitly priced issued proposal, synthetic acceptance, one Job/Project, assignment, and four uploaded evidence objects retrieved from a fresh page. Follow-up scheduling, completion, history, reload, scoped query failure, and recovery passed.
+- Actual loopback API plus browser-rendered reads: five-draw schedule, explicit financial unknowns, source-pinned material order, partial receipt/Today blocker, full receipt/blocker removal, persisted reload.
+- A synthetic PostgreSQL dump restored to a separate local database with matching counts; a synthetic S3 object copy matched its checksum. These are local drills, not managed Neon/R2 recovery acceptance.
 
-### Repository state
+Final combined verification is `powershell -NoProfile -File scripts/ci.ps1` (or `bash scripts/ci.sh`). Exact frozen commit, complete output, pass/failure/skip accounting, image compatibility, and independent review belong to the PR test report and the durable local `../business-completion-evidence/FINAL.json`; earlier focused checks do not certify a later candidate. The work graph is [.agent/GRAPH.md](.agent/GRAPH.md).
 
-- Designer, Website, Lead Engine, PRDs, legacy proposal calibration, and deck generators are in this repository. Layout: `docs/repositories.md`.
-- The six former GitHub repositories were deleted. Their history lives in this repository's git history.
-- Duplicate working copies under `archive/imported-repositories/` and the matching bundles, zips, and duplicate PRD copies under `docs/archive/` were removed. `archive/proposal-engine` stays because the legacy chain test and CI reference it.
-- No production deployment or production data mutation was performed by the consolidation.
+## Observed staging versus this candidate
 
-## Verification baseline
+The prior deployment handoff identifies audit-anchor `ab74aa3` on the existing workers.dev staging host. Fresh read-only checks on 2026-10-15 observed `/health` and `/ready` HTTP 200, database/evidence ready, and unauthenticated staff/API redirects to Cloudflare Access. This candidate has not been deployed by this mission. Production and real customer data were untouched.
 
-`scripts/ci.sh` on 2026-10-02, Node v22.22.2, pnpm 11.18.0, exit 0. Integration
-used PostgreSQL 16.15 on `127.0.0.1:5432` and moto (S3 API) on port 9000, bucket
-`apex-evidence`. The container image is still built from Node 24; this run did
-not build that image.
+## Open pilot gates
 
-- Install (`pnpm install --frozen-lockfile`, then `npm ci --ignore-scripts` in `apps/designer`) completed.
-- Root typecheck passed. Designer typecheck passed.
-- Apex OS production build passed. Designer production build passed.
-- A website production build with `PUBLIC_ENV=production` and no `PUBLIC_LEAD_WEBHOOK_URL` failed on purpose. The following development website check and build, with `PUBLIC_LEAD_WEBHOOK_URL_TEST` set, completed. `astro check` reported 0 errors.
-- Core unit suite (`packages`, `apps/gate-api`, `apps/apex-os`): **36 files, 518 tests passed**.
-- Designer unit suite: **26 files, 585 tests passed**.
-- Legacy proposal engine: `engine.test.mjs` 119 pass / 0 fail, `whitaker-evidence.test.mjs` 11 pass / 0 fail, `approved-takeoff.test.mjs` passed, `browser-graph.test.mjs` passed, `quantity-ownership.test.mjs` 1 pass / 0 fail.
-- Website Playwright (Chromium desktop and mobile): **122 passed**.
-- Integration suite with `DATABASE_URL` and S3 set: **4 files, 24 passed, 2 skipped**. The two skips are the guards that run only when `APEX_REQUIRE_DESIGNER_CONTRACT` or `APEX_REQUIRE_TAKEOFF_CHAIN` is set and the engine file is missing. With both engines present, the Postgres adapter (including a second run of the calendar-date case against the same database), the S3 adapter, the Designer contract, and the takeoff-to-proposal chain all passed.
-- `pnpm audit --prod`: critical 0, high 0, moderate 1 (`uuid` via `exceljs`). Designer `npm audit`: critical 0, high 0, moderate 4 (`uuid`/`exceljs`, and `vitest`/`@vitest/mocker`). Forcing those would install `exceljs@3.4.0` or `vitest@5`, so they were left.
+1. Deploy only an independently accepted candidate to staging under explicit release authority, then complete signed-in staff and customer-isolation acceptance through Cloudflare Access.
+2. Complete the entire browser lifecycle, including inspection, release, and closeout. A native synthetic Permit release confirmation blocked browser automation; the database remained in-progress and no blind retry was made. Backend lifecycle proof does not close this browser gate.
+3. Demonstrate managed Neon recovery and independent retained R2 evidence recovery, including retrieval/checksum checks, before real jobs or money.
+4. Confirm pilot staff/roles, final HTTPS customer-link origin, actual approved pricing, and operational lead-response ownership. No mocked adapter or human invoice reference proves live accounting reconciliation.
 
-The 2026-08-13 GitHub Actions run `31735048854` is historical. It is not the current verification.
-
-## Deployment status
-
-Hosting is Cloudflare only, never Render, Vercel, or GitHub Actions. The procedure is [`docs/runbooks/cloudflare-staging.md`](docs/runbooks/cloudflare-staging.md): Apex OS as a Cloudflare Container on `*.workers.dev`, the website on Cloudflare Pages (`*.pages.dev`), Neon Postgres via the pooled connection string (`CONTAINER_DATABASE_URL`), and R2 evidence. [`docs/runbooks/deployment.md`](docs/runbooks/deployment.md) is the old Render procedure. `render.yaml` and the GitHub Actions workflows have been removed. Production has not been touched.
-
-Required staging configuration:
-
-- managed PostgreSQL (`DATABASE_URL`, with verified TLS);
-- S3/R2-compatible private evidence storage;
-- OIDC issuer, audience, and public SPA client;
-- final HTTPS `APEX_PUBLIC_ORIGIN` before issuing customer links;
-- optional customer contact phone/label; and
-- real, approved price inputs for each estimate. There is intentionally no environment-backed inferred rate card.
-
-Migrations run forward on application startup under a PostgreSQL advisory lock. Never edit an applied migration. Do not follow the Render runbook to deploy.
-
-## Remaining operational work
-
-1. Stand up staging from [`docs/runbooks/cloudflare-staging.md`](docs/runbooks/cloudflare-staging.md) on Nick's machine. Do not deploy to Render. The runbook's placeholders are the values that still have to be supplied.
-2. Execute the staging acceptance flow in [`NEXT.md`](NEXT.md).
-3. Exercise and document a backup restore before the pilot carries real money.
-4. Obtain the brochure/reference inputs before implementing the deferred equipment-catalog and excavator-specific dig-sheet work.
-
-The legacy takeoff-to-proposal chain reads `archive/proposal-engine` in this repository. No proposal-engine deploy key is required.
-
-## Historical records
-
-- [`docs/status.md`](docs/status.md) is the chronological engineering record. Sections dated before this update describe the system as it existed then and are intentionally preserved.
-- [`docs/archive/`](docs/archive/README.md) keeps historical artifacts that are not copies of the live trees, including the old `designer-quantity-v4` fixtures. Do not rewrite those fixtures to look current. Duplicate repo snapshots that used to sit beside them were removed; that history lives in git, and the old GitHub repositories were deleted.
-- Current active guidance is this file, [`README.md`](README.md), [`NEXT.md`](NEXT.md), and [`docs/runbooks/cloudflare-staging.md`](docs/runbooks/cloudflare-staging.md). The Render runbook is historical.
+No completion percentage or business-readiness claim is made. See [NEXT.md](NEXT.md) for the exact next acceptance sequence. Historical engineering records remain in `docs/status.md` and Git history.

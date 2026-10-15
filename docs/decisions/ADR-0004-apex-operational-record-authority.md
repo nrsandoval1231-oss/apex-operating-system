@@ -5,7 +5,7 @@
 
 ## Decision
 
-PostgreSQL is the system of record for Leads, opportunity next actions, Proposal state, and Job state. A Lead exists before a Job; its durable follow-up history is keyed by the canonical Lead ID. A Job is created only by the existing accepted Proposal lifecycle.
+PostgreSQL is the system of record for Leads, opportunity next actions, Proposal state, Job state, schedules, and tracked material requirements, orders, and receipts. Procurement records coordinate work; they do not issue external orders or establish accounting commitments. A Lead exists before a Job; its durable follow-up history is keyed by the canonical Lead ID. A Job is created only by the existing accepted Proposal lifecycle.
 
 This decision explicitly supersedes decision-register items 24 and 25 and PRD 05's Monday and HubSpot working assumptions **for Apex operational records**. The historical register and PRD text remain unchanged as provenance. Monday or HubSpot may later serve bounded display or communications adapters using mapped external IDs, each subject to its own approval. Neither becomes an authority for Apex Lead, Proposal, or Job state by this decision.
 
@@ -14,7 +14,7 @@ This decision explicitly supersedes decision-register items 24 and 25 and PRD 05
 - QuickBooks remains the accounting authority.
 - Designer remains the measured-quantity authority; the pricing engine remains the estimate authority.
 - n8n remains the asynchronous integration boundary.
-- Cloudflare remains the staging host.
+- Cloudflare remains the approved hosting environment.
 - This decision authorizes no external account, customer communication, finance action, or production write.
 
 ## Rationale

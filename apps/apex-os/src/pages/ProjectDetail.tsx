@@ -6,11 +6,13 @@ import { useDrawSchedule, useJob, useJobCloseout, useJobGates, useJobInspections
 import AttachTakeoff from '../components/AttachTakeoff';
 import AssignSuperintendent from '../components/AssignSuperintendent';
 import ConfirmInvoice from '../components/ConfirmInvoice';
+import CreateDrawSchedule from '../components/CreateDrawSchedule';
 import CloseJob from '../components/CloseJob';
 import DownloadRetainedTakeoff from '../components/DownloadRetainedTakeoff';
 import { apiSend } from '../api/client';
 import GateWorkflow from '../components/GateWorkflow';
 import Inspections from '../components/Inspections';
+import Procurement from '../components/Procurement';
 import OpenProject from '../components/OpenProject';
 import QueryState from '../components/QueryState';
 import {
@@ -197,6 +199,7 @@ export default function ProjectDetail({ historical = false }: { historical?: boo
         <a href="#gates">Gates</a>
         <a href="#schedule">Schedule</a>
         <a href="#draws">Draws</a>
+        {['admin', 'office'].includes(me.data?.role ?? '') && <a href="#procurement">Procurement</a>}
         <a href="#takeoff">Takeoff</a>
         <a href="#inspections">Inspections</a>
         <a href="#completion">Completion</a>
@@ -462,6 +465,11 @@ export default function ProjectDetail({ historical = false }: { historical?: boo
         quiet
       />
 
+      {drawPlan !== null && drawPlan.draws.length === 0 && drawPlan.contractCents !== null
+        && !readOnly && ['admin', 'office'].includes(me.data?.role ?? '') && id !== undefined && (
+          <CreateDrawSchedule jobId={id} onDone={draws.reload} />
+        )}
+
       {drawPlan !== null && drawPlan.draws.length > 0 && (
         <>
           <ul className="schedule">
@@ -523,6 +531,10 @@ export default function ProjectDetail({ historical = false }: { historical?: boo
       )}
 
       {/* --------------------------------------------------------- takeoff */}
+
+      {id !== undefined && ['admin', 'office'].includes(me.data?.role ?? '') && (
+        <Procurement jobId={id} readOnly={readOnly} hasApprovedTakeoff={job.approvedTakeoffRevisionId !== null} />
+      )}
 
       <div className="section-rule" id="takeoff"><h2>Takeoff</h2></div>
       <dl className="facts">

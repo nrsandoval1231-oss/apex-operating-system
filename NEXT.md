@@ -1,51 +1,29 @@
 # Apex — Next
 
-## Immediate next milestone: stand up Cloudflare staging, then acceptance
+## Finish the reviewed local candidate
 
-[`docs/runbooks/cloudflare-staging.md`](docs/runbooks/cloudflare-staging.md) is the staging procedure. [`docs/runbooks/deployment.md`](docs/runbooks/deployment.md) describes Render and is historical. Hosting is Cloudflare only, never Vercel. Do not deploy until Nick runs that runbook from his machine. CI remains `scripts/ci.sh`.
+Use the current [.agent/GRAPH.md](.agent/GRAPH.md), [baseline audit](.agent/BASELINE.md), and [STATUS.md](STATUS.md). Preserve the owner vision and existing identity. This work is a controlled engineering candidate, not an accepted pilot.
 
-1. Supply the Cloudflare, Neon, R2, and Access values the runbook lists, then deploy to `*.workers.dev` and `*.pages.dev` only.
-2. Confirm `/ready` reports database and evidence readiness, and that `scripts/staging-smoke.sh` passes.
-3. Run this controlled lifecycle with non-production customer data:
+1. Freeze implementation and explanatory docs. Run the complete local CI entry point with the disposable PostgreSQL and S3-compatible test services. Record the exact commit, commands, exits, expected skips, and remaining unknowns.
+2. Build the same source as a local Cloudflare-compatible Container image; a local image build does not establish deployment.
+3. Obtain independent review of that exact candidate. Repair findings, re-freeze and revalidate changed surfaces, and review the repaired candidate before release.
+4. Prepare one focused PR with the capability audit, test report, browser evidence limits, and open pilot gates. Do not merge or deploy production as part of this mission.
 
-```text
-Create opportunity
-→ open it in Designer
-→ choose Sports Pool 3′–5′–3′
-→ resolve design blockers
-→ download and inspect Takeoff (.xlsx)
-→ Finish estimate
-→ enter every approved measured estimate and direct quote/N/A decision
-→ issue the exact Proposal version
-→ print/save PDF and verify email-copy actions
-→ record acceptance
-→ verify exactly one Job and Project exist
-→ exercise construction mutations
-→ satisfy closeout reconciliation
-→ close and archive
-→ verify read-only History and retained artifacts
-```
+## Staging acceptance after release authorization
 
-4. Retry Finish Estimate, issue, sign, and close commands with the same idempotency keys and confirm no duplicate revision, event, Job, Project, or closeout record appears.
-5. Attempt closed-job mutations and confirm the API refuses them while History, takeoff, Proposal, and retained evidence reads still work.
-6. Complete a staging database restore and evidence spot-check before approving a real pilot.
+The existing staging deployment is audit-anchor `ab74aa3`; the new candidate must not be confused with that observed runtime. Use only [docs/runbooks/cloudflare-staging.md](docs/runbooks/cloudflare-staging.md). The Render procedure is historical.
 
-## Before production
+- Verify reviewed source/image identity, `/health`, `/ready`, private R2 storage, environment validation, and the website Pages build.
+- Sign in through Cloudflare Access with a mailbox mapped to an active staff row. Prove refusal for unknown/inactive staff, least-privilege field access, and customer isolation. An unauthenticated 302 is not a signed-in lifecycle pass.
+- On synthetic data: create/qualify Lead → schedule/delegate follow-up → Designer Sports Pool → inspect Order List workbook → enter explicit prices → issue exact Proposal → record synthetic acceptance → verify one Job/Project → create draw schedule → assign responsibility → track an approved material/order/partial and full receipt → schedule work → record inspections/evidence and authorized Gate releases → record customer update → complete and close → retrieve History and evidence.
+- Retry signing, draw setup, follow-up, procurement receipts, and close commands; verify no duplicate identities, lost history, or repeated effects. Test stale revisions, missing pricing, invalid transitions, closed-job mutation refusal, unavailable integration, reload, and financial unknowns.
+- Dismiss the outstanding test-only native browser confirmation before further browser acceptance. Its release was not assumed successful. Preserve backend-versus-browser evidence boundaries.
+- Retain a PostgreSQL backup and independent object copy, restore to isolated targets, compare manifests/checksums, and retrieve retained artifacts through the restored application. Local emulator/count drills do not prove managed recovery.
 
-- Use the final HTTPS `APEX_PUBLIC_ORIGIN`; do not issue customer links on a temporary hostname.
-- Confirm real staff OIDC identities are mapped to active `app_users` rows and least-privilege roles.
-- Verify approved pricing inputs for the pilot estimate. Apex intentionally has no inferred/default customer price authority.
-- Confirm object-storage versioning and backup retention.
-- Obtain and approve the Hayward catalog and excavator dig-sheet reference before implementing those deferred Designer capabilities.
+## Before real jobs
 
-The legacy takeoff-to-proposal chain reads `apps/designer` and `archive/proposal-engine` in this repository. Do not configure a proposal-engine deploy key.
+Confirm staff ownership/coverage, pilot projects, final HTTPS customer-link origin, and approved price inputs. QuickBooks actuals remain unavailable until a separately authorized, verified integration exists. No general ledger, automatic external ordering, real customer messaging, or financial activation is included here.
 
-## Verification commands
+The procurement pilot tracks four source-pinned material codes and one order line per Job/revision/code. Expand split-order handling or other materials only from demonstrated pilot need; preserve explicit untracked/unknown states.
 
-```bash
-scripts/ci.sh
-```
-
-That runs install, typecheck, the Apex OS build, the Designer build, the website production-webhook refusal, the website check and build, core unit tests, Designer unit tests, the legacy proposal-engine scripts, and website Playwright. Integration tests run only when `DATABASE_URL`, `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, and `S3_SECRET_ACCESS_KEY` are set. Otherwise the script says it skipped them. That skip is not a pass.
-
-The 2026-10-02 run of that script is recorded in [`STATUS.md`](STATUS.md).
+The deferred equipment catalog and excavator-specific dig sheet still require approved reference inputs. Do not implement those while acceptance or a critical lifecycle blocker remains open.

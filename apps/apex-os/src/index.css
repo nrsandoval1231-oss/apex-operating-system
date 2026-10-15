@@ -467,6 +467,53 @@ body {
   overflow-wrap: anywhere;
 }
 
+.procurement-line {
+  padding: 14px var(--gutter);
+  border-bottom: 1px solid var(--rule);
+}
+
+.procurement-line h3 {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 6px;
+  font-family: var(--f-title);
+  font-size: 15px;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.procurement-line form,
+.procurement .inline-form {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  align-items: end;
+  margin-top: 12px;
+}
+
+.procurement-line label,
+.procurement .inline-form label {
+  display: grid;
+  gap: 5px;
+  color: var(--ink-2);
+  font-size: 12px;
+}
+
+.procurement-line input,
+.procurement .inline-form select {
+  width: 100%;
+  min-width: 0;
+}
+
+.procurement-line .state-quiet { margin-bottom: 0; }
+
+@media (max-width: 680px) {
+  .procurement-line form,
+  .procurement .inline-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
 .schedule .figure {
   text-align: right;
   flex-shrink: 0;
