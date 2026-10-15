@@ -115,6 +115,7 @@ The latest verified baseline is in [`STATUS.md`](STATUS.md).
 
 - [`STATUS.md`](STATUS.md) — concise current state, verification, and remaining operational work
 - [`NEXT.md`](NEXT.md) — immediate staging/pilot sequence
+- [`docs/decisions/ADR-0004-apex-operational-record-authority.md`](docs/decisions/ADR-0004-apex-operational-record-authority.md) — current operational authority and explicit Monday/HubSpot supersession
 - [`docs/runbooks/cloudflare-staging.md`](docs/runbooks/cloudflare-staging.md) — current Cloudflare staging deployment, identity, storage, and smoke test
 - [`docs/decisions/project-workspace-gate-boundary.md`](docs/decisions/project-workspace-gate-boundary.md) — authoritative mutation boundary
 - [`docs/decisions/single-signature-gates.md`](docs/decisions/single-signature-gates.md) — current active Gate authority

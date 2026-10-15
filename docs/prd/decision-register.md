@@ -1,5 +1,7 @@
 # Apex — Decision Register
 
+> **Current operational authority, 2026-10-15:** [ADR-0004](../decisions/ADR-0004-apex-operational-record-authority.md) supersedes items 24–25 and the Monday scheduling interpretation below for Apex operational records. PostgreSQL owns those records. The original decisions and approval provenance below are retained as history; QuickBooks remains accounting authority.
+
 **Written 2026-07-26. Answered 2026-08-05.**
 Every open decision across the four repos and seven PRDs, in one place, ranked by what it unlocks
 rather than by when it was discovered.
