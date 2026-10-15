@@ -9,7 +9,7 @@ export default function OpportunityEstimate() {
         <div><Link className="link-quiet" to="/projects">← Projects</Link><h1>Finish estimate</h1></div>
         <div className="stamp">Opportunity<b>{leadId?.slice(-10) ?? 'Missing'}</b></div>
       </header>
-      {leadId ? <FinishEstimate leadId={leadId} /> : <p className="error">This opportunity ID is missing.</p>}
+      {leadId ? <FinishEstimate key={leadId} leadId={leadId} /> : <p className="error">This opportunity ID is missing.</p>}
     </>
   );
 }

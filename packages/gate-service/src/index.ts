@@ -543,38 +543,33 @@ export class GateService {
     definitionKey: string;
   }): Promise<GateState> {
     await assertJobMutable(this.db, input.jobId);
-    const existing = await this.db.query<{ gate_instance_id: GateInstanceId }>(
-      `select gate_instance_id from gate_instances
-       where job_id = $1 and definition_key = $2`,
-      [input.jobId, input.definitionKey],
-    );
-    if (existing.rows[0]) return this.getGate(existing.rows[0].gate_instance_id);
-
-    const definition = await this.db.query<{ version: number }>(
-      `select version from gate_definitions
-       where definition_key = $1 and active = true
-       order by version desc limit 1`,
-      [input.definitionKey],
-    );
-    const version = definition.rows[0]?.version;
-    if (version === undefined) {
-      throw new DomainRuleError(`Unknown or inactive Gate definition: ${input.definitionKey}.`);
-    }
-
-    const approved = await this.db.query<{ revision_id: string }>(
-      `select revision_id from takeoff_revisions
-       where job_id = $1 and status = 'approved'
-       order by revision_number desc limit 1`,
-      [input.jobId],
-    );
-    if (!approved.rows[0]) throw new DomainRuleError('A Gate requires an approved Designer takeoff revision.');
-
-    await this.db.query(
-      `insert into gate_instances
-       (gate_instance_id, job_id, definition_key, definition_version, approved_takeoff_revision_id, status)
-       values ($1, $2, $3, $4, $5, 'not-started')`,
-      [input.gateInstanceId, input.jobId, input.definitionKey, version, approved.rows[0].revision_id],
-    );
+    let existingId: GateInstanceId | undefined;
+    await this.db.transaction(async (tx) => {
+      await assertJobMutable(tx, input.jobId);
+      const existing = await tx.query<{ gate_instance_id: GateInstanceId }>(
+        `select gate_instance_id from gate_instances where job_id = $1 and definition_key = $2`,
+        [input.jobId, input.definitionKey],
+      );
+      if (existing.rows[0]) { existingId = existing.rows[0].gate_instance_id; return; }
+      const definition = await tx.query<{ version: number }>(
+        `select version from gate_definitions where definition_key = $1 and active = true order by version desc limit 1`,
+        [input.definitionKey],
+      );
+      const version = definition.rows[0]?.version;
+      if (version === undefined) throw new DomainRuleError(`Unknown or inactive Gate definition: ${input.definitionKey}.`);
+      const approved = await tx.query<{ revision_id: string }>(
+        `select revision_id from takeoff_revisions where job_id = $1 and status = 'approved' order by revision_number desc limit 1`,
+        [input.jobId],
+      );
+      if (!approved.rows[0]) throw new DomainRuleError('A Gate requires an approved Designer takeoff revision.');
+      await tx.query(
+        `insert into gate_instances
+         (gate_instance_id, job_id, definition_key, definition_version, approved_takeoff_revision_id, status)
+         values ($1, $2, $3, $4, $5, 'not-started')`,
+        [input.gateInstanceId, input.jobId, input.definitionKey, version, approved.rows[0].revision_id],
+      );
+    });
+    if (existingId) return this.getGate(existingId);
     return this.getGate(input.gateInstanceId);
   }
 
@@ -726,6 +721,7 @@ export class GateService {
     const persisted: ApexEvent[] = [];
 
     await this.db.transaction(async (tx) => {
+      await assertJobMutable(tx, state.jobId);
       if (command.type === 'add-evidence' && context.evidence) {
         const actor = command.actor;
         if (actor.kind !== 'user') throw new Error('Evidence capture requires a user actor.');
@@ -939,6 +935,7 @@ export class GateService {
     const correlationId = createCanonicalId('event');
 
     await this.db.transaction(async (tx) => {
+      await assertJobMutable(tx, input.jobId);
       await tx.query(
         `insert into projects (job_id, current_phase_key, superintendent_user_id, created_by)
          values ($1, $2, $3, $4)`,
@@ -990,6 +987,7 @@ export class GateService {
     }
 
     await this.db.transaction(async (tx) => {
+      await assertJobMutable(tx, jobId);
       const event = await this.writeEvent(tx, {
         eventType: 'project.phase_changed',
         jobId,
@@ -1040,6 +1038,7 @@ export class GateService {
     if (duplicate.rows.length > 0) return project;
     const at = new Date().toISOString();
     await this.db.transaction(async (tx) => {
+      await assertJobMutable(tx, jobId);
       await tx.query(
         'update projects set target_completion_start = $2, target_completion_end = $3, updated_at = now() where job_id = $1',
         [jobId, target.targetCompletionStart, target.targetCompletionEnd],
@@ -1253,6 +1252,7 @@ export class GateService {
     const correlationId = createCanonicalId('event');
 
     await this.db.transaction(async (tx) => {
+      await assertJobMutable(tx, input.jobId);
       /*
        * Retire the old revision before inserting the new one. `one_approved_takeoff_per_job`
        * is a partial unique index, so two approved rows cannot coexist even for the
@@ -1581,6 +1581,7 @@ export class GateService {
     const signedAt = new Date().toISOString();
 
     await this.db.transaction(async (tx) => {
+      await assertJobMutable(tx, input.jobId);
       for (const { template, amountCents } of allocated) {
         const contractReleased = template.releaseCondition === 'contract-signed';
         // A job that released draw-bearing Gates before it had a schedule
@@ -1715,20 +1716,24 @@ export class GateService {
   }): Promise<DrawSchedule> {
     await assertJobMutable(this.db, input.jobId);
     if (input.actor.kind !== 'user') throw new DomainRuleError('Confirming an invoice requires an authenticated human actor.');
+    const invoicedBy = input.actor.userId;
     if (!DRAW_SCHEDULE_AUTHORITY.includes(input.actor.role as (typeof DRAW_SCHEDULE_AUTHORITY)[number])) {
       throw new RoleRefusalError(`Role ${input.actor.role} may not confirm an invoice.`);
     }
     const reference = input.invoiceReference.trim();
     if (reference.length === 0) throw new DomainRuleError('An invoice confirmation needs the accounting system reference.');
 
-    const updated = await this.db.query<{ draw_id: string }>(
+    const updated = await this.db.transaction(async (tx) => {
+      await assertJobMutable(tx, input.jobId);
+      return tx.query<{ draw_id: string }>(
       `update job_draws
        set status = 'invoiced', invoice_reference = $3, invoiced_at = now(), invoiced_by = $4,
            due_date = coalesce($5, due_date)
        where job_id = $1 and draw_code = $2 and status = 'eligible'
        returning draw_id`,
-      [input.jobId, input.drawCode, reference, input.actor.userId, input.dueDate ?? null],
-    );
+      [input.jobId, input.drawCode, reference, invoicedBy, input.dueDate ?? null],
+      );
+    });
     if (updated.rows.length === 0) {
       throw new DomainRuleError(
         `Draw ${input.drawCode} is not eligible to bill on this job, or has already been invoiced.`,
@@ -1769,6 +1774,7 @@ export class GateService {
   }): Promise<ScheduledVisit> {
     await assertJobMutable(this.db, input.jobId);
     if (input.actor.kind !== 'user') throw new DomainRuleError('Scheduling a visit requires an authenticated human actor.');
+    const createdBy = input.actor.userId;
     if (!SCHEDULE_AUTHORITY.includes(input.actor.role as (typeof SCHEDULE_AUTHORITY)[number])) {
       throw new RoleRefusalError(`Role ${input.actor.role} may not schedule a subcontractor visit.`);
     }
@@ -1779,13 +1785,16 @@ export class GateService {
       throw new DomainRuleError('Gunite/shotcrete is a one-day activity; its end date must equal its start date.');
     }
     const visitId = createCanonicalId('visit');
-    await this.db.query(
+    await this.db.transaction(async (tx) => {
+      await assertJobMutable(tx, input.jobId);
+      await tx.query(
       `insert into scheduled_visits
        (visit_id, job_id, subcontractor_id, phase_key, starts_on, ends_on, note, created_by)
        values ($1, $2, $3, $4, $5, $6, $7, $8)`,
       [visitId, input.jobId, input.subcontractorId, input.phaseKey,
-        input.startsOn, input.endsOn, input.note ?? null, input.actor.userId],
-    );
+        input.startsOn, input.endsOn, input.note ?? null, createdBy],
+      );
+    });
     const visit = (await this.listJobVisits(input.jobId)).find((row) => row.visitId === visitId);
     if (!visit) throw new Error('Visit was not persisted.');
     return visit;
@@ -1836,6 +1845,7 @@ export class GateService {
     }
 
     await this.db.transaction(async (tx) => {
+      await assertJobMutable(tx, jobId);
       await tx.query(
         `insert into visit_reschedules
          (visit_id, from_starts_on, from_ends_on, to_starts_on, to_ends_on, reason, moved_by)
