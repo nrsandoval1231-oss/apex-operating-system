@@ -83,7 +83,7 @@ The existing S3 adapter already speaks the S3 API, including R2. Staging sets `S
 npx wrangler r2 bucket create apex-evidence-staging
 ```
 
-In the dashboard, turn on bucket versioning before any real evidence is written. Then create an R2 API token with object read and write on `apex-evidence-staging`.
+R2 does not support S3 bucket versioning ([Cloudflare's S3 compatibility list](https://developers.cloudflare.com/r2/api/s3/api/)). Create an R2 API token with object read and write on `apex-evidence-staging`.
 
 ```text
 S3_ENDPOINT=https://REPLACE_WITH_ACCOUNT_ID.r2.cloudflarestorage.com
@@ -103,6 +103,14 @@ printf '%s' 'REPLACE_WITH_R2_SECRET_ACCESS_KEY' | npx wrangler secret put S3_SEC
 ```
 
 Do not set `DATABASE_URL`, `GATE_JWT_SECRET`, `GATE_LOCAL_USER`, or any `APEX_OIDC_*` variable on the Worker. The database secret is `CONTAINER_DATABASE_URL`. The Worker copies it into the container as `DATABASE_URL`. A second identity mechanism makes the process refuse to start.
+
+### Retained copy and restore
+
+Because R2 versioning is unavailable, retain a separate copy of the evidence bucket in an independently administered account or storage provider. Use an S3-compatible copy tool against the R2 endpoint; keep the copy outside the source bucket and record a manifest of object keys, sizes, and checksums. After each copy, compare the source and destination manifests and verify the copied object checksums.
+
+Back up Postgres separately with `pg_dump --format=custom` and retain the dump outside the database account. Restore it with `pg_restore --exit-on-error --no-owner` into a newly created isolated database, then check the applied migration version, expected row counts, and database constraints. Never use a production or staging database as the restore target.
+
+These steps describe the required recovery procedure; a successful backup and restore drill has not been demonstrated. Record and review a completed drill before claiming recoverability.
 
 ## 4. Cloudflare Access
 

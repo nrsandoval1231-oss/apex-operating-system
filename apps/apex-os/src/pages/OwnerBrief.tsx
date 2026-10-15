@@ -79,6 +79,7 @@ export default function OwnerBrief() {
 
   return (
     <>
+      <p className="state-quiet">Coverage note: this frozen construction brief does not include pre-contract opportunity follow-ups. Review Today for that separate lane.</p>
       <header className="title-block">
         <h1>Brief</h1>
         <div className="stamp">

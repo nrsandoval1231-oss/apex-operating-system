@@ -8,6 +8,28 @@ set -euo pipefail
 ROOT="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
 cd "$ROOT"
 
+# Keep Corepack shims writable and scoped to this run. Child processes inherit
+# PATH, so every nested pnpm command uses the pinned package manager without
+# writing beside Node or requiring an administrator.
+COREPACK_TMP_ROOT="${TMPDIR:-/tmp}"
+COREPACK_SHIMS="$(mktemp -d "${COREPACK_TMP_ROOT%/}/apex-ci-corepack.XXXXXXXX")"
+case "$COREPACK_SHIMS" in
+  "${COREPACK_TMP_ROOT%/}"/apex-ci-corepack.*) ;;
+  *) printf 'ci: unexpected Corepack shim directory: %s\n' "$COREPACK_SHIMS" >&2; exit 1 ;;
+esac
+cleanup_corepack_shims() {
+  case "$COREPACK_SHIMS" in
+    "${COREPACK_TMP_ROOT%/}"/apex-ci-corepack.*)
+      rm -rf -- "$COREPACK_SHIMS"
+      COREPACK_SHIMS=""
+      ;;
+  esac
+}
+trap cleanup_corepack_shims EXIT
+corepack enable --install-directory "$COREPACK_SHIMS"
+PATH="$COREPACK_SHIMS:$PATH"
+export PATH
+
 log() {
   printf '\n== %s\n' "$1"
 }
@@ -18,8 +40,6 @@ fail() {
 }
 
 log "install"
-corepack enable
-corepack prepare pnpm@11.18.0 --activate
 pnpm install --frozen-lockfile
 # Designer's typecheck and tests use its own npm tree. Install it before
 # typecheck, and not at the same time as another install into that directory.

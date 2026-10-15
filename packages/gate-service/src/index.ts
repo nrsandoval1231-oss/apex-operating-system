@@ -74,6 +74,7 @@ import {
 import { InspectionService } from './inspections.js';
 import { assertJobMutable } from './jobState.js';
 import { ProposalService, type FinishEstimateResult } from './proposal.js';
+import { LeadFollowupService } from './leadFollowup.js';
 export { ProposalService, type FinishEstimateResult } from './proposal.js';
 
 export interface EvidenceWrite {
@@ -500,6 +501,12 @@ export class GateService {
   constructor(private readonly db: Database) {}
 
   private proposalService(): ProposalService { return new ProposalService(this.db); }
+  private leadFollowupService(): LeadFollowupService { return new LeadFollowupService(this.db); }
+
+  getLeadFollowupsToday(today: string) { return this.leadFollowupService().getToday(today); }
+  getOpportunityWork(leadId: string) { return this.leadFollowupService().getOpportunity(leadId); }
+  scheduleLeadFollowup(input: Parameters<LeadFollowupService['schedule']>[0]) { return this.leadFollowupService().schedule(input); }
+  completeLeadFollowup(input: Parameters<LeadFollowupService['complete']>[0]) { return this.leadFollowupService().complete(input); }
 
   finishEstimate(input: Parameters<ProposalService['finishEstimate']>[0]): Promise<FinishEstimateResult> {
     return this.proposalService().finishEstimate(input);

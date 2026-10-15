@@ -25,7 +25,7 @@ Opportunity
 
 A pre-contract intake creates a Lead/opportunity only. Apex does **not** create a construction Job until an authorized user records acceptance of the exact issued Proposal version. Closed projects remain searchable and readable, while mutation APIs reject further operational changes.
 
-This code is production-shaped but deployment remains an explicit operator decision. See [`STATUS.md`](STATUS.md) for the current verified baseline and [`docs/runbooks/deployment.md`](docs/runbooks/deployment.md) before staging or production work.
+This code is production-shaped but deployment remains an explicit operator decision. See [`STATUS.md`](STATUS.md) for the current verified baseline and [`docs/runbooks/cloudflare-staging.md`](docs/runbooks/cloudflare-staging.md) before staging or production work.
 
 ## Authoritative components
 
@@ -115,7 +115,7 @@ The latest verified baseline is in [`STATUS.md`](STATUS.md).
 
 - [`STATUS.md`](STATUS.md) — concise current state, verification, and remaining operational work
 - [`NEXT.md`](NEXT.md) — immediate staging/pilot sequence
-- [`docs/runbooks/deployment.md`](docs/runbooks/deployment.md) — deployment, rollback, backup, identity, storage, and CI keys
+- [`docs/runbooks/cloudflare-staging.md`](docs/runbooks/cloudflare-staging.md) — current Cloudflare staging deployment, identity, storage, and smoke test
 - [`docs/decisions/project-workspace-gate-boundary.md`](docs/decisions/project-workspace-gate-boundary.md) — authoritative mutation boundary
 - [`docs/decisions/single-signature-gates.md`](docs/decisions/single-signature-gates.md) — current active Gate authority
 - [`docs/requirements/designer-next-slice.md`](docs/requirements/designer-next-slice.md) — implemented Designer slice and explicitly deferred catalog/dig-sheet items
