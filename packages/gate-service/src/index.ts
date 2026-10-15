@@ -1399,6 +1399,7 @@ export class GateService {
     const at = new Date().toISOString();
 
     await this.db.transaction(async (tx) => {
+      await assertJobMutable(tx, input.jobId);
       await tx.query(
         'update projects set superintendent_user_id = $2, updated_at = now() where job_id = $1',
         [input.jobId, input.superintendentUserId],
