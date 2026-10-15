@@ -9,6 +9,7 @@ import {
 import { apiSend } from '../api/client';
 import { buildOrderWorkbook } from '../lib/xlsx';
 import { MEASURED_LINE_DEFINITIONS } from '@apex/pricing-engine';
+import { parseFeeRateBps } from '../lib/feeRate.js';
 
 const directDefinitions = [
   [300, 'Pool Equipment'], [500, 'Utilities - Plumber & Electrician'], [600, 'Lights'],
@@ -60,8 +61,13 @@ export default function FinishEstimate({ leadId }: { leadId: string }) {
 
   const finish = async () => {
     if (!submission) return setError('Choose the approved Designer takeoff first.');
-    const percent = Number(feePercent);
-    if (!Number.isFinite(percent) || percent < 0 || percent > 100) return setError('Enter the approved fee from 0% through 100%.');
+    if (result?.proposal.leadId !== undefined && result.proposal.leadId !== leadId) {
+      setResult(null);
+      return setError('This estimate belongs to a different opportunity. Reload its Designer takeoff before finishing.');
+    }
+    let feeRateBps: number;
+    try { feeRateBps = parseFeeRateBps(feePercent); }
+    catch (caught) { return setError(caught instanceof Error ? caught.message : 'Enter the approved fee from 0% through 100%.'); }
     setBusy(true); setError(null);
     try {
       const directLines = directDefinitions.map(([code, name]) => {
@@ -91,7 +97,7 @@ export default function FinishEstimate({ leadId }: { leadId: string }) {
           FinishEstimateResultSchema.shape.proposal, { method: 'POST', body: {
             expectedVersionNumber: result.proposal.versionNumber,
             expectedDraftRevision: result.proposal.draftRevision,
-            directLines, measuredLines, feeRateBps: Math.round(percent * 100),
+            directLines, measuredLines, feeRateBps,
           } });
         const payload = updated.proposalPayload;
         const blockers = Array.isArray(payload['blockers']) ? payload['blockers'] : [];
@@ -105,7 +111,7 @@ export default function FinishEstimate({ leadId }: { leadId: string }) {
         }
       } else {
         next = await apiSend(`/api/opportunities/${leadId}/finish-estimate`, FinishEstimateResultSchema, {
-          method: 'POST', body: { submission, directLines, measuredLines, feeRateBps: Math.round(percent * 100) },
+          method: 'POST', body: { submission, directLines, measuredLines, feeRateBps },
         });
       }
       setResult(next);
