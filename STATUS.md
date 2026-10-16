@@ -37,7 +37,7 @@ The prior deployment handoff identifies audit-anchor `ab74aa3` on the existing w
 ## Open pilot gates
 
 1. Deploy only an independently accepted candidate to staging under explicit release authority, then complete signed-in staff and customer-isolation acceptance through Cloudflare Access.
-2. Complete the entire browser lifecycle, including inspection, release, and closeout. A native synthetic Permit release confirmation blocked browser automation; the database remained in-progress and no blind retry was made. Backend lifecycle proof does not close this browser gate.
+2. Local browser closeout is demonstrated on candidate `a3ddbf8`: `apps/apex-os/tests/closeout-acceptance.e2e.mjs` runs the built gate-api against PostgreSQL and S3-compatible storage with signed pilot tokens. Over HTTP it signs one priced Proposal (a retry returns the same Job), refuses early completion/close (409), records inspections and releases six Gates. In the browser it uploads Final evidence, passes requirements, accepts the native release confirmation, completes, closes (superintendent close 403), and lands on the read-only History record. Closed-job Gate/phase mutation returns 409; evidence remains readable to staff and 403 anonymously. This is local acceptance, not staging; the same journey still needs to run signed in through Cloudflare Access (gate 1).
 3. Demonstrate managed Neon recovery and independent retained R2 evidence recovery, including retrieval/checksum checks, before real jobs or money.
 4. Confirm pilot staff/roles, final HTTPS customer-link origin, actual approved pricing, and operational lead-response ownership. No mocked adapter or human invoice reference proves live accounting reconciliation.
 
