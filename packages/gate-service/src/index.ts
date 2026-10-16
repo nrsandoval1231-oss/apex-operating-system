@@ -905,6 +905,18 @@ export class GateService {
       if (row.current_phase_key !== finalPhase) {
         throw new DomainRuleError('Mark the job complete from the final construction phase.');
       }
+      // Handover tells the customer the build is done, so every required Gate
+      // and inspection must already be clear. Draws can still be invoiced after.
+      const closeout = await summarizeCloseout(tx, input.jobId);
+      const outstanding = [
+        !closeout.gates.complete ? `${closeout.gates.required - closeout.gates.released} gates are not released` : null,
+        !closeout.inspections.complete
+          ? `${closeout.inspections.required - closeout.inspections.cleared} inspections are incomplete`
+          : null,
+      ].filter((item): item is string => item !== null);
+      if (outstanding.length > 0) {
+        throw new DomainRuleError(`Cannot hand over this job yet: ${outstanding.join('; ')}.`);
+      }
       const baseKey = commandKey(input.idempotencyKey);
       const at = new Date().toISOString();
       const event = await this.writeEvent(tx, {

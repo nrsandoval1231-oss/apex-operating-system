@@ -109,4 +109,23 @@ describe.skipIf(!available)('material procurement idempotency on PostgreSQL', ()
     expect((await db.query('select revision from material_procurement where line_id=$1', [firstLine.lineId])).rows[0]?.revision).toBe(saved.revision);
     expect((await db.query('select count(*)::int as count from material_procurement_history where idempotency_key=$1', [key])).rows[0]?.count).toBe(1);
   });
+
+  it('replays a concurrent retry with the same key instead of reporting a stale revision', async () => {
+    const jobId = await makeJob();
+    const line = await service().createProcurement({
+      jobId, actor, quantityCode: quantity.code, neededBy: null, idempotencyKey: `procurement-retry:${jobId}:create`,
+    });
+    const changes = {
+      expectedRevision: line.revision, orderedQuantity: 100, vendor: 'Steel Yard', orderReference: 'PO-RACE-1',
+      neededBy: null, expectedOn: null, receivedQuantity: 25,
+    };
+    const key = `procurement-retry:${jobId}:race`;
+    const results = await Promise.allSettled(Array.from({ length: 4 }, () =>
+      service().updateProcurement({ lineId: line.lineId, actor, idempotencyKey: key, changes, action: 'receipt' })));
+    expect(results.map((result) => result.status)).toEqual(['fulfilled', 'fulfilled', 'fulfilled', 'fulfilled']);
+    for (const result of results) {
+      if (result.status === 'fulfilled') expect(result.value).toMatchObject({ revision: line.revision + 1, receivedQuantity: 25 });
+    }
+    expect((await db.query('select count(*)::int as count from material_procurement_history where idempotency_key=$1', [key])).rows[0]?.count).toBe(1);
+  });
 });
