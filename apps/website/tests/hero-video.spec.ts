@@ -87,6 +87,10 @@ test.describe('HeroVideo production controller', () => {
 });
 
 test('the native MP4 fixture is playable by Chromium', async ({ page }) => {
+  // Open-source Chromium builds ship without H.264. Chrome for Testing, which
+  // Playwright installs, has it; skip with the reason rather than fail elsewhere.
+  const h264 = await page.evaluate(() => document.createElement('video').canPlayType('video/mp4; codecs="avc1.42E01E"'));
+  test.skip(h264 === '', 'This Chromium build has no H.264 decoder; run with the Playwright-installed Chrome for Testing.');
   await page.route('**/hero-video-runtime.mp4', (route) =>
     route.fulfill({ path: path.join(process.cwd(), 'tests/fixtures/hero-video-runtime.mp4') }),
   );

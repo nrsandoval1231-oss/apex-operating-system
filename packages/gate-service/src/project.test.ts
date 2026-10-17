@@ -48,7 +48,7 @@ beforeEach(async () => {
 const open = (overrides: Partial<Parameters<GateService['openProject']>[0]> = {}) =>
   service.openProject({ jobId: ids.job, actor: owner, idempotencyKey: 'open-project-key', ...overrides });
 
-const completeCloseout = async () => {
+const approveTakeoff = async () => {
   await service.recordApprovedTakeoff({
     jobId: ids.job,
     actor: owner,
@@ -60,8 +60,9 @@ const completeCloseout = async () => {
       supersedeExisting: false,
     },
   });
-  await open({ initialPhaseKey: 'plaster-fill' });
+};
 
+const clearGatesAndInspections = async () => {
   const gateIds = new Map<string, string>();
   for (const entry of await service.listJobGates(ids.job)) {
     const gateId = createCanonicalId('gate');
@@ -80,6 +81,13 @@ const completeCloseout = async () => {
       outcome: 'passed', occurredOn: '2026-08-13', actor: owner,
     });
   }
+  return gateIds;
+};
+
+const completeCloseout = async () => {
+  await approveTakeoff();
+  await open({ initialPhaseKey: 'plaster-fill' });
+  const gateIds = await clearGatesAndInspections();
 
   for (const draw of DRAW_SCHEDULE_TEMPLATE) {
     await db.query(
@@ -306,6 +314,11 @@ describe('closing a completed job', () => {
     await open({ initialPhaseKey: 'plaster-fill' });
     await expect(service.completeJob({ jobId: ids.job, actor: fieldActor, idempotencyKey: 'field-complete' }))
       .rejects.toThrow(RoleRefusalError);
+    await expect(service.completeJob({ jobId: ids.job, actor: owner, idempotencyKey: 'mark-complete-early' }))
+      .rejects.toThrow(/gates are not released; .*inspections are incomplete/);
+    expect((await service.getJob(ids.job))?.status).toBe('active');
+    await approveTakeoff();
+    await clearGatesAndInspections();
     const completed = await service.completeJob({
       jobId: ids.job, actor: owner, idempotencyKey: 'mark-complete',
     });
