@@ -5,7 +5,7 @@ import {
   type ActionCard,
   type CardGroup,
 } from '@apex/contracts';
-import { useActionCards } from '../api/useJobs';
+import { useActionCards, useLeadFollowupsToday, useMe } from '../api/useJobs';
 import QueryState from '../components/QueryState';
 import { shortId } from '../lib/jobDisplay';
 
@@ -72,8 +72,16 @@ function Card({ card }: { card: ActionCard }) {
 
 export default function TodayFeed() {
   const { data, error, loading, reload } = useActionCards();
+  const me = useMe();
+  const canViewOpportunities = me.data !== null && ['admin', 'office'].includes(me.data.role);
+  const roleKnownWithoutAccess = me.data !== null && ['field', 'superintendent', 'customer'].includes(me.data.role);
+  const precontract = useLeadFollowupsToday(canViewOpportunities);
   const cards = data ?? [];
-  const needsYou = cards.filter((card) => card.group === 'needs-you').length;
+  const followups = precontract.data ?? [];
+  const needsYou = cards.filter((card) => card.group === 'needs-you').length + followups.length;
+  const allLoaded = data !== null && !loading && (canViewOpportunities
+    ? precontract.data !== null && !precontract.loading
+    : roleKnownWithoutAccess);
 
   return (
     <>
@@ -81,7 +89,7 @@ export default function TodayFeed() {
         <h1>Today</h1>
         <div className="stamp">
           {today()}
-          {data !== null && (
+          {allLoaded && (
             <b>{needsYou === 0 ? 'All clear' : `${needsYou} need${needsYou === 1 ? 's' : ''} you`}</b>
           )}
         </div>
@@ -90,11 +98,30 @@ export default function TodayFeed() {
       <QueryState
         loading={loading}
         error={error}
-        isEmpty={cards.length === 0}
+        isEmpty={cards.length === 0 && precontract.data?.length === 0 && precontract.error === null}
         emptyTitle="Nothing needs attention"
-        emptyBody="Every active job is clear. Cards appear here when a gate, a draw, or a project record needs a decision."
+        emptyBody="Construction cards appear when a gate, draw, or project record needs a decision. Pre-contract follow-ups are listed separately above."
         onRetry={reload}
       />
+
+      {precontract.error && <p className="error" role="alert">Pre-contract coverage could not be loaded. Construction cards below remain available. {precontract.error.message}</p>}
+      {me.error && <p className="error" role="alert">Your staff role could not be loaded, so opportunity follow-up coverage is unavailable.</p>}
+      {roleKnownWithoutAccess && <p className="state-quiet">Pre-contract opportunity follow-ups are available to admin and office staff.</p>}
+      {precontract.loading && <p className="state-quiet" aria-live="polite">Loading opportunity follow-ups…</p>}
+      {precontract.data !== null && <section aria-label="Pre-contract opportunity follow-ups">
+        <div className="section-rule"><h2>Opportunity follow-ups</h2>{followups.length > 0 && <span className="count">{followups.length}</span>}</div>
+        {followups.length === 0 ? <p className="state-quiet">No due or missing next actions on open opportunities.</p> : followups.map((item) => {
+          const title = item.kind === 'overdue' ? 'Overdue follow-up' : item.kind === 'due-today' ? 'Follow-up due today' : 'Set the next action';
+          const reason = item.kind === 'missing-next-action'
+            ? item.proposalState === 'issued' ? 'A Proposal has been issued. Record the next action; this does not imply customer contact.' : 'This open opportunity has no recorded next action.'
+            : item.nextAction ?? 'Follow-up action';
+          return <article className={`row settle ${item.kind === 'overdue' ? 'is-urgent' : ''}`} key={item.leadId}>
+            <div className="row-head"><div><div className="row-who">{item.customerName ?? item.leadId}</div><div className="row-where">{item.addressLine}</div></div><span className="tag tag-urgent">{title}</span></div>
+            <h3 className="row-action">{reason}</h3>
+            <div className="row-foot"><span className="due">{item.dueDate ?? ''}{item.assignedUserName ? ` · ${item.assignedUserName}` : ''}</span><Link className="action" to={`/opportunities/${item.leadId}`}>Open opportunity</Link></div>
+          </article>;
+        })}
+      </section>}
 
       {cards.length > 0 && CardGroupSchema.options.map((group) => {
         const inGroup = cards.filter((card) => card.group === group);

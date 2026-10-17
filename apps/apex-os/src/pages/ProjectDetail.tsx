@@ -6,11 +6,13 @@ import { useDrawSchedule, useJob, useJobCloseout, useJobGates, useJobInspections
 import AttachTakeoff from '../components/AttachTakeoff';
 import AssignSuperintendent from '../components/AssignSuperintendent';
 import ConfirmInvoice from '../components/ConfirmInvoice';
+import CreateDrawSchedule from '../components/CreateDrawSchedule';
 import CloseJob from '../components/CloseJob';
 import DownloadRetainedTakeoff from '../components/DownloadRetainedTakeoff';
 import { apiSend } from '../api/client';
 import GateWorkflow from '../components/GateWorkflow';
 import Inspections from '../components/Inspections';
+import Procurement from '../components/Procurement';
 import OpenProject from '../components/OpenProject';
 import QueryState from '../components/QueryState';
 import {
@@ -27,7 +29,7 @@ const DRAW_STATUS_LABEL: Readonly<Record<DrawStatus, string>> = {
   scheduled: 'Not earned',
   eligible: 'Ready to bill',
   invoiced: 'Invoiced',
-  paid: 'Paid',
+  paid: 'Paid (unverified)',
 };
 
 const DRAW_TAG: Readonly<Record<DrawStatus, string>> = {
@@ -197,6 +199,7 @@ export default function ProjectDetail({ historical = false }: { historical?: boo
         <a href="#gates">Gates</a>
         <a href="#schedule">Schedule</a>
         <a href="#draws">Draws</a>
+        {['admin', 'office'].includes(me.data?.role ?? '') && <a href="#procurement">Procurement</a>}
         <a href="#takeoff">Takeoff</a>
         <a href="#inspections">Inspections</a>
         <a href="#completion">Completion</a>
@@ -462,6 +465,11 @@ export default function ProjectDetail({ historical = false }: { historical?: boo
         quiet
       />
 
+      {drawPlan !== null && drawPlan.draws.length === 0 && drawPlan.contractCents !== null
+        && !readOnly && ['admin', 'office'].includes(me.data?.role ?? '') && id !== undefined && (
+          <CreateDrawSchedule jobId={id} onDone={draws.reload} />
+        )}
+
       {drawPlan !== null && drawPlan.draws.length > 0 && (
         <>
           <ul className="schedule">
@@ -506,22 +514,27 @@ export default function ProjectDetail({ historical = false }: { historical?: boo
             </div>
             <dt>Contract</dt>
             <dd>{formatContract(drawPlan.contractCents)}</dd>
-            <dt>Invoiced</dt>
+            <dt>Invoiced (staff recorded)</dt>
             <dd>{formatContract(drawPlan.invoicedCents)}</dd>
             <dt>Collected</dt>
-            <dd>{formatContract(drawPlan.collectedCents)}</dd>
+            <dd>{drawPlan.collectedCents === null ? 'Unavailable — QuickBooks not connected' : formatContract(drawPlan.collectedCents)}</dd>
             <dt>Remaining</dt>
-            <dd>{formatContract(drawPlan.remainingCents)}</dd>
+            <dd>{drawPlan.remainingCents === null ? 'Unavailable — QuickBooks not connected' : formatContract(drawPlan.remainingCents)}</dd>
           </dl>
 
           <p className="notice">
-            Apex OS records what a passed gate makes billable and what a person says they
-            invoiced. It does not issue invoices; QuickBooks remains the financial authority.
+            Invoice references are staff-recorded and unverified. Collections, remaining
+            balance, costs, and profitability are unavailable until connected to an
+            authoritative accounting source; QuickBooks is not connected.
           </p>
         </>
       )}
 
       {/* --------------------------------------------------------- takeoff */}
+
+      {id !== undefined && ['admin', 'office'].includes(me.data?.role ?? '') && (
+        <Procurement jobId={id} readOnly={readOnly} hasApprovedTakeoff={job.approvedTakeoffRevisionId !== null} />
+      )}
 
       <div className="section-rule" id="takeoff"><h2>Takeoff</h2></div>
       <dl className="facts">

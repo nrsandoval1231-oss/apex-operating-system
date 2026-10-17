@@ -1,0 +1,25 @@
+{
+  "stage": "SOURCE_FROZEN_PENDING_FINAL_GATES",
+  "controller_direction": "VALIDATE",
+  "baseline": "ab74aa333c97399004ccbdba20a7b1df58d33ab4",
+  "branch": "codex/apex-business-completion-20261015",
+  "source_packets": [
+    "BIZ001",
+    "OPS002",
+    "OPS003",
+    "F001",
+    "LIFE001",
+    "P001",
+    "ACCEPT001",
+    "OWNER002",
+    "PR-RETRY-001"
+  ],
+  "focused_controller_evidence": "../business-completion-evidence",
+  "final_acceptance_receipt": "../business-completion-evidence/FINAL.json",
+  "final_ci": "PENDING at source freeze",
+  "independent_review": "PENDING at source freeze",
+  "pilot_completion": "OPEN",
+  "real_customer_finance_production_effects": "NONE",
+  "tokens": "UNKNOWN",
+  "config_identity": "UNKNOWN"
+}

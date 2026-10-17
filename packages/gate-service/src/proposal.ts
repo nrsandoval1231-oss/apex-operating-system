@@ -485,6 +485,18 @@ export class ProposalService {
     const jobId = requestedJobId ?? createCanonicalId('job');
     const now = new Date().toISOString();
     await this.db.transaction(async (tx) => {
+      // Serialize contract signing with pre-contract follow-up creation on the
+      // same Lead row. Existing actions are completed in this transaction, so
+      // the signed opportunity cannot retain an open pre-contract action.
+      const lockedLead = await tx.query<{ status: string }>(
+        'select status from leads where lead_id = $1 for update', [current.leadId],
+      );
+      if (!lockedLead.rows[0] || !['accepted', 'qualified', 'proposal'].includes(lockedLead.rows[0].status)) {
+        throw new DomainRuleError('This opportunity is no longer open for signing.');
+      }
+      await tx.query(`update lead_followups set completed_by = $2, completed_at = $3,
+        completion_idempotency_key = $4 where lead_id = $1 and completed_at is null`,
+      [current.leadId, actor.userId, now, `${baseKey}:proposal-signed`]);
       await tx.query(`insert into jobs (job_id, lead_id, signed_proposal_version, status)
         values ($1, $2, $3, 'active')`, [jobId, current.leadId, current.versionNumber]);
       const createdEventId = createCanonicalId('event');

@@ -1,0 +1,52 @@
+{
+  "packet": "OWNER002",
+  "baseSha": "c2215cbe3188fd0439f6b0f880e571accdb39727",
+  "sourceHead": "c2215cbe3188fd0439f6b0f880e571accdb39727",
+  "finishedAtUtc": "2026-10-15T14:39:33.8662549Z",
+  "result": "IMPLEMENTED",
+  "changes": [
+    {
+      "path": "packages/gate-service/src/index.ts",
+      "sha256": "e5ae492c6132482868d6b12da2c5d307a1093294055078d45a88937540d35c1c"
+    },
+    {
+      "path": "packages/contracts/src/procurement.ts",
+      "sha256": "74e7891130664088b87e9c7bac6781845c3bdfe5c8f79dc2d8adf1e0b7dbd452"
+    },
+    {
+      "path": "apps/apex-os/src/components/Procurement.tsx",
+      "sha256": "521cff3291246c61ef09acff7d263d6cf23a0ac13b59071cc4dc123ad2dff4f5"
+    },
+    {
+      "path": "integration-tests/procurement.test.ts",
+      "sha256": "bbf8d983a9f766fcc15f8c26819138045d398087bc3860f336fa7c8a7df10925"
+    }
+  ],
+  "validation": [
+    {
+      "command": "DATABASE_URL=postgresql://postgres@127.0.0.1:55435/apex_business_test pnpm exec vitest run integration-tests/procurement.test.ts --config integration-tests/vitest.config.ts --maxWorkers=1 --no-file-parallelism",
+      "exitCode": 0,
+      "result": "3 passed"
+    },
+    {
+      "command": "pnpm exec tsc -b packages/contracts packages/domain packages/gate-service --pretty false",
+      "exitCode": 0,
+      "result": "passed; refreshed required local package dist artifacts"
+    },
+    {
+      "command": "pnpm exec tsc --noEmit -p apps/apex-os/tsconfig.json --pretty false",
+      "exitCode": 0,
+      "result": "passed"
+    },
+    {
+      "command": "git diff --check",
+      "exitCode": 0,
+      "result": "passed"
+    }
+  ],
+  "unknown": [
+    "Independent review and controller final gates are pending.",
+    "Configuration identity, token usage, and elapsed-to-accepted are UNKNOWN."
+  ],
+  "certification": false
+}

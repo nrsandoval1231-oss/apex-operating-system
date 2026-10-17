@@ -1,0 +1,51 @@
+{
+  "packet": "ACCEPT001",
+  "result": "READY_FOR_REVIEW",
+  "completion_claim": "Added the source-only PostgreSQL business lifecycle regression. Required execution is open for root after P001 freezes and supplies the disposable database.",
+  "certified": false,
+  "repository": {
+    "branch": "codex/apex-business-completion-20261015",
+    "base_sha": "ab74aa333c97399004ccbdba20a7b1df58d33ab4",
+    "head_sha": "264791ee6bf36899c6c2f02821b6addc439a58cb",
+    "candidate": "Uncommitted source-only diff; P001 owns concurrent product source and migration changes."
+  },
+  "changed_files": [
+    {
+      "path": "integration-tests/business-lifecycle.test.ts",
+      "sha256": "8467C4AE896F9D4101F9A22E609C9ED0D04372D5D894BC9CDE910D4DC32E90E7"
+    },
+    {
+      "path": ".agent/ACCEPT001-COMPLETION.json"
+    }
+  ],
+  "validation": [
+    {
+      "command": "PostgreSQL lifecycle test against root-provided disposable DATABASE_URL",
+      "result": "OPEN",
+      "run_by": "root after P001 source freeze",
+      "exit_code": null,
+      "reason": "Packet prohibits database tests and migrations while P001 source is active."
+    },
+    {
+      "command": "TypeScript check for integration-tests/business-lifecycle.test.ts",
+      "result": "OPEN",
+      "run_by": "root after P001 source freeze",
+      "exit_code": null
+    },
+    {
+      "command": "git diff --check",
+      "result": "PASS",
+      "run_by": "builder",
+      "exit_code": 0,
+      "scope": "Shared worktree diff; no whitespace errors, only existing CRLF warning on P001.md."
+    }
+  ],
+  "limitations": [
+    "The synthetic takeoff now includes all fourteen canonical quantities required by the measured price definitions, using fixture values and no claim of Designer provenance.",
+    "Command idempotency keys are namespaced by the generated lead and, where available, job and gate IDs to allow repeated runs against the same disposable database without key collisions. No synthetic rows are deleted.",
+    "This covers backend service lifecycle behavior only; it does not establish a browser workflow.",
+    "Invoice references are synthetic staff-recorded references and do not establish that an invoice was sent or paid.",
+    "Uses unique synthetic IDs and operational migrations; must run only on the disposable PostgreSQL database supplied by root.",
+    "No product source, migrations, deployment, customer communication, or external action was changed or performed."
+  ]
+}
