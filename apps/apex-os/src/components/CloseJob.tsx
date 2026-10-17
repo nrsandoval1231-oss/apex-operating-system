@@ -41,6 +41,8 @@ export default function CloseJob({
   const canComplete = role !== null && COMPLETE_ROLES.includes(role)
     && (job.status === 'active' || job.status === 'on-hold');
   const canClose = role !== null && CLOSE_ROLES.includes(role) && job.status === 'complete';
+  // The server refuses handover until every required Gate and inspection is clear.
+  const handoverReady = finalPhase && closeout?.gates.complete === true && closeout.inspections.complete === true;
 
   return (
     <div className="state" style={{ borderColor: 'var(--sage)' }}>
@@ -59,11 +61,14 @@ export default function CloseJob({
         <button
           type="button"
           className="action"
-          disabled={busy || !finalPhase}
+          disabled={busy || !handoverReady}
           onClick={() => void run(`/api/jobs/${job.jobId}/complete`, false)}
         >
           {busy ? 'Saving…' : 'Mark complete and hand over'}
         </button>
+      )}
+      {canComplete && finalPhase && closeout !== null && !handoverReady && (
+        <p className="notice">Release every required gate and clear every inspection before handover.</p>
       )}
       {canClose && (
         <button
