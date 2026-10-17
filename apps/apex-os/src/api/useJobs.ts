@@ -2,10 +2,13 @@ import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import { z } from 'zod';
 import {
   AppRoleSchema,
+  ApprovedTakeoffRevisionSchema,
   CalendarEntryListSchema,
   ActionCardListSchema,
   CustomerLinkStatusSchema,
   DailyBriefSchema,
+  LeadFollowupTodayListSchema,
+  OpportunityWorkSchema,
   JobInspectionListSchema,
   JobCloseoutSchema,
   JobPhotoListSchema,
@@ -13,13 +16,16 @@ import {
   StaffCustomerDecisionListSchema,
   VisitConflictSchema,
   DrawScheduleSchema,
+  ProcurementListSchema,
   JobGatePlanSchema,
   JobSummaryListSchema,
   JobSummarySchema,
   type ActionCard,
+  type ApprovedTakeoffRevision,
   type CustomerLinkStatus,
   type DailyBrief,
   type DrawSchedule,
+  type ProcurementLine,
   type JobGatePlanEntry,
   type JobInspection,
   type JobCloseout,
@@ -101,6 +107,12 @@ export const useJobs = (view: 'all' | 'active' | 'historical' = 'all'): Query<re
 export const useJob = (jobId: string | undefined): Query<JobSummary> =>
   useResource(jobId === undefined ? null : `/api/jobs/${jobId}`, loadJob);
 
+const loadApprovedTakeoff = (path: string, signal: AbortSignal): Promise<ApprovedTakeoffRevision> =>
+  apiGet(path, ApprovedTakeoffRevisionSchema, signal);
+
+export const useApprovedTakeoff = (jobId: string | undefined, enabled = true): Query<ApprovedTakeoffRevision> =>
+  useResource(jobId === undefined || !enabled ? null : `/api/jobs/${jobId}/approved-takeoff`, loadApprovedTakeoff);
+
 const loadCloseout = (path: string, signal: AbortSignal): Promise<JobCloseout> =>
   apiGet(path, JobCloseoutSchema, signal);
 
@@ -113,6 +125,13 @@ const loadCards = (path: string, signal: AbortSignal): Promise<readonly ActionCa
 /** The §9.5 action feed, derived server-side from stored state. */
 export const useActionCards = (): Query<readonly ActionCard[]> =>
   useResource('/api/today', loadCards);
+
+const loadLeadFollowups = (path: string, signal: AbortSignal) => apiGet(path, LeadFollowupTodayListSchema, signal);
+export const useLeadFollowupsToday = (enabled = true) =>
+  useResource(enabled ? '/api/today/opportunities' : null, loadLeadFollowups);
+const loadOpportunityWork = (path: string, signal: AbortSignal) => apiGet(path, OpportunityWorkSchema, signal);
+export const useOpportunityWork = (leadId: string | undefined) =>
+  useResource(leadId ? `/api/opportunities/${leadId}/work` : null, loadOpportunityWork);
 
 const JobScheduleSchema = z.strictObject({
   visits: ScheduledVisitListSchema,
@@ -143,6 +162,12 @@ const loadDraws = (path: string, signal: AbortSignal): Promise<DrawSchedule> =>
 /** The job's draw schedule and where the money stands. */
 export const useDrawSchedule = (jobId: string | undefined): Query<DrawSchedule> =>
   useResource(jobId === undefined ? null : `/api/jobs/${jobId}/draws`, loadDraws);
+
+const loadProcurement = (path: string, signal: AbortSignal): Promise<readonly ProcurementLine[]> =>
+  apiGet(path, ProcurementListSchema, signal);
+
+export const useJobProcurement = (jobId: string | undefined): Query<readonly ProcurementLine[]> =>
+  useResource(jobId === undefined ? null : `/api/jobs/${jobId}/procurement`, loadProcurement);
 
 const loadGatePlan = (path: string, signal: AbortSignal): Promise<readonly JobGatePlanEntry[]> =>
   apiGet(path, JobGatePlanSchema, signal);

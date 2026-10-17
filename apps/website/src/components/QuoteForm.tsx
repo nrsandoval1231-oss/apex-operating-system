@@ -8,7 +8,7 @@
  * call (AC-4.1). The "demo" framing from the mockup is dropped.
  */
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { VERTICAL_LIST, getVerticalConfig, isVertical, type Vertical } from '../content/verticals';
+import { VERTICAL_LIST, isVertical, type Vertical } from '../content/verticals';
 import { getAttribution } from '../lib/attribution';
 import { generateLeadId } from '../lib/lead-id';
 import {
@@ -86,7 +86,7 @@ export default function QuoteForm({ initialVertical, webhookUrl, phoneDisplay, p
     } else {
       if (emailGiven && !isValidEmail(email)) errs.email = 'Enter a valid email so we can reach you.';
       if (phoneGiven && !isValidPhone(phone))
-        errs.phone = 'Enter a phone number with area code — that’s how we text you back.';
+        errs.phone = 'Enter a phone number with area code so we can reach you.';
     }
 
     setFieldErrors(errs);
@@ -210,22 +210,20 @@ export default function QuoteForm({ initialVertical, webhookUrl, phoneDisplay, p
       <button className="btn" type="submit" disabled={status === 'submitting'}>
         {status === 'submitting' ? 'Sending…' : 'Get my quote →'}
       </button>
-      <p className="note mono">One form, routed to the right crew. We’ll text you back fast.</p>
+      <p className="note mono">One form, routed to the right crew. Our team will review your request.</p>
     </form>
   );
 }
 
 function CapturePanel({ payload, phoneDisplay }: { payload: LeadPayload; phoneDisplay: string }) {
-  const cfg = getVerticalConfig(payload.vertical);
   const name = `${payload.first_name} ${payload.last_name}`.trim() || '—';
   return (
     <div className="capture" role="status" aria-live="polite">
-      <div className="cap-top mono"><span className="dots"><i /><i /><i /></span> request received</div>
+      <div className="cap-top mono"><span className="dots"><i /><i /><i /></span> intake accepted</div>
       <div className="cap-body">
-        <div className="cap-tag">● Lead captured &amp; routed</div>
+        <div className="cap-tag">● Lead captured</div>
         <p className="cap-lead mono">
-          Thanks{payload.first_name ? `, ${payload.first_name}` : ''} — your request is in. The{' '}
-          {payload.vertical} crew will reach out shortly. Need us now? Call {phoneDisplay}.
+          Thanks{payload.first_name ? `, ${payload.first_name}` : ''} — your {payload.vertical} request was accepted. Need us now? Call {phoneDisplay}.
         </p>
         <div className="kv">
           <span className="k">service:</span><span className="v hi">{payload.vertical}</span>
@@ -234,9 +232,8 @@ function CapturePanel({ payload, phoneDisplay }: { payload: LeadPayload; phoneDi
           <span className="k">email:</span><span className="v">{payload.email || '—'}</span>
           <span className="k">source:</span><span className="v">{payload.source} / {payload.medium}</span>
           <span className="k">campaign:</span><span className="v">{payload.campaign}</span>
-          <span className="k">routed_to:</span><span className="v">{cfg.routedTo}</span>
           <span className="k">reference:</span><span className="v">{payload.lead_id}</span>
-          <span className="k">status:</span><span className="v ok">⏱ we’ll text you back fast</span>
+          <span className="k">status:</span><span className="v ok">request accepted</span>
         </div>
       </div>
     </div>

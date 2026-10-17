@@ -1,0 +1,103 @@
+{
+  "packet": "BIZ-001",
+  "status": "BUILDER_COMPLETE_CONTROLLER_REVIEW_PENDING",
+  "objective": "Add a durable, staff-only pre-contract Lead follow-up lane to Today without changing construction ActionCard or frozen DailyBrief contracts.",
+  "repository": "C:/Users/nrsan/Nucleus/02_Projects/Apex/business-completion",
+  "branch": "codex/apex-business-completion-20261015",
+  "base_sha": "ab74aa333c97399004ccbdba20a7b1df58d33ab4",
+  "candidate_identity": {
+    "kind": "uncommitted-owned-surface-fingerprint",
+    "sha256": "385317de02ccd1a1a531886b6313ca378ae6ad92aaf64cb7596f5bee283a7158",
+    "included_paths": [
+      "apps/apex-os/src/App.tsx",
+      "apps/apex-os/src/api/useJobs.ts",
+      "apps/apex-os/src/pages/OpportunityWork.tsx",
+      "apps/apex-os/src/pages/OwnerBrief.tsx",
+      "apps/apex-os/src/pages/TodayFeed.tsx",
+      "apps/gate-api/src/server.test.ts",
+      "apps/gate-api/src/server.ts",
+      "docs/decisions/ADR-0004-apex-operational-record-authority.md",
+      "packages/contracts/src/index.ts",
+      "packages/contracts/src/leadFollowup.ts",
+      "packages/database/migrations/0034_lead_followups.sql",
+      "packages/database/src/index.ts",
+      "packages/gate-service/src/index.ts",
+      "packages/gate-service/src/leadFollowup.test.ts",
+      "packages/gate-service/src/leadFollowup.ts",
+      "packages/gate-service/src/proposal.test.ts",
+      "packages/gate-service/src/proposal.ts"
+    ]
+  },
+  "changed_files": [
+    "apps/apex-os/src/App.tsx",
+    "apps/apex-os/src/api/useJobs.ts",
+    "apps/apex-os/src/pages/OpportunityWork.tsx",
+    "apps/apex-os/src/pages/OwnerBrief.tsx",
+    "apps/apex-os/src/pages/TodayFeed.tsx",
+    "apps/gate-api/src/server.test.ts",
+    "apps/gate-api/src/server.ts",
+    "docs/decisions/ADR-0004-apex-operational-record-authority.md",
+    "packages/contracts/src/index.ts",
+    "packages/contracts/src/leadFollowup.ts",
+    "packages/database/migrations/0034_lead_followups.sql",
+    "packages/database/src/index.ts",
+    "packages/gate-service/src/index.ts",
+    "packages/gate-service/src/leadFollowup.test.ts",
+    "packages/gate-service/src/leadFollowup.ts",
+    "packages/gate-service/src/proposal.test.ts",
+    "packages/gate-service/src/proposal.ts"
+  ],
+  "implementation": [
+    "Added append-only Lead follow-up records, one-open-row uniqueness, staff-assignment checks, opportunity lifecycle checks, and migration 0034 registration.",
+    "Added a separate typed pre-contract Today projection with overdue, due-today, and missing-next-action states, stable ordering, and truthful issued-Proposal wording.",
+    "Added admin/office-only Today, opportunity detail, schedule/replace, and completion API operations with idempotent retries and retained completion history.",
+    "Added the opportunity page with active admin/office assignment choices, scheduling, completion, and history; route changes suppress stale data and stale save results.",
+    "Today loads the opportunity lane only for admin/office users, avoids an all-clear claim until authorized coverage is loaded, and keeps lane errors scoped. The frozen Brief payload remains unchanged and its page names the follow-up coverage gap.",
+    "Proposal acceptance locks the same Lead row as follow-up writes and resolves any open follow-up inside the signing transaction, preventing a signed Lead from retaining open pre-contract work. Existing one-Job/Project and Proposal immutability behavior is retained."
+  ],
+  "validation": [
+    {
+      "command": "corepack pnpm@11.18.0 exec tsc -b --pretty false",
+      "exit_code": 0,
+      "result": "PASS"
+    },
+    {
+      "command": "$env:DATABASE_URL='postgresql://postgres@127.0.0.1:55435/apex_business_test'; corepack pnpm@11.18.0 exec vitest run packages/gate-service/src/leadFollowup.test.ts packages/gate-service/src/proposal.test.ts apps/gate-api/src/server.test.ts --maxWorkers=1 --no-file-parallelism",
+      "exit_code": 0,
+      "result": "PASS: 3 test files, 52 tests passed, 0 skipped. Covers PGlite lifecycle and API behavior plus existing Proposal regressions. This run used the controller's already-migrated disposable database; latest-migration PostgreSQL proof is recorded in the next entry."
+    },
+    {
+      "command": "$env:DATABASE_URL='postgresql://postgres@127.0.0.1:55435/apex_business_test?options=-csearch_path%3Dbiz001_validation_20261015'; corepack pnpm@11.18.0 exec vitest run packages/gate-service/src/leadFollowup.test.ts packages/gate-service/src/proposal.test.ts --maxWorkers=1 --no-file-parallelism",
+      "exit_code": 0,
+      "result": "PASS: 2 test files, 14 tests passed, 0 skipped against a newly migrated isolated PostgreSQL schema. The temporary schema was dropped after the run. Includes real Postgres duplicate/replacement and sign-vs-follow-up concurrency."
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0,
+      "result": "PASS"
+    }
+  ],
+  "not_run": [
+    "scripts/ci.sh final exact-candidate gate; controller owns this after browser review and source freeze.",
+    "Browser walkthrough and API-error/refresh proof; pending controller CUA walkthrough against the local synthetic setup.",
+    "Independent review."
+  ],
+  "authority": "Local disposable database tests only. No live customer records, external communications, commit, push, merge, or deployment.",
+  "repair_count": 1,
+  "metrics": {
+    "utc_start": "UNKNOWN (not captured at dispatch)",
+    "utc_finish": "2026-10-15 13:48:42 UTC",
+    "planning_duration": "UNKNOWN",
+    "build_duration": "UNKNOWN",
+    "validation_duration": "UNKNOWN",
+    "audit_duration": "UNKNOWN (no independent audit yet)",
+    "elapsed_to_accepted": "UNKNOWN (not independently accepted)",
+    "lane": "single-builder bounded packet",
+    "model": "UNKNOWN (not exposed to builder)",
+    "config_identity": "UNKNOWN",
+    "token_usage": "UNKNOWN"
+  },
+  "unresolved": [
+    "Controller browser proof, final exact-candidate scripts/ci.sh, and independent review remain required before acceptance."
+  ]
+}

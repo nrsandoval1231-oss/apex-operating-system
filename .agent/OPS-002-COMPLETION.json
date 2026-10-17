@@ -1,0 +1,102 @@
+{
+  "packet": "OPS-002",
+  "result": "READY_FOR_REVIEW",
+  "completion_claim": "The assigned customer copy, Cloudflare staging guidance, and README deployment links are updated. The focused website build and controller-run post-edit website and production intake suites passed. This is builder evidence, not certification or evidence that a backup/restore drill was performed.",
+  "certified": false,
+  "repository": {
+    "branch": "codex/apex-business-completion-20261015",
+    "base_sha": "ab74aa333c97399004ccbdba20a7b1df58d33ab4",
+    "head_sha": "ab74aa333c97399004ccbdba20a7b1df58d33ab4",
+    "candidate": "Uncommitted working-tree diff on the stated HEAD; per-file SHA-256 values below identify the changed files."
+  },
+  "changed_files": [
+    {
+      "path": "README.md",
+      "sha256": "F1FE4229EC1264F887F4BCF1E5B23B89E25A1FA8279CC234C476EC71B2EAC9B5"
+    },
+    {
+      "path": "apps/website/src/components/QuoteForm.tsx",
+      "sha256": "8ECA2FEA3023B0A511321C8D5FC505D0D6B840E7E5554FE9263FC19F9013F434"
+    },
+    {
+      "path": "apps/website/src/components/QuoteSection.astro",
+      "sha256": "E44DB2E8764D11ADEC4E423B08B3833E55CEC7225D666F6FDCC2326E1B067908"
+    },
+    {
+      "path": "apps/website/src/content/site-copy.ts",
+      "sha256": "06C593273EBB8E3185383D46C27C9F2BD50B60811CDAD371BD182627EB71581A"
+    },
+    {
+      "path": "apps/website/src/pages/[vertical].astro",
+      "sha256": "87D161053A591AB1B57EBEA7874A53053F52435BD9EE6F5A4B54E26247AED82E"
+    },
+    {
+      "path": "docs/runbooks/cloudflare-staging.md",
+      "sha256": "843DF72245DB66BCAB60FE3A5B937C57FF4B1E373C82537611EE646B646633AE"
+    }
+  ],
+  "validation": [
+    {
+      "command": "pnpm --filter apex-website build",
+      "run_by": "builder",
+      "exit_code": 0,
+      "result": "Astro static build completed; 7 pages built."
+    },
+    {
+      "command": "corepack pnpm@11.18.0 exec playwright test",
+      "working_directory": "apps/website",
+      "environment": "PUBLIC_ENV=development; PUBLIC_LEAD_WEBHOOK_URL_TEST=https://lead-webhook.example/webhook-test/apex-lead-intake; CLAUDECODE, CURSOR_TRACE_ID, and GEMINI_CLI removed",
+      "run_by": "controller after source freeze",
+      "exit_code": 0,
+      "result": "166 Playwright checks passed in 32.6 seconds."
+    },
+    {
+      "command": "corepack pnpm@11.18.0 run test:production",
+      "working_directory": "apps/website",
+      "run_by": "controller after source freeze",
+      "exit_code": 0,
+      "result": "10 production intake checks passed in 7.6 seconds."
+    },
+    {
+      "command": "git diff --check -- README.md apps/website/src/components/QuoteForm.tsx apps/website/src/components/QuoteSection.astro apps/website/src/content/site-copy.ts 'apps/website/src/pages/[vertical].astro' docs/runbooks/cloudflare-staging.md",
+      "run_by": "builder",
+      "exit_code": 0,
+      "result": "No whitespace errors."
+    },
+    {
+      "command": "rg -n -i 'text you back|minutes, not days|text you back fast|reach out shortly' apps/website/src apps/website/dist",
+      "run_by": "builder",
+      "result": "No matches; rg exit 1 is expected for an empty match set."
+    }
+  ],
+  "changes": [
+    "Removed rapid or assured text follow-up wording from the quote form, shared quote panel, homepage copy, and vertical pages while retaining SMS consent controls.",
+    "The success panel reports accepted intake and the failed state continues to direct the visitor to call.",
+    "Replaced the unsupported R2 versioning instruction with Cloudflare's compatibility reference and independent object-copy, manifest/checksum, and isolated Postgres backup/restore guidance.",
+    "The runbook explicitly records that a successful recovery drill has not been demonstrated.",
+    "Updated README deployment links to the active Cloudflare staging runbook without editing the historical Render runbook."
+  ],
+  "uncertainties": [
+    "No R2 copy or Postgres backup/restore drill was performed; recoverability remains unproven.",
+    "No deployment or live website check was performed by this builder."
+  ],
+  "attempts": {
+    "repair_count": 0,
+    "failed_attempts": [
+      "One initial patch application did not match the JSX context and made no changes; the bounded patch was reapplied against the exact source."
+    ]
+  },
+  "metrics": {
+    "lane": "focused",
+    "model": "UNKNOWN",
+    "config_identity": "UNKNOWN",
+    "tokens": "UNKNOWN",
+    "started_at_utc": "UNKNOWN (not captured at dispatch)",
+    "finished_at_utc": "2026-10-15T13:34:53Z",
+    "planning_duration": "UNKNOWN",
+    "build_duration": "UNKNOWN",
+    "validation_duration": "UNKNOWN",
+    "audit_duration": "UNKNOWN",
+    "elapsed_to_accepted": "NOT APPLICABLE; independent acceptance pending"
+  }
+}

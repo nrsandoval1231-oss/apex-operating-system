@@ -12,3 +12,5 @@ export * from './events.js';
 export * from './quantityDigest.js';
 export * from './jobSummary.js';
 export * from './proposal.js';
+export * from './leadFollowup.js';
+export * from './procurement.js';

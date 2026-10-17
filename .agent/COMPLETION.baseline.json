@@ -1,0 +1,29 @@
+{
+  "node": "BASELINE",
+  "status": "PASS_WITH_OPEN_GATES",
+  "base_sha": "ab74aa333c97399004ccbdba20a7b1df58d33ab4",
+  "base_tree": "2b69c5620ff5c4f5a0a178771dd6550bfe0fd946",
+  "current_sha": "ab74aa333c97399004ccbdba20a7b1df58d33ab4",
+  "current_tree": "2b69c5620ff5c4f5a0a178771dd6550bfe0fd946",
+  "changed_source_paths_by_this_agent": [],
+  "commands": [
+    {"command":"git fetch origin main; git rev-parse origin/main","exit":0,"result":"ab74aa333c97399004ccbdba20a7b1df58d33ab4"},
+    {"command":"bash scripts/ci.sh","exit":1,"result":"CRLF shell syntax failure before CI"},
+    {"command":"corepack pnpm@11.18.0 install --frozen-lockfile","exit":0},
+    {"command":"corepack pnpm@11.18.0 typecheck","exit":0},
+    {"command":"corepack pnpm@11.18.0 --filter @apex/os build","exit":0},
+    {"command":"corepack pnpm@11.18.0 exec vitest run --maxWorkers=1 --no-file-parallelism packages apps/gate-api apps/apex-os","exit":0,"result":"42 files, 552 tests, 304.64s; disposable services"},
+    {"command":"apps/designer: npm ci --ignore-scripts; npm run typecheck; npm run build; npm test","exit":0,"result":"26 files, 585 tests"},
+    {"command":"apps/website: astro check; astro build","exit":0,"result":"0 errors, 0 warnings, 2 hints; 7 pages"},
+    {"command":"apps/website: pnpm run test:unit","exit":0,"result":"2 passed"},
+    {"command":"archive/proposal-engine: engine; whitaker-evidence; approved-takeoff; browser-graph; quantity-ownership","exit":0,"result":"119 + 11 and remaining checks passed"}
+  ],
+  "open_gates_at_handoff": ["website Playwright suite", "website production intake Playwright", "estimate-navigation browser regression", "explicit integration-tests suite", "authenticated staging staff lifecycle", "backup/restore"],
+  "utc_started": "2026-10-15T13:08:00Z",
+  "utc_finished": "2026-10-15T13:28:00Z",
+  "model": "gpt-6-luna (inherited)",
+  "config_identity": "UNKNOWN",
+  "tokens": "UNKNOWN",
+  "timing": "Approximate session window; precise planning/build/audit durations UNKNOWN",
+  "independent_review": "Not required for read-only baseline; controller accepted handoff"
+}

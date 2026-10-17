@@ -1,0 +1,84 @@
+{
+  "packet": "OPS003",
+  "result": "READY_FOR_CONTROLLER_INTEGRATION",
+  "completion_claim": "The Windows CI portability edits are implemented. Local shell syntax, PowerShell syntax, LF attribute, and scoped diff checks pass. The controller directed that full CI wait until the integrated candidate is ready, so full CI remains pending and is not claimed.",
+  "certified": false,
+  "repository": {
+    "branch": "codex/apex-business-completion-20261015",
+    "base_sha": "ab74aa333c97399004ccbdba20a7b1df58d33ab4",
+    "head_sha": "ab74aa333c97399004ccbdba20a7b1df58d33ab4",
+    "candidate": "Uncommitted working-tree diff on the stated HEAD; per-file SHA-256 values below identify OPS-003 files."
+  },
+  "changed_files": [
+    {
+      "path": ".gitattributes",
+      "sha256": "F0BE4099BE330A043F90A426B7350642FA21D32AA08CCD9619E0E913636EFB9F"
+    },
+    {
+      "path": "scripts/ci.sh",
+      "sha256": "4B6F79869E1C1C78484DAB491977382F86C5E43D9213E155B804ECAF0D85A7E1"
+    },
+    {
+      "path": "scripts/ci.ps1",
+      "sha256": "4E49AF9D6B456D5B264E1C5013B995B3A6FB9A9126B694B2C92D33BE5ADC4D92"
+    },
+    {
+      "path": ".agent/packets/OPS003.md",
+      "sha256": "5FD0A4C7001F94C170A15E15CCE4714D0CA486677E262243AA7F43E8744B80A7"
+    }
+  ],
+  "changes": [
+    "Added a per-run Corepack shim directory under TMPDIR, prepended it to PATH for all nested pnpm commands, and remove only that generated directory on shell exit.",
+    "Removed global Corepack enable/activation steps while keeping the workspace-pinned pnpm 11.18.0 selection and all CI gates intact.",
+    "Made ci.ps1 locate Git for Windows Bash from the Git installation or a Git Bash path, reject WSL/WindowsApps aliases, and preserve the CI exit code.",
+    "Added a scoped Git attribute that enforces LF for scripts/ci.sh and converted the current working copy to LF."
+  ],
+  "validation": [
+    {
+      "command": "bash -n scripts/ci.sh",
+      "exit_code": 0,
+      "result": "Shell syntax accepted."
+    },
+    {
+      "command": "[System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path -LiteralPath 'scripts/ci.ps1'),[ref]$null,[ref]$null) | Out-Null",
+      "exit_code": 0,
+      "result": "PowerShell syntax accepted."
+    },
+    {
+      "command": "git check-attr text eol -- scripts/ci.sh",
+      "exit_code": 0,
+      "result": "text=set; eol=lf. `git ls-files --eol` reports the current ci.sh worktree as LF."
+    },
+    {
+      "command": "Get-Command git.exe; resolve Git root; Test-Path <Git root>\\bin\\bash.exe",
+      "exit_code": 0,
+      "result": "Git resolves to C:\\Program Files\\Git\\cmd\\git.exe and the selected Git Bash path exists at C:\\Program Files\\Git\\bin\\bash.exe; the initial `bash` command resolves to the WindowsApps WSL alias."
+    },
+    {
+      "command": "git diff --check -- scripts/ci.sh scripts/ci.ps1 .gitattributes .agent/packets/OPS003.md",
+      "exit_code": 0,
+      "result": "No whitespace errors."
+    }
+  ],
+  "pending": [
+    "Full `scripts/ci.sh` execution through `scripts/ci.ps1` was not run. The controller explicitly directed this builder to wait until the integrated candidate is ready and requests the full CI run.",
+    "The full CI run remains required before the controller can accept the integrated candidate; any configured Postgres/S3 integration suite may still be skipped according to existing CI behavior."
+  ],
+  "attempts": {
+    "repair_count": 0,
+    "failed_attempts": []
+  },
+  "metrics": {
+    "lane": "focused single-builder",
+    "model": "UNKNOWN",
+    "config_identity": "UNKNOWN",
+    "tokens": "UNKNOWN",
+    "started_at_utc": "UNKNOWN (not captured at dispatch)",
+    "finished_at_utc": "2026-10-15T13:41:37Z",
+    "planning_duration": "UNKNOWN",
+    "build_duration": "UNKNOWN",
+    "validation_duration": "UNKNOWN",
+    "audit_duration": "UNKNOWN",
+    "elapsed_to_accepted": "NOT APPLICABLE; full CI and controller acceptance pending"
+  }
+}

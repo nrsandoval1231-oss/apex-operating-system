@@ -11,6 +11,7 @@ import CustomerPage from './pages/CustomerPage';
 import AuthCallback from './pages/AuthCallback';
 import OpportunityEstimate from './pages/OpportunityEstimate';
 import ProposalPreview from './pages/ProposalPreview';
+import OpportunityWorkPage from './pages/OpportunityWork';
 
 const DesignerApp = lazy(async () => {
   const module = await import('@apex/designer');
@@ -47,6 +48,7 @@ export default function App() {
         <Route path="projects/:id/customer" element={<CustomerPage />} />
         <Route path="brief" element={<OwnerBrief />} />
         <Route path="opportunities/:leadId/estimate" element={<OpportunityEstimate />} />
+        <Route path="opportunities/:leadId" element={<OpportunityWorkPage />} />
         <Route path="proposals/:proposalVersionId" element={<ProposalPreview />} />
         <Route path="*" element={<Navigate to="/today" replace />} />
       </Route>

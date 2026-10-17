@@ -19,6 +19,7 @@ export const ID_KINDS = [
   'clink',
   'decision',
   'inspect',
+  'material',
 ] as const;
 
 export type CanonicalIdKind = (typeof ID_KINDS)[number];
@@ -49,6 +50,7 @@ export const idSchemas = {
   customerLink: canonicalIdSchema('clink'),
   customerDecision: canonicalIdSchema('decision'),
   inspection: canonicalIdSchema('inspect'),
+  material: canonicalIdSchema('material'),
 } as const;
 
 export const createCanonicalId = <Kind extends CanonicalIdKind>(kind: Kind, timestamp?: number): `${Kind}_${string}` =>
@@ -71,3 +73,4 @@ export type VisitId = z.infer<typeof idSchemas.visit>;
 export type CustomerLinkId = z.infer<typeof idSchemas.customerLink>;
 export type CustomerDecisionId = z.infer<typeof idSchemas.customerDecision>;
 export type InspectionId = z.infer<typeof idSchemas.inspection>;
+export type MaterialId = z.infer<typeof idSchemas.material>;

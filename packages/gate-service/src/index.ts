@@ -19,6 +19,7 @@ import {
   nextConstructionPhase,
   createCanonicalId,
   readLeadIdentity,
+  PROCUREMENT_LABELS,
   type ActionCard,
   type ApexEvent,
   type ApprovedTakeoffRevision,
@@ -58,6 +59,7 @@ import {
   decideGateCommand,
   decidePhaseChange,
   deriveCards,
+  sortCards,
   evolveGate,
   newGateState,
   type CardDrawSnapshot,
@@ -74,6 +76,9 @@ import {
 import { InspectionService } from './inspections.js';
 import { assertJobMutable } from './jobState.js';
 import { ProposalService, type FinishEstimateResult } from './proposal.js';
+import { LeadFollowupService } from './leadFollowup.js';
+import { ProcurementService } from './procurement.js';
+export { ProcurementService } from './procurement.js';
 export { ProposalService, type FinishEstimateResult } from './proposal.js';
 
 export interface EvidenceWrite {
@@ -500,6 +505,17 @@ export class GateService {
   constructor(private readonly db: Database) {}
 
   private proposalService(): ProposalService { return new ProposalService(this.db); }
+  private leadFollowupService(): LeadFollowupService { return new LeadFollowupService(this.db); }
+  private procurementService(): ProcurementService { return new ProcurementService(this.db); }
+  listProcurement(jobId: JobId) { return this.procurementService().list(jobId); }
+  createProcurement(input: Parameters<ProcurementService['create']>[0]) { return this.procurementService().create(input); }
+  updateProcurement(input: Parameters<ProcurementService['update']>[0]) { return this.procurementService().update(input); }
+  getProcurementToday(today: string) { return this.procurementService().today(today); }
+
+  getLeadFollowupsToday(today: string) { return this.leadFollowupService().getToday(today); }
+  getOpportunityWork(leadId: string) { return this.leadFollowupService().getOpportunity(leadId); }
+  scheduleLeadFollowup(input: Parameters<LeadFollowupService['schedule']>[0]) { return this.leadFollowupService().schedule(input); }
+  completeLeadFollowup(input: Parameters<LeadFollowupService['complete']>[0]) { return this.leadFollowupService().complete(input); }
 
   finishEstimate(input: Parameters<ProposalService['finishEstimate']>[0]): Promise<FinishEstimateResult> {
     return this.proposalService().finishEstimate(input);
@@ -888,6 +904,18 @@ export class GateService {
       const finalPhase = CONSTRUCTION_PHASES.at(-1)?.key;
       if (row.current_phase_key !== finalPhase) {
         throw new DomainRuleError('Mark the job complete from the final construction phase.');
+      }
+      // Handover tells the customer the build is done, so every required Gate
+      // and inspection must already be clear. Draws can still be invoiced after.
+      const closeout = await summarizeCloseout(tx, input.jobId);
+      const outstanding = [
+        !closeout.gates.complete ? `${closeout.gates.required - closeout.gates.released} gates are not released` : null,
+        !closeout.inspections.complete
+          ? `${closeout.inspections.required - closeout.inspections.cleared} inspections are incomplete`
+          : null,
+      ].filter((item): item is string => item !== null);
+      if (outstanding.length > 0) {
+        throw new DomainRuleError(`Cannot hand over this job yet: ${outstanding.join('; ')}.`);
       }
       const baseKey = commandKey(input.idempotencyKey);
       const at = new Date().toISOString();
@@ -1675,6 +1703,7 @@ export class GateService {
       eligibleAt: row.eligible_at === null ? null : new Date(row.eligible_at).toISOString(),
       sourceGateInstanceId: row.source_gate_instance_id,
       invoiceReference: row.invoice_reference,
+      invoiceReferenceStatus: row.invoice_reference === null ? null : 'staff-recorded-unverified' as const,
       invoicedAt: row.invoiced_at === null ? null : new Date(row.invoiced_at).toISOString(),
       dueDate: readDate(row.due_date),
       paidAt: row.paid_at === null ? null : new Date(row.paid_at).toISOString(),
@@ -1684,10 +1713,9 @@ export class GateService {
     const sumWhere = (predicate: (draw: JobDraw) => boolean) =>
       draws.filter(predicate).reduce((sum, draw) => sum + (draw.amountCents ?? 0), 0);
 
-    const collectedCents = draws.reduce(
-      (sum, draw) => sum + (draw.paidCents ?? (draw.status === 'paid' ? draw.amountCents ?? 0 : 0)),
-      0,
-    );
+    // No verified payment feed is connected. Database paid fields have no
+    // payment-source provenance, so neither a sum nor a zero is authoritative.
+    const collectedCents = null;
 
     return DrawScheduleSchema.parse({
       jobId,
@@ -1696,9 +1724,7 @@ export class GateService {
       eligibleUnbilledCents: sumWhere((draw) => draw.status === 'eligible'),
       invoicedCents: sumWhere((draw) => draw.status === 'invoiced' || draw.status === 'paid'),
       collectedCents,
-      remainingCents: summary?.contractCents === null || summary?.contractCents === undefined
-        ? null
-        : summary.contractCents - collectedCents,
+      remainingCents: null,
     });
   }
 
@@ -2031,8 +2057,28 @@ export class GateService {
    * this method only fetches. `today` is passed in rather than read here so the
    * feed is reproducible and testable.
    */
-  async getActionCards(today: string): Promise<readonly ActionCard[]> {
-    return deriveCards(await this.readCardSnapshot(), today);
+  async getActionCards(today: string, includeProcurement = true): Promise<readonly ActionCard[]> {
+    const snapshot = await this.readCardSnapshot();
+    const jobsById = new Map(snapshot.map((job) => [job.jobId, job]));
+    const cards = [...deriveCards(snapshot, today)];
+    if (includeProcurement) for (const line of await this.getProcurementToday(today)) {
+      const job = jobsById.get(line.jobId);
+      const displayQuantity = (quantity: number) => Number(quantity.toFixed(3));
+      cards.push({
+        cardId: `procurement.overdue:${line.lineId}`,
+        kind: 'procurement.overdue', group: 'needs-you', urgency: 'important', jobId: line.jobId,
+        customerName: job?.customerName ?? null, location: job?.addressLine ?? null,
+        title: `Follow up on ${PROCUREMENT_LABELS[line.quantityCode]}`,
+        reason: line.staleTakeoff
+          ? 'This material line belongs to an earlier approved takeoff and needs human reconciliation.'
+          : line.neededByOverdue
+            ? `Received ${displayQuantity(line.receivedQuantity)} of required ${displayQuantity(line.requiredQuantity)} ${line.unit}; the required receipt is still short.`
+            : `Expected delivery ${line.expectedOn} passed; ${displayQuantity(line.outstandingQuantity)} ${line.unit} remains undelivered.`,
+        dueLabel: line.neededByOverdue ? line.neededBy : line.expectedOn, amountCents: null,
+        actionLabel: 'Open procurement', actionHref: `/projects/${line.jobId}#procurement`,
+      });
+    }
+    return sortCards(cards);
   }
 
   /**
@@ -2043,12 +2089,12 @@ export class GateService {
    * what lets it answer "what changed since yesterday" at all. The Today feed
    * remains the live view.
    */
-  async getDailyBrief(briefDate: string): Promise<DailyBrief> {
+  async getDailyBrief(briefDate: string, includeProcurement = true): Promise<DailyBrief> {
     const existing = await this.db.query<{ payload: unknown }>(
       'select payload from daily_briefs where brief_date = $1',
       [briefDate],
     );
-    if (existing.rows[0]) return DailyBriefSchema.parse(existing.rows[0].payload);
+    if (existing.rows[0]) return this.filterProcurementBrief(DailyBriefSchema.parse(existing.rows[0].payload), includeProcurement);
 
     const previousRow = await this.db.query<{ brief_date: string | Date; payload: unknown }>(
       `select brief_date, payload from daily_briefs
@@ -2097,7 +2143,20 @@ export class GateService {
       'select payload from daily_briefs where brief_date = $1',
       [briefDate],
     );
-    return DailyBriefSchema.parse(stored.rows[0]?.payload ?? brief);
+    return this.filterProcurementBrief(DailyBriefSchema.parse(stored.rows[0]?.payload ?? brief), includeProcurement);
+  }
+
+  private filterProcurementBrief(brief: DailyBrief, includeProcurement: boolean): DailyBrief {
+    if (includeProcurement) return brief;
+    const visible = (items: DailyBrief['needsYou']) => items.filter((item) => item.card.kind !== 'procurement.overdue');
+    return DailyBriefSchema.parse({
+      ...brief,
+      needsYou: visible(brief.needsYou),
+      running: visible(brief.running),
+      thisWeek: visible(brief.thisWeek),
+      newSinceLast: visible(brief.newSinceLast),
+      cleared: brief.cleared.filter((item) => !item.cardId.startsWith('procurement.overdue:')),
+    });
   }
 
   private async readCardSnapshot(): Promise<readonly CardJobSnapshot[]> {

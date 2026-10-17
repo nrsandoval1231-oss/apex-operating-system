@@ -1,6 +1,6 @@
 import { PGlite } from '@electric-sql/pglite';
-import { beforeEach, describe, expect, it } from 'vitest';
-import { applyOperationalMigrations } from '@apex/database';
+import { afterAll, beforeEach, describe, expect, it } from 'vitest';
+import { applyOperationalMigrations, PostgresDatabase } from '@apex/database';
 import { createCanonicalId, type AuthoritativeQuantity, type DesignerTakeoffSubmission } from '@apex/contracts';
 import { MEASURED_LINE_DEFINITIONS, type DirectPriceInput } from '@apex/pricing-engine';
 import { GateService } from './index.js';
@@ -174,6 +174,9 @@ describe('proposal lifecycle and Finish estimate', () => {
     expect((await service.listProposalVersions(ids.lead))).toHaveLength(1);
     expect((await service.getProposalVersion(finished.proposal.proposalVersionId))?.proposalVersionId)
       .toBe(finished.proposal.proposalVersionId);
+    const openFollowup = await service.scheduleLeadFollowup({ leadId: ids.lead,
+      nextAction: 'Check proposal decision', dueDate: '2026-10-15', assignedUserId: ids.office,
+      actor, idempotencyKey: 'sign-followup-before-1' });
     await expect(service.signProposal({ proposalVersionId: finished.proposal.proposalVersionId,
       expectedVersionNumber: 1, expectedDraftRevision: 1, actor,
       customerAcceptanceConfirmed: false, idempotencyKey: 'sign-unconfirmed-1' })).rejects.toThrow(/customer accepted/i);
@@ -187,5 +190,46 @@ describe('proposal lifecycle and Finish estimate', () => {
     expect(retry.jobId).toBe(first.jobId);
     expect((await db.query('select * from jobs')).rows).toHaveLength(1);
     expect((await db.query('select * from projects')).rows).toHaveLength(1);
+    const opportunity = await service.getOpportunityWork(ids.lead);
+    expect(opportunity?.leadStatus).toBe('signed');
+    expect(opportunity?.followups.find((item) => item.followupId === openFollowup.followupId)?.completedAt).not.toBeNull();
+    expect((await service.getLeadFollowupsToday('2026-10-15')).some((item) => item.leadId === ids.lead)).toBe(false);
+  });
+});
+
+const postgresUrl = process.env.DATABASE_URL?.trim();
+describe.skipIf(!postgresUrl)('PostgreSQL Proposal signing and Lead follow-up race', () => {
+  let pg: PostgresDatabase | undefined;
+  afterAll(async () => { await pg?.close(); });
+  it('serializes a concurrent acceptance and follow-up write without an open action on a signed Lead', async () => {
+    pg = PostgresDatabase.create({ url: postgresUrl!, applicationName: 'apex-sign-followup-race-test', maxConnections: 6 });
+    await pg.withMigrationLock((client) => applyOperationalMigrations(client));
+    const leadId = createCanonicalId('lead');
+    const userId = createCanonicalId('user');
+    const raceActor = { kind: 'user', userId, role: 'office' } as const;
+    await pg.query(`insert into app_users (user_id, auth_user_id, role, display_name)
+      values ($1, gen_random_uuid(), 'office', 'Signing Race')`, [userId]);
+    await pg.query(`insert into leads (lead_id, intake_source, source_record_id, idempotency_key, accepted_payload)
+      values ($1, 'sign-followup-race', $2, $3, '{"customerName":"Race Customer","streetAddress":"9 Race Way"}')`,
+    [leadId, leadId, `sign-followup:${leadId}`]);
+    const pgService = new GateService(pg);
+    const finished = await pgService.finishEstimate({ leadId, actor: raceActor, submission,
+      directLines: direct, measuredLines: measured, feeRateBps: 3000, idempotencyKey: `finish:${leadId}` });
+    const signing = pgService.signProposal({ proposalVersionId: finished.proposal.proposalVersionId,
+      expectedVersionNumber: 1, expectedDraftRevision: 1, actor: raceActor,
+      customerAcceptanceConfirmed: true, idempotencyKey: `sign:${leadId}` });
+    const followup = pgService.scheduleLeadFollowup({ leadId, nextAction: 'Confirm proposal decision',
+      dueDate: '2026-10-15', assignedUserId: userId, actor: raceActor, idempotencyKey: `followup-race:${leadId}` });
+    const [signed, scheduled] = await Promise.allSettled([signing, followup]);
+    expect(signed.status).toBe('fulfilled');
+    if (scheduled.status === 'rejected') expect(String(scheduled.reason)).toMatch(/open pre-contract/i);
+    const state = await pg.query<{ status: string; jobs: string; followups: string; open_followups: string }>(
+      `select l.status, (select count(*)::text from jobs j where j.lead_id = l.lead_id) jobs,
+        (select count(*)::text from lead_followups f where f.lead_id = l.lead_id) followups,
+        (select count(*)::text from lead_followups f where f.lead_id = l.lead_id and f.completed_at is null) open_followups
+       from leads l where l.lead_id = $1`, [leadId],
+    );
+    expect(state.rows[0]).toMatchObject({ status: 'signed', jobs: '1', open_followups: '0' });
+    expect(Number(state.rows[0]?.followups)).toBe(scheduled.status === 'fulfilled' ? 1 : 0);
   });
 });
