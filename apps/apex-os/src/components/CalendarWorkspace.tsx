@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router';
 import { z } from 'zod';
 import {
@@ -96,6 +96,11 @@ export default function CalendarWorkspace({
   );
   const [member, setMember] = useState('');
   const [eventType, setEventType] = useState('');
+  const [filtersOpen, setFiltersOpen] = useState(
+    () => !window.matchMedia('(max-width: 700px)').matches,
+  );
+  const filtersId = useId();
+  const activeFilters = [project, member, eventType].filter(Boolean).length;
   const [detail, setDetail] = useState<WorkspaceCalendarEntry | null>(null);
   const [editing, setEditing] = useState<CalendarEvent | null>(null);
   const [compose, setCompose] = useState(false);
@@ -518,7 +523,16 @@ export default function CalendarWorkspace({
         </div>
       </div>
       {!compact && (
-        <div className="cw-filters">
+        <div className="cw-filter-panel">
+          <button
+            className="btn ghost cw-filter-toggle"
+            aria-expanded={filtersOpen}
+            aria-controls={filtersId}
+            onClick={() => setFiltersOpen((open) => !open)}
+          >
+            Filters ({activeFilters} active)
+          </button>
+        <div className="cw-filters" id={filtersId} hidden={!filtersOpen}>
           <label>
             Project
             <select
@@ -561,6 +575,7 @@ export default function CalendarWorkspace({
             </select>
           </label>
           <span className="cw-division">Division · Unknown</span>
+        </div>
         </div>
       )}
       {query.loading && <p role="status">Loading calendar…</p>}

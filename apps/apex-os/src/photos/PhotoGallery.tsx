@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import type { JobPhoto } from '@apex/contracts';
 import ProtectedImage from './ProtectedPhoto';
 import Sharing from './PhotoSharing';
-import Viewer from './PhotoViewer';
+const Viewer = lazy(() => import('./PhotoViewer'));
 
 export default function PhotoGallery({
   photos,
@@ -145,12 +145,14 @@ export default function PhotoGallery({
         ))}
       </div>
       {index >= 0 && (
+        <Suspense fallback={<p role="status">Opening photo…</p>}>
         <Viewer
           photos={filtered}
           index={index}
           onIndex={(next) => setSelected(filtered[next]!.evidenceId)}
           onClose={() => setSelected(null)}
         />
+        </Suspense>
       )}
     </>
   );

@@ -119,6 +119,12 @@ log "website production intake Playwright"
 log "Apex OS estimate route and fee browser regression"
 node apps/apex-os/tests/estimate-navigation.e2e.mjs
 
+log "Apex OS shell fixture browser acceptance (owned production preview)"
+node apps/apex-os/tests/shell.e2e.mjs
+
+log "Apex OS native IndexedDB photo queue races"
+node apps/apex-os/tests/photo-queue-races.e2e.mjs
+
 missing=""
 for var in DATABASE_URL S3_ENDPOINT S3_BUCKET S3_ACCESS_KEY_ID S3_SECRET_ACCESS_KEY; do
   eval "value=\${$var:-}"
@@ -138,8 +144,20 @@ else
   log "integration tests"
   pnpm exec vitest run --config integration-tests/vitest.config.ts \
     --maxWorkers=1 --no-file-parallelism
+  log "Apex OS persisted checklist browser acceptance"
+  node apps/apex-os/tests/checklist.e2e.mjs
+  log "Apex OS persisted calendar browser acceptance"
+  node apps/apex-os/tests/calendar.e2e.mjs
+  log "Apex OS persisted project workspace browser acceptance"
+  node apps/apex-os/tests/workspace.e2e.mjs
+  log "Apex OS persisted photo browser acceptance"
+  node apps/apex-os/tests/photos.e2e.mjs
   log "Apex OS full closeout browser acceptance"
-  node apps/apex-os/tests/closeout-acceptance.e2e.mjs
+  EVIDENCE_DIR="${APEX_CI_EVIDENCE_DIR:-/tmp/apex2/ci}/closeout-zero" \
+    node apps/apex-os/tests/closeout-acceptance.e2e.mjs
+  log "Apex OS full closeout with optional photo"
+  OPTIONAL_PHOTO_CLOSEOUT=1 EVIDENCE_DIR="${APEX_CI_EVIDENCE_DIR:-/tmp/apex2/ci}/closeout-photo" \
+    node apps/apex-os/tests/closeout-acceptance.e2e.mjs
 fi
 
 printf '\n== ci.sh finished\n'

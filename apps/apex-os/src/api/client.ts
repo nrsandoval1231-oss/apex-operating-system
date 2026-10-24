@@ -104,9 +104,14 @@ export const apiGet = async <T>(
   return parsed.data;
 };
 
+/** A resolved actor change must not coalesce new private reads with old ones. */
+export function clearPendingReads(): void {
+  pendingReads.clear();
+}
+
 /** XHR photo uploads use the same invalidation boundary as JSON commands. */
 export function invalidateAndNotify(): void {
-  pendingReads.clear();
+  clearPendingReads();
   if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
     window.dispatchEvent(new Event('apex:data-changed'));
   }

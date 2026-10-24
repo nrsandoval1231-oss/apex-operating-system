@@ -60,7 +60,7 @@ try {
     { width: 1440, height: 1000 },
     { width: 390, height: 844 },
   ]) {
-    const page = await browser.newPage({ viewport });
+    const page = await browser.newPage({ viewport, hasTouch: viewport.width < 700, isMobile: viewport.width < 700 });
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
     await page.addInitScript(
@@ -70,7 +70,8 @@ try {
     await page.goto(origin + '/app/checklist?action=add-task');
     // A cancelled composer must reopen through the same-route quick action.
     await page.getByRole('button', { name: 'Cancel', exact: true }).click();
-    await page.getByRole('button', { name: 'Open quick actions' }).click();
+    if (viewport.width < 700) await page.getByRole('button', { name: 'Open quick actions' }).tap();
+    else await page.getByRole('button', { name: 'Open quick actions' }).click();
     await page.getByRole('link', { name: 'Add Task', exact: true }).click();
     await page.getByLabel('Title', { exact: true }).waitFor();
     const title = `Browser persisted ${viewport.width} ${Date.now()}`;
@@ -93,7 +94,8 @@ try {
         .filter({ hasText: 'Could not reach' })
         .waitFor();
     }
-    await page.getByRole('button', { name: 'Save task', exact: true }).click();
+    if (viewport.width < 700) await page.getByRole('button', { name: 'Save task', exact: true }).tap();
+    else await page.getByRole('button', { name: 'Save task', exact: true }).click();
     const row = () =>
       page.locator('.task-row').filter({
         has: page.getByRole('heading', { name: title, exact: true }),
