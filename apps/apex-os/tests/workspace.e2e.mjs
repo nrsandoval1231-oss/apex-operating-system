@@ -45,6 +45,16 @@ async function assertMobileAppointment(page) {
     `First appointment must be above mobile overlays: ${JSON.stringify({ appointment, nav, quick })}`,
   );
 }
+async function waitForCenterCalendar(page, title, mobile) {
+  const center = page.locator('.workspace-center>.calendar-workspace');
+  if (!mobile) {
+    await center.locator('.cw-entry').filter({ hasText: title }).first().waitFor();
+    return;
+  }
+  await center.locator('.cw-summary>.cw-entry').first().waitFor();
+  const shown = await center.locator('.cw-summary>.cw-entry').count();
+  assert(shown > 0 && shown <= 2, 'Mobile Today keeps at most two chronological appointments');
+}
 
 try {
   for (let i = 0; i < 100; i++) {
@@ -472,12 +482,9 @@ try {
       .getByRole('button')
       .filter({ hasText: `Today appointment ${suffix}` })
       .waitFor();
-    await page
-      .locator('.workspace-center>.calendar-workspace .cw-entry')
-      .filter({ hasText: `Today appointment ${suffix}` })
-      .waitFor();
+    await waitForCenterCalendar(page, `Today appointment ${suffix}`, viewport.width < 700);
     checks.push(
-      `${viewport.width}: same persisted calendar event in center/project views`,
+      `${viewport.width}: persisted project event and center calendar summary`,
     );
     const reconnectedTitle = `Reconnect appointment ${viewport.width} ${suffix}`;
     await api('/api/calendar-events', {
@@ -507,10 +514,10 @@ try {
     await calendarRequest;
     await panel.getByRole('button', { name: 'Overview', exact: true }).click();
     resumeCalendar();
-    await page
-      .locator('.workspace-center>.calendar-workspace .cw-entry')
-      .filter({ hasText: reconnectedTitle })
-      .waitFor();
+    await waitForCenterCalendar(page, reconnectedTitle, viewport.width < 700);
+    assert((await api('/api/workspace-calendar')).some(
+      (entry) => entry.source === 'appointment' && entry.event.title === reconnectedTitle,
+    ));
     assert.equal(
       coalescedReads,
       1,
@@ -578,11 +585,7 @@ try {
       .waitFor();
     await page.getByLabel('Search jobs', { exact: true }).fill(suffix);
     await page.evaluate(() => window.scrollTo(0, 0));
-    await page
-      .locator('.workspace-center>.calendar-workspace .cw-entry')
-      .filter({ hasText: reconnectedTitle })
-      .first()
-      .waitFor();
+    await waitForCenterCalendar(page, reconnectedTitle, viewport.width < 700);
     await page
       .locator('.workspace-center>.calendar-workspace')
       .getByText('Loading calendar…', { exact: true })
