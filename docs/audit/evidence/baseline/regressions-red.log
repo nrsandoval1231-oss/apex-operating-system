@@ -1,0 +1,109 @@
+
+ RUN  v4.1.10 /workspace/apex-operating-system
+
+ ❯ packages/storage/src/local.test.ts (13 tests | 1 failed) 291ms
+     × recovers from an abandoned upload without exposing or overwriting it 14ms
+(node:1876) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ❯ packages/database/src/postgres-config.test.ts (5 tests | 5 failed) 13ms
+     × preserves peer verification and the configured CA with sslmode=require 8ms
+     × preserves peer verification and the configured CA with sslmode=no-verify 1ms
+     × preserves peer verification and the configured CA with sslmode=verify-full 1ms
+     × preserves peer verification and the configured CA with sslmode=require&uselibpqcompat=true 1ms
+     × preserves peer verification and the configured CA with ssl=false 1ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 6 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/database/src/postgres-config.test.ts > effective PostgreSQL TLS configuration > preserves peer verification and the configured CA with sslmode=require
+ FAIL  packages/database/src/postgres-config.test.ts > effective PostgreSQL TLS configuration > preserves peer verification and the configured CA with sslmode=verify-full
+AssertionError: expected {} to deeply equal { rejectUnauthorized: true, …(1) }
+
+- Expected
++ Received
+
+- {
+-   "ca": "audit-ca",
+-   "rejectUnauthorized": true,
+- }
++ {}
+
+ ❯ packages/database/src/postgres-config.test.ts:14:27
+     12|         const client = new pg.Client(pool.options);
+     13|         const effective = (client as unknown as { connectionParameters…
+     14|         expect(effective).toEqual({ rejectUnauthorized: true, ca: 'aud…
+       |                           ^
+     15|       } finally { await db.close(); }
+     16|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/6]⎯
+
+ FAIL  packages/database/src/postgres-config.test.ts > effective PostgreSQL TLS configuration > preserves peer verification and the configured CA with sslmode=no-verify
+ FAIL  packages/database/src/postgres-config.test.ts > effective PostgreSQL TLS configuration > preserves peer verification and the configured CA with sslmode=require&uselibpqcompat=true
+AssertionError: expected { rejectUnauthorized: false } to deeply equal { rejectUnauthorized: true, …(1) }
+
+- Expected
++ Received
+
+  {
+-   "ca": "audit-ca",
+-   "rejectUnauthorized": true,
++   "rejectUnauthorized": false,
+  }
+
+ ❯ packages/database/src/postgres-config.test.ts:14:27
+     12|         const client = new pg.Client(pool.options);
+     13|         const effective = (client as unknown as { connectionParameters…
+     14|         expect(effective).toEqual({ rejectUnauthorized: true, ca: 'aud…
+       |                           ^
+     15|       } finally { await db.close(); }
+     16|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/6]⎯
+
+ FAIL  packages/database/src/postgres-config.test.ts > effective PostgreSQL TLS configuration > preserves peer verification and the configured CA with ssl=false
+AssertionError: expected 'false' to deeply equal { rejectUnauthorized: true, …(1) }
+
+- Expected:
+{
+  "ca": "audit-ca",
+  "rejectUnauthorized": true,
+}
+
++ Received:
+"false"
+
+ ❯ packages/database/src/postgres-config.test.ts:14:27
+     12|         const client = new pg.Client(pool.options);
+     13|         const effective = (client as unknown as { connectionParameters…
+     14|         expect(effective).toEqual({ rejectUnauthorized: true, ca: 'aud…
+       |                           ^
+     15|       } finally { await db.close(); }
+     16|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/6]⎯
+
+ FAIL  packages/storage/src/local.test.ts > the local adapter > recovers from an abandoned upload without exposing or overwriting it
+ObjectExistsError: An object already exists at job_01ARZ3NDEKTSV4RRFFQ69G5FAW/gate_01ARZ3NDEKTSV4RRFFQ69G5FAX/evidence_01ARZ3NDEKTSV4RRFFQ69G5FB2.jpg; evidence storage is write-once.
+ ❯ LocalEvidenceStorage.put packages/storage/src/local.ts:57:69
+     55|       await writeFile(temporary, content, { flag: 'wx' });
+     56|     } catch (error) {
+     57|       if ((error as NodeJS.ErrnoException).code === 'EEXIST') throw ne…
+       |                                                                     ^
+     58|       throw error;
+     59|     }
+ ❯ packages/storage/src/local.test.ts:74:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/6]⎯
+
+
+ Test Files  2 failed (2)
+      Tests  6 failed | 12 passed (18)
+   Start at  05:49:40
+   Duration  678ms (transform 47ms, setup 0ms, import 88ms, tests 304ms, environment 0ms)

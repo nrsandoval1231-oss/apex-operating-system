@@ -16,4 +16,3 @@ export const canonicalJson = (value: unknown): string => {
   };
   return JSON.stringify(canonical(value));
 };
-

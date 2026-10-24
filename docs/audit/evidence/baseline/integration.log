@@ -1,0 +1,13 @@
+
+ RUN  v4.1.10 /workspace/apex-operating-system
+
+
+ Test Files  8 passed (8)
+      Tests  35 passed | 2 skipped (37)
+   Start at  05:49:15
+   Duration  6.56s (transform 769ms, setup 0ms, import 2.06s, tests 3.49s, environment 1ms)
+
+
+real	0m7.341s
+user	0m4.928s
+sys	0m0.798s

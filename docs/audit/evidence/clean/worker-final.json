@@ -1,0 +1,11 @@
+{
+  "command": [
+    "bash",
+    "-c",
+    "npm ci --ignore-scripts && npm audit --json && WRANGLER_SEND_METRICS=false npm exec -- wrangler deploy --dry-run --containers-rollout none --outdir /tmp/apex-worker-bundle-final"
+  ],
+  "cwd": "/workspace/apex-clean/deploy/cloudflare/apex-os",
+  "sha": "b70907b810197b541d4f3925fc36170969633893",
+  "seconds": 3.549,
+  "exit_code": 0
+}

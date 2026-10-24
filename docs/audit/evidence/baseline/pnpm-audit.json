@@ -1,0 +1,1319 @@
+{
+  "advisories": {
+    "1102341": {
+      "findings": [
+        {
+          "version": "0.21.5",
+          "paths": [
+            "apps__apex-os>@vitejs/plugin-react>vite>esbuild",
+            "apps__apex-os>vite>esbuild",
+            "apps__designer>vitest>@vitest/mocker>vite>esbuild",
+            "apps__designer>vitest>vite>esbuild"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1102341,
+      "title": "esbuild enables any website to send any requests to the development server and read the response",
+      "module_name": "esbuild",
+      "vulnerable_versions": "<=0.24.2",
+      "patched_versions": ">=0.24.3",
+      "severity": "moderate",
+      "cwe": "CWE-346",
+      "github_advisory_id": "GHSA-67mh-4wv8-2f99",
+      "url": "https://github.com/advisories/GHSA-67mh-4wv8-2f99"
+    },
+    "1102437": {
+      "findings": [
+        {
+          "version": "5.4.11",
+          "paths": [
+            "apps__apex-os>@vitejs/plugin-react>vite",
+            "apps__apex-os>vite",
+            "apps__designer>vitest>@vitest/mocker>vite",
+            "apps__designer>vitest>vite"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1102437,
+      "title": "Websites were able to send any requests to the development server and read the response in vite",
+      "module_name": "vite",
+      "vulnerable_versions": ">=5.0.0 <=5.4.11",
+      "patched_versions": ">=5.4.12",
+      "severity": "moderate",
+      "cwe": "CWE-346, CWE-350, CWE-1385",
+      "github_advisory_id": "GHSA-vg6x-rcgg-rjx6",
+      "url": "https://github.com/advisories/GHSA-vg6x-rcgg-rjx6"
+    },
+    "1103517": {
+      "findings": [
+        {
+          "version": "5.4.11",
+          "paths": [
+            "apps__apex-os>@vitejs/plugin-react>vite",
+            "apps__apex-os>vite",
+            "apps__designer>vitest>@vitest/mocker>vite",
+            "apps__designer>vitest>vite"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1103517,
+      "title": "Vite bypasses server.fs.deny when using ?raw??",
+      "module_name": "vite",
+      "vulnerable_versions": ">=5.0.0 <5.4.15",
+      "patched_versions": ">=5.4.15",
+      "severity": "moderate",
+      "cwe": "CWE-200, CWE-284",
+      "github_advisory_id": "GHSA-x574-m823-4x7w",
+      "url": "https://github.com/advisories/GHSA-x574-m823-4x7w"
+    },
+    "1103884": {
+      "findings": [
+        {
+          "version": "5.4.11",
+          "paths": [
+            "apps__apex-os>@vitejs/plugin-react>vite",
+            "apps__apex-os>vite",
+            "apps__designer>vitest>@vitest/mocker>vite",
+            "apps__designer>vitest>vite"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1103884,
+      "title": "Vite has an `server.fs.deny` bypass with an invalid `request-target`",
+      "module_name": "vite",
+      "vulnerable_versions": ">=5.0.0 <5.4.18",
+      "patched_versions": ">=5.4.18",
+      "severity": "moderate",
+      "cwe": "CWE-200",
+      "github_advisory_id": "GHSA-356w-63v5-8wf4",
+      "url": "https://github.com/advisories/GHSA-356w-63v5-8wf4"
+    },
+    "1104173": {
+      "findings": [
+        {
+          "version": "5.4.11",
+          "paths": [
+            "apps__apex-os>@vitejs/plugin-react>vite",
+            "apps__apex-os>vite",
+            "apps__designer>vitest>@vitest/mocker>vite",
+            "apps__designer>vitest>vite"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1104173,
+      "title": "Vite's server.fs.deny bypassed with /. for files under project root",
+      "module_name": "vite",
+      "vulnerable_versions": ">=5.0.0 <=5.4.18",
+      "patched_versions": ">=5.4.19",
+      "severity": "moderate",
+      "cwe": "CWE-22",
+      "github_advisory_id": "GHSA-859w-5945-r5v3",
+      "url": "https://github.com/advisories/GHSA-859w-5945-r5v3"
+    },
+    "1104202": {
+      "findings": [
+        {
+          "version": "5.4.11",
+          "paths": [
+            "apps__apex-os>@vitejs/plugin-react>vite",
+            "apps__apex-os>vite",
+            "apps__designer>vitest>@vitest/mocker>vite",
+            "apps__designer>vitest>vite"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1104202,
+      "title": "Vite allows server.fs.deny to be bypassed with .svg or relative paths",
+      "module_name": "vite",
+      "vulnerable_versions": ">=5.0.0 <5.4.17",
+      "patched_versions": ">=5.4.17",
+      "severity": "moderate",
+      "cwe": "CWE-200, CWE-284",
+      "github_advisory_id": "GHSA-xcj6-pq6g-qj4x",
+      "url": "https://github.com/advisories/GHSA-xcj6-pq6g-qj4x"
+    },
+    "1107323": {
+      "findings": [
+        {
+          "version": "5.4.11",
+          "paths": [
+            "apps__apex-os>@vitejs/plugin-react>vite",
+            "apps__apex-os>vite",
+            "apps__designer>vitest>@vitest/mocker>vite",
+            "apps__designer>vitest>vite"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1107323,
+      "title": "Vite middleware may serve files starting with the same name with the public directory",
+      "module_name": "vite",
+      "vulnerable_versions": "<=5.4.19",
+      "patched_versions": ">=5.4.20",
+      "severity": "low",
+      "cwe": "CWE-22, CWE-200, CWE-284",
+      "github_advisory_id": "GHSA-g4jq-h2w9-997c",
+      "url": "https://github.com/advisories/GHSA-g4jq-h2w9-997c"
+    },
+    "1107327": {
+      "findings": [
+        {
+          "version": "5.4.11",
+          "paths": [
+            "apps__apex-os>@vitejs/plugin-react>vite",
+            "apps__apex-os>vite",
+            "apps__designer>vitest>@vitest/mocker>vite",
+            "apps__designer>vitest>vite"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1107327,
+      "title": "Vite's `server.fs` settings were not applied to HTML files",
+      "module_name": "vite",
+      "vulnerable_versions": "<=5.4.19",
+      "patched_versions": ">=5.4.20",
+      "severity": "low",
+      "cwe": "CWE-23, CWE-200, CWE-284",
+      "github_advisory_id": "GHSA-jqfw-vq24-v9c3",
+      "url": "https://github.com/advisories/GHSA-jqfw-vq24-v9c3"
+    },
+    "1109131": {
+      "findings": [
+        {
+          "version": "5.4.11",
+          "paths": [
+            "apps__apex-os>@vitejs/plugin-react>vite",
+            "apps__apex-os>vite",
+            "apps__designer>vitest>@vitest/mocker>vite",
+            "apps__designer>vitest>vite"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1109131,
+      "title": "vite allows server.fs.deny bypass via backslash on Windows",
+      "module_name": "vite",
+      "vulnerable_versions": ">=5.2.6 <=5.4.20",
+      "patched_versions": ">=5.4.21",
+      "severity": "moderate",
+      "cwe": "CWE-22",
+      "github_advisory_id": "GHSA-93m4-6634-74q7",
+      "url": "https://github.com/advisories/GHSA-93m4-6634-74q7"
+    },
+    "1112511": {
+      "findings": [
+        {
+          "version": "5.4.11",
+          "paths": [
+            "apps__apex-os>@vitejs/plugin-react>vite",
+            "apps__apex-os>vite",
+            "apps__designer>vitest>@vitest/mocker>vite",
+            "apps__designer>vitest>vite"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1112511,
+      "title": "Vite has a `server.fs.deny` bypassed for `inline` and `raw` with `?import` query",
+      "module_name": "vite",
+      "vulnerable_versions": ">=5.0.0 <5.4.16",
+      "patched_versions": ">=5.4.16",
+      "severity": "moderate",
+      "cwe": "CWE-200, CWE-284",
+      "github_advisory_id": "GHSA-4r4m-qw57-chr8",
+      "url": "https://github.com/advisories/GHSA-4r4m-qw57-chr8"
+    },
+    "1116229": {
+      "findings": [
+        {
+          "version": "5.4.11",
+          "paths": [
+            "apps__apex-os>@vitejs/plugin-react>vite",
+            "apps__apex-os>vite",
+            "apps__designer>vitest>@vitest/mocker>vite",
+            "apps__designer>vitest>vite"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1116229,
+      "title": "Vite Vulnerable to Path Traversal in Optimized Deps `.map` Handling",
+      "module_name": "vite",
+      "vulnerable_versions": "<=6.4.1",
+      "patched_versions": ">=6.4.2",
+      "severity": "moderate",
+      "cwe": "CWE-22, CWE-200",
+      "github_advisory_id": "GHSA-4w7w-66w2-5vf9",
+      "url": "https://github.com/advisories/GHSA-4w7w-66w2-5vf9"
+    },
+    "1119441": {
+      "findings": [
+        {
+          "version": "8.3.2",
+          "paths": [
+            "apps__designer>exceljs>uuid"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1119441,
+      "title": "uuid: Missing buffer bounds check in v3/v5/v6 when buf is provided",
+      "module_name": "uuid",
+      "vulnerable_versions": "<11.1.1",
+      "patched_versions": ">=11.1.1",
+      "severity": "moderate",
+      "cwe": "CWE-787, CWE-1285",
+      "github_advisory_id": "GHSA-w5hq-g745-h8pq",
+      "url": "https://github.com/advisories/GHSA-w5hq-g745-h8pq"
+    },
+    "1120784": {
+      "findings": [
+        {
+          "version": "5.4.11",
+          "paths": [
+            "apps__apex-os>@vitejs/plugin-react>vite",
+            "apps__apex-os>vite",
+            "apps__designer>vitest>@vitest/mocker>vite",
+            "apps__designer>vitest>vite"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1120784,
+      "title": "launch-editor: NTLMv2 hash disclosure via UNC path handling on Windows",
+      "module_name": "vite",
+      "vulnerable_versions": "<=6.4.2",
+      "patched_versions": ">=6.4.3",
+      "severity": "moderate",
+      "cwe": "CWE-73, CWE-522",
+      "github_advisory_id": "GHSA-v6wh-96g9-6wx3",
+      "url": "https://github.com/advisories/GHSA-v6wh-96g9-6wx3"
+    },
+    "1123525": {
+      "findings": [
+        {
+          "version": "5.4.11",
+          "paths": [
+            "apps__apex-os>@vitejs/plugin-react>vite",
+            "apps__apex-os>vite",
+            "apps__designer>vitest>@vitest/mocker>vite",
+            "apps__designer>vitest>vite"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1123525,
+      "title": "vite: `server.fs.deny` bypass on Windows alternate paths",
+      "module_name": "vite",
+      "vulnerable_versions": "<=6.4.2",
+      "patched_versions": ">=6.4.3",
+      "severity": "high",
+      "cwe": "CWE-22, CWE-200",
+      "github_advisory_id": "GHSA-fx2h-pf6j-xcff",
+      "url": "https://github.com/advisories/GHSA-fx2h-pf6j-xcff"
+    },
+    "1193683": {
+      "findings": [
+        {
+          "version": "4.1.10",
+          "paths": [
+            ".>vitest"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        },
+        {
+          "version": "3.2.7",
+          "paths": [
+            "apps__designer>vitest"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1193683,
+      "title": "Vitest: Path Traversal / Arbitrary File Read via @vitest/mocker Redirect Mock",
+      "module_name": "vitest",
+      "vulnerable_versions": ">=2.1.0 <4.1.11",
+      "patched_versions": ">=4.1.11",
+      "severity": "moderate",
+      "cwe": "CWE-22",
+      "github_advisory_id": "GHSA-82fw-gwwq-j7x9",
+      "url": "https://github.com/advisories/GHSA-82fw-gwwq-j7x9"
+    },
+    "1193684": {
+      "findings": [
+        {
+          "version": "4.1.10",
+          "paths": [
+            ".>vitest>@vitest/mocker"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        },
+        {
+          "version": "3.2.7",
+          "paths": [
+            "apps__designer>vitest>@vitest/mocker"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1193684,
+      "title": "Vitest: Path Traversal / Arbitrary File Read via @vitest/mocker Redirect Mock",
+      "module_name": "@vitest/mocker",
+      "vulnerable_versions": ">=2.1.0 <4.1.11",
+      "patched_versions": ">=4.1.11",
+      "severity": "moderate",
+      "cwe": "CWE-22",
+      "github_advisory_id": "GHSA-82fw-gwwq-j7x9",
+      "url": "https://github.com/advisories/GHSA-82fw-gwwq-j7x9"
+    },
+    "1239943": {
+      "findings": [
+        {
+          "version": "3.1.6",
+          "paths": [
+            "apps__website>@astrojs/check>@astrojs/language-server>volar-service-yaml>yaml-language-server>ajv>fast-uri",
+            "apps__website>@astrojs/check>@astrojs/language-server>volar-service-yaml>yaml-language-server>ajv-draft-04>ajv>fast-uri",
+            "apps__website>@astrojs/check>@astrojs/language-server>volar-service-yaml>yaml-language-server>ajv-i18n>ajv>fast-uri"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1239943,
+      "title": "fast-uri vulnerable to authority injection via an unvalidated port in serialize",
+      "module_name": "fast-uri",
+      "vulnerable_versions": ">=3.0.0 <3.1.7",
+      "patched_versions": ">=3.1.7",
+      "severity": "high",
+      "cwe": "CWE-116",
+      "github_advisory_id": "GHSA-qw65-cvwx-89v3",
+      "url": "https://github.com/advisories/GHSA-qw65-cvwx-89v3"
+    },
+    "1239946": {
+      "findings": [
+        {
+          "version": "3.1.6",
+          "paths": [
+            "apps__website>@astrojs/check>@astrojs/language-server>volar-service-yaml>yaml-language-server>ajv>fast-uri",
+            "apps__website>@astrojs/check>@astrojs/language-server>volar-service-yaml>yaml-language-server>ajv-draft-04>ajv>fast-uri",
+            "apps__website>@astrojs/check>@astrojs/language-server>volar-service-yaml>yaml-language-server>ajv-i18n>ajv>fast-uri"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1239946,
+      "title": "fast-uri vulnerable to host confusion via an unclosed bracket in the URI authority",
+      "module_name": "fast-uri",
+      "vulnerable_versions": "=3.1.6",
+      "severity": "high",
+      "cwe": "CWE-436",
+      "github_advisory_id": "GHSA-58mr-gqgx-xq4g",
+      "url": "https://github.com/advisories/GHSA-58mr-gqgx-xq4g"
+    },
+    "1240091": {
+      "findings": [
+        {
+          "version": "3.1.6",
+          "paths": [
+            "apps__website>@astrojs/check>@astrojs/language-server>volar-service-yaml>yaml-language-server>ajv>fast-uri",
+            "apps__website>@astrojs/check>@astrojs/language-server>volar-service-yaml>yaml-language-server>ajv-draft-04>ajv>fast-uri",
+            "apps__website>@astrojs/check>@astrojs/language-server>volar-service-yaml>yaml-language-server>ajv-i18n>ajv>fast-uri"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1240091,
+      "title": "fast-uri vulnerable to inconsistent host case normalization via percent-encoded octets",
+      "module_name": "fast-uri",
+      "vulnerable_versions": ">=3.0.0 <3.1.8",
+      "patched_versions": ">=3.1.8",
+      "severity": "moderate",
+      "cwe": "CWE-178",
+      "github_advisory_id": "GHSA-hrr3-gc8f-f4qj",
+      "url": "https://github.com/advisories/GHSA-hrr3-gc8f-f4qj"
+    },
+    "1240991": {
+      "findings": [
+        {
+          "version": "4.2.0",
+          "paths": [
+            "apps__website>astro>http-cache-semantics"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1240991,
+      "title": "http-cache-semantics max-stale handling can disclose cross-user cached responses",
+      "module_name": "http-cache-semantics",
+      "vulnerable_versions": "<=4.2.0",
+      "patched_versions": ">=4.2.1",
+      "severity": "high",
+      "cwe": "CWE-524",
+      "github_advisory_id": "GHSA-ch52-4w7c-c8xp",
+      "url": "https://github.com/advisories/GHSA-ch52-4w7c-c8xp"
+    },
+    "1241205": {
+      "findings": [
+        {
+          "version": "1.8.0",
+          "paths": [
+            "apps__website>@astrojs/react>@astrojs/internal-helpers>smol-toml",
+            "apps__website>astro>@astrojs/internal-helpers>smol-toml",
+            "apps__website>astro>@astrojs/markdown-satteri>@astrojs/internal-helpers>smol-toml",
+            "apps__website>astro>smol-toml"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1241205,
+      "title": "smol-toml: Quadratic-time parse() from parseKey rescanning to end of document on each key line",
+      "module_name": "smol-toml",
+      "vulnerable_versions": "<=1.8.0",
+      "patched_versions": ">=1.8.1",
+      "severity": "moderate",
+      "cwe": "CWE-407",
+      "github_advisory_id": "GHSA-r4xh-jqrq-34v2",
+      "url": "https://github.com/advisories/GHSA-r4xh-jqrq-34v2"
+    },
+    "1241209": {
+      "findings": [
+        {
+          "version": "1.2.1",
+          "paths": [
+            ".>vitest>@vitest/mocker>vite>postcss>source-map-js",
+            ".>vitest>vite>postcss>source-map-js",
+            "apps__apex-os>@vitejs/plugin-react>vite>postcss>source-map-js",
+            "apps__apex-os>vite>postcss>source-map-js",
+            "apps__designer>@vitejs/plugin-react>vite>postcss>source-map-js",
+            "apps__designer>vite>postcss>source-map-js",
+            "apps__designer>vitest>@vitest/mocker>vite>postcss>source-map-js",
+            "apps__designer>vitest>vite>postcss>source-map-js",
+            "apps__designer>vitest>vite-node>vite>postcss>source-map-js",
+            "apps__website>@astrojs/react>@vitejs/plugin-react>vite>postcss>source-map-js",
+            "apps__website>@astrojs/react>vite>postcss>source-map-js",
+            "apps__website>astro>magicast>source-map-js",
+            "apps__website>astro>svgo>css-tree>source-map-js",
+            "apps__website>astro>svgo>csso>css-tree>source-map-js",
+            "apps__website>astro>unifont>css-tree>source-map-js",
+            "apps__website>astro>vite>postcss>source-map-js",
+            "apps__website>astro>vitefu>vite>postcss>source-map-js"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1241209,
+      "title": "source-map-js allows event-loop denial of service through indexed source-map section offsets",
+      "module_name": "source-map-js",
+      "vulnerable_versions": ">=1.0.0 <1.2.2",
+      "patched_versions": ">=1.2.2",
+      "severity": "high",
+      "cwe": "CWE-1284",
+      "github_advisory_id": "GHSA-68fv-2mgg-jv7q",
+      "url": "https://github.com/advisories/GHSA-68fv-2mgg-jv7q"
+    },
+    "1241260": {
+      "findings": [
+        {
+          "version": "1.1.1",
+          "paths": [
+            "apps__designer>vitest>tinypool"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1241260,
+      "title": "Tinypool: Prototype Pollution gadget in worker options leads to Remote Code Execution",
+      "module_name": "tinypool",
+      "vulnerable_versions": "<=2.1.0",
+      "patched_versions": ">=2.1.1",
+      "severity": "critical",
+      "cwe": "CWE-1321",
+      "github_advisory_id": "GHSA-5gmw-xhrv-c9v3",
+      "url": "https://github.com/advisories/GHSA-5gmw-xhrv-c9v3"
+    },
+    "1241261": {
+      "findings": [
+        {
+          "version": "1.1.1",
+          "paths": [
+            "apps__designer>vitest>tinypool"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1241261,
+      "title": "Tinypool: Prototype Pollution Gadget to RCE in run() options",
+      "module_name": "tinypool",
+      "vulnerable_versions": "<2.1.2",
+      "patched_versions": ">=2.1.2",
+      "severity": "critical",
+      "cwe": "CWE-94, CWE-1321",
+      "github_advisory_id": "GHSA-85c8-ppgw-ccpr",
+      "url": "https://github.com/advisories/GHSA-85c8-ppgw-ccpr"
+    },
+    "1241331": {
+      "findings": [
+        {
+          "version": "0.35.4",
+          "paths": [
+            "apps__website>astro>sharp"
+          ],
+          "dev": false,
+          "optional": true,
+          "bundled": false
+        }
+      ],
+      "id": 1241331,
+      "title": "sharp : Vulnerability in librsvg dependency CVE-2026-96889",
+      "module_name": "sharp",
+      "vulnerable_versions": "<0.35.5",
+      "patched_versions": ">=0.35.5",
+      "severity": "high",
+      "cwe": "CWE-416, CWE-1395",
+      "github_advisory_id": "GHSA-wq5f-xc86-pv6w",
+      "url": "https://github.com/advisories/GHSA-wq5f-xc86-pv6w"
+    },
+    "1242622": {
+      "findings": [
+        {
+          "version": "5.4.11",
+          "paths": [
+            "apps__apex-os>@vitejs/plugin-react>vite",
+            "apps__apex-os>vite",
+            "apps__designer>vitest>@vitest/mocker>vite",
+            "apps__designer>vitest>vite"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        },
+        {
+          "version": "6.4.3",
+          "paths": [
+            "apps__designer>@vitejs/plugin-react>vite",
+            "apps__designer>vite",
+            "apps__designer>vitest>vite-node>vite"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1242622,
+      "title": "launch-editor: escapeCmdArgs() omits % escaping on Windows",
+      "module_name": "vite",
+      "vulnerable_versions": "<=6.4.3",
+      "patched_versions": ">=6.4.4",
+      "severity": "moderate",
+      "cwe": "CWE-78",
+      "github_advisory_id": "GHSA-698v-4r3x-3vcv",
+      "url": "https://github.com/advisories/GHSA-698v-4r3x-3vcv"
+    },
+    "1242624": {
+      "findings": [
+        {
+          "version": "8.1.5",
+          "paths": [
+            "apps__website>astro>vite",
+            "apps__website>astro>vitefu>vite"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1242624,
+      "title": "launch-editor: escapeCmdArgs() omits % escaping on Windows",
+      "module_name": "vite",
+      "vulnerable_versions": ">=8.0.0 <=8.1.5",
+      "patched_versions": ">=8.1.6",
+      "severity": "moderate",
+      "cwe": "CWE-78",
+      "github_advisory_id": "GHSA-698v-4r3x-3vcv",
+      "url": "https://github.com/advisories/GHSA-698v-4r3x-3vcv"
+    },
+    "1242626": {
+      "findings": [
+        {
+          "version": "8.3.2",
+          "paths": [
+            ".>vitest>@vitest/mocker>vite",
+            ".>vitest>vite",
+            "apps__website>@astrojs/react>@vitejs/plugin-react>vite",
+            "apps__website>@astrojs/react>vite"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1242626,
+      "title": "launch-editor: escapeCmdArgs() omits % escaping on Windows",
+      "module_name": "vite",
+      "vulnerable_versions": ">=8.3.0 <=8.3.2",
+      "patched_versions": ">=8.3.3",
+      "severity": "moderate",
+      "cwe": "CWE-78",
+      "github_advisory_id": "GHSA-698v-4r3x-3vcv",
+      "url": "https://github.com/advisories/GHSA-698v-4r3x-3vcv"
+    },
+    "1242651": {
+      "findings": [
+        {
+          "version": "5.4.11",
+          "paths": [
+            "apps__apex-os>@vitejs/plugin-react>vite",
+            "apps__apex-os>vite",
+            "apps__designer>vitest>@vitest/mocker>vite",
+            "apps__designer>vitest>vite"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        },
+        {
+          "version": "6.4.3",
+          "paths": [
+            "apps__designer>@vitejs/plugin-react>vite",
+            "apps__designer>vite",
+            "apps__designer>vitest>vite-node>vite"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1242651,
+      "title": "launch-editor: Editor CLI flag misinterpretation causing arbitrary command execution for some editors",
+      "module_name": "vite",
+      "vulnerable_versions": "<=6.4.3",
+      "patched_versions": ">=6.4.4",
+      "severity": "moderate",
+      "cwe": "CWE-88",
+      "github_advisory_id": "GHSA-r825-w8mm-5pxw",
+      "url": "https://github.com/advisories/GHSA-r825-w8mm-5pxw"
+    },
+    "1242653": {
+      "findings": [
+        {
+          "version": "8.1.5",
+          "paths": [
+            "apps__website>astro>vite",
+            "apps__website>astro>vitefu>vite"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1242653,
+      "title": "launch-editor: Editor CLI flag misinterpretation causing arbitrary command execution for some editors",
+      "module_name": "vite",
+      "vulnerable_versions": ">=8.0.0 <=8.1.5",
+      "patched_versions": ">=8.1.6",
+      "severity": "moderate",
+      "cwe": "CWE-88",
+      "github_advisory_id": "GHSA-r825-w8mm-5pxw",
+      "url": "https://github.com/advisories/GHSA-r825-w8mm-5pxw"
+    },
+    "1242655": {
+      "findings": [
+        {
+          "version": "8.3.2",
+          "paths": [
+            ".>vitest>@vitest/mocker>vite",
+            ".>vitest>vite",
+            "apps__website>@astrojs/react>@vitejs/plugin-react>vite",
+            "apps__website>@astrojs/react>vite"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1242655,
+      "title": "launch-editor: Editor CLI flag misinterpretation causing arbitrary command execution for some editors",
+      "module_name": "vite",
+      "vulnerable_versions": ">=8.3.0 <=8.3.2",
+      "patched_versions": ">=8.3.3",
+      "severity": "moderate",
+      "cwe": "CWE-88",
+      "github_advisory_id": "GHSA-r825-w8mm-5pxw",
+      "url": "https://github.com/advisories/GHSA-r825-w8mm-5pxw"
+    },
+    "1242658": {
+      "findings": [
+        {
+          "version": "5.4.11",
+          "paths": [
+            "apps__apex-os>@vitejs/plugin-react>vite",
+            "apps__apex-os>vite",
+            "apps__designer>vitest>@vitest/mocker>vite",
+            "apps__designer>vitest>vite"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        },
+        {
+          "version": "6.4.3",
+          "paths": [
+            "apps__designer>@vitejs/plugin-react>vite",
+            "apps__designer>vite",
+            "apps__designer>vitest>vite-node>vite"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1242658,
+      "title": "launch-editor: `fs.existsSync()` existence check can be bypassed on Windows",
+      "module_name": "vite",
+      "vulnerable_versions": "<=6.4.3",
+      "patched_versions": ">=6.4.4",
+      "severity": "high",
+      "cwe": "CWE-77",
+      "github_advisory_id": "GHSA-587h-7wmj-h5pm",
+      "url": "https://github.com/advisories/GHSA-587h-7wmj-h5pm"
+    },
+    "1242660": {
+      "findings": [
+        {
+          "version": "8.1.5",
+          "paths": [
+            "apps__website>astro>vite",
+            "apps__website>astro>vitefu>vite"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1242660,
+      "title": "launch-editor: `fs.existsSync()` existence check can be bypassed on Windows",
+      "module_name": "vite",
+      "vulnerable_versions": ">=8.0.0 <=8.1.5",
+      "patched_versions": ">=8.1.6",
+      "severity": "high",
+      "cwe": "CWE-77",
+      "github_advisory_id": "GHSA-587h-7wmj-h5pm",
+      "url": "https://github.com/advisories/GHSA-587h-7wmj-h5pm"
+    },
+    "1242662": {
+      "findings": [
+        {
+          "version": "8.3.2",
+          "paths": [
+            ".>vitest>@vitest/mocker>vite",
+            ".>vitest>vite",
+            "apps__website>@astrojs/react>@vitejs/plugin-react>vite",
+            "apps__website>@astrojs/react>vite"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1242662,
+      "title": "launch-editor: `fs.existsSync()` existence check can be bypassed on Windows",
+      "module_name": "vite",
+      "vulnerable_versions": ">=8.3.0 <=8.3.2",
+      "patched_versions": ">=8.3.3",
+      "severity": "high",
+      "cwe": "CWE-77",
+      "github_advisory_id": "GHSA-587h-7wmj-h5pm",
+      "url": "https://github.com/advisories/GHSA-587h-7wmj-h5pm"
+    },
+    "1242724": {
+      "findings": [
+        {
+          "version": "5.4.11",
+          "paths": [
+            "apps__apex-os>@vitejs/plugin-react>vite",
+            "apps__apex-os>vite",
+            "apps__designer>vitest>@vitest/mocker>vite",
+            "apps__designer>vitest>vite"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        },
+        {
+          "version": "6.4.3",
+          "paths": [
+            "apps__designer>@vitejs/plugin-react>vite",
+            "apps__designer>vite",
+            "apps__designer>vitest>vite-node>vite"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1242724,
+      "title": "Vite: Cross origin script execution through Vite custom middleware",
+      "module_name": "vite",
+      "vulnerable_versions": "<=6.4.3",
+      "patched_versions": ">=6.4.4",
+      "severity": "low",
+      "cwe": "CWE-80",
+      "github_advisory_id": "GHSA-9jrq-w75r-8gcw",
+      "url": "https://github.com/advisories/GHSA-9jrq-w75r-8gcw"
+    },
+    "1242726": {
+      "findings": [
+        {
+          "version": "8.1.5",
+          "paths": [
+            "apps__website>astro>vite",
+            "apps__website>astro>vitefu>vite"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1242726,
+      "title": "Vite: Cross origin script execution through Vite custom middleware",
+      "module_name": "vite",
+      "vulnerable_versions": ">=8.0.0 <=8.1.5",
+      "patched_versions": ">=8.1.6",
+      "severity": "low",
+      "cwe": "CWE-80",
+      "github_advisory_id": "GHSA-9jrq-w75r-8gcw",
+      "url": "https://github.com/advisories/GHSA-9jrq-w75r-8gcw"
+    },
+    "1242728": {
+      "findings": [
+        {
+          "version": "8.3.2",
+          "paths": [
+            ".>vitest>@vitest/mocker>vite",
+            ".>vitest>vite",
+            "apps__website>@astrojs/react>@vitejs/plugin-react>vite",
+            "apps__website>@astrojs/react>vite"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1242728,
+      "title": "Vite: Cross origin script execution through Vite custom middleware",
+      "module_name": "vite",
+      "vulnerable_versions": ">=8.3.0 <=8.3.2",
+      "patched_versions": ">=8.3.3",
+      "severity": "low",
+      "cwe": "CWE-80",
+      "github_advisory_id": "GHSA-9jrq-w75r-8gcw",
+      "url": "https://github.com/advisories/GHSA-9jrq-w75r-8gcw"
+    },
+    "1242730": {
+      "findings": [
+        {
+          "version": "5.4.11",
+          "paths": [
+            "apps__apex-os>@vitejs/plugin-react>vite",
+            "apps__apex-os>vite",
+            "apps__designer>vitest>@vitest/mocker>vite",
+            "apps__designer>vitest>vite"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        },
+        {
+          "version": "6.4.3",
+          "paths": [
+            "apps__designer>@vitejs/plugin-react>vite",
+            "apps__designer>vite",
+            "apps__designer>vitest>vite-node>vite"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1242730,
+      "title": "Vite: Files outside `server.fs.allow` could be served when project paths match system paths on non-Windows machine",
+      "module_name": "vite",
+      "vulnerable_versions": "<=6.4.3",
+      "patched_versions": ">=6.4.4",
+      "severity": "moderate",
+      "cwe": "CWE-22, CWE-284",
+      "github_advisory_id": "GHSA-rq7h-c2jc-7f22",
+      "url": "https://github.com/advisories/GHSA-rq7h-c2jc-7f22"
+    },
+    "1242732": {
+      "findings": [
+        {
+          "version": "8.1.5",
+          "paths": [
+            "apps__website>astro>vite",
+            "apps__website>astro>vitefu>vite"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1242732,
+      "title": "Vite: Files outside `server.fs.allow` could be served when project paths match system paths on non-Windows machine",
+      "module_name": "vite",
+      "vulnerable_versions": ">=8.0.0 <=8.1.5",
+      "patched_versions": ">=8.1.6",
+      "severity": "moderate",
+      "cwe": "CWE-22, CWE-284",
+      "github_advisory_id": "GHSA-rq7h-c2jc-7f22",
+      "url": "https://github.com/advisories/GHSA-rq7h-c2jc-7f22"
+    },
+    "1242734": {
+      "findings": [
+        {
+          "version": "8.3.2",
+          "paths": [
+            ".>vitest>@vitest/mocker>vite",
+            ".>vitest>vite",
+            "apps__website>@astrojs/react>@vitejs/plugin-react>vite",
+            "apps__website>@astrojs/react>vite"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1242734,
+      "title": "Vite: Files outside `server.fs.allow` could be served when project paths match system paths on non-Windows machine",
+      "module_name": "vite",
+      "vulnerable_versions": ">=8.3.0 <=8.3.2",
+      "patched_versions": ">=8.3.3",
+      "severity": "moderate",
+      "cwe": "CWE-22, CWE-284",
+      "github_advisory_id": "GHSA-rq7h-c2jc-7f22",
+      "url": "https://github.com/advisories/GHSA-rq7h-c2jc-7f22"
+    },
+    "1242737": {
+      "findings": [
+        {
+          "version": "8.3.2",
+          "paths": [
+            ".>vitest>@vitest/mocker>vite",
+            ".>vitest>vite",
+            "apps__website>@astrojs/react>@vitejs/plugin-react>vite",
+            "apps__website>@astrojs/react>vite"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1242737,
+      "title": "Vite: First 4 bytes of files outside of `server.fs` setting is exposed by `?vite-wasm-instance`",
+      "module_name": "vite",
+      "vulnerable_versions": ">=8.3.0 <=8.3.2",
+      "patched_versions": ">=8.3.3",
+      "severity": "moderate",
+      "cwe": "CWE-22, CWE-200, CWE-209",
+      "github_advisory_id": "GHSA-vfpm-58rq-9qcg",
+      "url": "https://github.com/advisories/GHSA-vfpm-58rq-9qcg"
+    },
+    "1242767": {
+      "findings": [
+        {
+          "version": "4.1.10",
+          "paths": [
+            ".>vitest>@vitest/mocker"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        },
+        {
+          "version": "3.2.7",
+          "paths": [
+            "apps__designer>vitest>@vitest/mocker"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1242767,
+      "title": "Vitest: Code injection via unauthenticated manual mock registration",
+      "module_name": "@vitest/mocker",
+      "vulnerable_versions": ">=2.1.0-beta.7 <4.1.12",
+      "patched_versions": ">=4.1.12",
+      "severity": "moderate",
+      "cwe": "CWE-94, CWE-116, CWE-306",
+      "github_advisory_id": "GHSA-qxg6-89mg-rqv8",
+      "url": "https://github.com/advisories/GHSA-qxg6-89mg-rqv8"
+    },
+    "1243066": {
+      "findings": [
+        {
+          "version": "4.4.3",
+          "paths": [
+            "apps__apex-os>zod",
+            "apps__gate-api>zod",
+            "packages__contracts>zod"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        },
+        {
+          "version": "4.6.5",
+          "paths": [
+            "apps__website>astro>zod"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1243066,
+      "title": "Zod can exhaust memory while validating oversized constrained collections",
+      "module_name": "zod",
+      "vulnerable_versions": "<4.6.6",
+      "patched_versions": ">=4.6.6",
+      "severity": "high",
+      "cwe": "CWE-770",
+      "github_advisory_id": "GHSA-mrhx-c7xc-m3w5",
+      "url": "https://github.com/advisories/GHSA-mrhx-c7xc-m3w5"
+    },
+    "1243077": {
+      "findings": [
+        {
+          "version": "8.11.2",
+          "paths": [
+            "apps__website>astro>unifont>undici"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1243077,
+      "title": "undici vulnerable to Denial of Service via unbounded memory in the EventSource parser",
+      "module_name": "undici",
+      "vulnerable_versions": ">=8.0.0 <8.12.2",
+      "patched_versions": ">=8.12.2",
+      "severity": "moderate",
+      "cwe": "CWE-770",
+      "github_advisory_id": "GHSA-4qv8-2p9j-2685",
+      "url": "https://github.com/advisories/GHSA-4qv8-2p9j-2685"
+    },
+    "1243080": {
+      "findings": [
+        {
+          "version": "8.11.2",
+          "paths": [
+            "apps__website>astro>unifont>undici"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1243080,
+      "title": "undici vulnerable to Subresource Integrity bypass via non-lowercase algorithm tokens",
+      "module_name": "undici",
+      "vulnerable_versions": ">=8.0.0 <8.12.2",
+      "patched_versions": ">=8.12.2",
+      "severity": "moderate",
+      "cwe": "CWE-178",
+      "github_advisory_id": "GHSA-f72v-6w45-q472",
+      "url": "https://github.com/advisories/GHSA-f72v-6w45-q472"
+    },
+    "1243098": {
+      "findings": [
+        {
+          "version": "3.1.6",
+          "paths": [
+            "apps__website>@astrojs/check>@astrojs/language-server>volar-service-yaml>yaml-language-server>ajv>fast-uri",
+            "apps__website>@astrojs/check>@astrojs/language-server>volar-service-yaml>yaml-language-server>ajv-draft-04>ajv>fast-uri",
+            "apps__website>@astrojs/check>@astrojs/language-server>volar-service-yaml>yaml-language-server>ajv-i18n>ajv>fast-uri"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1243098,
+      "title": "fast-uri vulnerable to URI scheme spoofing via percent-encoded scheme decoding",
+      "module_name": "fast-uri",
+      "vulnerable_versions": ">=3.0.0 <3.1.9",
+      "patched_versions": ">=3.1.9",
+      "severity": "moderate",
+      "cwe": "CWE-172, CWE-180",
+      "github_advisory_id": "GHSA-w74x-v6f9-j3xg",
+      "url": "https://github.com/advisories/GHSA-w74x-v6f9-j3xg"
+    },
+    "1243101": {
+      "findings": [
+        {
+          "version": "3.1.6",
+          "paths": [
+            "apps__website>@astrojs/check>@astrojs/language-server>volar-service-yaml>yaml-language-server>ajv>fast-uri",
+            "apps__website>@astrojs/check>@astrojs/language-server>volar-service-yaml>yaml-language-server>ajv-draft-04>ajv>fast-uri",
+            "apps__website>@astrojs/check>@astrojs/language-server>volar-service-yaml>yaml-language-server>ajv-i18n>ajv>fast-uri"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1243101,
+      "title": "fast-uri vulnerable to improper path equivalence in relative reference normalization",
+      "module_name": "fast-uri",
+      "vulnerable_versions": ">=3.0.0 <3.1.9",
+      "patched_versions": ">=3.1.9",
+      "severity": "low",
+      "cwe": "CWE-41",
+      "github_advisory_id": "GHSA-xhq7-xmqj-769h",
+      "url": "https://github.com/advisories/GHSA-xhq7-xmqj-769h"
+    },
+    "1243104": {
+      "findings": [
+        {
+          "version": "3.1.6",
+          "paths": [
+            "apps__website>@astrojs/check>@astrojs/language-server>volar-service-yaml>yaml-language-server>ajv>fast-uri",
+            "apps__website>@astrojs/check>@astrojs/language-server>volar-service-yaml>yaml-language-server>ajv-draft-04>ajv>fast-uri",
+            "apps__website>@astrojs/check>@astrojs/language-server>volar-service-yaml>yaml-language-server>ajv-i18n>ajv>fast-uri"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1243104,
+      "title": "fast-uri vulnerable to host confusion via unchecked WHATWG host canonicalization",
+      "module_name": "fast-uri",
+      "vulnerable_versions": ">=3.1.3 <3.1.9",
+      "patched_versions": ">=3.1.9",
+      "severity": "moderate",
+      "cwe": "CWE-20, CWE-436",
+      "github_advisory_id": "GHSA-wjr9-j795-jxcr",
+      "url": "https://github.com/advisories/GHSA-wjr9-j795-jxcr"
+    },
+    "1243107": {
+      "findings": [
+        {
+          "version": "3.1.6",
+          "paths": [
+            "apps__website>@astrojs/check>@astrojs/language-server>volar-service-yaml>yaml-language-server>ajv>fast-uri",
+            "apps__website>@astrojs/check>@astrojs/language-server>volar-service-yaml>yaml-language-server>ajv-draft-04>ajv>fast-uri",
+            "apps__website>@astrojs/check>@astrojs/language-server>volar-service-yaml>yaml-language-server>ajv-i18n>ajv>fast-uri"
+          ],
+          "dev": true,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1243107,
+      "title": "fast-uri vulnerable to scheme injection via an unescaped first-segment colon in suffix references",
+      "module_name": "fast-uri",
+      "vulnerable_versions": ">=3.0.0 <3.1.9",
+      "patched_versions": ">=3.1.9",
+      "severity": "low",
+      "cwe": "CWE-41, CWE-116",
+      "github_advisory_id": "GHSA-333x-w4r6-6crp",
+      "url": "https://github.com/advisories/GHSA-333x-w4r6-6crp"
+    },
+    "1243112": {
+      "findings": [
+        {
+          "version": "8.11.2",
+          "paths": [
+            "apps__website>astro>unifont>undici"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1243112,
+      "title": "undici vulnerable to Denial of Service via unhandled error on excessive content-encodings",
+      "module_name": "undici",
+      "vulnerable_versions": ">=8.0.0 <8.12.2",
+      "patched_versions": ">=8.12.2",
+      "severity": "high",
+      "cwe": "CWE-248, CWE-459",
+      "github_advisory_id": "GHSA-xjj6-f33q-929c",
+      "url": "https://github.com/advisories/GHSA-xjj6-f33q-929c"
+    }
+  },
+  "metadata": {
+    "vulnerabilities": {
+      "info": 0,
+      "low": 7,
+      "moderate": 30,
+      "high": 11,
+      "critical": 2
+    },
+    "dependencies": 303,
+    "devDependencies": 284,
+    "optionalDependencies": 234,
+    "totalDependencies": 713
+  }
+}

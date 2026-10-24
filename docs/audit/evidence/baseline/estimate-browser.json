@@ -1,0 +1,10 @@
+{
+  "command": [
+    "node",
+    "apps/apex-os/tests/estimate-navigation.e2e.mjs"
+  ],
+  "cwd": "/workspace/apex-operating-system",
+  "sha": "f6d5252f76a3b103b8849ae74c00fd9f9b07c022",
+  "seconds": 5.577,
+  "exit_code": 0
+}
