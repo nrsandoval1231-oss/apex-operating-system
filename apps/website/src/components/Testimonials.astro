@@ -14,7 +14,6 @@ import { testimonials } from '@content/testimonials';
     <div class="quotes">
       {testimonials.map((t) => (
         <figure class="q">
-          <div class="stars" aria-label={`${t.stars} out of 5 stars`}>{'★'.repeat(t.stars)}</div>
           <blockquote><p>{t.quote}</p></blockquote>
           <figcaption class="who">{t.name}<span>{t.context}</span></figcaption>
         </figure>

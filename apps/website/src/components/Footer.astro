@@ -8,7 +8,7 @@
  * formality. URLs are env-driven and currently point at where the policies actually live
  * (apexcoatinglbk.com); see the D-03 note in lib/site.ts before that domain is redirected.
  */
-import { site, legalUrls, financingUrl } from '@lib/site';
+import { site, legalUrls } from '@lib/site';
 import { footer } from '@content/site-copy';
 import Logo from './Logo.astro';
 ---
@@ -23,13 +23,13 @@ import Logo from './Logo.astro';
         <p style="max-width:320px;margin-top:16px">{footer.blurb}</p>
       </div>
       <div class="foot-contact">
-        {footer.verticalsLine}<br />
+        <nav aria-label="Footer navigation" class="footer-nav">
+          <a href="/designer-pools">Designer Pools</a><a href="/concrete-coating">Concrete Coating</a><a href="/design-and-renovation">Design & Renovation</a>
+          <a href="/service">Pool Maintenance</a><a href="/work">Our Work</a><a href="/about-apex">About Apex</a><a href="/process">Our Process</a><a href="/contact">Contact</a>
+        </nav>
         <a href={`tel:${site.phoneE164}`}>{site.phoneDisplay}</a><br />
         <a href={`mailto:${site.contactEmail}`}>{site.contactEmail}</a><br />
         {site.city}<br />
-        <a class="fin-link" href={financingUrl} target="_blank" rel="noopener" aria-label={`${footer.financing} (opens in a new tab)`}>
-          <img src="/images/lyon-financial.webp" alt="Lyon Financial" />
-        </a>
       </div>
     </div>
     <div class="foot-bottom">
@@ -74,4 +74,5 @@ import Logo from './Logo.astro';
   }
   .fin-link img { display: block; width: 150px; height: auto; }
   .fin-link:hover { opacity: 0.86; }
+  .footer-nav{display:grid;grid-template-columns:repeat(2,minmax(130px,1fr));gap:7px 18px;margin-bottom:15px}
 </style>

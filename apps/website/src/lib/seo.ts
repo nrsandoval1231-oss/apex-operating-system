@@ -30,13 +30,6 @@ export const ORG_BRAND = 'Apex — Gets It Done';
 /** The service area. Structured data uses these; they are also the local-SEO surface. */
 export const SERVICE_AREA = [
   'Lubbock, TX',
-  'Wolfforth, TX',
-  'Shallowater, TX',
-  'Idalou, TX',
-  'Slaton, TX',
-  'Levelland, TX',
-  'Ransom Canyon, TX',
-  'The South Plains',
 ] as const;
 
 /**
@@ -63,12 +56,7 @@ export interface SitemapEntry {
  */
 export const SITEMAP_ENTRIES: readonly SitemapEntry[] = [
   { path: '/', changefreq: 'weekly', priority: 1.0 },
-  ...VERTICAL_LIST.map((cfg) => ({
-    path: `/${cfg.slug}`,
-    changefreq: 'monthly' as const,
-    // Designer Pools is the highest-ticket vertical and the primary organic target.
-    priority: cfg.vertical === 'Designer Pools' ? 0.9 : 0.8,
-  })),
+  ...['designer-pools','concrete-coating','design-and-renovation','about-apex','work','contact','process','service-areas','service'].map((path) => ({ path:`/${path}`, changefreq:'monthly' as const, priority:path==='designer-pools'?0.9:0.7 })),
   /* Legal pages are indexable and listed deliberately, at low priority. They rank for
      nothing and shouldn't, but they must be discoverable: the live site's versions are
      indexed today, so omitting them from the sitemap after cutover would drop URLs Google
@@ -95,9 +83,7 @@ export function organizationSchema(): JsonLdNode {
     url: absoluteUrl('/'),
     telephone: site.phoneE164,
     email: site.contactEmail,
-    description:
-      'Apex builds pools, installs concrete coatings, renovates homes, and services pools ' +
-      'across Lubbock and the South Plains — four crews under one accountable contractor.',
+    description: 'Apex provides designer pools, concrete coating, and design and renovation services in Lubbock, Texas.',
     // TODO(BLOCKED: D-09): add `address` (PostalAddress) + `geo` once the verified NAP is
     // confirmed. Publishing an unverified address here would conflict with the GBP listing.
     areaServed: SERVICE_AREA.map((name) => ({ '@type': 'Place', name })),
