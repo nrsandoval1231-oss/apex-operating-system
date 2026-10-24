@@ -1,6 +1,6 @@
 # APEX 2.0 implementation status
 
-Base: main `f4421197de580028bfe53f9c7d50776b20a6a52b`, including merged cleanup PR #31. No open PRs at start. Branch: `codex/apex-2-foundation`. No deployment or merge authorized.
+Base: main `f4421197de580028bfe53f9c7d50776b20a6a52b`, including merged cleanup PR #31. No open PRs at start. Initial branch: `codex/apex-2-foundation`. No deployment or merge authorized.
 
 ## Binding specification
 
@@ -18,7 +18,7 @@ Official source inspected 2026-10-24: https://apexgetsitdone.com/. Main logo: `/
 - [x] 2 Today + Checklist: authoritative personal/project/assigned/recurring tasks, due dates, priority, history, optimistic concurrency, task CRUD/completion. Test persistence, access, races and no gate side effects; commit/PR.
 - [x] 3 Calendar: existing scheduling read model plus persisted appointments, day/week/month/agenda and filtering; edits preserve operational restrictions. Test reload, edits, conflicts and date boundaries; commit/PR.
 - [x] 4 Projects: searchable/filterable selectable projects, verified progress, next milestones, integrated detail tabs/deep links, division metadata and safe lifecycle configuration. Test selection/back navigation, permissions and closure; commit/PR.
-- [ ] 5 Photos: optional metadata, camera/library multi-upload, optimized image bytes, durable recoverable upload queue, stable retry identity, protected gallery/viewer, customer sharing/activity. Test invalid files, interruptions/retry, isolation, zero-photo lifecycle; commit/PR.
+- [x] 5 Photos: optional metadata, camera/library multi-upload, optimized image bytes, durable recoverable upload queue, stable retry identity, protected gallery/viewer, customer sharing/activity. Test invalid files, interruptions/retry, isolation, zero-photo lifecycle; commit/PR.
 - [ ] 6 Integration: responsive/a11y/error/loading polish, browser workflow acceptance, full existing regressions, actual desktop/mobile screenshots, remaining gaps; commit/PR.
 
 ## Review focus
@@ -27,9 +27,13 @@ Cross-project stale responses; sign-out with pending uploads; lost server acknow
 
 ## Current status
 
+Milestones 1–5 are implemented and independently reviewed. Foundation through workspace are open in PRs32–35; the photo PR follows from reviewed `367ab5c`. Milestone6 integrated polish, full fresh-database regression and final acceptance remain. No APEX2 PR has been merged or deployed. Unapproved non-pool lifecycles remain an explicit acceptance condition.
+
+## Milestone 1 evidence
+
 Milestone 1 implemented in `bdceb97`. `pnpm typecheck`, `pnpm --filter @apex/os build`, and `node apps/apex-os/tests/shell.e2e.mjs` exit 0. Shell browser checks cover 1440×1000 and 390×844 navigation, keyboard focus, touch targets, auth failure/signout, and horizontal overflow. API reads were intercepted with synthetic fixtures; these checks do not establish backend persistence. Screenshots: [desktop](screenshots/foundation-desktop.png), [mobile](screenshots/foundation-mobile.png).
 
-Milestone1 alone routed Checklist to the existing Today feed. Milestone2 replaces that temporary route with persisted task operations; photo, note and calendar quick-action forms remain subsequent work. Baseline full `bash scripts/ci.sh` passed on main `f442119` in 627.133s: 581 core, 585 Designer, 2 website unit, 166 website browser, 10 production-intake browser, 39 integration cases passed; 2 missing-engine guards skipped (not passes); two staff browser harnesses and five archive scripts passed. Disposable PostgreSQL/Moto, synthetic records only. Exact run metadata: [baseline](validation/baseline-ci.json). Foundation follow-up `dfb7077` fixes nested-route manifest/icon URLs and manifest MIME; focused API test, typecheck/build and browser smoke passed. Next: persisted checklist. PRs will be stacked with explicit dependencies; none merged or deployed without approval.
+Milestone1 alone routed Checklist to the existing Today feed. Milestone2 replaces that temporary route with persisted task operations; photo, note and calendar quick-action forms remain subsequent work. Baseline full `bash scripts/ci.sh` passed on main `f442119` in 627.133s: 581 core, 585 Designer, 2 website unit, 166 website browser, 10 production-intake browser, 39 integration cases passed; 2 missing-engine guards skipped (not passes); two staff browser harnesses and five archive scripts passed. Disposable PostgreSQL/Moto, synthetic records only. Exact run metadata: [baseline](validation/baseline-ci.json). Foundation follow-up `dfb7077` fixes nested-route manifest/icon URLs and manifest MIME; focused API test, typecheck/build and browser smoke passed. PRs will be stacked with explicit dependencies; none merged or deployed without approval.
 
 ## Known inherited conditions
 
@@ -40,7 +44,7 @@ See `../audit/REMAINING_RISKS.md`: phase-advancement recovery, real IdP/R2/backu
 
 Backend `3739ec5`, frontend `c989222`: one persisted ordinary checklist for personal/project work, active assignment, due/priority edits, audited completion and atomic recurrence. Existing lead follow-ups remain links to their authority. Task writes never advance gates. PostgreSQL 10 passed/0 skipped; browser4 acceptance groups passed against real API/PostgreSQL, including lost acknowledgements and delayed lookup defaults. Narrow client/lead regression8 passed/1 optional-PG case skipped; full baseline had configured PostgreSQL. Typecheck/build and existing shell smoke pass. Review found and fixed personal-history reassignment exposure and unavailable-project fallback in `c4fc100`; scoped re-review clean (both findings addressed). No PR merge/deploy.
 
-[Exact checklist commands/results/limits](validation/checklist.md). Actual running application with synthetic persisted test records: [desktop](screenshots/checklist-desktop.png), [mobile](screenshots/checklist-mobile.png). Completed tasks remain immutable; no reopen/delete. List pagination and inactive-user display names are documented limits. Next: canonical calendar appointments and views.
+[Exact checklist commands/results/limits](validation/checklist.md). Actual running application with synthetic persisted test records: [desktop](screenshots/checklist-desktop.png), [mobile](screenshots/checklist-mobile.png). Completed tasks remain immutable; no reopen/delete. List pagination and inactive-user display names are documented limits. Calendar implementation is recorded below.
 
 
 ## Milestone 3 evidence
@@ -57,6 +61,7 @@ Backend `b2be256`, frontend `a1d750c`, review fixes `4f1c331`: one canonical app
 | Foundation | [32](https://github.com/nrsandoval1231-oss/apex-operating-system/pull/32) | main | Open, reviewed locally |
 | Checklist | [33](https://github.com/nrsandoval1231-oss/apex-operating-system/pull/33) | Foundation | Open, reviewed locally |
 | Calendar | [34](https://github.com/nrsandoval1231-oss/apex-operating-system/pull/34) | Checklist | Open, reviewed locally |
+| Workspace | [35](https://github.com/nrsandoval1231-oss/apex-operating-system/pull/35) | Calendar | Open, reviewed locally |
 
 The stack isolates milestone diffs. These local independent reviews are not owner merge approval. Later milestones build on reviewed candidates; all remain unmerged and undeployed.
 
@@ -66,3 +71,12 @@ The stack isolates milestone diffs. These local independent reviews are not owne
 Backend `20cb41b`, workspace `d88da21`: three-column desktop and dedicated mobile Today summary, canonical project tasks/calendar, selected-project deep links, real division intake metadata, signed-scope gate counts, retained documents, immutable notes and audited manager priority. Original operational project controls remain accessible. PostgreSQL24, affected unit97, workspace browser22, original checklist4/calendar7 browser groups and unchanged closeout acceptance passed; typecheck/build pass. Review identified unsupported-division inspection exposure and duplicate embedded section anchors; corrections committed in `d445264`, with26 browser groups/typecheck/build passing; scoped re-review approved, both findings addressed.
 
 [Exact workspace commands/results/limits](validation/workspace.md). Loaded actual application using synthetic persisted records: [desktop](screenshots/workspace-desktop.png), [mobile](screenshots/workspace-mobile.png). Optional photo upload follows in milestone5. Unsupported division stage catalogs remain inactive/configuration-required; financial API policy is unchanged.
+
+
+## Milestone 5 evidence
+
+Backend `26b7e9d`, UI `a4862e8`: optional jobsite photos reuse evidence/storage/customer publication, with strict validation, optional capture metadata, mobile optimization, protected galleries/viewer and recoverable owner/job-scoped uploads. Existing evidence migrates without changing links, bytes or publication. PhotoPG/Moto8, relatedPG7, affectedunit124, actual touch/desktopphoto browser15 groups and bothzero/optionalphoto guardedcloseout paths passed withoutskips. Typecheck/build pass.
+
+Independent review reproduced two clientqueue races. Fix `367ab5c` makes draft editing, first-attempt freezing and deletion atomic against durable state; every attempt uses the authoritative frozen payload. Missing/deleted durable entries cannot revert to cached writes. SixnativeIndexedDBrace groups and15realAPIbrowser groups/typecheck/build pass; scoped re-review approved; both findings addressed.
+
+[Exact photo commands/results/failures/limits](validation/photos.md). Actual synthetic persisted application: [mobile composer](screenshots/photos-composer-mobile.png), [mobile gallery](screenshots/photos-mobile.png), [desktop gallery](screenshots/photos-desktop.png). Physicalcamera/Safari, liveIdP/R2 and full offline shell are not claimed verified. Final integratedCI/polish remains milestone6.
