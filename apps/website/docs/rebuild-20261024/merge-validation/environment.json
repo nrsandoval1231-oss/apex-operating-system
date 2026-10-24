@@ -1,0 +1,16 @@
+{
+  "sha": "dc6c658e67edf9bbdbaa7deef128f9c0b4959f70",
+  "startedAtUTC": "2026-10-24T20:15:06.849364+00:00",
+  "database": "apex_website_merge_final",
+  "postgres": "17.11 on127.0.0.1:55432",
+  "initialPublicTables": 0,
+  "storage": "Moto5.1.15 on127.0.0.1:59000 bucketapex-website-merge-final",
+  "initialObjects": 0,
+  "node": "v24.19.0",
+  "pnpm": "11.18.0",
+  "playwright": "1.62.1",
+  "dirtyPaths": [
+    "?? apps/website/docs/rebuild-20261024/MERGE_READINESS.md",
+    "?? apps/website/docs/rebuild-20261024/merge-validation/"
+  ]
+}

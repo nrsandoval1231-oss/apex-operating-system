@@ -1,3 +1,11 @@
+# Current PR38 merge-readiness follow-up
+
+Worktree `/workspace/apex-website-merge`, branch `codex/apex-website-2-20261024`. Latest user direction: fix the website review findings and get the PR merge-ready; leave merging/deployment separate. OS main98fb06b is integrated through merge6444813. Website fixes7909f13 restore confirmed conversion events, protect frozen retry data from hero preselection, and bound tracking fields to the strict API contract. Test-onlydc6c658 corrects an inherited checklist wait.
+
+Full Linux `scripts/ci.sh` passed at frozen dc6c658:1,324 cases passed,3 disclosed skips, additional staff browser/closeout acceptance passed. Separate real PostgreSQL public-intake proof passed. Independent focused review approved all3fixes and the test wait. Exact commands/source/environment/results, first failed run, compressed full log and release conditions: `apps/website/docs/rebuild-20261024/MERGE_READINESS.md`. No main merge or deployment was performed in this follow-up. Historical staging was not updated and does not certify this candidate. Next: owner merge review, then separately approved production acceptance/cutover.
+
+## Previous website rebuild record — historical
+
 # Website 2.0 current state
 
 Repository nrsandoval1231-oss/apex-operating-system; worktree C:/Users/nrsan/Nucleus/02_Projects/Apex/website-2; branch codex/apex-website-2-20261024; base f4421197de580028bfe53f9c7d50776b20a6a52b. This branch is isolated from OS foundation PR32 and all existing worktrees. Previous current-state bytes are preserved unchanged in archive/CURRENT_STATE.website2-base-f442119.md; they describe historical business-completion work, not current dispatch.
