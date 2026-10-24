@@ -1,0 +1,29 @@
+{
+  "sha": "78dfa0857e53b13d69afc87bd2c8364704d9e485",
+  "startedAt": "2026-10-24T09:54:57.988Z",
+  "database": {
+    "host": "127.0.0.1",
+    "port": 55432,
+    "name": "apex2_final",
+    "initialPublicTables": 0,
+    "integrationRoleCreatedb": true,
+    "version": "PostgreSQL 17.11 (Debian 17.11-1.pgdg13+2) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit"
+  },
+  "storage": {
+    "endpoint": "http://127.0.0.1:59000",
+    "bucket": "apex2-final",
+    "initialObjects": 0
+  },
+  "node": "v24.19.0",
+  "ciPnpm": "11.18.0 (scripts/ci.sh Corepack pin)",
+  "directFeaturePnpm": "11.25.0",
+  "dirtyPaths": [
+    "M docs/apex2/IMPLEMENTATION.md",
+    " M docs/superpowers/plans/2026-10-24-apex2.md",
+    "?? docs/apex2/validation/foundation.md"
+  ],
+  "environmentFile": "/tmp/apex2/final-env.sh",
+  "playwright": "1.62.1 (installed and lockfile; package manifest range ^1.62.0)",
+  "kernel": "6.18.55",
+  "moto": "5.1.15"
+}

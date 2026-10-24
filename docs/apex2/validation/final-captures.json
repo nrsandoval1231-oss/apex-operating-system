@@ -1,0 +1,133 @@
+{
+  "synthetic": true,
+  "database": "apex2_visual_final_v2",
+  "storage": "Local Moto, S3 adapter",
+  "capturedAt": "2026-10-24T10:29:37.299Z",
+  "captures": [
+    {
+      "name": "today-1440",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "fullPage": false,
+      "data": "Synthetic persisted demo, real API/PostgreSQL and protected image storage",
+      "touch": false
+    },
+    {
+      "name": "checklist-1440",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "fullPage": false,
+      "data": "Synthetic persisted demo, real API/PostgreSQL and protected image storage",
+      "touch": false
+    },
+    {
+      "name": "calendar-1440",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "fullPage": false,
+      "data": "Synthetic persisted demo, real API/PostgreSQL and protected image storage",
+      "touch": false
+    },
+    {
+      "name": "jobs-1440",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "fullPage": false,
+      "data": "Synthetic persisted demo, real API/PostgreSQL and protected image storage",
+      "touch": false
+    },
+    {
+      "name": "project-1440",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "fullPage": false,
+      "data": "Synthetic persisted demo, real API/PostgreSQL and protected image storage",
+      "touch": false
+    },
+    {
+      "name": "photos-1440",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "fullPage": false,
+      "data": "Synthetic persisted demo, real API/PostgreSQL and protected image storage",
+      "touch": false
+    },
+    {
+      "name": "today-390",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "fullPage": false,
+      "data": "Synthetic persisted demo, real API/PostgreSQL and protected image storage",
+      "touch": true
+    },
+    {
+      "name": "checklist-390",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "fullPage": false,
+      "data": "Synthetic persisted demo, real API/PostgreSQL and protected image storage",
+      "touch": true
+    },
+    {
+      "name": "calendar-390",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "fullPage": false,
+      "data": "Synthetic persisted demo, real API/PostgreSQL and protected image storage",
+      "touch": true
+    },
+    {
+      "name": "jobs-390",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "fullPage": false,
+      "data": "Synthetic persisted demo, real API/PostgreSQL and protected image storage",
+      "touch": true
+    },
+    {
+      "name": "project-390",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "fullPage": false,
+      "data": "Synthetic persisted demo, real API/PostgreSQL and protected image storage",
+      "touch": true
+    },
+    {
+      "name": "photos-390",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "fullPage": false,
+      "data": "Synthetic persisted demo, real API/PostgreSQL and protected image storage",
+      "touch": true
+    }
+  ],
+  "skipped": 0,
+  "limits": [
+    "Chromium touch emulation; no physical camera or Safari acceptance",
+    "Bundled CC0 geometric illustration, not a customer photograph"
+  ]
+}

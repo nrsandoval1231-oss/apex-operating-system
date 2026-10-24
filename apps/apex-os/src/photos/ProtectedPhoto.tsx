@@ -23,7 +23,7 @@ export default function ProtectedImage({
     setError('');
     setSource(null);
     void fetch(`/api/evidence/${photo.evidenceId}`, {
-      headers: { authorization: `Bearer ${token}` },
+      headers: token ? { authorization: `Bearer ${token}` } : {},
       signal: controller.signal,
       cache: 'no-store',
     })

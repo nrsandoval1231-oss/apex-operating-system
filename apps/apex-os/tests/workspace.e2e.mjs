@@ -6,7 +6,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 import pg from '../../../packages/database/node_modules/pg/lib/index.js';
 import { SignJWT } from '../../gate-api/node_modules/jose/dist/webapi/index.js';
 import { chromium } from '../../website/node_modules/@playwright/test/index.mjs';
-import { createCanonicalId } from '../../../packages/contracts/dist/index.js';
+import { createCanonicalId, civilDay } from '../../../packages/contracts/dist/index.js';
 assert(process.env.DATABASE_URL, 'Disposable PostgreSQL required');
 const origin = 'http://127.0.0.1:4198',
   secret = 'workspace-browser-synthetic-secret-long-enough';
@@ -43,6 +43,42 @@ async function assertMobileAppointment(page) {
   assert(
     appointment.y + appointment.height <= Math.min(nav.y, quick.y),
     `First appointment must be above mobile overlays: ${JSON.stringify({ appointment, nav, quick })}`,
+  );
+}
+async function waitForCenterCalendar(page, title, mobile, api) {
+  const center = page.locator('.workspace-center>.calendar-workspace');
+  if (!mobile) {
+    await center.locator('.cw-entry').filter({ hasText: title }).first().waitFor();
+    return;
+  }
+  const cards = page.locator('.workspace-center>.calendar-workspace.cw-summary>.cw-entry');
+  await cards.first().waitFor();
+  const today = civilDay();
+  const eligible = (await api('/api/workspace-calendar'))
+    .filter((item) => {
+      if (item.source !== 'appointment' || item.event.cancelledAt) return false;
+      const event = item.event;
+      const start = event.allDay
+        ? event.startsOn
+        : civilDay(new Date(event.startsAt), 'America/Chicago');
+      const end = event.allDay
+        ? event.endsOn
+        : civilDay(new Date(Date.parse(event.endsAt) - 1), 'America/Chicago');
+      return start <= today && end >= today;
+    })
+    .sort((a, b) =>
+      Number(!a.event.allDay) - Number(!b.event.allDay) ||
+      (a.event.allDay ? a.event.startsOn : a.event.startsAt).localeCompare(
+        b.event.allDay ? b.event.startsOn : b.event.startsAt,
+      ) ||
+      a.id.localeCompare(b.id),
+    )
+    .slice(0, 2)
+    .map((item) => item.event.title);
+  assert.deepEqual(
+    await cards.locator('strong').allTextContents(),
+    eligible,
+    'Mobile Today shows the first two persisted appointments in chronological order',
   );
 }
 
@@ -162,6 +198,19 @@ try {
   });
   await api('/api/tasks', {
     ...fields,
+    title: `Personal-only ${suffix}`,
+    jobId: null,
+    dueDate: null,
+    priority: 'normal',
+  });
+  const scopedTasks = await api(`/api/tasks?jobId=${jobs.a}`);
+  assert(scopedTasks.some((task) => task.taskId === mine.taskId));
+  assert(scopedTasks.every((task) => task.jobId === jobs.a));
+  assert(!scopedTasks.some((task) => task.title === `Beta-only ${suffix}`));
+  assert(!scopedTasks.some((task) => task.title === `Personal-only ${suffix}`));
+  checks.push('Project task HTTP response excludes other projects and personal tasks');
+  await api('/api/tasks', {
+    ...fields,
     title: `Field assigned ${suffix}`,
     assignedUserId: ids.field,
     jobId: jobs.a,
@@ -184,7 +233,7 @@ try {
     { width: 1440, height: 1000 },
     { width: 390, height: 844 },
   ]) {
-    const page = await browser.newPage({ viewport });
+    const page = await browser.newPage({ viewport, hasTouch: viewport.width < 700, isMobile: viewport.width < 700 });
     const errors = [],
       requests = [];
     page.on('pageerror', (e) => errors.push(e.message));
@@ -273,6 +322,15 @@ try {
       `${viewport.width}: coating/renovation/service/unknown inspection tabs stay configuration-required with no pool fetch or controls`,
     );
     // Measure concurrent dashboard reads only for this navigation.
+    if (viewport.width < 700) {
+      await page.goto(origin + `/app/today?project=${jobs.a}`);
+      await page.locator('.selected-project').getByRole('heading', {name:names.a, exact:true}).waitFor();
+      await page.locator('.cw-summary>.cw-entry').first().waitFor();
+      const greeting = await page.locator('.workspace-greeting').boundingBox();
+      assert(greeting.y >= 0 && greeting.y < 150, 'Initial selected Today opens at daily greeting, not auto-scrolled project');
+      await assertMobileAppointment(page);
+      checks.push('390: initial selected Today retains greeting/checklist/appointment viewport');
+    }
     requests.length = 0;
     await page.goto(origin + '/app/today');
     await page
@@ -324,13 +382,16 @@ try {
       await assertMobileAppointment(page);
     }
     await page.getByLabel('Search jobs', { exact: true }).fill(suffix);
-    await page
-      .getByRole('button', { name: `Select ${names.a}`, exact: true })
-      .click();
+    const selectAlpha = page.getByRole('button', { name: `Select ${names.a}`, exact: true });
+    if (viewport.width < 700) await selectAlpha.tap(); else await selectAlpha.click();
     await page
       .locator('.selected-project')
       .getByRole('heading', { name: names.a, exact: true })
       .waitFor();
+    if (viewport.width < 700) {
+      const selectedHeading = await page.locator('.selected-project h2').boundingBox();
+      assert(selectedHeading.y >= 0 && selectedHeading.y < viewport.height - 100, 'Deliberate project selection reveals its heading on mobile');
+    }
     assert(new URL(page.url()).searchParams.get('project') === jobs.a);
     await page
       .locator('.selected-project')
@@ -389,7 +450,7 @@ try {
     // Delay the next project's task read: prior project identity must vanish immediately.
     let release;
     const hold = new Promise((r) => (release = r));
-    await page.route(`**/api/tasks?job=${jobs.b}`, async (route) => {
+    await page.route(`**/api/tasks?jobId=${jobs.b}`, async (route) => {
       await hold;
       await route.continue();
     });
@@ -413,7 +474,7 @@ try {
       .locator('.selected-project')
       .getByRole('heading', { name: `Beta-only ${suffix}`, exact: true })
       .waitFor();
-    await page.unroute(`**/api/tasks?job=${jobs.b}`);
+    await page.unroute(`**/api/tasks?jobId=${jobs.b}`);
     checks.push(
       `${viewport.width}: fast project scope switch clears prior tasks`,
     );
@@ -447,12 +508,9 @@ try {
       .getByRole('button')
       .filter({ hasText: `Today appointment ${suffix}` })
       .waitFor();
-    await page
-      .locator('.workspace-center>.calendar-workspace .cw-entry')
-      .filter({ hasText: `Today appointment ${suffix}` })
-      .waitFor();
+    await waitForCenterCalendar(page, `Today appointment ${suffix}`, viewport.width < 700, api);
     checks.push(
-      `${viewport.width}: same persisted calendar event in center/project views`,
+      `${viewport.width}: persisted project event and center calendar summary`,
     );
     const reconnectedTitle = `Reconnect appointment ${viewport.width} ${suffix}`;
     await api('/api/calendar-events', {
@@ -482,10 +540,10 @@ try {
     await calendarRequest;
     await panel.getByRole('button', { name: 'Overview', exact: true }).click();
     resumeCalendar();
-    await page
-      .locator('.workspace-center>.calendar-workspace .cw-entry')
-      .filter({ hasText: reconnectedTitle })
-      .waitFor();
+    await waitForCenterCalendar(page, reconnectedTitle, viewport.width < 700, api);
+    assert((await api('/api/workspace-calendar')).some(
+      (entry) => entry.source === 'appointment' && entry.event.title === reconnectedTitle,
+    ));
     assert.equal(
       coalescedReads,
       1,
@@ -553,11 +611,7 @@ try {
       .waitFor();
     await page.getByLabel('Search jobs', { exact: true }).fill(suffix);
     await page.evaluate(() => window.scrollTo(0, 0));
-    await page
-      .locator('.workspace-center>.calendar-workspace .cw-entry')
-      .filter({ hasText: reconnectedTitle })
-      .first()
-      .waitFor();
+    await waitForCenterCalendar(page, reconnectedTitle, viewport.width < 700, api);
     await page
       .locator('.workspace-center>.calendar-workspace')
       .getByText('Loading calendar…', { exact: true })
@@ -644,6 +698,26 @@ try {
     );
     await page.close();
   }
+  // Intermediate and narrow layout coverage uses the same persisted real project.
+  for (const width of [360, 768, 1024]) {
+    const page = await browser.newPage({viewport: {width, height: 1000}, hasTouch: true, isMobile: width < 700});
+    await page.addInitScript(t => localStorage.setItem('apex-gate-token', t), tokens.admin);
+    for (const path of [`/app/today?project=${jobs.a}`, `/app/projects/${jobs.a}`]) {
+      await page.goto(origin + path);
+      await page.locator('.selected-project').getByRole('heading', {name: names.a, exact:true}).waitFor();
+      assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${width}px ${path}: no page overflow`);
+      const tab = page.locator('.selected-project').getByRole('button', {name:'Overview',exact:true});
+      await tab.tap();
+      const box = await tab.boundingBox();
+      assert(box.width >= 44 && box.height >= 44, `${width}px accessible project tab target`);
+      if (path.includes('/today')) {
+        const columns = await page.locator('.workspace-columns').evaluate(e => getComputedStyle(e).gridTemplateColumns.split(' ').length);
+        assert.equal(columns, width <= 900 ? 1 : 2);
+      }
+    }
+    checks.push(`${width}px real Today/project layout, touch tab, no horizontal overflow`);
+    await page.close();
+  }
   const field = await browser.newPage({
     viewport: { width: 390, height: 844 },
   });
@@ -715,7 +789,7 @@ try {
         checks,
         screenshots: ['workspace-1440.png', 'workspace-390.png'],
         limits: [
-          'Jobsite upload deferred to following photo milestone; existing gallery only.',
+          'Optional photo persistence is exercised separately by photos.e2e.mjs.',
           'Synthetic loopback acceptance; no staging or live provider acceptance.',
         ],
       },

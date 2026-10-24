@@ -266,11 +266,13 @@ export default function ProjectWorkspace({
   metadata: provided,
   full = false,
   readOnly = false,
+  reveal = false,
 }: {
   job: JobSummary;
   metadata?: WorkspaceProject;
   full?: boolean;
   readOnly?: boolean;
+  reveal?: boolean;
 }) {
   const [params] = useSearchParams();
   const location = useLocation();
@@ -285,9 +287,9 @@ export default function ProjectWorkspace({
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
     heading.current?.focus({
-      preventScroll: full || !window.matchMedia('(max-width: 900px)').matches,
+      preventScroll: !reveal || full || !window.matchMedia('(max-width: 900px)').matches,
     });
-  }, [job.jobId, full]);
+  }, [job.jobId, full, reveal]);
   useEffect(() => {
     const action = params.get('action');
     if (action === 'add-note') setTab('Overview');

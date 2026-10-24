@@ -610,6 +610,58 @@ try {
   note(
     'IndexedDB unavailable explicitly reports recovery unavailable; device-only discard and queue count bound work',
   );
+  const anonymous = await fetch(origin + `/api/jobs/${jobs.other}/photos`);
+  assert.equal(anonymous.status, 403);
+  const localOrigin = 'http://127.0.0.1:4200';
+  const localServer = spawn(process.execPath, ['apps/gate-api/dist/main.js'], {
+    cwd: process.cwd(),
+    env: {
+      ...process.env,
+      PORT: '4200',
+      HOST: '127.0.0.1',
+      GATE_JWT_SECRET: secret,
+      GATE_LOCAL_USER: ids.admin,
+      APEX_PUBLIC_ORIGIN: localOrigin,
+    },
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  let localLogs = '';
+  localServer.stdout.on('data', (data) => (localLogs += data));
+  localServer.stderr.on('data', (data) => (localLogs += data));
+  try {
+    let ready = false;
+    for (let i = 0; i < 150; i++) {
+      if (localServer.exitCode !== null) throw Error(localLogs);
+      try {
+        if ((await fetch(localOrigin + '/ready')).ok) { ready = true; break; }
+      } catch {}
+      await delay(100);
+    }
+    assert(ready, localLogs);
+    const localContext = await browser.newContext();
+    const localPage = await localContext.newPage();
+    const photoRequests = [];
+    localPage.on('request', (request) => {
+      if (request.method() === 'POST' && request.url().endsWith(`/api/jobs/${jobs.other}/photos`))
+        photoRequests.push(request);
+      if (request.url().includes('/api/evidence/')) photoRequests.push(request);
+    });
+    await localPage.goto(localOrigin + `/app/projects/${jobs.other}?action=add-photos`);
+    await localPage.getByLabel('Choose from library', { exact: true }).setInputFiles(fallbackFile);
+    await localPage.getByRole('heading', { name: 'Pending on this device · 1' }).waitFor();
+    await localPage.getByRole('button', { name: 'Upload pending photos', exact: true }).click();
+    await localPage.getByText('1 photo uploaded.', { exact: true }).waitFor();
+    await localPage.locator('.photo-thumbnail').first().waitFor();
+    assert(await localPage.locator('.photo-thumbnail').first().evaluate((image) => image.complete && image.naturalWidth > 0));
+    assert(photoRequests.some((request) => request.method() === 'POST'));
+    assert(photoRequests.some((request) => request.url().includes('/api/evidence/')));
+    assert(photoRequests.every((request) => !request.headers().authorization));
+    await localContext.close();
+    note('Loopback localUserId session uploads and displays protected gallery bytes without Authorization; normal anonymous request is refused');
+  } finally {
+    localServer.kill('SIGTERM');
+    writeFileSync('/tmp/apex2/photos-browser-local-server.log', localLogs);
+  }
   writeFileSync(
     '/tmp/apex2/photos-browser.json',
     JSON.stringify({ result: 'pass', checks, jobs }, null, 2),
