@@ -414,6 +414,12 @@ export default function Checklist({
               }
             >
               <option value="">Unassigned</option>
+              {editing?.assignedUserId &&
+                !users.data?.some((u) => u.userId === editing.assignedUserId) && (
+                  <option value={editing.assignedUserId}>
+                    Current assignee (unavailable)
+                  </option>
+                )}
               {users.data?.map((u) => (
                 <option key={u.userId} value={u.userId}>
                   {u.displayName}

@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Link, Outlet, NavLink, useLocation } from 'react-router';
 import { setToken } from '../api/session';
-import { useMe, useToken } from '../api/useJobs';
+import { useMe, useToken, type StaffSession } from '../api/useJobs';
+import { clearPendingReads } from '../api/client';
 import SignIn from './SignIn';
 import Icon, { type IconName } from './Icon';
 
@@ -30,6 +31,19 @@ export default function Layout() {
 
 function AuthenticatedShell({ token }: { token: string }) {
   const me = useMe();
+  if (me.error?.isAuthFailure || me.error?.status === 401) return <SignIn />;
+  if (me.data === null) return <div className="shell-status" role="status">
+    <img src={`${import.meta.env.BASE_URL}brand/official-apex-logo.png`} alt="APEX" />
+    {me.loading ? <p>Opening your workspace…</p> : <><p>Unable to open your workspace. {me.error?.message}</p><button type="button" className="btn" onClick={me.reload}>Try again</button></>}
+  </div>;
+  // Provider/cookie sessions may change actor while the pilot token stays empty.
+  return <ActorShell key={JSON.stringify([me.data.userId, me.data.role])} token={token} actor={me.data} />;
+}
+
+function ActorShell({ token, actor }: { token: string; actor: StaffSession }) {
+  // This runs before child resource effects. Do not dispatch data-changed here:
+  // /me itself is a resource and a notification would create a refresh loop.
+  useLayoutEffect(() => clearPendingReads(), []);
   const location = useLocation();
   const [quickOpen, setQuickOpen] = useState(false);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -62,12 +76,6 @@ function AuthenticatedShell({ token }: { token: string }) {
     return () => { document.removeEventListener('keydown', close); document.removeEventListener('pointerdown', outside); };
   }, [quickOpen]);
 
-  if (me.error?.isAuthFailure || me.error?.status === 401) return <SignIn />;
-  if (me.data === null) return <div className="shell-status" role="status">
-    <img src={`${import.meta.env.BASE_URL}brand/official-apex-logo.png`} alt="APEX" />
-    {me.loading ? <p>Opening your workspace…</p> : <><p>Unable to open your workspace. {me.error?.message}</p><button type="button" className="btn" onClick={me.reload}>Try again</button></>}
-  </div>;
-
   return (
     <div className="app apex-shell">
       <a className="skip-link" href="#workspace-content">Skip to content</a>
@@ -82,7 +90,7 @@ function AuthenticatedShell({ token }: { token: string }) {
             : <NavLink key={item.to} to={item.to} className={({ isActive }) => `shell-destination${isActive ? ' selected' : ''}`}><Icon name={item.icon} /><span>{item.label}</span></NavLink>)}
         </nav>
         <div className="shell-identity">
-          <span className="shell-user">{me.data.displayName}<small>{ROLE_LABEL[me.data.role] ?? me.data.role}</small></span>
+          <span className="shell-user">{actor.displayName}<small>{ROLE_LABEL[actor.role] ?? actor.role}</small></span>
           {token !== '' && <button type="button" className="shell-signout" onClick={() => { setQuickOpen(false); setToken(''); }}>Sign out</button>}
         </div>
       </header>

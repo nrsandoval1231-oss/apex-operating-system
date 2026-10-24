@@ -18,7 +18,7 @@ export function uploadPhoto(
     signal.addEventListener('abort', abort, { once: true });
     const cleanup = () => signal.removeEventListener('abort', abort);
     xhr.open('POST', `/api/jobs/${photo.jobId}/photos`);
-    xhr.setRequestHeader('authorization', `Bearer ${token}`);
+    if (token) xhr.setRequestHeader('authorization', `Bearer ${token}`);
     xhr.setRequestHeader('content-type', 'application/json');
     xhr.setRequestHeader('idempotency-key', photo.id);
     xhr.timeout = 120_000;

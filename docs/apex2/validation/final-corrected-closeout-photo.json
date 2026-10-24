@@ -1,0 +1,73 @@
+{
+  "result": "pass",
+  "run": "gateb-1792838723070",
+  "jobId": "job_01M5PR7SWZ7F7YKQR12D4621WD",
+  "leadId": "lead_01M5PR7SVBEQ47K7581V929PWZ",
+  "steps": [
+    {
+      "step": "server ready, synthetic staff provisioned"
+    },
+    {
+      "step": "unauthenticated and inactive staff refused"
+    },
+    {
+      "step": "accepted proposal created exactly one job and project (retry with new key returned same job)",
+      "jobId": "job_01M5PR7SWZ7F7YKQR12D4621WD"
+    },
+    {
+      "step": "optional jobsite photo left gate/inspection/financial closeout safeguards unchanged"
+    },
+    {
+      "step": "closeout and completion refused before final phase",
+      "close": 409,
+      "complete": 409
+    },
+    {
+      "step": "required inspections recorded",
+      "count": 7
+    },
+    {
+      "step": "gates released through API",
+      "released": 6,
+      "browserGate": "final"
+    },
+    {
+      "step": "project advanced to final phase"
+    },
+    {
+      "step": "browser released final gate after native confirmation",
+      "gate": "final",
+      "dialog": "Release Final for Synthetic Closeout Customer? This is irreversible.",
+      "dbStatus": "released"
+    },
+    {
+      "step": "browser completed job; superintendent close refused",
+      "superClose": 403
+    },
+    {
+      "step": "browser closed and archived job",
+      "dbStatus": "closed"
+    },
+    {
+      "step": "closed archive retained optional photo and activity, and refused new upload"
+    },
+    {
+      "step": "history retained, protected, and immutable",
+      "historyEntries": 17,
+      "gateMutation": 409,
+      "phaseMutation": 409,
+      "closeRetry": 200,
+      "evidenceRead": 200,
+      "anonymousEvidence": 403,
+      "historicalListed": true,
+      "counts": {
+        "jobs": 1,
+        "projects": 1,
+        "evidence": 45
+      }
+    },
+    {
+      "step": "no browser page errors"
+    }
+  ]
+}

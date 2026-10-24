@@ -60,7 +60,7 @@ try {
     { width: 1440, height: 1000 },
     { width: 390, height: 844 },
   ]) {
-    const page = await browser.newPage({ viewport });
+    const page = await browser.newPage({ viewport, hasTouch: viewport.width < 700, isMobile: viewport.width < 700 });
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
     await page.addInitScript(
@@ -70,7 +70,8 @@ try {
     await page.goto(origin + '/app/checklist?action=add-task');
     // A cancelled composer must reopen through the same-route quick action.
     await page.getByRole('button', { name: 'Cancel', exact: true }).click();
-    await page.getByRole('button', { name: 'Open quick actions' }).click();
+    if (viewport.width < 700) await page.getByRole('button', { name: 'Open quick actions' }).tap();
+    else await page.getByRole('button', { name: 'Open quick actions' }).click();
     await page.getByRole('link', { name: 'Add Task', exact: true }).click();
     await page.getByLabel('Title', { exact: true }).waitFor();
     const title = `Browser persisted ${viewport.width} ${Date.now()}`;
@@ -93,7 +94,8 @@ try {
         .filter({ hasText: 'Could not reach' })
         .waitFor();
     }
-    await page.getByRole('button', { name: 'Save task', exact: true }).click();
+    if (viewport.width < 700) await page.getByRole('button', { name: 'Save task', exact: true }).tap();
+    else await page.getByRole('button', { name: 'Save task', exact: true }).click();
     const row = () =>
       page.locator('.task-row').filter({
         has: page.getByRole('heading', { name: title, exact: true }),
@@ -188,6 +190,38 @@ try {
     checks.push(
       `${viewport.width}px create/edit/complete/reload, overdue/upcoming/assigned/completed filters, append-only history, 44px checkbox, no overflow/runtime errors, persisted PostgreSQL row`,
     );
+    await page.close();
+  }
+  for (const width of [1440, 390]) {
+    const assignee = createCanonicalId('user');
+    await db.query(`insert into app_users(user_id,auth_user_id,role,display_name) values($1,gen_random_uuid(),'field','Inactive assignment regression')`, [assignee]);
+    const createdResponse = await fetch(origin + '/api/tasks', {
+      method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', 'Idempotency-Key': crypto.randomUUID() },
+      body: JSON.stringify({ title: `Retain assignment ${width}`, assignedUserId: assignee, jobId: null, detail: null, dueDate: null, milestone: null, priority: 'normal', recurrence: 'none' }),
+    });
+    assert.equal(createdResponse.status, 201);
+    const created = await createdResponse.json();
+    await db.query('update app_users set active=false where user_id=$1', [assignee]);
+    const page = await browser.newPage({ viewport: { width, height: 844 } });
+    await page.addInitScript(t => localStorage.setItem('apex-gate-token', t), token);
+    await page.goto(origin + '/app/checklist');
+    const row = () => page.locator('.task-row').filter({ has: page.getByRole('heading', { name: `Retain assignment ${width}`, exact: true }) });
+    await row().getByRole('button', { name: 'Edit', exact: true }).click();
+    assert.equal(await page.getByLabel('Assigned to', { exact: true }).inputValue(), assignee);
+    await page.getByLabel('Detail', { exact: true }).fill('Unrelated edit retains unavailable assignee');
+    await page.getByRole('button', { name: 'Save task', exact: true }).click();
+    await row().getByText('Unrelated edit retains unavailable assignee', { exact: true }).waitFor();
+    let snapshot = (await db.query('select snapshot from tasks where task_id=$1', [created.taskId])).rows[0].snapshot;
+    assert.equal(snapshot.assignedUserId, assignee);
+    await page.reload();
+    await row().getByRole('button', { name: 'Edit', exact: true }).click();
+    assert.equal(await page.getByLabel('Assigned to', { exact: true }).inputValue(), assignee);
+    await page.getByLabel('Assigned to', { exact: true }).selectOption('');
+    await page.getByRole('button', { name: 'Save task', exact: true }).click();
+    await page.getByRole('button', { name: 'Save task', exact: true }).waitFor({ state: 'hidden' });
+    snapshot = (await db.query('select snapshot from tasks where task_id=$1', [created.taskId])).rows[0].snapshot;
+    assert.equal(snapshot.assignedUserId, null, 'only explicit unassignment clears the existing assignee');
+    checks.push(`${width}px inactive assignee survives unrelated edit and reload; explicit unassignment persists`);
     await page.close();
   }
   const lead = createCanonicalId('lead'),

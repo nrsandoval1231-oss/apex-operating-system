@@ -27,6 +27,22 @@ export const calendarDates = (
       ? [item.task.dueDate, item.task.dueDate]
       : [item.entry.startsOn, item.entry.endsOn];
 
+/** All-day work precedes timed work; timed work follows its actual instant. */
+export const compareCalendarEntries = (
+  a: WorkspaceCalendarEntry,
+  b: WorkspaceCalendarEntry,
+): number => {
+  const timed = (item: WorkspaceCalendarEntry) =>
+    item.source === 'appointment' && !item.event.allDay;
+  const timeRank = Number(timed(a)) - Number(timed(b));
+  if (timeRank) return timeRank;
+  const start = (item: WorkspaceCalendarEntry) =>
+    item.source === 'appointment' && !item.event.allDay
+      ? item.event.startsAt!
+      : (calendarDates(item)[0] ?? '9999-12-31');
+  return start(a).localeCompare(start(b)) || a.id.localeCompare(b.id);
+};
+
 /** Minute-resolution editor value in the browser's local timezone. */
 export const calendarLocalInput = (iso: string | null): string =>
   iso

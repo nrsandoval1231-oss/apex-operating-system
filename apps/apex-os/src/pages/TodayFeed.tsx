@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { useActionCards, useJobs, useMe } from '../api/useJobs';
 import { useProjectWorkspace } from '../api/useProjectWorkspace';
@@ -27,7 +27,7 @@ function Attention({
       <div className="section-rule">
         <h2>Jobs needing attention</h2>
       </div>
-      {actions.loading && <p>Loading attention items…</p>}
+      {actions.loading && <p role="status">Loading attention items…</p>}
       {actions.error && (
         <p role="alert">
           {actions.error.message}
@@ -67,6 +67,7 @@ export default function TodayFeed() {
     actions = useActionCards();
   const [params, setParams] = useSearchParams();
   const selected = params.get('project');
+  const [revealedProject, setRevealedProject] = useState<string | null>(null);
   const job = jobs.data?.find((j) => j.jobId === selected);
   return (
     <div className="command-center">
@@ -100,6 +101,7 @@ export default function TodayFeed() {
             metadata={metadata.data ?? []}
             selected={selected}
             onSelect={(id) => {
+              setRevealedProject(id);
               const next = new URLSearchParams(params);
               next.set('project', id);
               next.delete('action');
@@ -124,6 +126,7 @@ export default function TodayFeed() {
             key={job.jobId}
             job={job}
             metadata={metadata.data?.find((m) => m.jobId === job.jobId)}
+            reveal={revealedProject === job.jobId}
           />
         ) : (
           <aside
