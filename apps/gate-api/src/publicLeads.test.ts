@@ -50,6 +50,20 @@ describe('public website lead intake', () => {
     expect(rows.rows[0]?.payload).toMatchObject({ consent_sms: true, consent_text: payload().consent_text, consent_version: 'website-2-20261024' });
     expect(rows.rows[0]?.payload).not.toHaveProperty('website');
   });
+  it('accepts tracking at the browser limit without relaxing contact validation or replay integrity', async () => {
+    const bounded = 'c'.repeat(200);
+    const body = payload({ source: bounded, medium: bounded, campaign: bounded,
+      landing_page: bounded, referrer: bounded, fbclid: bounded, gclid: bounded, page_submitted: bounded });
+    expect((await post(body)).status).toBe(201);
+    expect((await post(body)).status).toBe(200);
+    const rows = await db.query<{ accepted_payload: Record<string, string> }>('select accepted_payload from leads');
+    expect(rows.rows).toHaveLength(1);
+    for (const field of ['source', 'medium', 'campaign', 'landing_page', 'referrer', 'fbclid', 'gclid', 'page_submitted'])
+      expect(rows.rows[0]!.accepted_payload[field]).toBe(bounded);
+    expect((await post({ ...body, campaign: 'different campaign' })).status).toBe(409);
+    expect((await post({ ...body, first_name: 'a'.repeat(201) })).status).toBe(422);
+    expect((await post({ ...body, campaign: 'a'.repeat(201) })).status).toBe(422);
+  });
   it('rejects changed content with the same idempotency key', async () => {
     const body = payload();
     await post(body);

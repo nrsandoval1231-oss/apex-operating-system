@@ -104,9 +104,16 @@ export interface BuildLeadInput {
 /**
  * Assemble the complete, correctly-tagged lead object. `campaign` falls back to the vertical's
  * default when no utm_campaign was captured (data-contract.md); every other attribution field
- * comes straight from first touch. The vertical is the caller's resolved selection (AC-2.3),
+ * comes from first touch, bounded to the public intake contract. The vertical is the caller's resolved selection (AC-2.3),
  * and consent_text is rebuilt from that same vertical so it always names the right brand.
  */
+// PublicLeadSchema bounds tracking strings at 200 UTF-16 units. Normalize here,
+// including old session attribution, so incidental metadata cannot reject a quote.
+// Avoid cutting a surrogate pair at the boundary (PostgreSQL rejects lone halves).
+const boundedAttribution = (value: unknown): string => typeof value === 'string'
+  ? value.trim().slice(0, 200).replace(/[\uD800-\uDBFF]$/, '')
+  : '';
+
 export function buildLeadObject(input: BuildLeadInput): LeadPayload {
   const cfg = getVerticalConfig(input.vertical);
   const attr = input.attribution;
@@ -119,14 +126,14 @@ export function buildLeadObject(input: BuildLeadInput): LeadPayload {
     phone: normalizePhone(input.phone),
     consent_sms: input.consentSms === true,
     consent_text: input.consentSms ? buildConsentText(input.vertical) : '',
-    source: attr.source || 'direct',
-    medium: attr.medium || 'none',
-    campaign: attr.campaign || cfg.defaultCampaign,
-    landing_page: attr.landing_page || '/',
-    referrer: attr.referrer || '',
-    fbclid: attr.fbclid || '',
-    gclid: attr.gclid || '',
-    page_submitted: input.pageSubmitted || '/',
+    source: boundedAttribution(attr.source) || 'direct',
+    medium: boundedAttribution(attr.medium) || 'none',
+    campaign: boundedAttribution(attr.campaign) || cfg.defaultCampaign,
+    landing_page: boundedAttribution(attr.landing_page) || '/',
+    referrer: boundedAttribution(attr.referrer) || '',
+    fbclid: boundedAttribution(attr.fbclid) || '',
+    gclid: boundedAttribution(attr.gclid) || '',
+    page_submitted: boundedAttribution(input.pageSubmitted) || '/',
     device: input.device,
     submitted_at: input.submittedAt || isoWithOffset(),
   };
