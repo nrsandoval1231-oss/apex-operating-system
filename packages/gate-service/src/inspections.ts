@@ -1,4 +1,4 @@
-import type { Database } from '@apex/database';
+import type { Database, Queryable } from '@apex/database';
 import {
   InspectionResultSchema,
   InspectionTypeSchema,
@@ -155,8 +155,8 @@ export class InspectionService {
    * with a null status — "not requested" is a state the feed has to act on, not
    * a row that is missing.
    */
-  async listJobInspections(jobId: JobId): Promise<readonly JobInspection[]> {
-    const rows = await this.db.query<InspectionRow>(
+  async listJobInspections(jobId: JobId, client: Queryable = this.db): Promise<readonly JobInspection[]> {
+    const rows = await client.query<InspectionRow>(
       `${inspectionSelect} order by it.sequence`,
       [jobId],
     );
@@ -345,8 +345,8 @@ export class InspectionService {
    * release actually fails — a warning that can be clicked past is not a block,
    * and this is the one control that stops a pour going ahead of the city.
    */
-  async blockingFor(jobId: JobId, definitionKey: string): Promise<readonly JobInspection[]> {
-    return blockingInspections(await this.listJobInspections(jobId), definitionKey);
+  async blockingFor(jobId: JobId, definitionKey: string, client: Queryable = this.db): Promise<readonly JobInspection[]> {
+    return blockingInspections(await this.listJobInspections(jobId, client), definitionKey);
   }
 
   private async readOne(jobId: JobId, inspectionKey: string): Promise<JobInspection> {
