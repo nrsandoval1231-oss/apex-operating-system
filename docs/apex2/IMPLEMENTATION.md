@@ -14,7 +14,7 @@ Official source inspected 2026-10-24: https://apexgetsitdone.com/. Main logo: `/
 
 ## Milestones
 
-- [ ] 1 Foundation: branded desktop/mobile shell, reusable controls, existing route compatibility. Browser-check navigation at desktop and 390px touch viewport; build/typecheck; commit/PR.
+- [x] 1 Foundation: branded desktop/mobile shell, reusable controls, existing route compatibility. Browser-check navigation at desktop and 390px touch viewport; build/typecheck; commit/PR.
 - [ ] 2 Today + Checklist: authoritative personal/project/assigned/recurring tasks, due dates, priority, history, optimistic concurrency, task CRUD/completion. Test persistence, access, races and no gate side effects; commit/PR.
 - [ ] 3 Calendar: existing scheduling read model plus persisted appointments, day/week/month/agenda and filtering; edits preserve operational restrictions. Test reload, edits, conflicts and date boundaries; commit/PR.
 - [ ] 4 Projects: searchable/filterable selectable projects, verified progress, next milestones, integrated detail tabs/deep links, division metadata and safe lifecycle configuration. Test selection/back navigation, permissions and closure; commit/PR.
@@ -27,7 +27,9 @@ Cross-project stale responses; sign-out with pending uploads; lost server acknow
 
 ## Current status
 
-Baseline validation running on merged main before structural edits. Read-only API/ownership investigation in progress. Each milestone will update this record with commands, outcomes and limitations. Reviewable PRs may be stacked with explicit dependencies; none will be merged or deployed without approval.
+Milestone 1 implemented in `bdceb97`. `pnpm typecheck`, `pnpm --filter @apex/os build`, and `node apps/apex-os/tests/shell.e2e.mjs` exit 0. Shell browser checks cover 1440×1000 and 390×844 navigation, keyboard focus, touch targets, auth failure/signout, and horizontal overflow. API reads were intercepted with synthetic fixtures; these checks do not establish backend persistence. Screenshots: [desktop](screenshots/foundation-desktop.png), [mobile](screenshots/foundation-mobile.png).
+
+Checklist temporarily renders the existing Today feed; quick actions currently preserve intent/project in navigation URLs. Their persisted forms are subsequent milestones, not completed features. Baseline full `bash scripts/ci.sh` passed on main `f442119` in 627.133s: 581 core, 585 Designer, 2 website unit, 166 website browser, 10 production-intake browser, 39 integration cases passed; 2 missing-engine guards skipped (not passes); two staff browser harnesses and five archive scripts passed. Disposable PostgreSQL/Moto, synthetic records only. Exact run metadata: [baseline](validation/baseline-ci.json). Foundation follow-up `dfb7077` fixes nested-route manifest/icon URLs and manifest MIME; focused API test, typecheck/build and browser smoke passed. Next: persisted checklist. PRs will be stacked with explicit dependencies; none merged or deployed without approval.
 
 ## Known inherited conditions
 
