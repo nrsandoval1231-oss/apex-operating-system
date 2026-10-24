@@ -29,6 +29,7 @@ import { DomainRuleError, RoleRefusalError } from '@apex/domain';
 import { CustomerService, GateService, InspectionService, TaskService, CalendarService, WorkspaceService, JobPhotoService } from '@apex/gate-service';
 import { renderClosedPage, renderCustomerPage } from './customerPage.js';
 import { log, redactPath } from './log.js';
+import { createPublicLeadHandler } from './publicLeads.js';
 
 const EvidenceUploadSchema = z.strictObject({
   requirementKey: z.string().min(1).max(120),
@@ -390,6 +391,7 @@ interface GateApiOptions {
    * one. Set from APEX_CUSTOMER_CONTACT_PHONE — see main.ts.
    */
   readonly customerContact?: CustomerContact;
+  readonly publicLeadIntake?: { enabled?: boolean; origins?: readonly string[] };
 }
 
 const sendJson = (response: ServerResponse, status: number, value: unknown) => {
@@ -470,6 +472,7 @@ export function createGateApi(options: GateApiOptions) {
   const customerPhone = options.customerContact?.phone ?? null;
   const inspections = new InspectionService(options.db);
   const storage = options.storage;
+  const publicLeadHandler = createPublicLeadHandler({ db: options.db, ...options.publicLeadIntake });
 
   /**
    * The provider's signing keys, fetched lazily and cached by `jose`, which
@@ -743,6 +746,7 @@ export function createGateApi(options: GateApiOptions) {
   const handler = async (request: IncomingMessage, response: ServerResponse) => {
     try {
       const url = new URL(request.url ?? '/', 'http://localhost');
+      if (await publicLeadHandler(request, response)) return;
       /*
        * Liveness: is this process running. Deliberately checks nothing else —
        * a platform restarting the container because the database blipped would

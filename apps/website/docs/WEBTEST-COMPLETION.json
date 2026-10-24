@@ -1,0 +1,15 @@
+{
+  "scope": "website-2 browser and intake acceptance",
+  "retiredAssertions": {
+    "reason": "The previous specs were bound to the cinematic stock-photo/video presentation and its single-step Get My Quote webhook form. Website 2 replaces that UI with three-step project intake and a persisted v2 API acknowledgement.",
+    "preservedCoverage": ["route and heading health", "mobile navigation", "authentic local project imagery", "pool service support route", "lead payload and attribution", "consent", "validation", "retry identity", "strict persisted acknowledgement"]
+  },
+  "trafficBoundary": "All browser tests intercept /api/public/v1/leads; no real lead submissions are made.",
+  "validation": {
+    "command": "pnpm --dir apps/website exec playwright test",
+    "result": "37 passed, 1 skipped across desktop Chromium and Pixel 7 mobile; exit code 0",
+    "productionPlaywright": "pnpm --dir apps/website test:production — 12 passed across desktop Chromium and Pixel 7 mobile; exit code 0",
+    "unit": "pnpm --dir apps/website test:unit — 2 passed; exit code 0",
+    "serverIsolation": "Both Playwright web servers use Astro --ignore-lock, unique ports 4329/4330, and reuseExistingServer=false."
+  }
+}

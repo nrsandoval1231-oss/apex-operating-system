@@ -22,8 +22,6 @@ import BaseLayout from '@layouts/BaseLayout.astro';
 import Header from '@components/Header.astro';
 import VerticalHero from '@components/VerticalHero.astro';
 import Faq from '@components/Faq.astro';
-import GuaranteeBand from '@components/GuaranteeBand.astro';
-import Testimonials from '@components/Testimonials.astro';
 import QuoteSection from '@components/QuoteSection.astro';
 import Footer from '@components/Footer.astro';
 import ImageSlot from '@components/ImageSlot.astro';
@@ -37,15 +35,11 @@ import {
   faqSchema,
   jsonLdGraph,
   serviceSchema,
-  SERVICE_AREA,
 } from '@lib/seo';
 
 export function getStaticPaths() {
-  return VERTICAL_LIST.map((cfg) => ({
-    // The route param IS the slug from verticals.ts — no second list of URLs to keep in sync.
-    params: { vertical: cfg.slug },
-    props: { cfg, page: getVerticalPage(cfg.vertical) },
-  }));
+  const aliases: Record<string, string[]> = { pools:['pools','designer-pools'], coating:['coating','concrete-coating'], renovation:['renovation','design-and-renovation'], service:['service'] };
+  return VERTICAL_LIST.flatMap((cfg) => (aliases[cfg.slug] ?? [cfg.slug]).map((slug) => ({ params:{ vertical:slug }, props:{ cfg, page:getVerticalPage(cfg.vertical) } })));
 }
 
 interface Props {
@@ -54,7 +48,11 @@ interface Props {
 }
 
 const { cfg, page } = Astro.props;
-const path = `/${cfg.slug}`;
+const canonicalSlug: Record<string, string> = { pools:'designer-pools', coating:'concrete-coating', renovation:'design-and-renovation' };
+const path = `/${canonicalSlug[cfg.slug] ?? cfg.slug}`;
+const galleryIds = cfg.slug === 'pools' ? ['real-pool-work','real-pool-two','real-pool-three'] : cfg.slug === 'coating' ? ['real-coating-before','real-coating-work'] : cfg.slug === 'renovation' ? ['real-renovation-work','real-renovation-laundry','real-renovation-project'] : ['real-pool-work','real-pool-two'];
+const projectSteps = ['First conversation','Understand the space','Explore design and options','Plan the work','Walkthrough'];
+const customerQuote = cfg.slug === 'renovation' ? {quote:'They rescued me when 2 previous contractors failed to do the job. They found all the problems and poor quality work and made my house look and function beautifully. So easy and professional to work with. They get in, work quickly, and completely finish all the work they are hired to do. Kudos to Jorge and Frank for a job well done.',name:'Bonnie T.',role:'Home Owner'} : {quote:'Great work. Great people. Travis and his team do outstanding work. Highly recommend.',name:'Terry W.',role:'Home Owner'};
 
 /**
  * The "what we do" list. Reused from the content the mockup already approved (D-08) rather
@@ -84,7 +82,7 @@ const jsonLd = jsonLdGraph([
   jsonLd={jsonLd}
 >
   <Header />
-  <main>
+  <main id="content">
     <VerticalHero page={page} accentVar={cfg.accentVar} />
 
     <section class="vservices">
@@ -100,7 +98,7 @@ const jsonLd = jsonLdGraph([
             </ul>
 
             <p class="area mono">
-              Serving {SERVICE_AREA.slice(0, -1).join(' · ')} and the wider South Plains.
+              Serving customers in Lubbock, Texas.
             </p>
           </div>
           {page.secondaryImage && (
@@ -114,9 +112,13 @@ const jsonLd = jsonLdGraph([
       </div>
     </section>
 
-    <GuaranteeBand />
     <Faq items={page.faq} accentVar={cfg.accentVar} />
-    <Testimonials />
+    {cfg.slug === 'pools' && <section class="v-info"><div class="wrap"><p class="eyebrow">Planning a pool</p><h2>Start with the details that matter.</h2><p>Project planning can include questions about the property, applicable permits, and HOA approval. Requirements vary by project; use your first conversation to identify what needs to be confirmed.</p><div class="v-info-links"><a href="/service">Pool maintenance and service ↗</a><a href="https://www.lyonfinancial.net/dealer/apex-designer-pools-tx/" target="_blank" rel="noopener">Financing information from Lyon Financial ↗</a></div></div></section>}
+    {cfg.slug === 'coating' && <section class="v-info"><div class="wrap"><p class="eyebrow">Surface, prep, finish</p><h2>Start with the condition of the concrete.</h2><p>Preparation, coating options, and care depend on the existing surface and selected system. Ask the Apex team to walk through those details and confirm any warranty terms that apply to your project.</p><div class="before-after"><figure><ImageSlot id="real-coating-before" sizes="(max-width:760px) 100vw, 45vw" /><figcaption>Before</figcaption></figure><figure><ImageSlot id="real-coating-work" sizes="(max-width:760px) 100vw, 45vw" /><figcaption>After</figcaption></figure></div></div></section>}
+    {cfg.slug === 'renovation' && <section class="v-info"><div class="wrap"><p class="eyebrow">Plan your renovation</p><h2>Start with scope and priorities.</h2><p>Share the spaces you want to change, your priorities, and the budget you have in mind. Project scope and material choices shape the plan; the team can discuss next steps after learning more.</p></div></section>}
+    <section class="v-gallery"><div class="wrap"><p class="eyebrow">Selected work</p><h2>Projects by Apex</h2><div class="v-gallery-grid">{galleryIds.map((id) => <ImageSlot id={id as any} sizes="(max-width:760px) 100vw, 33vw" />)}</div></div></section>
+    <section class="v-process"><div class="wrap"><p class="eyebrow">The process</p><h2>Five clear steps.</h2><ol>{projectSteps.map((step,index)=><li><b>0{index+1}</b><span>{step}</span></li>)}</ol></div></section>
+    <section class="v-review"><div class="wrap"><p class="eyebrow">Customer words</p><blockquote>“{customerQuote.quote}”</blockquote><p><b>{customerQuote.name}</b> · {customerQuote.role}</p></div></section>
     <QuoteSection
       preselect={cfg.vertical}
       heading={`Get your ${cfg.vertical.toLowerCase()} quote.`}
@@ -127,6 +129,7 @@ const jsonLd = jsonLdGraph([
 </BaseLayout>
 
 <style>
+  .v-info,.v-gallery,.v-process,.v-review{padding:74px 0}.v-info{background:#fff}.v-info h2,.v-gallery h2,.v-process h2{font-size:clamp(38px,6vw,68px);max-width:850px}.v-info p:not(.eyebrow){max-width:800px}.v-info-links{display:flex;gap:24px;flex-wrap:wrap;margin-top:25px}.v-info-links a{text-decoration:underline;text-underline-offset:4px}.before-after,.v-gallery-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-top:30px}.before-after figure{margin:0;min-width:0}.before-after :global(.img-slot),.v-gallery-grid :global(.img-slot){width:100%;min-width:0}.before-after :global(picture),.v-gallery-grid :global(picture){display:block;width:100%;min-width:0}.before-after :global(img),.v-gallery-grid :global(img){display:block;width:100%;max-width:100%;height:340px;object-fit:cover}.before-after figcaption{margin-top:8px}.v-gallery{background:#efefec}.v-gallery-grid{grid-template-columns:repeat(3,1fr)}.v-process{background:#A1CCCA}.v-process .eyebrow{color:#383838}.v-process ol{list-style:none;padding:0;max-width:800px}.v-process li{display:flex;gap:24px;padding:18px 0;border-top:1px solid #667c7a}.v-process li b{font:14px Barlow,monospace}.v-process li span{font-size:20px}.v-review{background:#383838;color:white}.v-review blockquote{font-size:clamp(24px,3.4vw,42px);line-height:1.35;margin:20px 0;max-width:940px}.v-review .eyebrow{color:#A1CCCA}
   .vservices {
     padding: 72px 0;
     background: var(--concrete);
@@ -157,5 +160,6 @@ const jsonLd = jsonLdGraph([
   }
   @media (max-width: 700px) {
     .vservices .featlist { grid-template-columns: 1fr; }
+    .v-gallery-grid,.before-after{grid-template-columns:1fr}.v-gallery-grid :global(img),.before-after :global(img){height:270px}
   }
 </style>

@@ -1,0 +1,10 @@
+{
+  "command": [
+    "bash",
+    "scripts/ci.sh"
+  ],
+  "cwd": "/workspace/apex-website-merge",
+  "sha": "dc6c658e67edf9bbdbaa7deef128f9c0b4959f70",
+  "seconds": 643.413,
+  "exit_code": 0
+}

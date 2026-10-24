@@ -21,10 +21,27 @@ import Logo from './Logo.astro';
     <a class="brand" href="/" aria-label="Apex — Gets It Done, home">
       <Logo height={40} alt={null} />
     </a>
+    <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="primary-nav">Menu</button>
+    <nav id="primary-nav" class="primary-nav" aria-label="Main navigation">
+      <a href="/designer-pools">Designer Pools</a><a href="/concrete-coating">Concrete Coating</a><a href="/design-and-renovation">Design & Renovation</a><a href="/work">Our Work</a><a href="/about-apex">About</a><a href="/contact">Contact</a>
+    </nav>
     <div class="nav-r">
       <a class="nav-phone" href={`tel:${site.phoneE164}`}>{site.phoneDisplay}</a>
       <a class="btn ghost nav-phone-sm" href={`tel:${site.phoneE164}`}>Call</a>
-      <a class="btn" href="#quote">Get a Quote</a>
+      <a class="btn" href="#quote">Get a Free Quote</a>
     </div>
   </div>
 </header>
+<script>
+  const toggle = document.querySelector<HTMLButtonElement>('.menu-toggle');
+  const nav = document.querySelector<HTMLElement>('#primary-nav');
+  toggle?.addEventListener('click', () => { const open = toggle.getAttribute('aria-expanded') !== 'true'; toggle.setAttribute('aria-expanded', String(open)); nav?.classList.toggle('open', open); });
+  document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && toggle?.getAttribute('aria-expanded') === 'true') { toggle.setAttribute('aria-expanded','false'); nav?.classList.remove('open'); toggle.focus(); } });
+</script>
+<style>
+  .menu-toggle{display:none;background:transparent;color:white;border:1px solid #777;padding:9px 12px;min-height:44px}
+  .primary-nav{display:flex;gap:12px;color:white;font-size:12px;white-space:nowrap}
+  @media(max-width:1050px){.menu-toggle{display:block}.primary-nav{display:none;position:absolute;top:100%;left:0;right:0;background:#383838;padding:18px 24px;flex-direction:column;gap:0;white-space:normal}.primary-nav.open{display:flex}.primary-nav a{padding:14px 0;border-bottom:1px solid #555}.nav{position:relative}.nav-r .nav-phone-sm{display:none}}
+  @media(max-width:720px){.nav{height:auto;min-height:60px;flex-wrap:wrap;padding-top:8px;padding-bottom:8px}.brand .apex-logo{width:126px!important;height:30px!important}.nav-r{margin-left:auto;gap:8px}.nav-phone{display:inline;font-size:14px}.nav-r .btn{font-size:12px!important;padding:10px!important}}
+  @media(max-width:380px){.nav-phone{display:inline;font-size:12px}.nav-r .btn{font-size:11px!important;padding:8px!important}.brand .apex-logo{width:108px!important;height:26px!important}}
+</style>

@@ -32,8 +32,8 @@ export const sections = {
 
 export const footer = {
   blurb:
-    'Anything construction, done right the first time. Serving Lubbock and the South Plains.',
-  verticalsLine: 'POOLS · COATING · RENOVATION · SERVICE',
+    'Anything construction. Apex gets it done in Lubbock, Texas.',
+  verticalsLine: 'POOLS · COATING · RENOVATION',
   financing: 'Financing via Lyon Financial',
   copyright: '© Apex 2026 · All rights reserved',
   /**

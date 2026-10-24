@@ -152,6 +152,19 @@ const customerContact = contactPhone
   }
   : undefined;
 
+const publicLeadFlag = process.env.APEX_PUBLIC_LEAD_INTAKE?.trim();
+if (publicLeadFlag !== undefined && publicLeadFlag !== '' && publicLeadFlag !== '1') {
+  throw new Error('APEX_PUBLIC_LEAD_INTAKE must be 1 or unset.');
+}
+const publicLeadOrigins = (process.env.APEX_PUBLIC_LEAD_ORIGINS ?? '')
+  .split(',').map((origin) => origin.trim()).filter(Boolean);
+for (const origin of publicLeadOrigins) {
+  const parsed = new URL(origin);
+  if (parsed.origin !== origin || (parsed.protocol !== 'https:' && !['localhost', '127.0.0.1'].includes(parsed.hostname))) {
+    throw new Error('APEX_PUBLIC_LEAD_ORIGINS must contain exact HTTPS origins.');
+  }
+}
+
 /**
  * Managed Postgres when DATABASE_URL is set, embedded Postgres otherwise.
  *
@@ -191,6 +204,7 @@ const server = createGateApi({
   ...(localUserId ? { localUserId } : {}),
   ...(customerContact ? { customerContact } : {}),
   ...(disallowRobots ? { disallowRobots: true } : {}),
+  publicLeadIntake: { enabled: publicLeadFlag === '1', origins: publicLeadOrigins },
 });
 
 /**
