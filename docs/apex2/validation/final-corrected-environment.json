@@ -1,0 +1,35 @@
+{
+  "sha": "2231248cc6c0fc69e5850188782943191c45dec5",
+  "startedAt": "2026-10-24T10:34:28.957353+00:00",
+  "database": {
+    "host": "127.0.0.1",
+    "port": 55432,
+    "name": "apex2_final_v2",
+    "initialPublicTables": 0,
+    "version": "17.11"
+  },
+  "storage": {
+    "endpoint": "http://127.0.0.1:59000",
+    "bucket": "apex2-final-v2",
+    "initialObjects": 0
+  },
+  "node": "v24.19.0",
+  "ciPnpm": "11.18.0 (Corepack pin)",
+  "playwright": "1.62.1",
+  "moto": "5.1.15",
+  "dirtyPaths": [
+    " M docs/apex2/IMPLEMENTATION.md",
+    " M docs/apex2/screenshots/final-calendar-1440.png",
+    " M docs/apex2/screenshots/final-calendar-390.png",
+    " M docs/apex2/screenshots/final-checklist-390.png",
+    " M docs/apex2/screenshots/final-jobs-1440.png",
+    " M docs/apex2/screenshots/final-jobs-390.png",
+    " M docs/apex2/validation/final-captures.json",
+    " M docs/apex2/validation/integration.md",
+    " M docs/apex2/validation/staff-assets-final.json",
+    " M docs/superpowers/plans/2026-10-24-apex2.md",
+    "?? docs/apex2/validation/foundation.md",
+    "?? docs/apex2/validation/independent-review.md"
+  ],
+  "environmentFile": "/tmp/apex2/final-v2-env.sh"
+}
