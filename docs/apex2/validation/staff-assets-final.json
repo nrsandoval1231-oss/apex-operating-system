@@ -1,0 +1,44 @@
+{
+  "commit": "2231248cc6c0fc69e5850188782943191c45dec5",
+  "source": "production staff build; all emitted chunks, not initial transfer",
+  "assets": [
+    {
+      "path": "assets/App-CZuxq36T.css",
+      "bytes": 28430,
+      "gzip_bytes": 6027,
+      "html_entry": false
+    },
+    {
+      "path": "assets/App-DHZ_ZfeK.js",
+      "bytes": 239859,
+      "gzip_bytes": 73465,
+      "html_entry": false
+    },
+    {
+      "path": "assets/PhotoViewer-BQPrbKi-.js",
+      "bytes": 1689,
+      "gzip_bytes": 835,
+      "html_entry": false
+    },
+    {
+      "path": "assets/exceljs.min-BomWTBbT.js",
+      "bytes": 940243,
+      "gzip_bytes": 268471,
+      "html_entry": false
+    },
+    {
+      "path": "assets/index-BVQnuGPq.css",
+      "bytes": 63412,
+      "gzip_bytes": 14076,
+      "html_entry": false
+    },
+    {
+      "path": "assets/index-Na1JgO9r.js",
+      "bytes": 538463,
+      "gzip_bytes": 159966,
+      "html_entry": true
+    }
+  ],
+  "total_js_bytes": 1720254,
+  "total_js_gzip_bytes": 502737
+}

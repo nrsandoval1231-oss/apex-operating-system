@@ -1,0 +1,13 @@
+{
+  "name": "APEX 2.0 Workspace",
+  "short_name": "APEX 2.0",
+  "start_url": "./today",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#171819",
+  "theme_color": "#383838",
+  "icons": [
+    { "src": "brand/apex-icon-180.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "brand/apex-icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

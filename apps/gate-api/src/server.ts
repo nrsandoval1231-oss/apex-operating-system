@@ -26,7 +26,7 @@ import {
   ProcurementUpdateSchema,
 } from '@apex/contracts';
 import { DomainRuleError, RoleRefusalError } from '@apex/domain';
-import { CustomerService, GateService, InspectionService } from '@apex/gate-service';
+import { CustomerService, GateService, InspectionService, TaskService, CalendarService, WorkspaceService, JobPhotoService } from '@apex/gate-service';
 import { renderClosedPage, renderCustomerPage } from './customerPage.js';
 import { log, redactPath } from './log.js';
 import { createPublicLeadHandler } from './publicLeads.js';
@@ -109,6 +109,7 @@ const APP_CONTENT_TYPES: Record<string, string> = {
   '.svg': 'image/svg+xml',
   '.png': 'image/png',
   '.map': 'application/json; charset=utf-8',
+  '.webmanifest': 'application/manifest+json; charset=utf-8',
 };
 
 const appContentType = (file: string): string =>
@@ -425,7 +426,7 @@ const readJson = async (request: IncomingMessage, limit = 35_000_000): Promise<u
   for await (const chunk of request) {
     const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
     size += buffer.length;
-    if (size > limit) throw new Error('Request body exceeds the configured limit.');
+    if (size > limit) throw new InputError('Request body exceeds the configured limit.');
     chunks.push(buffer);
   }
   return JSON.parse(Buffer.concat(chunks).toString('utf8')) as unknown;
@@ -1027,6 +1028,100 @@ export function createGateApi(options: GateApiOptions) {
         });
       }
 
+      if (
+        url.pathname === '/api/calendar-events' ||
+        /^\/api\/calendar-events\//.test(url.pathname)
+      ) {
+        requireStaff(actor);
+        const events = new CalendarService(options.db);
+        if (
+          request.method === 'GET' &&
+          url.pathname === '/api/calendar-events'
+        ) {
+          const job = url.searchParams.get('jobId');
+          return sendJson(
+            response,
+            200,
+            await events.list(
+              actor,
+              job === null ? undefined : idSchemas.job.parse(job),
+            ),
+          );
+        }
+        if (
+          request.method === 'POST' &&
+          url.pathname === '/api/calendar-events'
+        ) {
+          return sendJson(
+            response,
+            201,
+            await events.command(
+              actor,
+              idempotency(request),
+              'create',
+              null,
+              await readJson(request),
+            ),
+          );
+        }
+        const match = url.pathname.match(
+          /^\/api\/calendar-events\/(agenda_[0-9A-HJKMNP-TV-Z]{26})\/(edit|cancel|history)$/,
+        );
+        if (match && request.method === 'GET' && match[2] === 'history') {
+          return sendJson(
+            response,
+            200,
+            await events.history(actor, match[1]!),
+          );
+        }
+        if (
+          match &&
+          request.method === 'POST' &&
+          (match[2] === 'edit' || match[2] === 'cancel')
+        ) {
+          return sendJson(
+            response,
+            200,
+            await events.command(
+              actor,
+              idempotency(request),
+              match[2],
+              match[1]!,
+              await readJson(request),
+            ),
+          );
+        }
+      }
+
+      if (
+        url.pathname === '/api/tasks' || url.pathname === '/api/task-assignees' ||
+        /^\/api\/tasks\//.test(url.pathname)
+      ) {
+        requireStaff(actor);
+        const tasks = new TaskService(options.db);
+        if (request.method === 'GET' && url.pathname === '/api/task-assignees') {
+          return sendJson(response, 200, await tasks.assignees(actor));
+        }
+        if (request.method === 'GET' && url.pathname === '/api/tasks') {
+          const job = url.searchParams.get('jobId');
+          return sendJson(response, 200, await tasks.list(actor, job === null ? undefined : idSchemas.job.parse(job)));
+        }
+        if (request.method === 'POST' && url.pathname === '/api/tasks') {
+          return sendJson(response, 201, await tasks.command(
+            actor, idempotency(request), 'create', null, await readJson(request),
+          ));
+        }
+        const match = url.pathname.match(/^\/api\/tasks\/(task_[0-9A-HJKMNP-TV-Z]{26})\/(edit|complete|history)$/);
+        if (match && request.method === 'GET' && match[2] === 'history') {
+          return sendJson(response, 200, await tasks.history(actor, match[1]!));
+        }
+        if (match && request.method === 'POST' && (match[2] === 'edit' || match[2] === 'complete')) {
+          return sendJson(response, 200, await tasks.command(
+            actor, idempotency(request), match[2], match[1]!, await readJson(request),
+          ));
+        }
+      }
+
       const opportunityProposalsMatch = url.pathname.match(
         /^\/api\/opportunities\/(lead_[0-9A-HJKMNP-TV-Z]{26})\/proposals$/,
       );
@@ -1165,6 +1260,34 @@ export function createGateApi(options: GateApiOptions) {
         return sendJson(response, 200, await service.getDailyBrief(briefDate, includeProcurement));
       }
 
+      if (request.method === 'GET' && url.pathname === '/api/workspace-projects') {
+        requireStaff(actor);
+        return sendJson(response, 200, await new WorkspaceService(options.db).list(actor));
+      }
+      const workspaceMatch = url.pathname.match(
+        /^\/api\/jobs\/(job_[0-9A-HJKMNP-TV-Z]{26})\/(notes|priority|activity)$/,
+      );
+      if (workspaceMatch) {
+        requireStaff(actor);
+        const workspace = new WorkspaceService(options.db),
+          jobId = idSchemas.job.parse(workspaceMatch[1]);
+        if (request.method === 'GET' && workspaceMatch[2] === 'notes')
+          return sendJson(response, 200, await workspace.notes(actor, jobId));
+        if (request.method === 'GET' && workspaceMatch[2] === 'activity')
+          return sendJson(response, 200, await workspace.activity(actor, jobId));
+        if (request.method === 'POST' && workspaceMatch[2] !== 'activity')
+          return sendJson(
+            response,
+            workspaceMatch[2] === 'notes' ? 201 : 200,
+            await workspace.command(
+              actor,
+              idempotency(request),
+              jobId,
+              workspaceMatch[2] === 'notes' ? 'note' : 'priority',
+              await readJson(request),
+            ),
+          );
+      }
       if (request.method === 'GET' && url.pathname === '/api/jobs') {
         requireStaff(actor);
         const requestedView = url.searchParams.get('view') ?? 'all';
@@ -1354,6 +1477,35 @@ export function createGateApi(options: GateApiOptions) {
       if (request.method === 'GET' && url.pathname === '/api/subcontractors') {
         requireStaff(actor);
         return sendJson(response, 200, await service.listSubcontractors());
+      }
+
+      if (
+        request.method === 'GET' &&
+        url.pathname === '/api/workspace-calendar'
+      ) {
+        requireStaff(actor);
+        const appointments = await new CalendarService(options.db).list(actor);
+        const tasks = await new TaskService(options.db).list(actor);
+        const operational = await service.listCalendarEntries();
+        return sendJson(response, 200, [
+          ...appointments.map((event) => ({
+            source: 'appointment',
+            id: `appointment:${event.eventId}`,
+            event,
+          })),
+          ...tasks
+            .filter((task) => task.dueDate !== null && !task.completedAt)
+            .map((task) => ({
+              source: 'task',
+              id: `task:${task.taskId}`,
+              task,
+            })),
+          ...operational.map((entry) => ({
+            source: 'operational',
+            id: `operational:${entry.taskId}`,
+            entry,
+          })),
+        ]);
       }
 
       if (request.method === 'GET' && url.pathname === '/api/calendar') {
@@ -1668,6 +1820,18 @@ export function createGateApi(options: GateApiOptions) {
       }
 
       const photosMatch = url.pathname.match(/^\/api\/jobs\/(job_[0-9A-HJKMNP-TV-Z]{26})\/photos$/);
+      if (request.method === 'POST' && photosMatch) {
+        requireStaff(actor);
+        const key = idempotency(request);
+        const body = await readJson(request, 11_200_000);
+        const photo = await new JobPhotoService(options.db, storage).upload(
+          actor,
+          idSchemas.job.parse(photosMatch[1]),
+          key,
+          body,
+        );
+        return sendJson(response, 201, photo);
+      }
       if (request.method === 'GET' && photosMatch) {
         requireStaff(actor);
         return sendJson(response, 200, await customers.listJobPhotos(idSchemas.job.parse(photosMatch[1])));

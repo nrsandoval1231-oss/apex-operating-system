@@ -1,0 +1,65 @@
+.apex-shell { padding-bottom: 110px; }
+.apex-shell .sheet { max-width: var(--shell-width); width: 100%; }
+.shell-header { display: flex; align-items: center; gap: 26px; padding: 10px 28px; min-height: 80px; border-bottom: 1px solid var(--rule); background: var(--brand-charcoal); }
+.shell-brand { display: flex; align-items: center; gap: var(--space-3); color: var(--ink); text-decoration: none; flex-shrink: 0; }
+.shell-brand img { width: 120px; height: 48px; object-fit: contain; }
+.shell-brand span { font-family: var(--font-heading); font-size: 22px; white-space: nowrap; letter-spacing: .04em; }
+.shell-brand strong { color: var(--brand-gold-bright); font-weight: 500; }
+.shell-nav { display: flex; align-items: stretch; gap: 4px; }
+.shell-destination { display: flex; align-items: center; justify-content: center; gap: var(--space-2); min-height: var(--control-height); padding: 8px 14px; border-radius: var(--radius-control); color: var(--ink-2); text-decoration: none; font-size: var(--font-label); font-weight: 500; border: 1px solid transparent; }
+.shell-destination.selected { color: var(--brand-gold-bright); background: var(--surface-selected); border-color: var(--border-selected); }
+.shell-destination:hover { color: var(--ink); background: var(--surface-hover); }
+.shell-identity { margin-left: auto; display: flex; align-items: center; gap: var(--space-4); font-size: 13px; }
+.shell-user { max-width: 210px; overflow-wrap: anywhere; }
+.shell-user small { display: block; color: var(--ink-2); font-size: 11px; }
+.shell-signout { min-height: 44px; padding: 8px; background: transparent; color: var(--ink); border: 1px solid var(--rule-bright); border-radius: 4px; cursor: pointer; white-space: nowrap; }
+.shell-content { min-height: 65vh; outline: none; }
+.shell-content > main { min-width: 0; }
+.shell-content .title-block { padding-top: 28px; }
+.shell-content .designer-loading { max-width: none; }
+.shell-muted { color: var(--ink-2); margin: 6px 0 0; }
+.shell-quick { position: fixed; right: 28px; bottom: 24px; z-index: 40; }
+.quick-trigger { display: flex; align-items: center; gap: var(--space-2); justify-content: center; min-width: 58px; height: 56px; padding: 0 18px; border-radius: var(--radius-pill); border: 1px solid var(--brand-gold-bright); background: var(--brand-gold); color: #17120b; font: 600 14px var(--font-ui); box-shadow: var(--shadow-action); cursor: pointer; }
+.quick-panel { position: absolute; right: 0; bottom: 68px; width: 250px; padding: 8px; border: 1px solid var(--rule-bright); border-radius: var(--radius-panel); background: var(--panel); box-shadow: var(--shadow-overlay); }
+.quick-heading { display: block; padding: 6px 12px; font-size: 12px; color: var(--ink-2); }
+.quick-panel a { display: flex; align-items: center; gap: var(--space-3); min-height: 50px; padding: 10px 12px; border-radius: var(--radius-control); color: var(--ink); text-decoration: none; }
+.quick-panel a:hover { background: var(--panel-2); color: var(--brand-gold-bright); }
+.apex-shell :focus-visible, .shell-status :focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 4px; }
+.skip-link { position: fixed; top: -100px; left: 16px; z-index: 100; padding: 12px 18px; background: var(--brand-gold-bright); color: #17120b; }
+.skip-link:focus { top: 10px; }
+.more-tools { padding: 24px var(--gutter); max-width: 900px; }
+.more-tool { display: flex; align-items: center; gap: 18px; min-height: 100px; padding: 20px; border: 1px solid var(--rule); border-radius: 8px; background: var(--panel); color: var(--ink); text-decoration: none; margin-bottom: 14px; }
+.more-tool > svg { color: var(--brand-gold-bright); flex-shrink: 0; }
+.more-tool > span:nth-child(2) { flex: 1; }
+.more-tool strong { display: block; font-size: 17px; }
+.more-tool small { display: block; color: var(--ink-2); margin-top: 4px; }
+.more-tool:hover { border-color: var(--brand-gold); }
+.shell-status { min-height: 100dvh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; text-align: center; }
+.shell-status img { width: 160px; height: 100px; object-fit: contain; }
+@media (min-width: 1100px) {
+  .shell-content > main:not(.designer-app) { padding-inline: 16px; }
+}
+@media (max-width: 1099px) and (min-width: 720px) {
+  .shell-header { gap: var(--space-3); padding-inline: 16px; flex-wrap: wrap; }
+  .shell-nav { order: 3; width: 100%; justify-content: center; }
+}
+@media (max-width: 719px) {
+  .apex-shell { padding-bottom: calc(176px + env(safe-area-inset-bottom)); }
+  .shell-header { padding: 8px 16px; min-height: 72px; gap: var(--space-2); }
+  .shell-brand { gap: var(--space-2); }
+  .shell-brand img { width: 90px; height: 42px; }
+  .shell-brand span { font-size: 18px; }
+  .shell-identity { gap: var(--space-2); font-size: 11px; }
+  .shell-user { max-width: 115px; }
+  .shell-user small { font-size: 10px; }
+  .shell-signout { font-size: 11px; padding: 6px; }
+  .shell-nav { position: fixed; bottom: 0; inset-inline: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0; padding: 6px 4px calc(6px + env(safe-area-inset-bottom)); border-top: 1px solid var(--rule-bright); background: var(--brand-charcoal); z-index: 50; }
+  .shell-destination { flex-direction: column; gap: 4px; padding: 7px 2px; min-height: 58px; font-size: 11px; border-radius: var(--radius-control); }
+  .shell-quick { right: auto; left: 50%; transform: translateX(-50%); bottom: calc(86px + env(safe-area-inset-bottom)); }
+  .quick-trigger { height: 54px; }
+  .quick-panel { right: 50%; transform: translateX(50%); bottom: 66px; max-height: calc(100dvh - 230px); overflow-y: auto; }
+  .shell-content .title-block { padding-top: 20px; }
+  .more-tool { padding: 16px; }
+}
+@media (max-width: 359px) { .shell-user { max-width: 70px; } .shell-brand span { font-size: 16px; } }
+@media print { .shell-header, .shell-quick, .skip-link { display: none !important; } .apex-shell { padding-bottom: 0; } }

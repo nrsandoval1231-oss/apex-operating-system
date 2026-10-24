@@ -1,0 +1,547 @@
+.command-center,
+.jobs-workspace {
+  max-width: 1600px;
+  margin: auto;
+  min-width: 0;
+  padding: 0 var(--gutter) 32px;
+}
+.workspace-greeting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 24px 0;
+}
+.workspace-greeting h1 {
+  font-size: 1.8rem;
+  margin: 0;
+}
+.workspace-greeting p {
+  margin: 5px 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+.workspace-greeting time {
+  font-size: 0.85rem;
+}
+.workspace-columns {
+  display: grid;
+  grid-template-columns: minmax(240px, 300px) minmax(0, 1fr) minmax(
+      300px,
+      360px
+    );
+  gap: 20px;
+  align-items: start;
+}
+.workspace-columns > * {
+  min-width: 0;
+}
+.workspace-checklist,
+.workspace-center,
+.selected-project {
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  background: var(--panel);
+  padding: 16px;
+  min-width: 0;
+}
+.workspace-center {
+  padding: 16px;
+}
+.workspace-checklist .checklist {
+  padding: 0;
+}
+.workspace-checklist .task-row {
+  grid-template-columns: 44px minmax(0, 1fr);
+}
+.workspace-checklist .task-row h3 {
+  font-size: 0.9rem;
+}
+.workspace-checklist .task-row p {
+  font-size: 0.75rem;
+}
+.workspace-checklist .task-filters {
+  gap: 4px;
+}
+.workspace-checklist .task-filters label {
+  width: 100%;
+}
+.workspace-checklist .task-filters button {
+  font-size: 0.75rem;
+  padding: 4px 8px;
+}
+.workspace-checklist .section-rule h2 {
+  font-size: 1.15rem;
+}
+.project-list {
+  min-width: 0;
+}
+.project-filters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 16px 0;
+}
+.project-filters label:first-child {
+  grid-column: 1/-1;
+}
+.project-filters label,
+.selected-project label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.8rem;
+  min-width: 0;
+}
+.project-filters input,
+.project-filters select,
+.selected-project select,
+.selected-project textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--ink);
+  padding: 10px;
+  font: inherit;
+  min-height: 44px;
+  color-scheme: dark;
+}
+.project-card {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  width: 100%;
+  padding: 16px;
+  margin: 10px 0;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+  font: inherit;
+  text-decoration: none;
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.project-card:hover,
+.project-card[aria-pressed='true'] {
+  border-color: var(--brand-gold);
+  background: rgba(205, 165, 80, 0.06);
+}
+.project-card > span {
+  font-size: 0.82rem;
+}
+.project-card-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+.project-card-head strong {
+  font-size: 1rem;
+}
+.workspace-identity h2 {
+  font-size: 1.4rem;
+  overflow-wrap: anywhere;
+  margin: 8px 0;
+}
+.workspace-identity p {
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+.workspace-eyebrow {
+  color: var(--brand-gold);
+  font-weight: 750;
+  letter-spacing: 0.1em;
+  font-size: 0.72rem !important;
+}
+.workspace-tabs,
+.workspace-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 16px 0;
+}
+.workspace-tabs .btn {
+  font-size: 0.75rem;
+  padding: 8px;
+  min-height: 44px;
+}
+.workspace-tabs [aria-pressed='true'] {
+  border-color: var(--brand-gold);
+  color: var(--brand-gold);
+}
+.workspace-tab {
+  font-size: 0.85rem;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.workspace-tab .checklist {
+  padding: 0;
+}
+.workspace-tab h3 {
+  font-size: 1rem;
+}
+.workspace-tab .task-filters {
+  gap: 4px;
+}
+.workspace-tab .task-filters button {
+  font-size: 0.7rem;
+  padding: 4px 7px;
+}
+.workspace-tab .task-row {
+  grid-template-columns: 44px minmax(0, 1fr);
+}
+.workspace-note {
+  border-top: 1px solid var(--rule);
+  padding: 10px 0;
+  white-space: pre-wrap;
+}
+.workspace-note small,
+.workspace-audit {
+  font-size: 0.68rem;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+  display: block;
+}
+.workspace-operations {
+  margin-top: 16px;
+}
+.workspace-tab dialog {
+  max-width: min(540px, calc(100vw - 32px));
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  background: var(--panel);
+  color: var(--ink);
+  padding: 24px;
+}
+.workspace-tab dialog::backdrop {
+  background: rgba(0, 0, 0, 0.7);
+}
+.workspace-tab dialog textarea {
+  min-height: 140px;
+  margin-bottom: 12px;
+}
+.project-workspace-full {
+  margin: 24px var(--gutter);
+}
+.workspace-attention-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 0;
+  border-top: 1px solid var(--rule);
+  color: var(--ink);
+  text-decoration: none;
+  font-size: 0.85rem;
+}
+.project-chooser {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 16px;
+  border: 1px solid var(--brand-gold);
+  border-radius: 8px;
+}
+.project-chooser h2,
+.project-chooser p {
+  width: 100%;
+}
+.jobs-workspace .project-list {
+  max-width: 960px;
+}
+.selected-project .section-rule {
+  padding: 12px 0;
+  margin: 0;
+}
+.workspace-checklist select,
+.workspace-checklist input {
+  max-width: 100%;
+}
+.workspace-unselected {
+  min-height: 240px;
+}
+@media (min-width: 1100px) {
+  .shell-content:has(.command-center) {
+    max-width: 1600px;
+    width: 100%;
+  }
+}
+@media (max-width: 1200px) and (min-width: 901px) {
+  .workspace-columns {
+    grid-template-columns: 240px minmax(0, 1fr);
+  }
+  .workspace-columns > .selected-project {
+    grid-column: 1/-1;
+  }
+  .workspace-columns > .selected-project .workspace-tab {
+    max-width: 100%;
+  }
+}
+@media (max-width: 900px) {
+  .workspace-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .workspace-greeting {
+    align-items: flex-start;
+  }
+  .workspace-greeting h1 {
+    font-size: 1.5rem;
+  }
+  .workspace-greeting time {
+    max-width: 120px;
+    text-align: right;
+  }
+  .workspace-columns {
+    gap: 16px;
+  }
+  .command-center,
+  .jobs-workspace {
+    padding-inline: 16px;
+  }
+  .workspace-checklist,
+  .workspace-center,
+  .selected-project {
+    padding: 14px;
+  }
+  .workspace-checklist .task-row p {
+    font-size: 0.8rem;
+  }
+  .project-workspace-full {
+    margin: 16px;
+  }
+  .workspace-tab .calendar-workspace {
+    padding: 0;
+  }
+}
+.workspace-checklist .task-row > div,
+.workspace-tab .task-row > div {
+  min-width: 0;
+  flex: 1;
+}
+.workspace-checklist .task-form,
+.workspace-tab .task-form {
+  grid-template-columns: minmax(0, 1fr);
+}
+.workspace-checklist .task-form > *,
+.workspace-tab .task-form > * {
+  grid-column: 1;
+}
+.workspace-checklist .task-form input,
+.workspace-checklist .task-form textarea,
+.workspace-checklist .task-form select {
+  width: 100%;
+  box-sizing: border-box;
+}
+.workspace-tab .cw-navigation {
+  gap: 4px;
+}
+.workspace-tab .cw-navigation label {
+  flex-wrap: wrap;
+}
+.workspace-tab .calendar-workspace .title-block {
+  flex-wrap: wrap;
+}
+.selected-project .btn,
+.project-chooser .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid var(--brand-gold);
+  border-radius: var(--radius-control);
+  background: var(--brand-gold);
+  color: #17120b;
+  font: 600 13px var(--font-ui);
+  cursor: pointer;
+  text-decoration: none;
+}
+.selected-project .btn.ghost,
+.project-chooser .btn.ghost {
+  background: transparent;
+  color: var(--ink);
+  border-color: var(--rule-bright);
+}
+.selected-project .btn:hover:not(:disabled),
+.project-chooser .btn:hover:not(:disabled) {
+  border-color: var(--brand-gold-bright);
+  background: var(--surface-selected);
+  color: var(--brand-gold-bright);
+}
+.selected-project .btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.selected-project .workspace-tabs .btn {
+  padding: 8px;
+  font-size: 0.75rem;
+}
+.selected-project .workspace-tabs [aria-pressed='true'] {
+  border-color: var(--brand-gold);
+  color: var(--brand-gold-bright);
+}
+.command-center .workspace-checklist .section-rule {
+  padding: 8px 0;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.command-center .workspace-checklist .section-rule::after {
+  display: none;
+}
+.command-center .workspace-checklist .section-rule h2 {
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  flex-shrink: 1;
+  min-width: 0;
+}
+.command-center .workspace-checklist .section-rule .action {
+  padding: 8px 10px;
+  font-size: 0.72rem;
+}
+.command-center .workspace-checklist .section-rule > button,
+.command-center .workspace-checklist .section-rule > a {
+  margin-left: auto;
+}
+.command-center .project-list .section-rule {
+  padding: 16px 0 8px;
+}
+.command-center .cw-compact .title-block {
+  padding: 0 0 8px;
+  align-items: center;
+  min-height: 44px;
+}
+.command-center .cw-compact .title-block h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+.command-center .cw-compact .cw-period {
+  margin: 10px 0;
+}
+.command-center .cw-compact .cw-days {
+  max-height: 140px;
+}
+.command-center .project-filters {
+  margin: 12px 0;
+  gap: 8px;
+}
+.cw-compact-footer {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 8px;
+}
+.cw-compact-footer > .cw-undated {
+  margin-top: 0;
+  min-width: 0;
+  flex: 1;
+}
+.cw-compact-footer > .cw-full-calendar {
+  margin-top: 0;
+  flex-shrink: 0;
+}
+.task-summary-label {
+  font-size: 0.78rem;
+  color: var(--ink-2);
+  margin: 5px 0;
+}
+.checklist-summary .task-row {
+  padding: 10px 0;
+  gap: 10px;
+}
+.checklist-summary .task-row h3 {
+  font-size: 0.9rem;
+  line-height: 1.3;
+  margin: 0 0 6px;
+}
+.checklist-summary .task-row p {
+  font-size: 0.78rem;
+  margin: 0;
+}
+.checklist-summary .full-checklist {
+  margin-top: 10px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+.cw-summary h2 {
+  font-size: 1.15rem;
+  margin: 0 0 12px;
+}
+.cw-summary .cw-entry {
+  margin: 8px 0;
+  padding: 10px;
+  display: flex;
+  gap: 5px;
+  text-decoration: none;
+  min-height: 44px;
+}
+.cw-summary .cw-entry strong {
+  font-size: 0.85rem;
+}
+.cw-summary .cw-entry span {
+  font-size: 0.75rem;
+}
+.cw-summary-milestones {
+  margin-top: 18px;
+}
+.cw-summary-milestones h3 {
+  font-size: 0.95rem;
+  margin: 0 0 8px;
+}
+.cw-summary-milestones p {
+  font-size: 0.85rem;
+  color: var(--ink-2);
+}
+@media (min-width: 901px) {
+  .project-list-dense .project-filters {
+    grid-template-columns: minmax(140px, 1.7fr) repeat(3, minmax(0, 1fr));
+  }
+  .project-list-dense .project-filters label:first-child {
+    grid-column: auto;
+  }
+  .project-list-dense .project-filters label {
+    font-size: 0.75rem;
+  }
+  .project-list-dense .project-filters select,
+  .project-list-dense .project-filters input {
+    padding: 8px;
+    font-size: 0.75rem;
+  }
+}
+@media (max-width: 900px) {
+  .command-center .workspace-greeting {
+    padding: 18px 0;
+  }
+  .command-center .workspace-columns {
+    gap: 12px;
+  }
+  .command-center .workspace-checklist {
+    padding: 12px 14px;
+  }
+  .command-center .workspace-checklist .checklist-summary .task-row {
+    padding: 10px 0;
+  }
+  .command-center .workspace-center {
+    padding: 14px;
+  }
+  .command-center .workspace-attention .section-rule {
+    padding: 12px 0;
+  }
+  .command-center .workspace-attention {
+    margin-bottom: 20px;
+  }
+  .command-center .workspace-attention-card {
+    padding: 10px 0;
+  }
+  .command-center .workspace-attention-card:nth-of-type(n + 3) {
+    display: none;
+  }
+}

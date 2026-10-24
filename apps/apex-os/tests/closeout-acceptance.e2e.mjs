@@ -115,6 +115,22 @@ try {
   assert.equal(jobRows.length, 1); assert.equal(projectRows.length, 1);
   note('accepted proposal created exactly one job and project (retry with new key returned same job)', { jobId });
 
+  // Optional documentation must neither satisfy nor add to operational closeout.
+  let optionalPhoto = null;
+  if (process.env.OPTIONAL_PHOTO_CLOSEOUT === '1') {
+    const before = await ok('admin', 'GET', `/api/jobs/${jobId}/close`);
+    optionalPhoto = await ok('admin', 'POST', `/api/jobs/${jobId}/photos`, {
+      mimeType: 'image/png',
+      contentBase64: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLbtAAAAABJRU5ErkJggg==',
+    }, k('optional-photo'));
+    const after = await ok('admin', 'GET', `/api/jobs/${jobId}/close`);
+    assert.deepEqual(after, before, 'optional photo must not change any closeout requirement');
+    assert.equal(optionalPhoto.purpose, 'jobsite-photo');
+    assert.equal(optionalPhoto.gateTitle, null);
+    note('optional jobsite photo left gate/inspection/financial closeout safeguards unchanged');
+  }
+
+
   // Draw schedule; invoice references are recorded but collections stay unknown.
   const draws = await ok('admin', 'POST', `/api/jobs/${jobId}/draws`, undefined, k('draws'));
   assert.equal(draws.collectedCents ?? null, null);
@@ -222,6 +238,19 @@ try {
   const closedRow = (await db.query('select status from jobs where job_id=$1', [jobId])).rows[0];
   assert.equal(closedRow.status, 'closed');
   note('browser closed and archived job', { dbStatus: closedRow.status });
+  if (optionalPhoto) {
+    const retained = await ok('admin', 'GET', `/api/jobs/${jobId}/photos`);
+    assert(retained.some((photo) => photo.evidenceId === optionalPhoto.evidenceId));
+    const activity = await ok('admin', 'GET', `/api/jobs/${jobId}/activity`);
+    assert(activity.some((entry) => entry.id === `photo:${optionalPhoto.evidenceId}`));
+    const lateUpload = await call('admin', 'POST', `/api/jobs/${jobId}/photos`, {
+      mimeType: 'image/png',
+      contentBase64: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLbtAAAAABJRU5ErkJggg==',
+    }, k('late-optional-photo'));
+    assert.equal(lateUpload.status, 409);
+    note('closed archive retained optional photo and activity, and refused new upload');
+  }
+
 
   // 6. History persists, is read-only, and closed-job mutation is refused.
   await page.goto(`${origin}/app/projects/${jobId}`);

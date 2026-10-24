@@ -168,7 +168,10 @@ export class CustomerService {
   private readonly basePath: string;
   private readonly publicOrigin: string | null;
 
-  constructor(private readonly db: Database, options: CustomerServiceOptions = {}) {
+  constructor(
+    private readonly db: Database,
+    options: CustomerServiceOptions = {},
+  ) {
     this.contact = options.contact ?? null;
     this.basePath = options.basePath ?? '/c';
     this.publicOrigin = options.publicOrigin?.replace(/\/+$/, '') ?? null;
@@ -202,18 +205,20 @@ export class CustomerService {
    * The old link is revoked in the same transaction as the new one is issued, so
    * there is never a moment with two working links or none.
    */
-  async rotateLink(input: {
-    jobId: JobId;
-    actor: EventActor;
-    reason?: string;
-  }): Promise<IssuedCustomerLink> {
+  async rotateLink(input: { jobId: JobId; actor: EventActor; reason?: string }): Promise<IssuedCustomerLink> {
     const { userId } = requireRole(input.actor, LINK_AUTHORITY, 'Rotating a customer link');
     await assertJobMutable(this.db, input.jobId);
     const live = await this.activeLinkRow(input.jobId);
-    return this.mintLink(input.jobId, userId, live === null ? null : {
-      linkId: live.link_id,
-      reason: input.reason ?? 'Rotated',
-    });
+    return this.mintLink(
+      input.jobId,
+      userId,
+      live === null
+        ? null
+        : {
+            linkId: live.link_id,
+            reason: input.reason ?? 'Rotated',
+          },
+    );
   }
 
   /** Close the page. There is no un-revoke; issue a new link instead. */
@@ -225,9 +230,9 @@ export class CustomerService {
     await this.db.transaction(async (tx) => {
       await assertJobMutable(tx, input.jobId);
       await tx.query(
-      `update customer_links set revoked_at = now(), revoked_by = $2, revoked_reason = $3
+        `update customer_links set revoked_at = now(), revoked_by = $2, revoked_reason = $3
        where link_id = $1`,
-      [live.link_id, userId, input.reason?.trim() || 'Revoked'],
+        [live.link_id, userId, input.reason?.trim() || 'Revoked'],
       );
     });
     return this.getLinkStatus(input.jobId);
@@ -258,16 +263,18 @@ export class CustomerService {
       [jobId],
     );
 
-    const history = links.rows.map((row): CustomerLink => CustomerLinkSchema.parse({
-      linkId: row.link_id,
-      jobId: row.job_id,
-      issuedAt: new Date(row.issued_at).toISOString(),
-      issuedByName: row.issued_by_name,
-      revokedAt: asIso(row.revoked_at),
-      revokedReason: row.revoked_reason,
-      pageViews: Number(row.page_views),
-      lastViewedAt: asIso(row.last_page_view),
-    }));
+    const history = links.rows.map((row): CustomerLink =>
+      CustomerLinkSchema.parse({
+        linkId: row.link_id,
+        jobId: row.job_id,
+        issuedAt: new Date(row.issued_at).toISOString(),
+        issuedByName: row.issued_by_name,
+        revokedAt: asIso(row.revoked_at),
+        revokedReason: row.revoked_reason,
+        pageViews: Number(row.page_views),
+        lastViewedAt: asIso(row.last_page_view),
+      }),
+    );
 
     const accesses = await this.db.query<{
       occurred_at: string | Date;
@@ -328,22 +335,35 @@ export class CustomerService {
    * customer URL therefore resolves to nothing.
    */
   async getPhoto(token: string, evidenceId: EvidenceId, context: AccessContext = {}): Promise<CustomerPhotoResult> {
-    const link = await this.resolveToken(token);
-    if (link === null) return { outcome: 'unknown' };
-    if (link.revoked_at !== null) {
-      await this.recordAccess(link.link_id, 'photo', 'refused-revoked', context);
+    if (!TOKEN_PATTERN.test(token)) return { outcome: 'unknown' };
+    const digest = hashToken(token);
+    // Scope, current token state and publication come from one statement snapshot.
+    const result = await this.db.query<{
+      link_id: string;
+      revoked_at: Date | string | null;
+      token_sha256: string;
+      storage_key: string | null;
+      mime_type: string | null;
+    }>(
+      `select l.link_id,l.revoked_at,l.token_sha256,e.storage_key,e.mime_type
+       from customer_links l
+       left join evidence_records e on e.job_id=l.job_id and e.evidence_id=$2
+         and e.customer_visible=true and e.kind='photo' and l.revoked_at is null
+       where l.token_sha256=$1`,
+      [digest, evidenceId],
+    );
+    const row = result.rows[0];
+    if (!row) return { outcome: 'unknown' };
+    const stored = Buffer.from(row.token_sha256, 'hex');
+    const offered = Buffer.from(digest, 'hex');
+    if (stored.length !== offered.length || !timingSafeEqual(stored, offered)) return { outcome: 'unknown' };
+    if (row.revoked_at !== null) {
+      await this.recordAccess(row.link_id, 'photo', 'refused-revoked', context);
       return { outcome: 'revoked' };
     }
-    const photo = await this.db.query<{ storage_key: string; mime_type: string }>(
-      `select storage_key, mime_type from evidence_records
-       where evidence_id = $1 and job_id = $2 and customer_visible = true and kind = 'photo'`,
-      [evidenceId, link.job_id],
-    );
-    const row = photo.rows[0];
-    if (!row) return { outcome: 'unknown' };
-    // "served" is recorded only after the bytes are actually read. A storage
-    // failure must not look like a customer who opened the photo.
-    return { outcome: 'served', linkId: link.link_id, storageKey: row.storage_key, mimeType: row.mime_type };
+    if (!row.storage_key || !row.mime_type) return { outcome: 'unknown' };
+    // Served is logged only after the caller successfully reads object bytes.
+    return { outcome: 'served', linkId: row.link_id, storageKey: row.storage_key, mimeType: row.mime_type };
   }
 
   /** Call after the photo bytes have been read. Not before. */
@@ -380,34 +400,30 @@ export class CustomerService {
     const { userId } = requireRole(input.actor, PUBLISH_AUTHORITY, 'Publishing a photo to a customer');
     const jobId = await this.jobOfEvidence(input.evidenceId);
     await assertJobMutable(this.db, jobId);
-    const existing = await this.db.query<{ kind: string }>(
-      'select kind from evidence_records where evidence_id = $1',
-      [input.evidenceId],
-    );
+    const existing = await this.db.query<{ kind: string }>('select kind from evidence_records where evidence_id = $1', [
+      input.evidenceId,
+    ]);
     const kind = existing.rows[0]?.kind;
     if (kind === undefined) throw new DomainRuleError(`Unknown evidence: ${input.evidenceId}.`);
     if (input.visible && kind !== 'photo') {
-      throw new DomainRuleError(
-        `Only a photo can be published to a customer; this evidence is a ${kind}.`,
-      );
+      throw new DomainRuleError(`Only a photo can be published to a customer; this evidence is a ${kind}.`);
     }
 
     const caption = input.caption?.trim();
     await this.db.transaction(async (tx) => {
       await assertJobMutable(tx, jobId);
       await tx.query(
-      `update evidence_records
+        `update evidence_records
        set customer_visible = $2,
            customer_caption = case when $2 then $3 else null end,
            visibility_set_at = case when $2 then now() else null end,
            visibility_set_by = case when $2 then $4 else null end
        where evidence_id = $1`,
-      [input.evidenceId, input.visible, caption || null, userId],
+        [input.evidenceId, input.visible, caption || null, userId],
       );
     });
 
-    const photo = (await this.listJobPhotos(jobId))
-      .find((row) => row.evidenceId === input.evidenceId);
+    const photo = (await this.listJobPhotos(jobId)).find((row) => row.evidenceId === input.evidenceId);
     if (!photo) throw new Error('Photo disappeared after its visibility changed.');
     return photo;
   }
@@ -416,9 +432,14 @@ export class CustomerService {
   async listJobPhotos(jobId: JobId): Promise<readonly JobPhoto[]> {
     const rows = await this.db.query<{
       evidence_id: string;
-      gate_title: string;
-      requirement_key: string;
+      gate_title: string | null;
+      requirement_key: string | null;
       captured_at: string | Date;
+      created_at: string | Date;
+      purpose: 'gate-requirement' | 'jobsite-photo';
+      uploader_name: string | null;
+      storage_key: string;
+      metadata: Record<string, unknown>;
       caption: string | null;
       customer_visible: boolean;
       customer_caption: string | null;
@@ -426,28 +447,40 @@ export class CustomerService {
       visibility_set_by_name: string | null;
     }>(
       `select e.evidence_id, gd.title as gate_title, e.requirement_key, e.captured_at,
+              e.created_at, e.purpose, e.storage_key, e.metadata, author.display_name as uploader_name,
               e.caption, e.customer_visible, e.customer_caption, e.visibility_set_at,
               u.display_name as visibility_set_by_name
        from evidence_records e
-       join gate_instances gi on gi.gate_instance_id = e.gate_instance_id
-       join gate_definitions gd
+       left join gate_instances gi on gi.gate_instance_id = e.gate_instance_id
+       left join gate_definitions gd
          on gd.definition_key = gi.definition_key and gd.version = gi.definition_version
        left join app_users u on u.user_id = e.visibility_set_by
+       left join app_users author on author.user_id = e.captured_by
        where e.job_id = $1 and e.kind = 'photo'
-       order by e.captured_at desc, e.evidence_id`,
+       order by e.created_at desc, e.evidence_id`,
       [jobId],
     );
-    return rows.rows.map((row) => JobPhotoSchema.parse({
-      evidenceId: row.evidence_id,
-      gateTitle: row.gate_title,
-      requirementKey: row.requirement_key,
-      capturedAt: new Date(row.captured_at).toISOString(),
-      internalCaption: row.caption,
-      customerVisible: row.customer_visible,
-      customerCaption: row.customer_caption,
-      visibilitySetAt: asIso(row.visibility_set_at),
-      visibilitySetByName: row.visibility_set_by_name,
-    }));
+    return rows.rows.map((row) =>
+      JobPhotoSchema.parse({
+        evidenceId: row.evidence_id,
+        purpose: row.purpose,
+        uploadedAt: new Date(row.created_at).toISOString(),
+        uploaderName: row.uploader_name,
+        originalCapturedAt: row.metadata.originalCapturedAt ?? null,
+        capturedLocal: row.metadata.capturedLocal ?? null,
+        stage: row.metadata.stage ?? null,
+        category: row.metadata.category ?? null,
+        objectReference: row.storage_key,
+        gateTitle: row.gate_title,
+        requirementKey: row.requirement_key,
+        capturedAt: new Date(row.captured_at).toISOString(),
+        internalCaption: row.caption,
+        customerVisible: row.customer_visible,
+        customerCaption: row.customer_caption,
+        visibilitySetAt: asIso(row.visibility_set_at),
+        visibilitySetByName: row.visibility_set_by_name,
+      }),
+    );
   }
 
   /* ------------------------------------------------------------- decisions */
@@ -467,11 +500,18 @@ export class CustomerService {
     await this.db.transaction(async (tx) => {
       await assertJobMutable(tx, input.jobId);
       await tx.query(
-      `insert into customer_decisions
+        `insert into customer_decisions
        (decision_id, job_id, title, detail, consequence, needed_by, created_by)
        values ($1, $2, $3, $4, $5, $6, $7)`,
-      [decisionId, input.jobId, input.title.trim(), input.detail.trim(),
-        input.consequence.trim(), input.neededBy ?? null, userId],
+        [
+          decisionId,
+          input.jobId,
+          input.title.trim(),
+          input.detail.trim(),
+          input.consequence.trim(),
+          input.neededBy ?? null,
+          userId,
+        ],
       );
     });
     const decision = (await this.listDecisions(input.jobId)).find((row) => row.decisionId === decisionId);
@@ -521,8 +561,7 @@ export class CustomerService {
     if (updatedJobId === undefined) {
       throw new DomainRuleError('That decision does not exist or has already been resolved.');
     }
-    const decision = (await this.listDecisions(jobId))
-      .find((row) => row.decisionId === input.decisionId);
+    const decision = (await this.listDecisions(jobId)).find((row) => row.decisionId === input.decisionId);
     if (!decision) throw new Error('Decision disappeared after being resolved.');
     return decision;
   }
@@ -530,9 +569,16 @@ export class CustomerService {
   /** Every decision on a job, open first. Staff view. */
   async listDecisions(jobId: JobId): Promise<readonly StaffCustomerDecision[]> {
     const rows = await this.db.query<{
-      decision_id: string; job_id: string; title: string; detail: string; consequence: string;
-      needed_by: string | Date | null; status: 'open' | 'answered' | 'withdrawn';
-      answer_note: string | null; resolved_at: string | Date | null; created_at: string | Date;
+      decision_id: string;
+      job_id: string;
+      title: string;
+      detail: string;
+      consequence: string;
+      needed_by: string | Date | null;
+      status: 'open' | 'answered' | 'withdrawn';
+      answer_note: string | null;
+      resolved_at: string | Date | null;
+      created_at: string | Date;
     }>(
       `select decision_id, job_id, title, detail, consequence, needed_by, status,
               answer_note, resolved_at, created_at
@@ -540,18 +586,20 @@ export class CustomerService {
        order by (status = 'open') desc, needed_by nulls last, created_at`,
       [jobId],
     );
-    return rows.rows.map((row) => StaffCustomerDecisionSchema.parse({
-      decisionId: row.decision_id,
-      jobId: row.job_id,
-      title: row.title,
-      detail: row.detail,
-      consequence: row.consequence,
-      neededBy: row.needed_by === null ? null : asDay(row.needed_by),
-      status: row.status,
-      answerNote: row.answer_note,
-      resolvedAt: asIso(row.resolved_at),
-      createdAt: new Date(row.created_at).toISOString(),
-    }));
+    return rows.rows.map((row) =>
+      StaffCustomerDecisionSchema.parse({
+        decisionId: row.decision_id,
+        jobId: row.job_id,
+        title: row.title,
+        detail: row.detail,
+        consequence: row.consequence,
+        neededBy: row.needed_by === null ? null : asDay(row.needed_by),
+        status: row.status,
+        answerNote: row.answer_note,
+        resolvedAt: asIso(row.resolved_at),
+        createdAt: new Date(row.created_at).toISOString(),
+      }),
+    );
   }
 
   /* ---------------------------------------------------------------- internals */
@@ -567,7 +615,9 @@ export class CustomerService {
    */
   private async readPage(jobId: JobId, token: string | null): Promise<CustomerPage> {
     const job = await this.db.query<{
-      status: string; accepted_payload: unknown; current_phase_key: string | null;
+      status: string;
+      accepted_payload: unknown;
+      current_phase_key: string | null;
     }>(
       `select j.status, l.accepted_payload, p.current_phase_key
        from jobs j
@@ -581,7 +631,10 @@ export class CustomerService {
     const identity = readLeadIdentity(row.accepted_payload);
 
     const decisions = await this.db.query<{
-      decision_id: string; title: string; detail: string; consequence: string;
+      decision_id: string;
+      title: string;
+      detail: string;
+      consequence: string;
       needed_by: string | Date | null;
     }>(
       `select decision_id, title, detail, consequence, needed_by
@@ -591,7 +644,9 @@ export class CustomerService {
     );
 
     const photos = await this.db.query<{
-      evidence_id: string; customer_caption: string | null; captured_at: string | Date;
+      evidence_id: string;
+      customer_caption: string | null;
+      captured_at: string | Date;
     }>(
       `select evidence_id, customer_caption, captured_at
        from evidence_records
@@ -606,35 +661,37 @@ export class CustomerService {
       [jobId],
     );
 
-    return CustomerPageSchema.parse(buildCustomerPage({
-      customerName: identity.customerName,
-      addressLine: identity.addressLine,
-      currentPhaseKey: (row.current_phase_key as ConstructionPhaseKey | null) ?? null,
-      // Handover comes from the job being finished and from nothing else.
-      jobComplete: row.status === 'complete' || row.status === 'closed',
-      decisions: decisions.rows.map((decision): CustomerDecision => ({
-        decisionId: decision.decision_id as CustomerDecision['decisionId'],
-        title: decision.title,
-        detail: decision.detail,
-        consequence: decision.consequence,
-        neededBy: decision.needed_by === null ? null : asDay(decision.needed_by),
-      })),
-      photos: photos.rows.map((photo) => ({
-        evidenceId: photo.evidence_id as EvidenceId,
-        caption: photo.customer_caption,
-        takenOn: asDay(photo.captured_at),
-      })),
-      updates: updates.rows.map((update): CustomerUpdate => ({
-        title: update.title,
-        summary: update.summary,
-        publishedOn: asDay(update.published_at),
-      })),
-      contact: this.contact,
-      // A preview has no token, so it renders the gallery without hrefs that
-      // would work. The staff screen shows photos from the staff route instead.
-      photoHref: (evidenceId) =>
-        token === null ? `#${evidenceId}` : `${this.basePath}/${token}/photo/${evidenceId}`,
-    }));
+    return CustomerPageSchema.parse(
+      buildCustomerPage({
+        customerName: identity.customerName,
+        addressLine: identity.addressLine,
+        currentPhaseKey: (row.current_phase_key as ConstructionPhaseKey | null) ?? null,
+        // Handover comes from the job being finished and from nothing else.
+        jobComplete: row.status === 'complete' || row.status === 'closed',
+        decisions: decisions.rows.map((decision): CustomerDecision => ({
+          decisionId: decision.decision_id as CustomerDecision['decisionId'],
+          title: decision.title,
+          detail: decision.detail,
+          consequence: decision.consequence,
+          neededBy: decision.needed_by === null ? null : asDay(decision.needed_by),
+        })),
+        photos: photos.rows.map((photo) => ({
+          evidenceId: photo.evidence_id as EvidenceId,
+          caption: photo.customer_caption,
+          takenOn: asDay(photo.captured_at),
+        })),
+        updates: updates.rows.map((update): CustomerUpdate => ({
+          title: update.title,
+          summary: update.summary,
+          publishedOn: asDay(update.published_at),
+        })),
+        contact: this.contact,
+        // A preview has no token, so it renders the gallery without hrefs that
+        // would work. The staff screen shows photos from the staff route instead.
+        photoHref: (evidenceId) =>
+          token === null ? `#${evidenceId}` : `${this.basePath}/${token}/photo/${evidenceId}`,
+      }),
+    );
   }
 
   private async mintLink(
@@ -720,10 +777,9 @@ export class CustomerService {
   }
 
   private async jobOfEvidence(evidenceId: EvidenceId): Promise<JobId> {
-    const rows = await this.db.query<{ job_id: string }>(
-      'select job_id from evidence_records where evidence_id = $1',
-      [evidenceId],
-    );
+    const rows = await this.db.query<{ job_id: string }>('select job_id from evidence_records where evidence_id = $1', [
+      evidenceId,
+    ]);
     const jobId = rows.rows[0]?.job_id;
     if (jobId === undefined) throw new DomainRuleError(`Unknown evidence: ${evidenceId}.`);
     return jobId as JobId;

@@ -1,3 +1,4 @@
+import { gateRequiredByScope, type SignedScopeLine } from './gateScope.js';
 import { canonicalJson } from './canonicalJson.js';
 import { createHash } from 'node:crypto';
 import type { Database, Queryable } from '@apex/database';
@@ -370,18 +371,6 @@ const commandKey = (value: string) => {
  * Cover and automation are optional direct lines. Their Gates are required
  * only when the signed proposal quoted them.
  */
-const SCOPE_GATED_LINES: Readonly<Record<string, { readonly code: number; readonly name: string }>> = {
-  'cover-install': { code: 900, name: 'Cover' },
-  'automation-programming-complete': { code: 1200, name: 'Automation' },
-};
-
-interface SignedScopeLine {
-  readonly name?: string;
-  readonly resolved?: boolean;
-  readonly scopeStatus?: string;
-  readonly code?: number;
-}
-
 const signedScopeLines = async (db: Queryable, jobId: JobId): Promise<readonly SignedScopeLine[] | null> => {
   const result = await db.query<{ proposal_payload: { scope?: unknown } | null }>(
     `select pv.proposal_payload
@@ -396,17 +385,6 @@ const signedScopeLines = async (db: Queryable, jobId: JobId): Promise<readonly S
   const scope = result.rows[0]?.proposal_payload?.scope;
   if (!Array.isArray(scope)) return null;
   return scope.filter((line): line is SignedScopeLine => typeof line === 'object' && line !== null);
-};
-
-/** No signed proposal keeps every active template. A signed one drops lines left out of scope. */
-const gateRequiredByScope = (definitionKey: string, scope: readonly SignedScopeLine[] | null): boolean => {
-  const optional = SCOPE_GATED_LINES[definitionKey];
-  if (optional === undefined || scope === null) return true;
-  const line = scope.find((item) => item.code === optional.code || item.name === optional.name);
-  if (!line) return false;
-  if (line.scopeStatus === 'not-applicable' || line.scopeStatus === 'unresolved') return false;
-  if (line.scopeStatus === 'quoted') return true;
-  return line.resolved === true;
 };
 
 const requiredGateKeys = async (db: Queryable, jobId: JobId): Promise<readonly string[]> => {
@@ -2524,5 +2502,11 @@ export class GateService {
   }
 }
 
+export * from './tasks.js';
 export * from './customer.js';
 export * from './inspections.js';
+
+export { CalendarService } from './calendarEvents.js';
+export { WorkspaceService } from './workspace.js';
+
+export { JobPhotoService } from './jobPhotos.js';
