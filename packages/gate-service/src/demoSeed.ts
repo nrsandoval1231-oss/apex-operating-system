@@ -471,7 +471,7 @@ const syncDemoPhotos = async (
   }>(
     `select evidence_id, gate_instance_id, storage_key, sha256, byte_size, customer_visible
      from evidence_records
-     where job_id = $1 and kind = 'photo'`,
+     where job_id = $1 and kind = 'photo' and purpose = 'gate-requirement'`,
     [jobId],
   );
   for (const photo of photos.rows) {

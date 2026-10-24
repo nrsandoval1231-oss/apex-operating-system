@@ -26,7 +26,7 @@ import {
   ProcurementUpdateSchema,
 } from '@apex/contracts';
 import { DomainRuleError, RoleRefusalError } from '@apex/domain';
-import { CustomerService, GateService, InspectionService, TaskService, CalendarService, WorkspaceService } from '@apex/gate-service';
+import { CustomerService, GateService, InspectionService, TaskService, CalendarService, WorkspaceService, JobPhotoService } from '@apex/gate-service';
 import { renderClosedPage, renderCustomerPage } from './customerPage.js';
 import { log, redactPath } from './log.js';
 
@@ -424,7 +424,7 @@ const readJson = async (request: IncomingMessage, limit = 35_000_000): Promise<u
   for await (const chunk of request) {
     const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
     size += buffer.length;
-    if (size > limit) throw new Error('Request body exceeds the configured limit.');
+    if (size > limit) throw new InputError('Request body exceeds the configured limit.');
     chunks.push(buffer);
   }
   return JSON.parse(Buffer.concat(chunks).toString('utf8')) as unknown;
@@ -1816,6 +1816,18 @@ export function createGateApi(options: GateApiOptions) {
       }
 
       const photosMatch = url.pathname.match(/^\/api\/jobs\/(job_[0-9A-HJKMNP-TV-Z]{26})\/photos$/);
+      if (request.method === 'POST' && photosMatch) {
+        requireStaff(actor);
+        const key = idempotency(request);
+        const body = await readJson(request, 11_200_000);
+        const photo = await new JobPhotoService(options.db, storage).upload(
+          actor,
+          idSchemas.job.parse(photosMatch[1]),
+          key,
+          body,
+        );
+        return sendJson(response, 201, photo);
+      }
       if (request.method === 'GET' && photosMatch) {
         requireStaff(actor);
         return sendJson(response, 200, await customers.listJobPhotos(idSchemas.job.parse(photosMatch[1])));

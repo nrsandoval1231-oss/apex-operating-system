@@ -171,10 +171,46 @@ export const CustomerLinkStatusSchema = z.strictObject({
 export type CustomerLinkStatus = z.infer<typeof CustomerLinkStatusSchema>;
 
 /** A job's gate photos and whether each one is published. Staff view. */
+export const JobPhotoUploadSchema = z.strictObject({
+  mimeType: z.enum(['image/jpeg', 'image/png', 'image/webp'], {
+    error:
+      'Photos support JPEG, PNG or WebP only. Convert HEIC to JPEG before uploading.',
+  }),
+  contentBase64: z.string().min(4).max(11_184_812),
+  caption: z.string().max(1000).nullable().optional(),
+  stage: z.string().trim().min(1).max(120).nullable().optional(),
+  category: z.enum(['before', 'during', 'after']).nullable().optional(),
+  originalCapturedAt: z
+    .string()
+    .datetime({ offset: true })
+    .nullable()
+    .optional(),
+  capturedLocal: z
+    .string()
+    .regex(/^\d{4}:\d{2}:\d{2} \d{2}:\d{2}:\d{2}$/)
+    .nullable()
+    .optional(),
+});
+export type JobPhotoUpload = z.infer<typeof JobPhotoUploadSchema>;
+
 export const JobPhotoSchema = z.strictObject({
+  purpose: z
+    .enum(['gate-requirement', 'jobsite-photo'])
+    .default('gate-requirement'),
+  uploadedAt: z.string().datetime({ offset: true }).nullable().default(null),
+  uploaderName: z.string().nullable().default(null),
+  originalCapturedAt: z
+    .string()
+    .datetime({ offset: true })
+    .nullable()
+    .default(null),
+  capturedLocal: z.string().nullable().default(null),
+  stage: z.string().nullable().default(null),
+  category: z.enum(['before', 'during', 'after']).nullable().default(null),
+  objectReference: z.string().nullable().default(null),
   evidenceId: idSchemas.evidence,
-  gateTitle: z.string().min(1).max(200),
-  requirementKey: z.string().min(1).max(120),
+  gateTitle: z.string().min(1).max(200).nullable(),
+  requirementKey: z.string().min(1).max(120).nullable(),
   capturedAt: z.string().datetime({ offset: true }),
   /** The internal caption. Staff-only — the customer page never reads it. */
   internalCaption: z.string().max(1000).nullable(),
@@ -200,4 +236,6 @@ export const StaffCustomerDecisionSchema = z.strictObject({
   createdAt: z.string().datetime({ offset: true }),
 });
 export type StaffCustomerDecision = z.infer<typeof StaffCustomerDecisionSchema>;
-export const StaffCustomerDecisionListSchema = z.array(StaffCustomerDecisionSchema);
+export const StaffCustomerDecisionListSchema = z.array(
+  StaffCustomerDecisionSchema,
+);

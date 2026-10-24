@@ -335,14 +335,14 @@ export default function CustomerPage() {
         error={photos.error}
         isEmpty={(photos.data ?? []).length === 0}
         emptyTitle="No photos"
-        emptyBody="No gate photos have been captured on this job yet."
+        emptyBody="No photos have been captured on this job yet."
         onRetry={photos.reload}
         quiet
       />
 
       {asking?.kind === 'publish' && (
         <InlineForm
-          title={`Publish this photo — ${humanizeKey(asking.photo.requirementKey)}`}
+          title={`Publish this photo — ${humanizeKey(asking.photo.requirementKey ?? 'jobsite-photo')}`}
           note="Write the caption for the customer. The internal caption is never shown to them, and leaving this blank publishes the photo with no caption at all."
           fields={[{
             name: 'caption',
@@ -362,9 +362,9 @@ export default function CustomerPage() {
           {(photos.data ?? []).map((photo) => (
             <li key={photo.evidenceId}>
               <div style={{ minWidth: 0 }}>
-                <div className="what">{photo.gateTitle}</div>
+                <div className="what">{photo.gateTitle ?? 'Optional jobsite photo'}</div>
                 <div className="note">
-                  {[humanizeKey(photo.requirementKey), readable(photo.capturedAt)].join(' · ')}
+                  {[humanizeKey(photo.requirementKey ?? 'jobsite-photo'), readable(photo.capturedAt)].join(' · ')}
                 </div>
                 {/* Shown so whoever publishes can see what they would be
                     publishing under. The customer never sees this line. */}
