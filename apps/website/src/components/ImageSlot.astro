@@ -27,6 +27,10 @@ const slot = getImageSlot(id);
 const altText = slot.decorative ? '' : slot.alt;
 const wrapperClass = ['img-slot', className].filter(Boolean).join(' ');
 const style = `aspect-ratio:${slot.ratio};`;
+const [ratioWidth, ratioHeight] = slot.ratio.split('/').map((part) => Number(part.trim()));
+const intrinsicWidth = Number(slot.src?.match(/-(\d+)\.webp$/)?.[1] ?? slot.srcset?.match(/(\d+)w\s*(?:,\s*[^,]+)*$/)?.[1] ?? 1600);
+const intrinsicHeight = Math.round(intrinsicWidth * ratioHeight / ratioWidth);
+const jpegFallback = slot.src?.replace(/-\d+(?=\.webp$)/, '').replace(/\.webp$/, '.jpg');
 ---
 {slot.src ? (
   <div class={wrapperClass} style={style}>
@@ -37,16 +41,12 @@ const style = `aspect-ratio:${slot.ratio};`;
       guard is `npm run preflight`, which counts these and warns before any launch — see the
       note on `stock` in content/images.ts.
     */}
-    <img
-      src={slot.src}
-      srcset={slot.srcset}
-      sizes={sizes}
-      alt={altText}
-      loading={loading}
-      fetchpriority={loading === 'eager' ? 'high' : undefined}
-      decoding="async"
-      data-stock={slot.stock ? 'true' : undefined}
-    />
+    <picture>
+      {slot.srcset && <source type="image/webp" srcset={slot.srcset} sizes={sizes} />}
+      <img src={jpegFallback ?? slot.src} alt={altText} width={intrinsicWidth} height={intrinsicHeight}
+        loading={loading} fetchpriority={loading === 'eager' ? 'high' : undefined} decoding="async"
+        data-stock={slot.stock ? 'true' : undefined} />
+    </picture>
   </div>
 ) : (
   <div

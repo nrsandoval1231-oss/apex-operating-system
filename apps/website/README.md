@@ -1,40 +1,39 @@
-# Apex Website
+# Apex Website 2.0
 
-Marketing site for Apex (Lubbock, TX) — one brand, four verticals: Designer Pools, Concrete Coating, Design & Renovation, Pool Service.
+Mobile-first construction website for Apex in Lubbock, Texas. The home page introduces the three primary divisions—Designer Pools, Concrete Coating, and Design & Renovation—using the official Apex logo and owner-provided project photography. Pool Service remains available as a supporting service page.
 
-**Its one job:** route visitors to the right vertical and capture every lead with a vertical + source tag, so conversion and ad spend can be measured per vertical. Everything else supports that.
+## Routes
 
-## For the coding agent
+- `/` — home, featured and recent work, division links, process, exact customer quotes, and project request form.
+- `/designer-pools`, `/concrete-coating`, `/design-and-renovation` — primary division pages with service details, FAQ, five-step process, project gallery, and a preselected quote form.
+- `/pools`, `/coating`, `/renovation` — compatibility paths for the primary divisions.
+- `/service`, `/work`, `/about-apex`, `/contact`, `/process`, `/service-areas` — supporting pages.
+- `/privacy`, `/terms` — current legal text transcribed from the 2026-10-24 source crawl. `/legacy-privacy` preserves the earlier policy.
 
-Start with `CLAUDE.md` (loaded automatically), then `docs/prd.md`. Build order and gates are there.
+All pages in non-production builds are noindexed. Published service-area copy is limited to Lubbock. Marketing pages use the self-hosted Barlow and Bebas Neue font families and authentic locally stored images.
 
-## For a human
+## Project requests
 
-| File | What it's for |
-|---|---|
-| `CLAUDE.md` | Rules, stack, tokens, definition of done — the agent's standing instructions |
-| `docs/prd.md` | Scope, phases, dependency graph |
-| `docs/data-contract.md` | The lead object — the spine everything feeds |
-| `docs/acceptance-criteria.md` | Pass/fail checklist + test skeleton |
-| `docs/decisions.md` | What's locked, what's blocked on a human |
-| `reference/apex-mockup.html` | Approved design + interaction spec — open in a browser |
+The React island collects the division, project details, contact information, and optional SMS consent in three steps. It posts the existing LeadPayload plus `schema_version: 2`, `project`, `website` honeypot, and `consent_version: website-2-20261024` to the build-time endpoint. Only a persisted acknowledgement matching the submitted website lead ID and containing the canonical OS lead ID confirms success. HTTP 400/422 responses permit editing and a new ID; timeouts, network failures, server errors, conflicts, and unknown acknowledgements preserve the same payload and ID for retry. Keep the form page open during an uncertain retry; after reload, call Apex before submitting again.
 
-## Status
+Preview builds show “Website preview — use test details only.” A missing endpoint leaves the form in a clear call-us fallback state; it is never treated as success.
 
-**The site is built.** All five phases are done: five pages, four vertical landing pages, the quote form, SEO/analytics wiring, redirect tooling, and the cutover preflight gate. `npm test` runs 122 acceptance assertions across desktop and mobile, and `npm run check` and `npm run build` are clean on Astro 7.
+## Source and media
 
-What stands between this and launch is **not code**:
+`docs/rebuild-20261024/` contains the dated source crawl and image inventory. `src/content/testimonials.ts` holds the eight exact source testimonials and attributions, with no invented ratings or project locations. `public/images/projects/` contains the supplied optimized project images and JPEG fallbacks.
 
-- **D-01 · access transfer from Monsoon** — registrar, GTM, GA4, Meta, Google Business Profile.
-- **D-03 · canonical domain** — three domains in play; one has to win and the other two 301 in.
-- **D-20 · photography** — 12 images are licensed stock. `npm run preflight` fails on this by design; it is the one blocker the build itself reports.
-- **D-07 · content-editing model** — Markdown in `content/` vs a headless CMS.
-- **D-21 · lead webhook** — the form needs a real `PUBLIC_LEAD_WEBHOOK_URL`.
+## Local checks
 
-Also open, and owned by the maintainer rather than the code: the speed-to-lead copy ("we'll text you back in minutes, not days") promises an automated response `workflows/lead-engine` has not built yet (`02-speed-to-lead.ts` does not exist). Either build the automation or change the promise — see `docs/decisions.md`.
+From `apps/website`:
 
-Full detail in `docs/decisions.md`.
+```sh
+npm run check
+npm run build
+npm run validate
+npm run test
+npm run test:production
+npm run test:unit
+npm run redirects:generate
+```
 
-## Not in this app
-
-This site is `apps/website` in the Apex monorepo, not a separate repository. CRM, commission engine, job costing, QuickBooks integration, and Meta offline conversions are outside this app, gated on their own decisions. This app ends at the n8n webhook handoff.
+`npm run preflight` checks the built output. For preview use `PUBLIC_ENV=preview` and `PUBLIC_LEAD_WEBHOOK_URL_TEST`; production requires `PUBLIC_ENV=production` and `PUBLIC_LEAD_WEBHOOK_URL`. Browser tests intercept the endpoint and never write real leads. Redirect files are generated into `build/redirects/`; copy only the target-host file as part of the separately authorized staging/release process.

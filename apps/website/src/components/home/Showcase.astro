@@ -80,11 +80,7 @@ const [quote] = testimonials;
         the --paper the old testimonial band used, so this is a small regression of an
         existing issue, not a new class of one.
       */}
-      <p class="rating">
-        <span class="stars" aria-hidden="true">{'★'.repeat(quote.stars)}</span>
-        <span class="rating-num">{quote.stars.toFixed(1)} out of 5</span>
-      </p>
-      <blockquote>{quote.quote}</blockquote>
+     <blockquote>{quote.quote}</blockquote>
       <figcaption>
         <span class="who">{quote.name}</span>
         <span class="mono ctx">{quote.context}</span>
@@ -188,7 +184,7 @@ const [quote] = testimonials;
   }
   .rating .stars { color: var(--amber); letter-spacing: 4px; font-size: 14px; line-height: 1; }
   .rating-num {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: Barlow, monospace;
     font-size: 11px;
     letter-spacing: 0.12em;
     text-transform: uppercase;
@@ -197,7 +193,7 @@ const [quote] = testimonials;
 
   .quote blockquote {
     margin: 22px 0 0;
-    font-family: Oswald, sans-serif;
+    font-family: Bebas Neue, sans-serif;
     font-weight: 400;
     font-size: clamp(24px, 4vw, 44px);
     line-height: 1.18;
@@ -205,7 +201,7 @@ const [quote] = testimonials;
     text-wrap: balance;
   }
   .quote figcaption { margin-top: 26px; display: flex; flex-direction: column; gap: 4px; }
-  .quote .who { font-family: Oswald, sans-serif; text-transform: uppercase; letter-spacing: 0.06em; font-size: 15px; }
+  .quote .who { font-family: Bebas Neue, sans-serif; text-transform: uppercase; letter-spacing: 0.06em; font-size: 15px; }
   .quote .ctx { font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--steel); }
 
   @media (max-width: 900px) {

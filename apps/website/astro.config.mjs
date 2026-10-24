@@ -18,6 +18,6 @@ export default defineConfig({
   // off via this env var. Normal `npm run dev` keeps the toolbar.
   devToolbar: { enabled: process.env.ASTRO_DEV_TOOLBAR !== 'false' },
   build: {
-    inlineStylesheets: 'auto',
+    inlineStylesheets: 'always',
   },
 });

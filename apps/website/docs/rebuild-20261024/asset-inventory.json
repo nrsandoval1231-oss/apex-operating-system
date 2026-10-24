@@ -1,0 +1,987 @@
+{
+  "retrievedAt": "2026-10-24T07:18:02.592Z",
+  "scope": "All image URLs discoverable in Firecrawl crawl markdown; original hashes and source references preserved. Site-publication provenance, no invented project locations.",
+  "assets": [
+    {
+      "name": "Apex-Site-Logo-2x.png",
+      "url": "https://apexgetsitdone.com/snapshot/media/uploads/2024/09/Apex-Site-Logo-2x.png",
+      "sourcePages": [
+        "https://apexgetsitdone.com/",
+        "https://apexgetsitdone.com/apex-privacy-policy/",
+        "https://apexgetsitdone.com/terms-and-conditions/",
+        "https://apexgetsitdone.com/about-apex/"
+      ],
+      "sha256": "421e7a063b78adb7f47c69fce6d17e5c9f5186360060cf04e0c3fbdefb1688bb",
+      "width": 801,
+      "height": 191,
+      "bytes": 10987,
+      "classification": "brand or supporting image",
+      "thumbnail": false,
+      "variants": []
+    },
+    {
+      "name": "Apex-Concrete-Coating.png",
+      "url": "https://apexgetsitdone.com/snapshot/media/uploads/2024/09/Apex-Concrete-Coating.png",
+      "sourcePages": [
+        "https://apexgetsitdone.com/",
+        "https://apexgetsitdone.com/concrete-coating/",
+        "https://apexgetsitdone.com/apex-privacy-policy/",
+        "https://apexgetsitdone.com/terms-and-conditions/",
+        "https://apexgetsitdone.com/about-apex/"
+      ],
+      "sha256": "164466f30d5468721ff2420582767472004f0aedff99b9cba9fe068ee0ba3465",
+      "width": 801,
+      "height": 229,
+      "bytes": 13980,
+      "classification": "brand or supporting image",
+      "thumbnail": false,
+      "variants": []
+    },
+    {
+      "name": "ApexCC-FavIcon-270px.jpg",
+      "url": "https://apexgetsitdone.com/snapshot/media/uploads/2024/10/ApexCC-FavIcon-270px.jpg",
+      "sourcePages": [
+        "https://apexgetsitdone.com/",
+        "https://apexgetsitdone.com/concrete-coating/",
+        "https://apexgetsitdone.com/apex-privacy-policy/",
+        "https://apexgetsitdone.com/designer-pools/",
+        "https://apexgetsitdone.com/terms-and-conditions/",
+        "https://apexgetsitdone.com/design-and-renovation/",
+        "https://apexgetsitdone.com/about-apex/"
+      ],
+      "sha256": "0c923a2e6d2f3bf932937600f34097a46ac46f214bbdb3c308f39e2f72d9d363",
+      "width": 270,
+      "height": 270,
+      "bytes": 9906,
+      "classification": "brand or supporting image",
+      "thumbnail": false,
+      "variants": []
+    },
+    {
+      "name": "Apex-Design-Reno.png",
+      "url": "https://apexgetsitdone.com/snapshot/media/uploads/2024/09/Apex-Design-Reno.png",
+      "sourcePages": [
+        "https://apexgetsitdone.com/",
+        "https://apexgetsitdone.com/apex-privacy-policy/",
+        "https://apexgetsitdone.com/terms-and-conditions/",
+        "https://apexgetsitdone.com/design-and-renovation/",
+        "https://apexgetsitdone.com/about-apex/"
+      ],
+      "sha256": "5c8c6883938a7d98602112d4fa3b3dd8d97e90e04b1b631141c60a2ef6b3df9e",
+      "width": 801,
+      "height": 229,
+      "bytes": 14830,
+      "classification": "brand or supporting image",
+      "thumbnail": false,
+      "variants": []
+    },
+    {
+      "name": "Apex-FavIcon-270px.jpg",
+      "url": "https://apexgetsitdone.com/snapshot/media/uploads/2024/09/Apex-FavIcon-270px.jpg",
+      "sourcePages": [
+        "https://apexgetsitdone.com/",
+        "https://apexgetsitdone.com/concrete-coating/",
+        "https://apexgetsitdone.com/apex-privacy-policy/",
+        "https://apexgetsitdone.com/designer-pools/",
+        "https://apexgetsitdone.com/terms-and-conditions/",
+        "https://apexgetsitdone.com/design-and-renovation/",
+        "https://apexgetsitdone.com/about-apex/"
+      ],
+      "sha256": "9782ff613566be9d10b39878d185f4fe82a3214199f64c1dbd810a72ccc2585e",
+      "width": 270,
+      "height": 270,
+      "bytes": 8178,
+      "classification": "brand or supporting image",
+      "thumbnail": false,
+      "variants": []
+    },
+    {
+      "name": "Apex-Designer-Pool.png",
+      "url": "https://apexgetsitdone.com/snapshot/media/uploads/2024/09/Apex-Designer-Pool.png",
+      "sourcePages": [
+        "https://apexgetsitdone.com/",
+        "https://apexgetsitdone.com/apex-privacy-policy/",
+        "https://apexgetsitdone.com/designer-pools/",
+        "https://apexgetsitdone.com/terms-and-conditions/",
+        "https://apexgetsitdone.com/about-apex/",
+        "https://apexgetsitdone.com/apex-designer-pools-landing-page/"
+      ],
+      "sha256": "2da2dcea33383e81e00ba10b413615fe9022cf7d4a73a08c4a9b9c47864c6646",
+      "width": 800,
+      "height": 228,
+      "bytes": 11732,
+      "classification": "brand or supporting image",
+      "thumbnail": false,
+      "variants": []
+    },
+    {
+      "name": "ApexDP-FavIcon-270px.jpg",
+      "url": "https://apexgetsitdone.com/snapshot/media/uploads/2024/10/ApexDP-FavIcon-270px.jpg",
+      "sourcePages": [
+        "https://apexgetsitdone.com/",
+        "https://apexgetsitdone.com/concrete-coating/",
+        "https://apexgetsitdone.com/apex-privacy-policy/",
+        "https://apexgetsitdone.com/designer-pools/",
+        "https://apexgetsitdone.com/terms-and-conditions/",
+        "https://apexgetsitdone.com/design-and-renovation/",
+        "https://apexgetsitdone.com/about-apex/"
+      ],
+      "sha256": "e102ca3d54029c6cce5c5579f0d0b83b57bfe55aeabd3ce5c52faf7a8d8f060b",
+      "width": 270,
+      "height": 270,
+      "bytes": 10582,
+      "classification": "brand or supporting image",
+      "thumbnail": false,
+      "variants": []
+    },
+    {
+      "name": "Apex-Charcoal-Lion-Face.png",
+      "url": "https://apexgetsitdone.com/snapshot/media/uploads/2022/04/Apex-Charcoal-Lion-Face.png",
+      "sourcePages": [
+        "https://apexgetsitdone.com/",
+        "https://apexgetsitdone.com/concrete-coating/",
+        "https://apexgetsitdone.com/designer-pools/",
+        "https://apexgetsitdone.com/design-and-renovation/",
+        "https://apexgetsitdone.com/about-apex/"
+      ],
+      "sha256": "0755051e4b347528fcabca6e259f55e672967cf521c427018141df110c025e13",
+      "width": 270,
+      "height": 270,
+      "bytes": 3702,
+      "classification": "brand or supporting image",
+      "thumbnail": false,
+      "variants": []
+    },
+    {
+      "name": "ApexJob-R2-1-460x295.jpg",
+      "url": "https://apexgetsitdone.com/snapshot/media/uploads/2022/08/ApexJob-R2-1-460x295.jpg",
+      "sourcePages": [
+        "https://apexgetsitdone.com/",
+        "https://apexgetsitdone.com/concrete-coating/"
+      ],
+      "sha256": "838b10f2f6365a636bf4082aa0a4be97ccdadfc8a1499b487ab536aa399c18c7",
+      "width": 460,
+      "height": 295,
+      "bytes": 30929,
+      "classification": "APEX project image published in source gallery",
+      "thumbnail": true,
+      "variants": []
+    },
+    {
+      "name": "ApexJob-R2-1.jpg",
+      "url": "https://apexgetsitdone.com/snapshot/media/uploads/2022/08/ApexJob-R2-1.jpg",
+      "sourcePages": [
+        "https://apexgetsitdone.com/",
+        "https://apexgetsitdone.com/concrete-coating/"
+      ],
+      "sha256": "814845977fd515c72fc46cdd6050c8469f98e7cd9e06bcbed95c6f5a5af83e11",
+      "width": 900,
+      "height": 1200,
+      "bytes": 185868,
+      "classification": "APEX project image published in source gallery",
+      "thumbnail": false,
+      "variants": [
+        {
+          "width": 480,
+          "src": "/images/projects/apexjob-r2-1-480.webp",
+          "bytes": 78372
+        },
+        {
+          "width": 800,
+          "src": "/images/projects/apexjob-r2-1-800.webp",
+          "bytes": 208882
+        },
+        {
+          "width": 900,
+          "src": "/images/projects/apexjob-r2-1-900.webp",
+          "bytes": 253716
+        }
+      ]
+    },
+    {
+      "name": "ApexDPv1-460x295.jpg",
+      "url": "https://apexgetsitdone.com/snapshot/media/uploads/2024/09/ApexDPv1-460x295.jpg",
+      "sourcePages": [
+        "https://apexgetsitdone.com/",
+        "https://apexgetsitdone.com/designer-pools/"
+      ],
+      "sha256": "32645a2ea9471680bb3881a0fa03fdfcfd84f56019b2131eb76077aa7f1c0788",
+      "width": 460,
+      "height": 295,
+      "bytes": 22496,
+      "classification": "APEX project image published in source gallery",
+      "thumbnail": true,
+      "variants": []
+    },
+    {
+      "name": "ApexDPv1.jpg",
+      "url": "https://apexgetsitdone.com/snapshot/media/uploads/2024/09/ApexDPv1.jpg",
+      "sourcePages": [
+        "https://apexgetsitdone.com/",
+        "https://apexgetsitdone.com/designer-pools/"
+      ],
+      "sha256": "fc45350c950570d4e4f1473e49ff3e441d80bfee24f94e95008ebb314c1390e4",
+      "width": 1200,
+      "height": 1600,
+      "bytes": 152123,
+      "classification": "APEX project image published in source gallery",
+      "thumbnail": false,
+      "variants": [
+        {
+          "width": 480,
+          "src": "/images/projects/apexdpv1-480.webp",
+          "bytes": 17302
+        },
+        {
+          "width": 800,
+          "src": "/images/projects/apexdpv1-800.webp",
+          "bytes": 38834
+        },
+        {
+          "width": 1200,
+          "src": "/images/projects/apexdpv1-1200.webp",
+          "bytes": 74414
+        }
+      ]
+    },
+    {
+      "name": "Apex-dr-laundryroom-460x295.jpg",
+      "url": "https://apexgetsitdone.com/snapshot/media/uploads/2024/09/Apex-dr-laundryroom-460x295.jpg",
+      "sourcePages": [
+        "https://apexgetsitdone.com/",
+        "https://apexgetsitdone.com/design-and-renovation/"
+      ],
+      "sha256": "35d130181e47e7e298d38477d474dc82df81912e872e8a2721df25c5e5865d5e",
+      "width": 460,
+      "height": 295,
+      "bytes": 20085,
+      "classification": "APEX project image published in source gallery",
+      "thumbnail": true,
+      "variants": []
+    },
+    {
+      "name": "Apex-dr-laundryroom.jpg",
+      "url": "https://apexgetsitdone.com/snapshot/media/uploads/2024/09/Apex-dr-laundryroom.jpg",
+      "sourcePages": [
+        "https://apexgetsitdone.com/",
+        "https://apexgetsitdone.com/design-and-renovation/"
+      ],
+      "sha256": "ab00a9e0b27d0873df8a6d66851db0731a32fa8f0716a780730afe0835f1b519",
+      "width": 1400,
+      "height": 1867,
+      "bytes": 181253,
+      "classification": "APEX project image published in source gallery",
+      "thumbnail": false,
+      "variants": [
+        {
+          "width": 480,
+          "src": "/images/projects/apex-dr-laundryroom-480.webp",
+          "bytes": 34422
+        },
+        {
+          "width": 800,
+          "src": "/images/projects/apex-dr-laundryroom-800.webp",
+          "bytes": 68966
+        },
+        {
+          "width": 1400,
+          "src": "/images/projects/apex-dr-laundryroom-1400.webp",
+          "bytes": 142166
+        }
+      ]
+    },
+    {
+      "name": "Apex-dr-bathroom-460x295.jpg",
+      "url": "https://apexgetsitdone.com/snapshot/media/uploads/2024/09/Apex-dr-bathroom-460x295.jpg",
+      "sourcePages": [
+        "https://apexgetsitdone.com/",
+        "https://apexgetsitdone.com/design-and-renovation/"
+      ],
+      "sha256": "c16bd5f907e328239ea7ac52f418dc0f1ef918605977ddc9b53a4fd4e062b55d",
+      "width": 460,
+      "height": 295,
+      "bytes": 23427,
+      "classification": "APEX project image published in source gallery",
+      "thumbnail": true,
+      "variants": []
+    },
+    {
+      "name": "Apex-dr-bathroom.jpg",
+      "url": "https://apexgetsitdone.com/snapshot/media/uploads/2024/09/Apex-dr-bathroom.jpg",
+      "sourcePages": [
+        "https://apexgetsitdone.com/",
+        "https://apexgetsitdone.com/design-and-renovation/"
+      ],
+      "sha256": "a3f2076b8ab9b3d0e80419beb0cac32dc281edcd664407b1c7774439f760eb30",
+      "width": 1400,
+      "height": 1867,
+      "bytes": 202588,
+      "classification": "APEX project image published in source gallery",
+      "thumbnail": false,
+      "variants": [
+        {
+          "width": 480,
+          "src": "/images/projects/apex-dr-bathroom-480.webp",
+          "bytes": 30710
+        },
+        {
+          "width": 800,
+          "src": "/images/projects/apex-dr-bathroom-800.webp",
+          "bytes": 71726
+        },
+        {
+          "width": 1400,
+          "src": "/images/projects/apex-dr-bathroom-1400.webp",
+          "bytes": 173354
+        }
+      ]
+    },
+    {
+      "name": "ApexJob-R2-5-460x295.jpg",
+      "url": "https://apexgetsitdone.com/snapshot/media/uploads/2022/08/ApexJob-R2-5-460x295.jpg",
+      "sourcePages": [
+        "https://apexgetsitdone.com/",
+        "https://apexgetsitdone.com/concrete-coating/"
+      ],
+      "sha256": "306c3ed46b949516a5870a2e1ca73f1faacdac58841be3d416edab63d411b327",
+      "width": 460,
+      "height": 295,
+      "bytes": 29528,
+      "classification": "APEX project image published in source gallery",
+      "thumbnail": true,
+      "variants": []
+    },
+    {
+      "name": "ApexJob-R2-5.jpg",
+      "url": "https://apexgetsitdone.com/snapshot/media/uploads/2022/08/ApexJob-R2-5.jpg",
+      "sourcePages": [
+        "https://apexgetsitdone.com/",
+        "https://apexgetsitdone.com/concrete-coating/"
+      ],
+      "sha256": "8641deec7635a2d89af51e9fc46d7ac57bd854b519274491c44b0a4261f0253a",
+      "width": 900,
+      "height": 1200,
+      "bytes": 205780,
+      "classification": "APEX project image published in source gallery",
+      "thumbnail": false,
+      "variants": [
+        {
+          "width": 480,
+          "src": "/images/projects/apexjob-r2-5-480.webp",
+          "bytes": 86618
+        },
+        {
+          "width": 800,
+          "src": "/images/projects/apexjob-r2-5-800.webp",
+          "bytes": 240300
+        },
+        {
+          "width": 900,
+          "src": "/images/projects/apexjob-r2-5-900.webp",
+          "bytes": 289320
+        }
+      ]
+    },
+    {
+      "name": "ApexDPv2-460x295.jpg",
+      "url": "https://apexgetsitdone.com/snapshot/media/uploads/2024/09/ApexDPv2-460x295.jpg",
+      "sourcePages": [
+        "https://apexgetsitdone.com/"
+      ],
+      "sha256": "8052014a0f2d8bdedb67febb53d3bd9ce55deaf6bf95b01fc5d600ffc0db0170",
+      "width": 460,
+      "height": 295,
+      "bytes": 34134,
+      "classification": "APEX project image published in source gallery",
+      "thumbnail": true,
+      "variants": []
+    },
+    {
+      "name": "ApexDPv2.jpg",
+      "url": "https://apexgetsitdone.com/snapshot/media/uploads/2024/09/ApexDPv2.jpg",
+      "sourcePages": [
+        "https://apexgetsitdone.com/"
+      ],
+      "sha256": "48998be3b8c0e193550851161ffb5b79c41fb825956fcb72a0202c378d7dfc74",
+      "width": 1200,
+      "height": 900,
+      "bytes": 221203,
+      "classification": "APEX project image published in source gallery",
+      "thumbnail": false,
+      "variants": [
+        {
+          "width": 480,
+          "src": "/images/projects/apexdpv2-480.webp",
+          "bytes": 27888
+        },
+        {
+          "width": 800,
+          "src": "/images/projects/apexdpv2-800.webp",
+          "bytes": 69266
+        },
+        {
+          "width": 1200,
+          "src": "/images/projects/apexdpv2-1200.webp",
+          "bytes": 139702
+        }
+      ]
+    },
+    {
+      "name": "Travis-1.jpg",
+      "url": "https://apexgetsitdone.com/snapshot/media/uploads/2024/10/Travis-1.jpg",
+      "sourcePages": [
+        "https://apexgetsitdone.com/",
+        "https://apexgetsitdone.com/about-apex/"
+      ],
+      "sha256": "532c92731f725e51e6c59571359500be75ad34dbe4eb67111592eac613c8a858",
+      "width": 1080,
+      "height": 1080,
+      "bytes": 287234,
+      "classification": "brand or supporting image",
+      "thumbnail": false,
+      "variants": []
+    },
+    {
+      "name": "ApexJob-R2-6.jpg",
+      "url": "https://apexgetsitdone.com/snapshot/media/uploads/2022/08/ApexJob-R2-6.jpg",
+      "sourcePages": [
+        "https://apexgetsitdone.com/",
+        "https://apexgetsitdone.com/concrete-coating/"
+      ],
+      "sha256": "c71cc238a48e55f41517dbacfc36252d75592824c87df44dd3fe025cab1b4e4f",
+      "width": 900,
+      "height": 1200,
+      "bytes": 251452,
+      "classification": "APEX project image published in source gallery",
+      "thumbnail": false,
+      "variants": [
+        {
+          "width": 480,
+          "src": "/images/projects/apexjob-r2-6-480.webp",
+          "bytes": 107120
+        },
+        {
+          "width": 800,
+          "src": "/images/projects/apexjob-r2-6-800.webp",
+          "bytes": 281180
+        },
+        {
+          "width": 900,
+          "src": "/images/projects/apexjob-r2-6-900.webp",
+          "bytes": 336376
+        }
+      ]
+    },
+    {
+      "name": "ApexDPv3.jpg",
+      "url": "https://apexgetsitdone.com/snapshot/media/uploads/2024/09/ApexDPv3.jpg",
+      "sourcePages": [
+        "https://apexgetsitdone.com/",
+        "https://apexgetsitdone.com/designer-pools/"
+      ],
+      "sha256": "a78b2715a40191103219fa4c308711e831d653a8dad88245d4ae5e736440bbee",
+      "width": 1200,
+      "height": 900,
+      "bytes": 243271,
+      "classification": "APEX project image published in source gallery",
+      "thumbnail": false,
+      "variants": [
+        {
+          "width": 480,
+          "src": "/images/projects/apexdpv3-480.webp",
+          "bytes": 30462
+        },
+        {
+          "width": 800,
+          "src": "/images/projects/apexdpv3-800.webp",
+          "bytes": 79160
+        },
+        {
+          "width": 1200,
+          "src": "/images/projects/apexdpv3-1200.webp",
+          "bytes": 167996
+        }
+      ]
+    },
+    {
+      "name": "Lyon-Financial.png",
+      "url": "https://apexgetsitdone.com/snapshot/media/uploads/2024/09/Lyon-Financial.png",
+      "sourcePages": [
+        "https://apexgetsitdone.com/",
+        "https://apexgetsitdone.com/concrete-coating/",
+        "https://apexgetsitdone.com/apex-privacy-policy/",
+        "https://apexgetsitdone.com/designer-pools/",
+        "https://apexgetsitdone.com/terms-and-conditions/",
+        "https://apexgetsitdone.com/design-and-renovation/",
+        "https://apexgetsitdone.com/about-apex/"
+      ],
+      "sha256": "008a6d3551dfaeb8a3ee8a846303e81a9b1a3acefff76575a01ac2d21a4d609f",
+      "width": 243,
+      "height": 66,
+      "bytes": 2058,
+      "classification": "brand or supporting image",
+      "thumbnail": false,
+      "variants": []
+    },
+    {
+      "name": "Apex-Concrete-Coating-V2.png",
+      "url": "https://apexgetsitdone.com/snapshot/media/uploads/2024/10/Apex-Concrete-Coating-V2.png",
+      "sourcePages": [
+        "https://apexgetsitdone.com/",
+        "https://apexgetsitdone.com/concrete-coating/",
+        "https://apexgetsitdone.com/apex-privacy-policy/",
+        "https://apexgetsitdone.com/designer-pools/",
+        "https://apexgetsitdone.com/terms-and-conditions/",
+        "https://apexgetsitdone.com/design-and-renovation/",
+        "https://apexgetsitdone.com/about-apex/"
+      ],
+      "sha256": "ddc0b1699206723d77e360ebc2d6f9e537b1263f43eabadcb3a384745e30daba",
+      "width": 801,
+      "height": 229,
+      "bytes": 14186,
+      "classification": "brand or supporting image",
+      "thumbnail": false,
+      "variants": []
+    },
+    {
+      "name": "Apex-Design-Reno-V2.png",
+      "url": "https://apexgetsitdone.com/snapshot/media/uploads/2024/10/Apex-Design-Reno-V2.png",
+      "sourcePages": [
+        "https://apexgetsitdone.com/",
+        "https://apexgetsitdone.com/concrete-coating/",
+        "https://apexgetsitdone.com/apex-privacy-policy/",
+        "https://apexgetsitdone.com/designer-pools/",
+        "https://apexgetsitdone.com/terms-and-conditions/",
+        "https://apexgetsitdone.com/design-and-renovation/",
+        "https://apexgetsitdone.com/about-apex/"
+      ],
+      "sha256": "b3673d905a7f35d0c329648cd7c900655269055f6c68aac3dfbaad21823c92f7",
+      "width": 801,
+      "height": 229,
+      "bytes": 15451,
+      "classification": "brand or supporting image",
+      "thumbnail": false,
+      "variants": []
+    },
+    {
+      "name": "Apex-Designer-Pools-V2.png",
+      "url": "https://apexgetsitdone.com/snapshot/media/uploads/2024/10/Apex-Designer-Pools-V2.png",
+      "sourcePages": [
+        "https://apexgetsitdone.com/",
+        "https://apexgetsitdone.com/concrete-coating/",
+        "https://apexgetsitdone.com/apex-privacy-policy/",
+        "https://apexgetsitdone.com/designer-pools/",
+        "https://apexgetsitdone.com/terms-and-conditions/",
+        "https://apexgetsitdone.com/design-and-renovation/",
+        "https://apexgetsitdone.com/about-apex/"
+      ],
+      "sha256": "be50b6be3d68ad8bdf1f3df1f0a1420d87050bc2e880869c039b5daf5ed452f9",
+      "width": 801,
+      "height": 229,
+      "bytes": 14028,
+      "classification": "brand or supporting image",
+      "thumbnail": false,
+      "variants": []
+    },
+    {
+      "name": "Before-1-DT.jpg",
+      "url": "https://apexgetsitdone.com/snapshot/media/uploads/2022/05/Before-1-DT.jpg",
+      "sourcePages": [
+        "https://apexgetsitdone.com/concrete-coating/"
+      ],
+      "sha256": "3d2e76c50a80f0f3b8f88cadc9d2034b991717b8ffc664c30101e6c2c659ada3",
+      "width": 1800,
+      "height": 860,
+      "bytes": 103324,
+      "classification": "APEX project image published in source gallery",
+      "thumbnail": false,
+      "variants": [
+        {
+          "width": 480,
+          "src": "/images/projects/before-1-dt-480.webp",
+          "bytes": 7244
+        },
+        {
+          "width": 800,
+          "src": "/images/projects/before-1-dt-800.webp",
+          "bytes": 20712
+        },
+        {
+          "width": 1440,
+          "src": "/images/projects/before-1-dt-1440.webp",
+          "bytes": 63130
+        }
+      ]
+    },
+    {
+      "name": "After-1-DT.jpg",
+      "url": "https://apexgetsitdone.com/snapshot/media/uploads/2022/05/After-1-DT.jpg",
+      "sourcePages": [
+        "https://apexgetsitdone.com/concrete-coating/"
+      ],
+      "sha256": "31f4f6a95c2502bccf7f6204f47e4ce0f046dcf7317f9b51f7b590305ce0f725",
+      "width": 1800,
+      "height": 860,
+      "bytes": 361229,
+      "classification": "APEX project image published in source gallery",
+      "thumbnail": false,
+      "variants": [
+        {
+          "width": 480,
+          "src": "/images/projects/after-1-dt-480.webp",
+          "bytes": 26702
+        },
+        {
+          "width": 800,
+          "src": "/images/projects/after-1-dt-800.webp",
+          "bytes": 89202
+        },
+        {
+          "width": 1440,
+          "src": "/images/projects/after-1-dt-1440.webp",
+          "bytes": 298704
+        }
+      ]
+    },
+    {
+      "name": "Before-1-Mobile.jpg",
+      "url": "https://apexgetsitdone.com/snapshot/media/uploads/2022/05/Before-1-Mobile.jpg",
+      "sourcePages": [
+        "https://apexgetsitdone.com/concrete-coating/"
+      ],
+      "sha256": "b2b45332621052142af60ee8cd2facd6b04f07ef773b0002da648a6d83fbee03",
+      "width": 1300,
+      "height": 1300,
+      "bytes": 127578,
+      "classification": "APEX project image published in source gallery",
+      "thumbnail": false,
+      "variants": [
+        {
+          "width": 480,
+          "src": "/images/projects/before-1-mobile-480.webp",
+          "bytes": 18184
+        },
+        {
+          "width": 800,
+          "src": "/images/projects/before-1-mobile-800.webp",
+          "bytes": 51888
+        },
+        {
+          "width": 1300,
+          "src": "/images/projects/before-1-mobile-1300.webp",
+          "bytes": 112978
+        }
+      ]
+    },
+    {
+      "name": "After-1-Mobile.jpg",
+      "url": "https://apexgetsitdone.com/snapshot/media/uploads/2022/05/After-1-Mobile.jpg",
+      "sourcePages": [
+        "https://apexgetsitdone.com/concrete-coating/"
+      ],
+      "sha256": "a33dd6463c5cc622b1c5be826bea63c6d53a91c03b53d3de8bd7b4d034802fca",
+      "width": 1300,
+      "height": 1300,
+      "bytes": 414194,
+      "classification": "APEX project image published in source gallery",
+      "thumbnail": false,
+      "variants": [
+        {
+          "width": 480,
+          "src": "/images/projects/after-1-mobile-480.webp",
+          "bytes": 79342
+        },
+        {
+          "width": 800,
+          "src": "/images/projects/after-1-mobile-800.webp",
+          "bytes": 223186
+        },
+        {
+          "width": 1300,
+          "src": "/images/projects/after-1-mobile-1300.webp",
+          "bytes": 483378
+        }
+      ]
+    },
+    {
+      "name": "ApexJob-R2-2-460x295.jpg",
+      "url": "https://apexgetsitdone.com/snapshot/media/uploads/2022/08/ApexJob-R2-2-460x295.jpg",
+      "sourcePages": [
+        "https://apexgetsitdone.com/concrete-coating/"
+      ],
+      "sha256": "1e637eed621cd07345352c08b730e81e8d7f76bbda0f579e53a3b337d14b2163",
+      "width": 460,
+      "height": 295,
+      "bytes": 47037,
+      "classification": "APEX project image published in source gallery",
+      "thumbnail": true,
+      "variants": []
+    },
+    {
+      "name": "ApexJob-R2-2.jpg",
+      "url": "https://apexgetsitdone.com/snapshot/media/uploads/2022/08/ApexJob-R2-2.jpg",
+      "sourcePages": [
+        "https://apexgetsitdone.com/concrete-coating/"
+      ],
+      "sha256": "c1f699c7baf54d0a9821c03fc2567ce80fcce67935734fb5510fe07d686a0425",
+      "width": 900,
+      "height": 1200,
+      "bytes": 259032,
+      "classification": "APEX project image published in source gallery",
+      "thumbnail": false,
+      "variants": [
+        {
+          "width": 480,
+          "src": "/images/projects/apexjob-r2-2-480.webp",
+          "bytes": 111958
+        },
+        {
+          "width": 800,
+          "src": "/images/projects/apexjob-r2-2-800.webp",
+          "bytes": 292572
+        },
+        {
+          "width": 900,
+          "src": "/images/projects/apexjob-r2-2-900.webp",
+          "bytes": 349124
+        }
+      ]
+    },
+    {
+      "name": "ApexJob-R2-3-460x295.jpg",
+      "url": "https://apexgetsitdone.com/snapshot/media/uploads/2022/08/ApexJob-R2-3-460x295.jpg",
+      "sourcePages": [
+        "https://apexgetsitdone.com/concrete-coating/"
+      ],
+      "sha256": "288eccafe6e67aecf6e24c28d27a21141a40790d77dad0d80f0c6687f5bf71d0",
+      "width": 460,
+      "height": 295,
+      "bytes": 29556,
+      "classification": "APEX project image published in source gallery",
+      "thumbnail": true,
+      "variants": []
+    },
+    {
+      "name": "ApexJob-R2-3.jpg",
+      "url": "https://apexgetsitdone.com/snapshot/media/uploads/2022/08/ApexJob-R2-3.jpg",
+      "sourcePages": [
+        "https://apexgetsitdone.com/concrete-coating/"
+      ],
+      "sha256": "6340c0121aed989c21944f92a9320f90ba1b4a1e6afa2198bf867b182302f0bb",
+      "width": 900,
+      "height": 1200,
+      "bytes": 150177,
+      "classification": "APEX project image published in source gallery",
+      "thumbnail": false,
+      "variants": [
+        {
+          "width": 480,
+          "src": "/images/projects/apexjob-r2-3-480.webp",
+          "bytes": 68912
+        },
+        {
+          "width": 800,
+          "src": "/images/projects/apexjob-r2-3-800.webp",
+          "bytes": 159454
+        },
+        {
+          "width": 900,
+          "src": "/images/projects/apexjob-r2-3-900.webp",
+          "bytes": 185118
+        }
+      ]
+    },
+    {
+      "name": "ApexJob-R2-4-460x295.jpg",
+      "url": "https://apexgetsitdone.com/snapshot/media/uploads/2022/08/ApexJob-R2-4-460x295.jpg",
+      "sourcePages": [
+        "https://apexgetsitdone.com/concrete-coating/"
+      ],
+      "sha256": "b913e207edaeaa061dde92691bd21e880a41fd9cfc21e23a06d0ffca0f2e57f9",
+      "width": 460,
+      "height": 295,
+      "bytes": 25009,
+      "classification": "APEX project image published in source gallery",
+      "thumbnail": true,
+      "variants": []
+    },
+    {
+      "name": "ApexJob-R2-4.jpg",
+      "url": "https://apexgetsitdone.com/snapshot/media/uploads/2022/08/ApexJob-R2-4.jpg",
+      "sourcePages": [
+        "https://apexgetsitdone.com/concrete-coating/"
+      ],
+      "sha256": "7056d94a7535c5e2e1f0dea9dadc35c777be5a146641d59148f4a489c4772f97",
+      "width": 900,
+      "height": 1200,
+      "bytes": 173607,
+      "classification": "APEX project image published in source gallery",
+      "thumbnail": false,
+      "variants": [
+        {
+          "width": 480,
+          "src": "/images/projects/apexjob-r2-4-480.webp",
+          "bytes": 67384
+        },
+        {
+          "width": 800,
+          "src": "/images/projects/apexjob-r2-4-800.webp",
+          "bytes": 193270
+        },
+        {
+          "width": 900,
+          "src": "/images/projects/apexjob-r2-4-900.webp",
+          "bytes": 233830
+        }
+      ]
+    },
+    {
+      "name": "ApexJob-R2-6-460x295.jpg",
+      "url": "https://apexgetsitdone.com/snapshot/media/uploads/2022/08/ApexJob-R2-6-460x295.jpg",
+      "sourcePages": [
+        "https://apexgetsitdone.com/concrete-coating/"
+      ],
+      "sha256": "b89f3a0afbdfd5adf9469046378e17c1422926e1ec50dedbb1a00a82a942b22b",
+      "width": 460,
+      "height": 295,
+      "bytes": 39521,
+      "classification": "APEX project image published in source gallery",
+      "thumbnail": true,
+      "variants": []
+    },
+    {
+      "name": "ApexDPv4.jpg",
+      "url": "https://apexgetsitdone.com/snapshot/media/uploads/2024/09/ApexDPv4.jpg",
+      "sourcePages": [
+        "https://apexgetsitdone.com/designer-pools/",
+        "https://apexgetsitdone.com/apex-designer-pools-landing-page/"
+      ],
+      "sha256": "cdb260186c3db96ff6341504f63c67167b95ace3a5d7f1be504df6d9e6d212ac",
+      "width": 1200,
+      "height": 900,
+      "bytes": 261546,
+      "classification": "APEX project image published in source gallery",
+      "thumbnail": false,
+      "variants": [
+        {
+          "width": 480,
+          "src": "/images/projects/apexdpv4-480.webp",
+          "bytes": 33606
+        },
+        {
+          "width": 800,
+          "src": "/images/projects/apexdpv4-800.webp",
+          "bytes": 85424
+        },
+        {
+          "width": 1200,
+          "src": "/images/projects/apexdpv4-1200.webp",
+          "bytes": 179854
+        }
+      ]
+    },
+    {
+      "name": "ApexDPv3-460x295.jpg",
+      "url": "https://apexgetsitdone.com/snapshot/media/uploads/2024/09/ApexDPv3-460x295.jpg",
+      "sourcePages": [
+        "https://apexgetsitdone.com/designer-pools/"
+      ],
+      "sha256": "a8e75e7f4d76d56a2c22c8124016a9aa0453a626c937031395242a06d493fe92",
+      "width": 460,
+      "height": 295,
+      "bytes": 34954,
+      "classification": "APEX project image published in source gallery",
+      "thumbnail": true,
+      "variants": []
+    },
+    {
+      "name": "ApexDPv5-460x295.jpg",
+      "url": "https://apexgetsitdone.com/snapshot/media/uploads/2024/09/ApexDPv5-460x295.jpg",
+      "sourcePages": [
+        "https://apexgetsitdone.com/designer-pools/"
+      ],
+      "sha256": "9ccb82aa7cf1f1a556f8a7b852e15f255350eb0df680dff79ce8392f312f89b9",
+      "width": 460,
+      "height": 295,
+      "bytes": 38559,
+      "classification": "APEX project image published in source gallery",
+      "thumbnail": true,
+      "variants": []
+    },
+    {
+      "name": "ApexDPv5.jpg",
+      "url": "https://apexgetsitdone.com/snapshot/media/uploads/2024/09/ApexDPv5.jpg",
+      "sourcePages": [
+        "https://apexgetsitdone.com/designer-pools/",
+        "https://apexgetsitdone.com/apex-designer-pools-landing-page/"
+      ],
+      "sha256": "c151cb7f259958fe2b18ee22c043be33ceae5c9d81531e7cb50ddfcd746d6605",
+      "width": 1200,
+      "height": 900,
+      "bytes": 347521,
+      "classification": "APEX project image published in source gallery",
+      "thumbnail": false,
+      "variants": [
+        {
+          "width": 480,
+          "src": "/images/projects/apexdpv5-480.webp",
+          "bytes": 43026
+        },
+        {
+          "width": 800,
+          "src": "/images/projects/apexdpv5-800.webp",
+          "bytes": 122142
+        },
+        {
+          "width": 1200,
+          "src": "/images/projects/apexdpv5-1200.webp",
+          "bytes": 273096
+        }
+      ]
+    },
+    {
+      "name": "Apex-dr-laundryroom7-460x295.jpg",
+      "url": "https://apexgetsitdone.com/snapshot/media/uploads/2024/09/Apex-dr-laundryroom7-460x295.jpg",
+      "sourcePages": [
+        "https://apexgetsitdone.com/design-and-renovation/"
+      ],
+      "sha256": "1bbbceaddca1dfce354c147c5bc379f393020e5c13057186a4ad4680b6e776da",
+      "width": 460,
+      "height": 295,
+      "bytes": 23066,
+      "classification": "APEX project image published in source gallery",
+      "thumbnail": true,
+      "variants": []
+    },
+    {
+      "name": "Apex-dr-laundryroom7.jpg",
+      "url": "https://apexgetsitdone.com/snapshot/media/uploads/2024/09/Apex-dr-laundryroom7.jpg",
+      "sourcePages": [
+        "https://apexgetsitdone.com/design-and-renovation/"
+      ],
+      "sha256": "9d310eb7e0bfdff004bd147c1283c2cc90390a30d4c5d75279c5322750a334c5",
+      "width": 1050,
+      "height": 1400,
+      "bytes": 125395,
+      "classification": "APEX project image published in source gallery",
+      "thumbnail": false,
+      "variants": [
+        {
+          "width": 480,
+          "src": "/images/projects/apex-dr-laundryroom7-480.webp",
+          "bytes": 28248
+        },
+        {
+          "width": 800,
+          "src": "/images/projects/apex-dr-laundryroom7-800.webp",
+          "bytes": 67918
+        },
+        {
+          "width": 1050,
+          "src": "/images/projects/apex-dr-laundryroom7-1050.webp",
+          "bytes": 103624
+        }
+      ]
+    }
+  ]
+}

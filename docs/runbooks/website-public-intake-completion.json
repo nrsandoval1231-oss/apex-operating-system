@@ -1,0 +1,70 @@
+{
+  "work_item": "API001",
+  "base_sha": "f4421197de580028bfe53f9c7d50776b20a6a52b",
+  "branch": "codex/apex-website-2-20261024",
+  "result": "implemented; ready for controller review",
+  "changed_files": [
+    "apps/gate-api/src/publicLeads.ts",
+    "apps/gate-api/src/publicLeads.test.ts",
+    "apps/gate-api/src/server.ts",
+    "apps/gate-api/src/main.ts",
+    "deploy/cloudflare/apex-os/src/index.ts",
+    "docs/runbooks/website-public-intake.md",
+    "docs/runbooks/website-public-intake-completion.json"
+  ],
+  "validation": [
+    {
+      "command": "pnpm exec vitest run apps/gate-api/src/publicLeads.test.ts --maxWorkers=1 --no-file-parallelism",
+      "exit_code": 0,
+      "result": "8 tests passed; PGlite used a temporary on-disk database"
+    },
+    {
+      "command": "pnpm --filter @apex/gate-api build",
+      "exit_code": 0,
+      "result": "TypeScript build passed"
+    }
+  ],
+  "fixture_validation": [
+    {
+      "command": "node tools/website-intake-fixture.mjs start",
+      "result": "Started on 127.0.0.1:4411 using var/website-review-db and the four configured review origins."
+    },
+    {
+      "check": "GET /health returned 404; OPTIONS on the public intake path returned 204 with the exact configured origin.",
+      "result": "passed"
+    },
+    {
+      "command": "node tools/website-intake-fixture.mjs receipt apex_1721925123_a1b9",
+      "result": "Returned found:false without exposing lead data. Runner was stopped before offline receipt access."
+    },
+    {
+      "command": "node --check tools/website-intake-fixture.mjs",
+      "result": "passed"
+    }
+  ],
+  "hosting_wrapper_update": {
+    "work_item": "APICONFIG",
+    "result": "optional APEX_PUBLIC_LEAD_INTAKE and APEX_PUBLIC_LEAD_ORIGINS are forwarded only when configured; main.ts remains responsible for strict value and origin validation",
+    "validation": "git diff --check passed; Wrangler dependencies are not installed in deploy/cloudflare/apex-os and were not installed for this task",
+    "external_configuration_changed": false
+  },
+  "repair_history": [
+    {
+      "attempt": 1,
+      "finding": "The race test initially generated a new submitted_at per request; the fixture correctly rejected changed content. The standalone runner then revealed that PGlite requires its parent directory to exist.",
+      "repair": "Reuse one captured request body in the race test and create the parent directory before opening the fixture database.",
+      "result": "resolved; concurrent test passes with one stored row and the runtime runner starts"
+    }
+  ],
+  "deployment_gates": [
+    "APEX_PUBLIC_LEAD_INTAKE must be explicitly enabled.",
+    "APEX_PUBLIC_LEAD_ORIGINS must contain the exact public origin.",
+    "Ingress must bypass Access only for /api/public/v1/leads, including OPTIONS.",
+    "A distributed edge rate limit is required before public launch; this process limiter keys only on the socket remote address."
+  ],
+  "unknown": [
+    "Hosting and ingress behavior has not been tested.",
+    "No production or staging database was accessed or modified.",
+    "No commit, push, merge, or deployment was performed."
+  ]
+}

@@ -40,7 +40,9 @@ if (preselect !== undefined && !isVertical(preselect)) {
   </script>
 )}
 <section id="quote">
+  <span id="contact" class="anchor-alias" aria-hidden="true"></span>
   <div class="wrap">
+    {site.env !== 'production' && <p class="preview-notice" role="note">Website preview — use test details only.</p>}
     <div class="sec-head">
       <p class="eyebrow">{sections.quote.eyebrow}</p>
       <h2>{heading ?? sections.quote.heading}</h2>
@@ -55,16 +57,12 @@ if (preselect !== undefined && !isVertical(preselect)) {
         phoneDisplay={site.phoneDisplay}
         phoneE164={site.phoneE164}
       />
-      <aside class="capture-side" aria-hidden="true">
-        <div class="capture capture-idle">
-          <div class="cap-top mono"><span class="dots"><i></i><i></i><i></i></span> apex — lead intake</div>
-          <div class="cap-body">
-            <p class="cap-empty mono">
-              &gt; ready when you are<span class="blink">_</span><br /><br />
-              Submit your request and our team will review it. Need help now? Give us a call.
-            </p>
-          </div>
-        </div>
+      <aside class="quote-help">
+        <p class="eyebrow">Prefer a conversation?</p>
+        <h3>Call our Lubbock team.</h3>
+        <p>Talk through your project directly with Apex.</p>
+        <a class="btn ghost" href={`tel:${site.phoneE164}`}>{site.phoneDisplay}</a>
+        <p class="quote-help-note">Apex serves customers in Lubbock, Texas.</p>
       </aside>
     </div>
   </div>
@@ -84,3 +82,9 @@ if (preselect !== undefined && !isVertical(preselect)) {
     });
   });
 </script>
+<style>
+  .anchor-alias{display:block;position:relative;top:-72px;visibility:hidden}
+  .preview-notice{padding:10px 14px;background:#65BC7B;color:#202820;font-weight:700;border-radius:4px}
+  .quote-help{padding:38px 26px;border-top:1px solid #626565;align-self:start}.quote-help h3{font-size:34px;color:white;margin:12px 0}.quote-help p{color:#e3e3e3}.quote-help .eyebrow{color:#A1CCCA}.quote-help .btn.ghost{background:#383838;color:#fff;border-color:#383838}.quote-help-note{margin-top:34px;font-size:14px}
+  @media(max-width:900px){.quote-help{padding:22px 0}}
+</style>

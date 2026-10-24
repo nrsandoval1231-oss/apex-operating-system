@@ -1,0 +1,23 @@
+{
+  "id": "WEB001",
+  "status": "source_complete_pending_integrated_review",
+  "scope": "Website 2 source, content, configuration, validation, legal copy and support routes. No deploy, merge, or real lead submission.",
+  "implementation": [
+    "Built photo-led home page, three primary division pages with compatibility routes, service/support pages, mobile call/quote bar, accessible three-step quote form, SEO/schema/sitemap and preview noindex.",
+    "Used owner-supplied official logo and local project photography with responsive WebP and JPEG fallback. Preserved pool maintenance compatibility.",
+    "Copied current privacy, terms and About source text from the 2026-10-24 crawl; kept the earlier privacy policy at /legacy-privacy. Replaced testimony data with all eight exact source quotes and original Home Owner attribution, without ratings.",
+    "Updated host redirects, source documentation, build checks and preview/production preflight. Retired tests tied to the superseded cinematic/stock-photo design and recorded supersession in WEBTEST-COMPLETION.json."
+  ],
+  "validation": [
+    { "command": "npm run check", "result": "PASS; 0 errors, 0 warnings, 2 informational hints (deprecated React FormEvent type)." },
+    { "command": "npm run build", "result": "PASS; 16 static pages built." },
+    { "command": "npm run validate", "result": "PASS; typecheck, build, home copy and required routes checked." },
+    { "command": "$env:PUBLIC_LEAD_WEBHOOK_URL_TEST='https://example.test/leads'; npm run preflight", "result": "PASS for preview build; no production endpoint was used." },
+    { "command": "npm run test:unit", "result": "PASS; 2 tests." },
+    { "command": "pnpm --dir apps/website exec playwright test", "result": "PASS from website test packet; 37 passed, 1 skipped across Chromium and Pixel 7. Latest root-owned static accessibility/viewport sweep is still required after final source build." },
+    { "command": "pnpm --dir apps/website test:production", "result": "PASS from website test packet; 12 passed across Chromium and Pixel 7, with intercepted reserved endpoint." },
+    { "command": "npm run redirects:generate", "result": "PASS; emitted Netlify, Vercel and Apache redirect maps with canonical apexgetsitdone.com." },
+    { "command": "git diff --check", "result": "PASS; no whitespace errors." }
+  ],
+  "remaining": ["Root must rebuild and rerun integrated browser viewport/accessibility evidence on this final source candidate; staging API persistence proof and final cross-system review remain root-owned."]
+}
