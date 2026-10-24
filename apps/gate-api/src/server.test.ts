@@ -839,6 +839,25 @@ describe('Gate HTTP vertical slice', () => {
     expect(await ready.json()).toMatchObject({ status: 'degraded', database: false });
   });
 
+  it('serves app-base manifest and icons correctly from a nested project deep link', async () => {
+    const nested = await fetch(`${baseUrl}/app/projects/${ids.job}`);
+    expect(nested.status).toBe(200);
+    const html = await nested.text();
+    expect(html).toContain('href="/app/manifest.webmanifest"');
+    expect(html).toContain('href="/app/brand/apex-icon-180.png"');
+    const manifest = await fetch(`${baseUrl}/app/manifest.webmanifest`);
+    expect(manifest.status).toBe(200);
+    expect(manifest.headers.get('content-type')).toContain('application/manifest+json');
+    const metadata = await manifest.json() as { start_url: string; icons: { src: string }[] };
+    expect(new URL(metadata.start_url, manifest.url).pathname).toBe('/app/today');
+    for (const path of ['brand/apex-icon-180.png', ...metadata.icons.map(icon => icon.src)]) {
+      const image = await fetch(new URL(path, manifest.url));
+      expect(image.status).toBe(200);
+      expect(image.headers.get('content-type')).toBe('image/png');
+      expect(Buffer.from(await image.arrayBuffer()).subarray(0, 8).toString('hex')).toBe('89504e470d0a1a0a');
+    }
+  });
+
   it('requires authentication and idempotency headers, with staff UI under Apex OS', async () => {
     const health = await fetch(`${baseUrl}/health`);
     expect(health.status).toBe(200);

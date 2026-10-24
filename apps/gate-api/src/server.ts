@@ -108,6 +108,7 @@ const APP_CONTENT_TYPES: Record<string, string> = {
   '.svg': 'image/svg+xml',
   '.png': 'image/png',
   '.map': 'application/json; charset=utf-8',
+  '.webmanifest': 'application/manifest+json; charset=utf-8',
 };
 
 const appContentType = (file: string): string =>

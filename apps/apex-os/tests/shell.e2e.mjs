@@ -39,6 +39,31 @@ try {
   assert.equal(await page.locator('#quick-actions').count(),0);
   assert.equal(await quick.evaluate(el=>document.activeElement===el),true);
   await page.goto(`${baseURL}/projects/test-project`);
+  // Head assets must resolve from the app base even on a directly loaded nested route.
+  const headAssets = await page.locator('link[rel="manifest"], link[rel="apple-touch-icon"], link[rel="icon"], link[rel="mask-icon"]').evaluateAll(links => links.map(link => ({rel: link.rel, href: link.href})));
+  for (const asset of headAssets) {
+   const expected = asset.rel === 'manifest' ? 'manifest.webmanifest' : asset.rel === 'apple-touch-icon' ? 'brand/apex-icon-180.png' : 'favicon.svg';
+   assert.equal(asset.href, `${baseURL}/${expected}`, `${asset.rel} must resolve from app base`);
+   const response = await page.request.get(asset.href);
+   assert.equal(response.status(), 200);
+   if (asset.rel === 'manifest') {
+    assert.match(response.headers()['content-type'], /(?:manifest\+json|application\/json)/);
+    const manifest = await response.json();
+    assert.equal(new URL(manifest.start_url, asset.href).href, `${baseURL}/today`);
+    for (const icon of manifest.icons) {
+     const iconResponse = await page.request.get(new URL(icon.src, asset.href).href);
+     assert.equal(iconResponse.status(), 200);
+     assert.match(iconResponse.headers()['content-type'], /image\/png/);
+     assert.equal((await iconResponse.body()).subarray(0, 8).toString('hex'), '89504e470d0a1a0a');
+    }
+   } else if (asset.rel === 'apple-touch-icon') {
+    assert.match(response.headers()['content-type'], /image\/png/);
+    assert.equal((await response.body()).subarray(0, 8).toString('hex'), '89504e470d0a1a0a');
+   } else {
+    assert.match(response.headers()['content-type'], /image\/svg\+xml/);
+    assert.match(await response.text(), /<svg/);
+   }
+  }
   await page.getByRole('button',{name:'Open quick actions'}).click();
   const task=page.getByRole('link',{name:'Add Task',exact:true});
   assert.equal(await task.getAttribute('href'),'/app/checklist?action=add-task&project=test-project');
@@ -56,7 +81,7 @@ try {
   }
   assert.equal(errors.length,0,errors.join('\n'));
   await page.screenshot({path:`${screenshotDir}/shell-${viewport.width}.png`,fullPage:true});
-  checks.push(`${viewport.width}px: five routes, More tools, logo, action URL/project retention, Escape/focus, overflow, targets, no runtime errors passed`);
+  checks.push(`${viewport.width}px: five routes, nested-route manifest/icon URLs and real asset MIME/content, More tools, logo, action URL/project retention, Escape/focus, overflow, targets, no runtime errors passed`);
   await page.close();
  }
  const signed=await browser.newPage();
