@@ -13,9 +13,15 @@ import { z } from 'zod';
 
 class FakeStorage {
   private readonly entries = new Map<string, string>();
-  getItem(key: string): string | null { return this.entries.get(key) ?? null; }
-  setItem(key: string, value: string): void { this.entries.set(key, value); }
-  removeItem(key: string): void { this.entries.delete(key); }
+  getItem(key: string): string | null {
+    return this.entries.get(key) ?? null;
+  }
+  setItem(key: string, value: string): void {
+    this.entries.set(key, value);
+  }
+  removeItem(key: string): void {
+    this.entries.delete(key);
+  }
 }
 
 let sent: RequestInit & { headers: Record<string, string> };
@@ -29,7 +35,9 @@ beforeEach(() => {
   vi.stubGlobal('localStorage', new FakeStorage());
   vi.stubGlobal('sessionStorage', new FakeStorage());
   vi.stubGlobal('window', { addEventListener: () => {} });
-  vi.stubGlobal('crypto', { randomUUID: () => '11111111-2222-3333-4444-555555555555' });
+  vi.stubGlobal('crypto', {
+    randomUUID: () => '11111111-2222-3333-4444-555555555555',
+  });
   vi.stubGlobal('fetch', (_path: string, init: RequestInit) => {
     sent = init as typeof sent;
     return Promise.resolve({
@@ -45,12 +53,27 @@ afterEach(() => {
 });
 
 describe('apiSend', () => {
+  it('uses a caller intent key for recoverable retries', async () => {
+    const { apiSend } = await loadClient();
+    for (let attempt = 0; attempt < 2; attempt++) {
+      await apiSend('/api/tasks', z.object({ ok: z.boolean() }), {
+        method: 'POST',
+        body: { title: 'Call supplier' },
+        idempotencyKey: 'stable-intent-key',
+      });
+      expect(sent.headers['idempotency-key']).toBe('stable-intent-key');
+    }
+  });
   it('sends an idempotency key long enough for the API to accept', async () => {
     const { apiSend } = await loadClient();
-    await apiSend('/api/jobs/x/approved-takeoff', z.object({ ok: z.boolean() }), {
-      method: 'POST',
-      body: { a: 1 },
-    });
+    await apiSend(
+      '/api/jobs/x/approved-takeoff',
+      z.object({ ok: z.boolean() }),
+      {
+        method: 'POST',
+        body: { a: 1 },
+      },
+    );
 
     const key = sent.headers['idempotency-key'];
     expect(key).toBeDefined();
@@ -60,7 +83,10 @@ describe('apiSend', () => {
 
   it('still sends the body and content type', async () => {
     const { apiSend } = await loadClient();
-    await apiSend('/api/thing', z.object({ ok: z.boolean() }), { method: 'POST', body: { a: 1 } });
+    await apiSend('/api/thing', z.object({ ok: z.boolean() }), {
+      method: 'POST',
+      body: { a: 1 },
+    });
 
     expect(sent.headers['content-type']).toBe('application/json');
     expect(sent.body).toBe(JSON.stringify({ a: 1 }));
@@ -69,7 +95,39 @@ describe('apiSend', () => {
   /** A DELETE is a command too, and the same routes refuse it without a key. */
   it('sends one on DELETE as well', async () => {
     const { apiSend } = await loadClient();
-    await apiSend('/api/thing', z.object({ ok: z.boolean() }), { method: 'DELETE' });
-    expect((sent.headers['idempotency-key'] ?? '').length).toBeGreaterThanOrEqual(8);
+    await apiSend('/api/thing', z.object({ ok: z.boolean() }), {
+      method: 'DELETE',
+    });
+    expect(
+      (sent.headers['idempotency-key'] ?? '').length,
+    ).toBeGreaterThanOrEqual(8);
+  });
+});
+
+describe('XHR upload invalidation', () => {
+  it('clears shared pre-upload reads before notifying gallery subscribers', async () => {
+    const { apiGet, invalidateAndNotify } = await loadClient();
+    const pending: Array<(value: Response) => void> = [];
+    const fetcher = vi.fn(
+      () => new Promise<Response>((resolve) => pending.push(resolve)),
+    );
+    vi.stubGlobal('fetch', fetcher);
+    const schema = z.array(z.string());
+    const old = apiGet('/api/jobs/a/photos', schema);
+    const shared = apiGet('/api/jobs/a/photos', schema);
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    let refreshed: Promise<string[]> | undefined;
+    vi.stubGlobal('window', {
+      dispatchEvent: () => {
+        refreshed = apiGet('/api/jobs/a/photos', schema);
+      },
+    });
+    invalidateAndNotify();
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    pending[0]!({ ok: true, json: async () => [] } as Response);
+    pending[1]!({ ok: true, json: async () => ['confirmed'] } as Response);
+    expect(await old).toEqual([]);
+    expect(await shared).toEqual([]);
+    expect(await refreshed).toEqual(['confirmed']);
   });
 });

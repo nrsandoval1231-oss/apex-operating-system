@@ -149,3 +149,6 @@ export const ProjectPhaseTransitionSchema = z.strictObject({
   reason: z.string().min(1).max(2000).nullable(),
 });
 export type ProjectPhaseTransition = z.infer<typeof ProjectPhaseTransitionSchema>;
+
+/** Existing GET /api/jobs/:id/project/history omits its route-scoped Job ID. */
+export const ProjectPhaseHistorySchema = z.array(ProjectPhaseTransitionSchema.omit({ jobId: true }));

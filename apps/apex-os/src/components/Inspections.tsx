@@ -53,6 +53,7 @@ export default function Inspections({
   today,
   focus,
   readOnly,
+  anchorId = 'inspections',
 }: {
   jobId: string;
   query: Query<readonly JobInspection[]>;
@@ -61,6 +62,8 @@ export default function Inspections({
   /** Feed cards use this to land the operator at the resolving workflow. */
   focus?: string | null;
   readOnly: boolean;
+  /** Embedded views may omit an anchor so legacy operational links stay unique. */
+  anchorId?: string | null;
 }) {
   const [asking, setAsking] = useState<
     | { kind: 'request'; inspection: JobInspection }
@@ -84,8 +87,8 @@ export default function Inspections({
   }, []);
 
   useEffect(() => {
-    if (focus === 'inspections') document.getElementById('inspections')?.scrollIntoView({ block: 'start' });
-  }, [focus]);
+    if (focus === 'inspections' && anchorId) document.getElementById(anchorId)?.scrollIntoView({ block: 'start' });
+  }, [focus, anchorId]);
 
   const inspections = query.data ?? [];
   const outstanding = inspections.filter(
@@ -123,7 +126,7 @@ export default function Inspections({
 
   return (
     <>
-      <div className="section-rule" id="inspections">
+      <div className="section-rule" id={anchorId ?? undefined}>
         <h2>Inspections</h2>
         {outstanding.length > 0 && <span className="count">{outstanding.length} need calling in</span>}
       </div>

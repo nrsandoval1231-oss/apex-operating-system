@@ -1,8 +1,10 @@
 import { Routes, Route, Navigate } from 'react-router';
 import { lazy, Suspense } from 'react';
 import Layout from './components/Layout';
+import More from './pages/More';
 import Calendar from './pages/Calendar';
 import TodayFeed from './pages/TodayFeed';
+import ChecklistPage from './pages/Checklist';
 import Projects from './pages/Projects';
 import HistoricalProjects from './pages/HistoricalProjects';
 import ProjectDetail from './pages/ProjectDetail';
@@ -40,6 +42,8 @@ export default function App() {
           </Suspense>
         } />
         <Route path="today" element={<TodayFeed />} />
+        <Route path="checklist" element={<ChecklistPage />} />
+        <Route path="more" element={<More />} />
         <Route path="calendar" element={<Calendar />} />
         <Route path="projects" element={<Projects />} />
         <Route path="historical" element={<HistoricalProjects />} />

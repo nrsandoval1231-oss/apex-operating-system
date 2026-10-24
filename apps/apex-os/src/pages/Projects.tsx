@@ -1,80 +1,65 @@
-import { Link } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import { useJobs } from '../api/useJobs';
+import { useProjectWorkspace } from '../api/useProjectWorkspace';
+import ProjectList from '../components/ProjectList';
 import QueryState from '../components/QueryState';
-import {
-  GATE_STATUS_LABEL,
-  formatContract,
-  jobLocation,
-  jobTitle,
-  milestoneTitle,
-  shortId,
-} from '../lib/jobDisplay';
-
-/**
- * Every job, newest first. A schedule of work rather than a gallery of cards:
- * the phase, the milestone, and the contract value are what distinguish one
- * pool from another at a glance.
- */
+import '../components/ProjectWorkspace.css';
 export default function Projects() {
-  const { data, error, loading, reload } = useJobs('active');
-  const jobs = data ?? [];
-
+  const jobs = useJobs(),
+    metadata = useProjectWorkspace();
+  const [params, setParams] = useSearchParams();
+  const action = params.get('action');
   return (
-    <>
-      <header className="title-block">
-        <h1>Projects</h1>
-        {data !== null && (
-          <div className="stamp">
-            Active pools
-            <b>{jobs.length}</b>
-          </div>
-        )}
+    <div className="jobs-workspace">
+      <header className="workspace-greeting">
+        <div>
+          <h1>Jobs</h1>
+          <p>Your active project workspaces.</p>
+        </div>
       </header>
-
+      {(action === 'add-note' || action === 'add-photos') && (
+        <section className="project-chooser" aria-label="Choose a project">
+          <h2>Choose a project</h2>
+          <p>
+            {action === 'add-note'
+              ? 'Select a project for your note.'
+              : 'Select a project for photos.'}
+          </p>
+          {jobs.data
+            ?.filter((j) => !['closed', 'cancelled'].includes(j.status))
+            .map((j) => (
+              <Link
+                className="btn ghost"
+                key={j.jobId}
+                to={`/projects/${j.jobId}?action=${action}&project=${j.jobId}`}
+              >
+                {j.customerName ?? j.jobId}
+              </Link>
+            ))}
+          <button
+            className="btn ghost"
+            onClick={() => {
+              const next = new URLSearchParams(params);
+              next.delete('action');
+              setParams(next, { replace: true });
+            }}
+          >
+            Cancel
+          </button>
+        </section>
+      )}
       <QueryState
-        loading={loading}
-        error={error}
-        isEmpty={jobs.length === 0}
+        loading={jobs.loading || metadata.loading}
+        error={jobs.error ?? metadata.error}
+        isEmpty={jobs.data !== null && jobs.data.length === 0}
         emptyTitle="No projects yet"
-        emptyBody="A project appears here once a signed proposal mints a Job ID."
-        onRetry={reload}
+        emptyBody="A project appears after a signed proposal creates its Job ID."
+        onRetry={() => {
+          jobs.reload();
+          metadata.reload();
+        }}
       />
-
-      {jobs.map((job) => (
-        <Link key={job.jobId} to={`/projects/${job.jobId}`} className="row settle">
-          <div className="row-head">
-            <div style={{ minWidth: 0 }}>
-              <div className="row-who">{jobTitle(job)}</div>
-              <div className="row-where">{jobLocation(job)}</div>
-            </div>
-            <span className="tag tag-dim">{shortId(job.jobId)}</span>
-          </div>
-
-          <h3 className="row-action">
-            {job.project === null
-              ? 'Not opened as a project'
-              : job.project.currentPhaseTitle}
-          </h3>
-
-          <div className="row-foot">
-            <span className="due">
-              {job.project === null
-                ? 'No phase'
-                : `Phase ${job.project.currentPhaseSequence} of 11 · ${milestoneTitle(job.project.customerMilestone)}`}
-            </span>
-            <span className="money">{formatContract(job.contractCents)}</span>
-          </div>
-
-          {job.currentGate !== null && (
-            <div className="row-foot" style={{ marginTop: '10px' }}>
-              <span className="due">{job.currentGate.title}</span>
-              <span className={`tag ${job.currentGate.status === 'awaiting-countersign' ? 'tag-urgent' : job.currentGate.status === 'released' ? 'tag-clear' : 'tag-dim'}`}>
-                {GATE_STATUS_LABEL[job.currentGate.status]}
-              </span>
-            </div>
-          )}
-        </Link>
-      ))}
-    </>
+      <ProjectList jobs={jobs.data ?? []} metadata={metadata.data ?? []} />
+    </div>
   );
 }

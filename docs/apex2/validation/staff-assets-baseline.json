@@ -1,0 +1,33 @@
+{
+  "commit": "f4421197de580028bfe53f9c7d50776b20a6a52b",
+  "source": "unchanged baseline production build",
+  "assets": [
+    {
+      "path": "assets/App-CZuxq36T.css",
+      "bytes": 28430,
+      "gzip_bytes": 6027
+    },
+    {
+      "path": "assets/App-wVxdruNw.js",
+      "bytes": 239859,
+      "gzip_bytes": 73465
+    },
+    {
+      "path": "assets/exceljs.min-BSBJIfQm.js",
+      "bytes": 940243,
+      "gzip_bytes": 268472
+    },
+    {
+      "path": "assets/index-9VGN2D7r.css",
+      "bytes": 35345,
+      "gzip_bytes": 8557
+    },
+    {
+      "path": "assets/index-DoqTXJrN.js",
+      "bytes": 467603,
+      "gzip_bytes": 139102
+    }
+  ],
+  "total_js_bytes": 1647705,
+  "total_js_gzip_bytes": 481039
+}
