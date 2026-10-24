@@ -1,24 +1,10 @@
 /**
- * site-copy.ts — global site copy (hero, guarantee band, section eyebrows/headings).
+ * site-copy.ts — global site copy (guarantee band, section eyebrows/headings).
  *
  * D-08: copy comes from the approved mockup (reference/apex-mockup.html), not rewritten
  * from scratch. All copy lives in content/ data files (never inlined in components) so it
  * can be edited without touching layout, and a headless CMS can be layered on later (D-07).
  */
-
-export const hero = {
-  eyebrow: 'Lubbock & the South Plains · Est. by a retired firefighter',
-  // Rendered as three lines; the last line is the brand-sage accent phrase.
-  headingLines: ['Anything', 'Construction.'] as const,
-  headingAccent: 'Apex gets it done.',
-  sub: 'Four crews. One standard. Pools, coatings, renovations, and pool service — built by a team that shows up, finishes the job, and stands behind it for decades.',
-  stats: [
-    { value: '30-Yr', label: 'Coating warranty' },
-    { value: '7-Yr', label: 'Pool warranty' },
-    { value: '48-Hr', label: 'Warranty response' },
-  ],
-  routerQuestion: 'Which Apex do you need?',
-} as const;
 
 /** The dark guarantee band between the vertical sections and testimonials. */
 export const guaranteeStats = [

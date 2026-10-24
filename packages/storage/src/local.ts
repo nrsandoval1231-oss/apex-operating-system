@@ -1,4 +1,5 @@
-import { mkdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
+import { link, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { dirname, resolve, sep } from 'node:path';
 import {
   ObjectExistsError,
@@ -38,26 +39,26 @@ export class LocalEvidenceStorage implements EvidenceStorage {
     return path;
   }
 
-  /**
-   * Write to a temporary name and rename into place.
-   *
-   * `wx` fails rather than truncating if the temporary file exists, and
-   * `rename` is atomic within a filesystem — so a reader never sees a partial
-   * object, and a concurrent writer for the same key loses at `wx` instead of
-   * interleaving bytes.
-   */
+  /** Publish complete bytes atomically without ever replacing existing evidence. */
   async put(key: string, content: Buffer, _contentType: string): Promise<void> {
     const path = this.pathFor(key);
-    if (await this.exists(path)) throw new ObjectExistsError(key);
-    const temporary = `${path}.upload`;
+    const temporary = `${path}.${randomUUID()}.upload`;
     await mkdir(dirname(path), { recursive: true });
     try {
       await writeFile(temporary, content, { flag: 'wx' });
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === 'EEXIST') throw new ObjectExistsError(key);
-      throw error;
+      // Unlike rename, link refuses an existing destination atomically. Both
+      // names are in the same directory/filesystem; readers see complete bytes.
+      try {
+        await link(temporary, path);
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code === 'EEXIST') throw new ObjectExistsError(key);
+        throw error;
+      }
+    } finally {
+      // A leftover private temp is harmless and must not turn a published
+      // object into a reported failure (which could trigger destructive retry).
+      await rm(temporary, { force: true }).catch(() => undefined);
     }
-    await rename(temporary, path);
   }
 
   async get(key: string): Promise<Buffer | null> {
@@ -86,12 +87,4 @@ export class LocalEvidenceStorage implements EvidenceStorage {
     return `local filesystem at ${this.root}`;
   }
 
-  private async exists(path: string): Promise<boolean> {
-    try {
-      await stat(path);
-      return true;
-    } catch {
-      return false;
-    }
-  }
 }

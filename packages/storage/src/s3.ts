@@ -79,6 +79,7 @@ export class S3EvidenceStorage implements EvidenceStorage {
     const url = this.urlFor(key);
     const existing = await this.client.fetch(url, { method: 'HEAD' });
     if (existing.ok) throw new ObjectExistsError(key);
+    if (existing.status !== 404) throw await this.failure('check existence', 'HEAD', url, existing);
 
     const response = await this.client.fetch(url, {
       method: 'PUT',

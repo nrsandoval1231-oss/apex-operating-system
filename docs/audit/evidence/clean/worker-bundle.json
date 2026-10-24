@@ -1,0 +1,18 @@
+{
+  "command": [
+    "npm",
+    "exec",
+    "--",
+    "wrangler",
+    "deploy",
+    "--dry-run",
+    "--containers-rollout",
+    "none",
+    "--outdir",
+    "/tmp/apex-worker-bundle"
+  ],
+  "cwd": "/workspace/apex-clean/deploy/cloudflare/apex-os",
+  "sha": "3a39be4baffe8937ef211b428c7ce5a593621bec",
+  "seconds": 6.655,
+  "exit_code": 0
+}

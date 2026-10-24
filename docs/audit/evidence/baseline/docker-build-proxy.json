@@ -1,0 +1,18 @@
+{
+  "command": [
+    "docker",
+    "--host=unix:///var/run/docker.sock",
+    "build",
+    "--secret",
+    "id=proxy_ca,src=/usr/local/share/ca-certificates/environment-proxy-ca.crt",
+    "-f",
+    "/tmp/apex-audit/baseline/Dockerfile.validation",
+    "-t",
+    "apex-audit-baseline:local",
+    "."
+  ],
+  "cwd": "/workspace/apex-operating-system",
+  "sha": "f6d5252f76a3b103b8849ae74c00fd9f9b07c022",
+  "seconds": 51.569,
+  "exit_code": 0
+}

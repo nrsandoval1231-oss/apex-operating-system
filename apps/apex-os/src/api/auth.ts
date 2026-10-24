@@ -14,15 +14,10 @@ import { setToken } from './session';
  * browser makes one same-origin request rather than two cross-origin ones, and
  * nothing about which identity provider Apex uses is baked into this bundle.
  *
- * TOKEN STORAGE, AND WHAT IT COSTS: the access token goes in `sessionStorage`,
- * so it is scoped to the tab and gone when the browser closes — which matters on
- * a shared machine in an office. It is readable by JavaScript running on this
- * origin, so a script injection would expose it. The CSP served with this app is
- * `script-src 'self'` with no inline scripts and no third-party origins, which
- * is what makes that acceptable rather than merely convenient. The stronger
- * alternative is a backend-for-frontend holding an httpOnly cookie; that is a
- * real change to the API and is noted in the deployment plan rather than
- * pretended away here.
+ * TOKEN STORAGE: session.ts owns the persistent, cross-tab localStorage token.
+ * PKCE state and verifier below remain tab scoped in sessionStorage. Bearer
+ * tokens are readable by same-origin JavaScript; the app CSP limits script
+ * sources. See session.ts for the shared-machine tradeoff.
  *
  * NO REFRESH TOKENS. When the access token expires the app shows the sign-in
  * screen again. Refresh-token rotation in a public client is a meaningful amount

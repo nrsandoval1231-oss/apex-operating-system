@@ -14,8 +14,8 @@
     "//verify": "typecheck FIRST: it runs tsc -b, which emits the dist/ that the workspace packages' exports point at. Then the staff app is built, because the API serves it and tests assert on the headers it is served with \u2014 without this, `pnpm verify` passes while the shipped bundle is never compiled, and those tests silently depend on a stale local build."
   },
   "devDependencies": {
-    "@types/node": "latest",
+    "@types/node": "26.6.5",
     "typescript": "7.0.2",
-    "vitest": "4.1.10"
+    "vitest": "4.1.12"
   }
 }

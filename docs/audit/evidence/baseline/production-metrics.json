@@ -1,0 +1,25 @@
+{
+  "sha": "f6d5252f76a3b103b8849ae74c00fd9f9b07c022",
+  "tracked_files": 624,
+  "source_files": 285,
+  "source_lines": 58651,
+  "direct_dependency_declarations": 67,
+  "bundles": {
+    "apex-os": {
+      "js_files": 3,
+      "bytes": 1622062,
+      "gzip_bytes": 471984
+    },
+    "designer": {
+      "js_files": 2,
+      "bytes": 1377511,
+      "gzip_bytes": 403436
+    },
+    "website": {
+      "js_files": 5,
+      "bytes": 203407,
+      "gzip_bytes": 64804
+    }
+  },
+  "production_source_lines": 42623
+}

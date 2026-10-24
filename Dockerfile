@@ -18,24 +18,23 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY packages/contracts/package.json packages/contracts/
 COPY packages/domain/package.json packages/domain/
+COPY packages/pricing-engine/package.json packages/pricing-engine/
 COPY packages/database/package.json packages/database/
 COPY packages/storage/package.json packages/storage/
 COPY packages/gate-service/package.json packages/gate-service/
 COPY apps/gate-api/package.json apps/gate-api/
 COPY apps/apex-os/package.json apps/apex-os/
-COPY apps/designer/package.json apps/designer/package-lock.json apps/designer/
+COPY apps/designer/package.json apps/designer/
 COPY apps/website/package.json apps/website/
 
 RUN pnpm install --frozen-lockfile
-RUN cd apps/designer && npm ci --ignore-scripts
 
 COPY . .
 
 # `typecheck` is what emits dist/ for the workspace packages — the same ordering
 # trap that broke CI, and the reason the app build runs after it rather than
 # beside it.
-RUN pnpm typecheck && pnpm --filter @apex/os build \
-  && rm -rf apps/designer/node_modules
+RUN pnpm typecheck && pnpm --filter @apex/os build
 
 # -------------------------------------------------------------- runtime stage
 FROM node:24-bookworm-slim AS runtime
@@ -45,11 +44,11 @@ ENV NODE_ENV=production
 
 WORKDIR /app
 
-# The whole tree, then dev dependencies pruned. Copying the built workspace
+# The whole tree, then a production workspace install. Copying the built workspace
 # wholesale keeps pnpm's symlinked layout intact; reconstructing it in the
 # runtime stage is where these Dockerfiles usually go wrong.
 COPY --from=build /app /app
-RUN pnpm prune --prod && pnpm store prune || true
+RUN CI=true pnpm install --prod --frozen-lockfile && pnpm store prune
 
 # Bind every interface: the platform reaches the container from outside it.
 # `main.ts` refuses to start with GATE_LOCAL_USER on a non-loopback bind, so
@@ -75,10 +74,16 @@ ENV APEX_APP_DIR=/app/apps/apex-os/dist
 # This makes the fallback work; it does not make it good. Evidence on a
 # container filesystem is erased by the next deploy. Object storage is the only
 # configuration fit for a real job — see docs/runbooks/deployment.md §1.
-RUN mkdir -p /app/var/gate-evidence && chown -R node:node /app/var
+# COPY preserves a restrictive source checkout umask. Keep code root-owned,
+# but readable/traversable by the runtime user regardless of checkout permissions.
+RUN chmod -R a+rX /app \
+  && mkdir -p /app/var/gate-evidence && chown -R node:node /app/var
 
 # node, not root.
 USER node
+
+# Validate the actual non-root runtime graph, including workspace links.
+RUN node --input-type=module -e "await import('./apps/gate-api/dist/server.js')"
 
 EXPOSE 4100
 

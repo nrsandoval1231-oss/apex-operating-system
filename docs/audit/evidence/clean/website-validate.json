@@ -1,0 +1,12 @@
+{
+  "command": [
+    "corepack",
+    "pnpm",
+    "run",
+    "validate"
+  ],
+  "cwd": "/workspace/apex-clean/apps/website",
+  "sha": "d3020af7d7c6d5087913dd027b8e0686877e1725",
+  "seconds": 8.748,
+  "exit_code": 0
+}
