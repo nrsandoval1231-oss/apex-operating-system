@@ -2,7 +2,7 @@
 
 ## Final corrected candidate
 
-Full `bash scripts/ci.sh` **passed again**, exit **0**, **659.457 seconds**, on frozen source/test SHA **`2231248cc6c0fc69e5850188782943191c45dec5`**, after all five review corrections. The source, tests and HEAD stayed fixed throughout this run. Later changes are documentation and screenshots only. [Exact result](final-corrected-ci.json) · [Counts and skips](final-corrected-summary.json) · [Environment](final-corrected-environment.json) · [Migration inventory](final-corrected-migrations.json).
+Full `bash scripts/ci.sh` **passed again**, exit **0**, **659.457 seconds**, on frozen source/test SHA **`2231248cc6c0fc69e5850188782943191c45dec5`**, after all five review corrections. The source, tests and HEAD stayed fixed throughout this run. The initial follow-up changes were documentation and screenshots only. A subsequent merge-time checklist fix in `881361e` has separate [targeted validation](merge-acceptance.md); the full-run SHA below remains historical evidence. [Exact result](final-corrected-ci.json) · [Counts and skips](final-corrected-summary.json) · [Environment](final-corrected-environment.json) · [Migration inventory](final-corrected-migrations.json).
 
 ```bash
 cd /workspace/apex2
