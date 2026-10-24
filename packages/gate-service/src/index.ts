@@ -2524,5 +2524,6 @@ export class GateService {
   }
 }
 
+export * from './tasks.js';
 export * from './customer.js';
 export * from './inspections.js';
