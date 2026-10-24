@@ -1,0 +1,60 @@
+{
+  "testedSha": "dc6c658e67edf9bbdbaa7deef128f9c0b4959f70",
+  "command": [
+    "bash",
+    "scripts/ci.sh"
+  ],
+  "seconds": 643.413,
+  "exitCode": 0,
+  "runnerCases": {
+    "passed": 1324,
+    "skipped": 3
+  },
+  "suites": {
+    "core": {
+      "passed": 605,
+      "skipped": 0
+    },
+    "Designer": {
+      "passed": 585,
+      "skipped": 0
+    },
+    "websiteUnit": {
+      "passed": 2,
+      "skipped": 0
+    },
+    "websiteBrowser": {
+      "passed": 49,
+      "skipped": 1
+    },
+    "productionIntakeBrowser": {
+      "passed": 12,
+      "skipped": 0
+    },
+    "PostgreSQLAndStorage": {
+      "passed": 71,
+      "skipped": 2
+    }
+  },
+  "skips": [
+    "Desktop invocation of mobile-only menu test; mobile invocation passed",
+    "Designer missing-engine failure guard; actual engine compatibility executed",
+    "Takeoff missing-engine failure guard; actual engine chain executed"
+  ],
+  "additionalBrowserGroups": {
+    "shell": 6,
+    "nativeIndexedDB": 6,
+    "checklist": 6,
+    "calendar": 16,
+    "workspace": 31,
+    "photos": 16
+  },
+  "additionalAcceptance": [
+    "Five legacy proposal scripts passed",
+    "Estimate navigation passed",
+    "Zero-optional-photo closeout passed (12 recorded steps)",
+    "Optional-photo closeout passed (14 recorded steps)"
+  ],
+  "infrastructureOmitted": false,
+  "note": "Browser group/step counts are not added to the runner-case total. Expected negative production build refused missing webhook; not an unexpected failure."
+}
