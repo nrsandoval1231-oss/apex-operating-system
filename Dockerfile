@@ -74,7 +74,10 @@ ENV APEX_APP_DIR=/app/apps/apex-os/dist
 # This makes the fallback work; it does not make it good. Evidence on a
 # container filesystem is erased by the next deploy. Object storage is the only
 # configuration fit for a real job — see docs/runbooks/deployment.md §1.
-RUN mkdir -p /app/var/gate-evidence && chown -R node:node /app/var
+# COPY preserves a restrictive source checkout umask. Keep code root-owned,
+# but readable/traversable by the runtime user regardless of checkout permissions.
+RUN chmod -R a+rX /app \
+  && mkdir -p /app/var/gate-evidence && chown -R node:node /app/var
 
 # node, not root.
 USER node
