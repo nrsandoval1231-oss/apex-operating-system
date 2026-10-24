@@ -6,7 +6,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 import pg from '../../../packages/database/node_modules/pg/lib/index.js';
 import { SignJWT } from '../../gate-api/node_modules/jose/dist/webapi/index.js';
 import { chromium } from '../../website/node_modules/@playwright/test/index.mjs';
-import { createCanonicalId } from '../../../packages/contracts/dist/index.js';
+import { createCanonicalId, civilDay } from '../../../packages/contracts/dist/index.js';
 assert(process.env.DATABASE_URL, 'Disposable PostgreSQL required');
 const origin = 'http://127.0.0.1:4198',
   secret = 'workspace-browser-synthetic-secret-long-enough';
@@ -45,15 +45,41 @@ async function assertMobileAppointment(page) {
     `First appointment must be above mobile overlays: ${JSON.stringify({ appointment, nav, quick })}`,
   );
 }
-async function waitForCenterCalendar(page, title, mobile) {
+async function waitForCenterCalendar(page, title, mobile, api) {
   const center = page.locator('.workspace-center>.calendar-workspace');
   if (!mobile) {
     await center.locator('.cw-entry').filter({ hasText: title }).first().waitFor();
     return;
   }
-  await center.locator('.cw-summary>.cw-entry').first().waitFor();
-  const shown = await center.locator('.cw-summary>.cw-entry').count();
-  assert(shown > 0 && shown <= 2, 'Mobile Today keeps at most two chronological appointments');
+  const cards = page.locator('.workspace-center>.calendar-workspace.cw-summary>.cw-entry');
+  await cards.first().waitFor();
+  const today = civilDay();
+  const eligible = (await api('/api/workspace-calendar'))
+    .filter((item) => {
+      if (item.source !== 'appointment' || item.event.cancelledAt) return false;
+      const event = item.event;
+      const start = event.allDay
+        ? event.startsOn
+        : civilDay(new Date(event.startsAt), 'America/Chicago');
+      const end = event.allDay
+        ? event.endsOn
+        : civilDay(new Date(Date.parse(event.endsAt) - 1), 'America/Chicago');
+      return start <= today && end >= today;
+    })
+    .sort((a, b) =>
+      Number(!a.event.allDay) - Number(!b.event.allDay) ||
+      (a.event.allDay ? a.event.startsOn : a.event.startsAt).localeCompare(
+        b.event.allDay ? b.event.startsOn : b.event.startsAt,
+      ) ||
+      a.id.localeCompare(b.id),
+    )
+    .slice(0, 2)
+    .map((item) => item.event.title);
+  assert.deepEqual(
+    await cards.locator('strong').allTextContents(),
+    eligible,
+    'Mobile Today shows the first two persisted appointments in chronological order',
+  );
 }
 
 try {
@@ -482,7 +508,7 @@ try {
       .getByRole('button')
       .filter({ hasText: `Today appointment ${suffix}` })
       .waitFor();
-    await waitForCenterCalendar(page, `Today appointment ${suffix}`, viewport.width < 700);
+    await waitForCenterCalendar(page, `Today appointment ${suffix}`, viewport.width < 700, api);
     checks.push(
       `${viewport.width}: persisted project event and center calendar summary`,
     );
@@ -514,7 +540,7 @@ try {
     await calendarRequest;
     await panel.getByRole('button', { name: 'Overview', exact: true }).click();
     resumeCalendar();
-    await waitForCenterCalendar(page, reconnectedTitle, viewport.width < 700);
+    await waitForCenterCalendar(page, reconnectedTitle, viewport.width < 700, api);
     assert((await api('/api/workspace-calendar')).some(
       (entry) => entry.source === 'appointment' && entry.event.title === reconnectedTitle,
     ));
@@ -585,7 +611,7 @@ try {
       .waitFor();
     await page.getByLabel('Search jobs', { exact: true }).fill(suffix);
     await page.evaluate(() => window.scrollTo(0, 0));
-    await waitForCenterCalendar(page, reconnectedTitle, viewport.width < 700);
+    await waitForCenterCalendar(page, reconnectedTitle, viewport.width < 700, api);
     await page
       .locator('.workspace-center>.calendar-workspace')
       .getByText('Loading calendar…', { exact: true })
