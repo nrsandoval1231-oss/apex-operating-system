@@ -208,7 +208,7 @@ export class WorkspaceService {
    union all select 'task:'||h.history_id,'task',h.entry->>'action'||': '||(h.entry->'snapshot'->>'title'),h.entry->>'actor',(h.entry->>'at')::timestamptz from task_history h join tasks t on t.task_id=h.task_id where t.job_id=$1
    union all select 'appointment:'||h.history_id,'appointment',h.entry->>'action'||': '||(h.entry->'snapshot'->>'title'),h.entry->>'actor',(h.entry->>'at')::timestamptz from calendar_event_history h join calendar_events e on e.calendar_event_id=h.calendar_event_id where e.job_id=$1
    union all select 'operational:'||event_id,'operational',event_type,actor->>'userId',occurred_at from events where job_id=$1
-   union all select 'photo:'||evidence_id,'photo',coalesce(caption,'Photo recorded'),captured_by,captured_at from evidence_records e where e.job_id=$1 and e.kind='photo' and not exists(select 1 from events v where v.job_id=$1 and v.event_type='evidence.added' and v.payload->>'evidenceId'=e.evidence_id)
+   union all select 'photo:'||evidence_id,'photo',coalesce(caption,'Photo recorded'),captured_by,created_at from evidence_records e where e.job_id=$1 and e.kind='photo' and not exists(select 1 from events v where v.job_id=$1 and v.event_type='evidence.added' and v.payload->>'evidenceId'=e.evidence_id)
    order by at desc,id desc`,
       [jobId],
     );
