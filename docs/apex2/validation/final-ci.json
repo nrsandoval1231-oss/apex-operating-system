@@ -1,0 +1,10 @@
+{
+  "command": [
+    "bash",
+    "scripts/ci.sh"
+  ],
+  "cwd": "/workspace/apex2",
+  "sha": "78dfa0857e53b13d69afc87bd2c8364704d9e485",
+  "seconds": 659.171,
+  "exit_code": 0
+}
