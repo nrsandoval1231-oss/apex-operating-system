@@ -6,7 +6,10 @@ import { preparePhoto } from './preparePhoto';
 import { uploadPhoto } from './uploadPhoto';
 import {
   readQueue,
-  putQueuedPhoto,
+  addQueuedPhoto,
+  updateQueuedPhoto,
+  freezeQueuedPhoto,
+  QueueConflictError,
   deleteQueuedPhoto,
   MAX_QUEUE_BYTES,
   MAX_QUEUE_FILES,
@@ -37,7 +40,11 @@ export default function PhotoComposer({ ownerId, jobId, readOnly }: Props) {
   const location = useLocation();
   const composer = useRef<HTMLDivElement>(null);
   const live = useRef(true);
-  const storedRows = useRef(new Map<string, QueuedPhoto>());
+  // Once a row was durable, an unavailable/missing store can never turn it into
+  // a page-only upload. This also covers stale send callbacks after deletion.
+  const durableIds = useRef(new Set<string>());
+  const discardedIds = useRef(new Set<string>());
+  const unsavedDraftIds = useRef(new Set<string>());
   const controller = useRef<AbortController | null>(null);
   const token = getToken();
 
@@ -50,7 +57,7 @@ export default function PhotoComposer({ ownerId, jobId, readOnly }: Props) {
     void readQueue(ownerId, jobId)
       .then((rows) => {
         if (live.current) {
-          storedRows.current = new Map(rows.map((photo) => [photo.id, photo]));
+          durableIds.current = new Set(rows.map((photo) => photo.id));
           setQueue(rows);
           setReady(true);
         }
@@ -88,33 +95,73 @@ export default function PhotoComposer({ ownerId, jobId, readOnly }: Props) {
     return () => window.removeEventListener('beforeunload', warn);
   }, [queue.length]);
 
-  async function persist(photo: QueuedPhoto) {
-    if (!durable) return false;
+  async function addDraft(photo: QueuedPhoto) {
+    if (!durable) return;
     try {
-      await putQueuedPhoto(photo);
-      storedRows.current.set(photo.id, photo);
-      return true;
-    } catch {
+      await addQueuedPhoto(photo);
+      durableIds.current.add(photo.id);
+    } catch (cause) {
+      if (cause instanceof QueueConflictError) throw cause;
       if (live.current) setDurable(false);
-      return false;
+    }
+  }
+
+  function applyAuthoritative(
+    requested: QueuedPhoto,
+    current: QueuedPhoto | null,
+  ) {
+    if (!live.current || discardedIds.current.has(requested.id)) return;
+    setQueue((rows) =>
+      current
+        ? rows.map((row) => (row.id === requested.id ? current : row))
+        : rows.filter((row) => row.id !== requested.id),
+    );
+    if (current?.attempted && !requested.attempted) {
+      setMessage(
+        'This photo already started uploading in another tab. Its saved details were kept.',
+      );
     }
   }
 
   function editDraft(field: 'caption' | 'stage' | 'category', value: string) {
-    const next = queue.map((photo) =>
-      photo.attempted
-        ? photo
-        : {
-            ...photo,
-            payload: { ...photo.payload, [field]: value || null },
-          },
+    const drafts = queue.filter(
+      (photo) => !photo.attempted && !discardedIds.current.has(photo.id),
     );
-    setQueue(next);
-    if (!next.some((photo) => !photo.attempted)) return;
+    setQueue((rows) =>
+      rows.map((photo) =>
+        photo.attempted
+          ? photo
+          : {
+              ...photo,
+              payload: { ...photo.payload, [field]: value || null },
+            },
+      ),
+    );
+    if (!drafts.length) return;
     setSavingDetails(true);
     const saving = draftSaves.current.then(async () => {
-      for (const photo of next.filter((item) => !item.attempted))
-        await persist(photo);
+      for (const photo of drafts) {
+        if (
+          discardedIds.current.has(photo.id) ||
+          !durableIds.current.has(photo.id)
+        )
+          continue;
+        try {
+          const current = await updateQueuedPhoto(photo, field, value || null);
+          unsavedDraftIds.current.delete(photo.id);
+          applyAuthoritative(photo, current);
+        } catch (cause) {
+          unsavedDraftIds.current.add(photo.id);
+          if (live.current) {
+            setDurable(false);
+            setError(
+              cause instanceof Error
+                ? cause.message
+                : 'Optional details could not be saved.',
+            );
+          }
+        }
+      }
     });
     draftSaves.current = saving;
     void saving.finally(() => {
@@ -161,7 +208,7 @@ export default function PhotoComposer({ ownerId, jobId, readOnly }: Props) {
           queuedAt: new Date().toISOString(),
           attempted: false,
         };
-        await persist(photo);
+        await addDraft(photo);
         additions.push(photo);
       }
     } catch (cause) {
@@ -180,11 +227,14 @@ export default function PhotoComposer({ ownerId, jobId, readOnly }: Props) {
   }
 
   async function discard(photo: QueuedPhoto) {
-    // An uncertain upload may already be on the server; discarding only removes device bytes.
+    // Mark locally before awaiting storage so delayed callbacks cannot restore UI.
+    // Other tabs are protected by the store's conditional existing-row mutations.
+    discardedIds.current.add(photo.id);
     try {
-      if (storedRows.current.has(photo.id)) await deleteQueuedPhoto(photo.id);
-      storedRows.current.delete(photo.id);
+      if (durableIds.current.has(photo.id)) await deleteQueuedPhoto(photo);
+      unsavedDraftIds.current.delete(photo.id);
     } catch {
+      discardedIds.current.delete(photo.id);
       setDurable(false);
       setError(
         'Could not clear device storage. Recovery is unavailable until storage works again.',
@@ -206,18 +256,33 @@ export default function PhotoComposer({ ownerId, jobId, readOnly }: Props) {
       for (const original of photos) {
         if (!live.current || token !== getToken()) break;
         if (readOnly && !original.attempted) continue;
-        const photo = { ...original, attempted: true };
-        const stored = storedRows.current.get(photo.id);
-        const saved = await persist(photo);
-        if (
-          !saved &&
-          stored &&
-          (!stored.attempted ||
-            JSON.stringify(stored.payload) !== JSON.stringify(photo.payload))
-        ) {
-          throw new Error(
-            'Device storage cannot save these changes. Restore storage or discard this draft before uploading.',
-          );
+        if (discardedIds.current.has(original.id)) continue;
+        let photo: QueuedPhoto;
+        if (durableIds.current.has(original.id)) {
+          if (unsavedDraftIds.current.has(original.id)) {
+            throw new Error(
+              'Device storage could not save changed details. Restore storage and edit again, or discard this draft before uploading.',
+            );
+          }
+          let frozen: QueuedPhoto | null;
+          try {
+            frozen = await freezeQueuedPhoto(original);
+          } catch (cause) {
+            if (live.current) setDurable(false);
+            throw cause;
+          }
+          if (!frozen) {
+            applyAuthoritative(original, null);
+            if (live.current)
+              setMessage(
+                'This pending photo was already removed from the device.',
+              );
+            continue;
+          }
+          photo = frozen;
+        } else {
+          // Initial unavailable-IDB fallback has never had a shared durable row.
+          photo = { ...original, attempted: true };
         }
         if (!live.current || token !== getToken()) break;
         setQueue((rows) =>
@@ -229,9 +294,8 @@ export default function PhotoComposer({ ownerId, jobId, readOnly }: Props) {
         });
         // Clear durable bytes only after a validated server receipt.
         try {
-          if (storedRows.current.has(photo.id))
-            await deleteQueuedPhoto(photo.id);
-          storedRows.current.delete(photo.id);
+          discardedIds.current.add(photo.id);
+          if (durableIds.current.has(photo.id)) await deleteQueuedPhoto(photo);
         } catch {
           setDurable(false);
           setError(
