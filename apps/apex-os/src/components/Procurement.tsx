@@ -12,7 +12,18 @@ import { ApiError, apiSend } from '../api/client';
 type Code = (typeof PROCUREMENT_CODES)[number];
 const formatQuantity = new Intl.NumberFormat(undefined, { maximumFractionDigits: 3 });
 
-export default function Procurement({ jobId, readOnly, hasApprovedTakeoff }: { jobId: string; readOnly: boolean; hasApprovedTakeoff: boolean }) {
+export default function Procurement({
+  jobId,
+  readOnly,
+  hasApprovedTakeoff,
+  anchorId = 'procurement',
+}: {
+  jobId: string;
+  readOnly: boolean;
+  hasApprovedTakeoff: boolean;
+  /** Embedded views may omit an anchor so legacy operational links stay unique. */
+  anchorId?: string | null;
+}) {
   const tracked = useJobProcurement(jobId);
   const takeoff = useApprovedTakeoff(jobId, hasApprovedTakeoff);
   const [selected, setSelected] = useState<Code | ''>('');
@@ -38,7 +49,7 @@ export default function Procurement({ jobId, readOnly, hasApprovedTakeoff }: { j
   };
 
   return <section className="procurement" aria-label="Material procurement">
-    <div className="section-rule" id="procurement"><h2>Procurement</h2></div>
+    <div className="section-rule" id={anchorId ?? undefined}><h2>Procurement</h2></div>
     <p className="state-quiet">Manual coordination only. Tracking an order here does not place an order or record a committed cost.</p>
     {!tracked.loading && tracked.data?.length === 0 && <p className="state-quiet">Procurement not tracked — material status is unknown.</p>}
     {!hasApprovedTakeoff && <p className="state-quiet">No approved takeoff is available. Material requirements cannot be tracked.</p>}

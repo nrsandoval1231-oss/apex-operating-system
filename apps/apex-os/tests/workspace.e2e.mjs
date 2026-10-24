@@ -97,9 +97,12 @@ try {
       a: `Workspace Alpha ${suffix}`,
       b: `Workspace Beta ${suffix}`,
       c: `Workspace Coating ${suffix}`,
+      d: `Workspace Renovation ${suffix}`,
+      e: `Workspace Service ${suffix}`,
+      f: `Workspace Unknown ${suffix}`,
     };
   const jobs = {};
-  for (const k of ['a', 'b', 'c']) {
+  for (const k of ['a', 'b', 'c', 'd', 'e', 'f']) {
     const lead = createCanonicalId('lead'),
       job = createCanonicalId('job');
     jobs[k] = job;
@@ -110,7 +113,14 @@ try {
         crypto.randomUUID(),
         JSON.stringify({
           customerName: names[k],
-          vertical: k === 'c' ? 'Concrete Coating' : 'Designer Pools',
+          vertical: {
+            a: 'Designer Pools',
+            b: 'Designer Pools',
+            c: 'Concrete Coating',
+            d: 'Design & Renovation',
+            e: 'Pool Service',
+            f: null,
+          }[k],
           address: 'Synthetic test address',
         }),
       ],
@@ -185,6 +195,85 @@ try {
       (t) => localStorage.setItem('apex-gate-token', t),
       tokens.admin,
     );
+    // Embedded tabs must not shadow preserved operational deep links.
+    await page.goto(origin + `/app/projects/${jobs.a}`);
+    for (const [tab, anchor] of [
+      ['Inspections', 'inspections'],
+      ['Procurement', 'procurement'],
+    ]) {
+      await page
+        .locator('.selected-project')
+        .getByRole('button', { name: tab, exact: true })
+        .click();
+      await page
+        .locator('.selected-project .workspace-tab')
+        .getByRole('heading', { name: tab, exact: true })
+        .waitFor();
+      assert.equal(
+        await page.locator(`[id="${anchor}"]`).count(),
+        1,
+        `${tab}: preserved operational ID must remain unique with embedded tab mounted`,
+      );
+      const duplicates = await page.locator('[id]').evaluateAll((nodes) => {
+        const ids = nodes.map((n) => n.id);
+        return [
+          ...new Set(ids.filter((id, index) => ids.indexOf(id) !== index)),
+        ];
+      });
+      assert.deepEqual(duplicates, [], 'all DOM IDs remain unique');
+      await page.locator(`.project-jump a[href="#${anchor}"]`).click();
+      await page.waitForFunction(
+        (value) => location.hash === `#${value}`,
+        anchor,
+      );
+      assert(
+        await page
+          .locator(`[id="${anchor}"]`)
+          .evaluate((node) => !node.closest('.selected-project')),
+        `${tab}: legacy jump still targets original operational section`,
+      );
+    }
+    checks.push(
+      `${viewport.width}: embedded inspection/procurement tabs preserve unique legacy anchors and jump destinations`,
+    );
+    for (const key of ['c', 'd', 'e', 'f']) {
+      await page.goto(origin + `/app/today?project=${jobs[key]}`);
+      const selected = page.locator('.selected-project');
+      await selected
+        .getByRole('heading', { name: names[key], exact: true })
+        .waitFor();
+      await selected
+        .getByRole('button', { name: 'Inspections', exact: true })
+        .click();
+      await selected
+        .getByRole('region', { name: 'Inspection configuration' })
+        .getByRole('heading', {
+          name: 'Inspection configuration required',
+          exact: true,
+        })
+        .waitFor({ timeout: 4000 });
+      assert.equal(
+        await selected.locator('.workspace-tab ul.schedule').count(),
+        0,
+      );
+      assert.equal(
+        await selected
+          .getByRole('button', { name: /^Call in$|^Result$/ })
+          .count(),
+        0,
+      );
+      assert.equal(
+        requests.filter((path) => path === `/api/jobs/${jobs[key]}/inspections`)
+          .length,
+        0,
+        'unsupported workspace must not fetch the pool inspection catalog',
+      );
+    }
+    checks.push(
+      `${viewport.width}: coating/renovation/service/unknown inspection tabs stay configuration-required with no pool fetch or controls`,
+    );
+    // Measure concurrent dashboard reads only for this navigation.
+    requests.length = 0;
     await page.goto(origin + '/app/today');
     await page
       .getByRole('heading', { name: 'My Checklist', exact: true })
