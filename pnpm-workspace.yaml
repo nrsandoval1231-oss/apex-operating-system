@@ -7,7 +7,14 @@ overrides:
   # Patch or same-major only: devalue stays on 5, js-yaml on 4, undici on 8.
   devalue: 5.9.4
   js-yaml: 4.3.2
-  undici: 8.11.2
+  undici: 8.12.2
+  # Same-major security patches for transitive development/build dependencies.
+  vite@8: 8.3.3
+  fast-uri: 3.1.9
+  http-cache-semantics: 4.3.0
+  source-map-js: 1.2.2
+  smol-toml: 1.9.1
+  sharp: 0.35.5
   brace-expansion@1: 1.1.21
   brace-expansion@2: 2.1.7
 # esbuild is a Vite build-time dependency only. Its postinstall script merely

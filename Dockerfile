@@ -18,24 +18,23 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY packages/contracts/package.json packages/contracts/
 COPY packages/domain/package.json packages/domain/
+COPY packages/pricing-engine/package.json packages/pricing-engine/
 COPY packages/database/package.json packages/database/
 COPY packages/storage/package.json packages/storage/
 COPY packages/gate-service/package.json packages/gate-service/
 COPY apps/gate-api/package.json apps/gate-api/
 COPY apps/apex-os/package.json apps/apex-os/
-COPY apps/designer/package.json apps/designer/package-lock.json apps/designer/
+COPY apps/designer/package.json apps/designer/
 COPY apps/website/package.json apps/website/
 
 RUN pnpm install --frozen-lockfile
-RUN cd apps/designer && npm ci --ignore-scripts
 
 COPY . .
 
 # `typecheck` is what emits dist/ for the workspace packages — the same ordering
 # trap that broke CI, and the reason the app build runs after it rather than
 # beside it.
-RUN pnpm typecheck && pnpm --filter @apex/os build \
-  && rm -rf apps/designer/node_modules
+RUN pnpm typecheck && pnpm --filter @apex/os build
 
 # -------------------------------------------------------------- runtime stage
 FROM node:24-bookworm-slim AS runtime
@@ -49,7 +48,7 @@ WORKDIR /app
 # wholesale keeps pnpm's symlinked layout intact; reconstructing it in the
 # runtime stage is where these Dockerfiles usually go wrong.
 COPY --from=build /app /app
-RUN pnpm prune --prod && pnpm store prune || true
+RUN pnpm prune --prod && pnpm store prune
 
 # Bind every interface: the platform reaches the container from outside it.
 # `main.ts` refuses to start with GATE_LOCAL_USER on a non-loopback bind, so
