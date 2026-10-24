@@ -87,7 +87,7 @@ function AuthenticatedShell({ token }: { token: string }) {
         </div>
       </header>
       <div id="workspace-content" className="sheet shell-content" tabIndex={-1}><Outlet /></div>
-      <div className="shell-quick">
+      {!/^\/historical\/[^/]+/.test(location.pathname) && <div className="shell-quick">
         {quickOpen && <div ref={quickPanel} id="quick-actions" className="quick-panel" aria-label="Quick actions" onBlur={event => {
           if (!event.currentTarget.contains(event.relatedTarget) && event.relatedTarget !== trigger.current) setQuickOpen(false);
         }}>
@@ -102,7 +102,7 @@ function AuthenticatedShell({ token }: { token: string }) {
         <button ref={trigger} type="button" className="quick-trigger" aria-label={quickOpen ? 'Close quick actions' : 'Open quick actions'} aria-expanded={quickOpen} aria-controls="quick-actions" onClick={() => setQuickOpen(open => !open)}>
           <Icon name={quickOpen ? 'close' : 'plus'} size={26} /><span>Quick add</span>
         </button>
-      </div>
+      </div>}
     </div>
   );
 }

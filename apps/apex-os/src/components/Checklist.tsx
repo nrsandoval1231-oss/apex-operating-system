@@ -10,20 +10,40 @@ import { apiGet, apiSend } from '../api/client';
 import { useMe, useJobs, useLeadFollowupsToday } from '../api/useJobs';
 import { useTasks, useTaskAssignees } from '../api/useTasks';
 import './Checklist.css';
+import { taskInScope, canEditTask } from '../lib/taskAccess';
 type Filter =
-  'Today' | 'Overdue' | 'Upcoming' | 'Assigned' | 'Completed' | 'All';
-export default function Checklist({ compact = false }: { compact?: boolean }) {
+  | 'Today'
+  | 'Overdue'
+  | 'Upcoming'
+  | 'Assigned'
+  | 'Completed'
+  | 'All';
+export default function Checklist({
+  compact = false,
+  scope = 'all',
+  jobId,
+  readOnly = false,
+  summary = false,
+}: {
+  compact?: boolean;
+  scope?: 'mine' | 'all';
+  jobId?: string;
+  readOnly?: boolean;
+  summary?: boolean;
+}) {
   const [params, setParams] = useSearchParams();
   const location = useLocation();
   const me = useMe();
   const jobs = useJobs();
-  const query = useTasks();
+  const query = useTasks(jobId);
   const users = useTaskAssignees();
   const followups = useLeadFollowupsToday(
     me.data?.role === 'admin' || me.data?.role === 'office',
   );
   const [filter, setFilter] = useState<Filter>(compact ? 'Today' : 'All');
-  const [project, setProject] = useState(params.get('project') ?? '');
+  const [project, setProject] = useState(
+    jobId ?? (scope === 'mine' ? '' : (params.get('project') ?? '')),
+  );
   const [draftJob, setDraftJob] = useState(project);
   const [compose, setCompose] = useState(false);
   const [editing, setEditing] = useState<Task | null>(null);
@@ -37,7 +57,7 @@ export default function Checklist({ compact = false }: { compact?: boolean }) {
   );
   const completionKeys = useRef(new Map<string, string>());
   useEffect(() => {
-    if (params.get('action') !== 'add-task') return;
+    if (readOnly || params.get('action') !== 'add-task') return;
     setProject(params.get('project') ?? '');
     setDraftJob(params.get('project') ?? '');
     setEditing(null);
@@ -56,6 +76,8 @@ export default function Checklist({ compact = false }: { compact?: boolean }) {
   const today = civilDay();
   const tasks = (query.data ?? []).filter(
     (t) =>
+      taskInScope(t, scope, me.data?.userId) &&
+      (!jobId || t.jobId === jobId) &&
       (!project || t.jobId === project) &&
       (filter === 'Completed'
         ? !!t.completedAt
@@ -159,21 +181,92 @@ export default function Checklist({ compact = false }: { compact?: boolean }) {
       setBusy(false);
     }
   }
+  if (summary) {
+    const rank = { low: 0, normal: 1, high: 2, urgent: 3 };
+    const due = (query.data ?? [])
+      .filter(
+        (t) =>
+          taskInScope(t, scope, me.data?.userId) &&
+          !t.completedAt &&
+          ((t.dueDate !== null && t.dueDate <= today) ||
+            t.priority === 'urgent'),
+      )
+      .sort(
+        (a, b) =>
+          rank[b.priority] - rank[a.priority] ||
+          (a.dueDate ?? '9999').localeCompare(b.dueDate ?? '9999') ||
+          b.taskId.localeCompare(a.taskId),
+      )
+      .slice(0, 2);
+    return (
+      <section className="checklist checklist-summary" aria-label="Checklist">
+        <div className="section-rule">
+          <h2>My Checklist</h2>
+          <Link className="action action-quiet" to="/checklist?action=add-task">
+            Add task
+          </Link>
+        </div>
+        <p className="task-summary-label">Urgent and due work</p>
+        {(error || query.error) && (
+          <p role="alert">
+            {error || query.error?.message}
+            <button className="action action-quiet" onClick={query.reload}>
+              Retry
+            </button>
+          </p>
+        )}
+        {query.loading && <p>Loading tasks…</p>}
+        {!query.loading && query.data && due.length === 0 && (
+          <p>No urgent or due tasks.</p>
+        )}
+        {due.map((t) => (
+          <article className="task-row" key={t.taskId}>
+            <input
+              type="checkbox"
+              aria-label={`Complete ${t.title}`}
+              checked={!!t.completedAt}
+              disabled={
+                busy ||
+                !!t.completedAt ||
+                isClosed(t) ||
+                !canEditTask(t, me.data)
+              }
+              onChange={() => void complete(t)}
+            />
+            <div>
+              <h3>{t.title}</h3>
+              <p>
+                {t.dueDate ?? 'No due date'} ·{' '}
+                <span className="task-priority" data-priority={t.priority}>
+                  {t.priority}
+                </span>
+              </p>
+            </div>
+          </article>
+        ))}
+        <Link className="action action-quiet full-checklist" to="/checklist">
+          Full checklist
+        </Link>
+      </section>
+    );
+  }
   return (
     <section className="checklist" aria-label="Checklist">
       <div className="section-rule">
-        <h2>{compact ? 'Your checklist' : 'Tasks'}</h2>
-        <button
-          className="action"
-          onClick={() => {
-            setEditing(null);
-            setCompose(true);
-            setDraftJob(project);
-            setIntent(null);
-          }}
-        >
-          Add task
-        </button>
+        <h2>{scope === 'mine' ? 'My Checklist' : 'Tasks'}</h2>
+        {!readOnly && (
+          <button
+            className="action"
+            onClick={() => {
+              setEditing(null);
+              setCompose(true);
+              setDraftJob(project);
+              setIntent(null);
+            }}
+          >
+            Add task
+          </button>
+        )}
       </div>
       <div className="task-filters">
         {(
@@ -194,17 +287,22 @@ export default function Checklist({ compact = false }: { compact?: boolean }) {
             {v}
           </button>
         ))}
-        <label>
-          Project{' '}
-          <select value={project} onChange={(e) => setProject(e.target.value)}>
-            <option value="">All projects and personal</option>
-            {jobs.data?.map((j) => (
-              <option key={j.jobId} value={j.jobId}>
-                {j.customerName}
-              </option>
-            ))}
-          </select>
-        </label>
+        {!jobId && (
+          <label>
+            Project{' '}
+            <select
+              value={project}
+              onChange={(e) => setProject(e.target.value)}
+            >
+              <option value="">All projects and personal</option>
+              {jobs.data?.map((j) => (
+                <option key={j.jobId} value={j.jobId}>
+                  {j.customerName}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
       </div>
       {(error || query.error || users.error || jobs.error || me.error) && (
         <p role="alert" className="error">
@@ -374,7 +472,13 @@ export default function Checklist({ compact = false }: { compact?: boolean }) {
             type="checkbox"
             aria-label={`Complete ${t.title}`}
             checked={!!t.completedAt}
-            disabled={busy || !!t.completedAt || isClosed(t)}
+            disabled={
+              readOnly ||
+              busy ||
+              !!t.completedAt ||
+              isClosed(t) ||
+              !canEditTask(t, me.data)
+            }
             onChange={() => void complete(t)}
           />
           <div>
@@ -397,18 +501,21 @@ export default function Checklist({ compact = false }: { compact?: boolean }) {
             {t.recurrence !== 'none' && <p>Repeats {t.recurrence}</p>}
             {t.completedAt && <p>Completed {t.completedAt.slice(0, 10)}</p>}
             <div className="task-actions">
-              {!t.completedAt && !isClosed(t) && (
-                <button
-                  disabled={busy}
-                  onClick={() => {
-                    setEditing(t);
-                    setCompose(false);
-                    setIntent(null);
-                  }}
-                >
-                  Edit
-                </button>
-              )}
+              {!readOnly &&
+                !t.completedAt &&
+                !isClosed(t) &&
+                canEditTask(t, me.data) && (
+                  <button
+                    disabled={busy}
+                    onClick={() => {
+                      setEditing(t);
+                      setCompose(false);
+                      setIntent(null);
+                    }}
+                  >
+                    Edit
+                  </button>
+                )}
               <button
                 disabled={busy}
                 onClick={() => {
