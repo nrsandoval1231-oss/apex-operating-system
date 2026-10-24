@@ -17,7 +17,7 @@ Official source inspected 2026-10-24: https://apexgetsitdone.com/. Main logo: `/
 - [x] 1 Foundation: branded desktop/mobile shell, reusable controls, existing route compatibility. Browser-check navigation at desktop and 390px touch viewport; build/typecheck; commit/PR.
 - [x] 2 Today + Checklist: authoritative personal/project/assigned/recurring tasks, due dates, priority, history, optimistic concurrency, task CRUD/completion. Test persistence, access, races and no gate side effects; commit/PR.
 - [x] 3 Calendar: existing scheduling read model plus persisted appointments, day/week/month/agenda and filtering; edits preserve operational restrictions. Test reload, edits, conflicts and date boundaries; commit/PR.
-- [ ] 4 Projects: searchable/filterable selectable projects, verified progress, next milestones, integrated detail tabs/deep links, division metadata and safe lifecycle configuration. Test selection/back navigation, permissions and closure; commit/PR.
+- [x] 4 Projects: searchable/filterable selectable projects, verified progress, next milestones, integrated detail tabs/deep links, division metadata and safe lifecycle configuration. Test selection/back navigation, permissions and closure; commit/PR.
 - [ ] 5 Photos: optional metadata, camera/library multi-upload, optimized image bytes, durable recoverable upload queue, stable retry identity, protected gallery/viewer, customer sharing/activity. Test invalid files, interruptions/retry, isolation, zero-photo lifecycle; commit/PR.
 - [ ] 6 Integration: responsive/a11y/error/loading polish, browser workflow acceptance, full existing regressions, actual desktop/mobile screenshots, remaining gaps; commit/PR.
 
@@ -48,3 +48,21 @@ Backend `3739ec5`, frontend `c989222`: one persisted ordinary checklist for pers
 Backend `b2be256`, frontend `a1d750c`, review fixes `4f1c331`: one canonical appointment model plus source-qualified operational schedule/task deadline projection. Four views, persisted create/edit/cancel, personal privacy, revision checks, immutable audit, closure locks, and payload-bound retries. PostgreSQL17 passed/0 skipped; focused schedule/date23 passed before review; correction-focused8 passed; final real API/PostgreSQL/browser7 acceptance groups passed. Typecheck/build pass. Review identified DST roundtrip, cross-zone cursor and terminal unscheduled-item defects; fixes preserve original instants/precision, share business-day projection and reuse authoritative scheduling status. Scoped re-review approved: all3 findings addressed, no new breakage.
 
 [Exact calendar commands/results/limits](validation/calendar.md). Actual running synthetic persisted records: [desktop](screenshots/calendar-desktop.png), [mobile](screenshots/calendar-mobile.png). Division metadata and dashboard embedding are milestone4; compact mobile optional filters are milestone6. Unbounded calendar reads remain a scaling limitation. No merge or deployment.
+
+
+## Review sequence
+
+| Milestone | Pull request | Base | Status |
+| --- | --- | --- | --- |
+| Foundation | [32](https://github.com/nrsandoval1231-oss/apex-operating-system/pull/32) | main | Open, reviewed locally |
+| Checklist | [33](https://github.com/nrsandoval1231-oss/apex-operating-system/pull/33) | Foundation | Open, reviewed locally |
+| Calendar | [34](https://github.com/nrsandoval1231-oss/apex-operating-system/pull/34) | Checklist | Open, reviewed locally |
+
+The stack isolates milestone diffs. These local independent reviews are not owner merge approval. Later milestones build on reviewed candidates; all remain unmerged and undeployed.
+
+
+## Milestone 4 evidence
+
+Backend `20cb41b`, workspace `d88da21`: three-column desktop and dedicated mobile Today summary, canonical project tasks/calendar, selected-project deep links, real division intake metadata, signed-scope gate counts, retained documents, immutable notes and audited manager priority. Original operational project controls remain accessible. PostgreSQL24, affected unit97, workspace browser22, original checklist4/calendar7 browser groups and unchanged closeout acceptance passed; typecheck/build pass. Review identified unsupported-division inspection exposure and duplicate embedded section anchors; corrections committed in `d445264`, with26 browser groups/typecheck/build passing; scoped re-review approved, both findings addressed.
+
+[Exact workspace commands/results/limits](validation/workspace.md). Loaded actual application using synthetic persisted records: [desktop](screenshots/workspace-desktop.png), [mobile](screenshots/workspace-mobile.png). Optional photo upload follows in milestone5. Unsupported division stage catalogs remain inactive/configuration-required; financial API policy is unchanged.
