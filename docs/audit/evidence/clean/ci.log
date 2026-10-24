@@ -1,0 +1,632 @@
+
+== install
+Scope: all 11 workspace projects
+? Verifying lockfile against supply-chain policies (646 entries)...
+Lockfile is up to date, resolution step is skipped
+Already up to date
+✓ Lockfile passes supply-chain policies (646 entries in 5s)
+
+Done in 5.7s using pnpm v11.18.0
+
+== typecheck
+$ tsc -b && tsc --noEmit -p apps/apex-os/tsconfig.json
+$ tsc --noEmit
+
+== builds
+$ vite build
+vite v6.4.5 building for production...
+transforming...
+../../node_modules/.pnpm/zod@4.6.7/node_modules/zod/v4/core/regexes.js (74:0): A comment
+
+"/** Anchors a pattern source. The interpolation lives here rather than at the call site because
+ * esbuild will not drop a `@__PURE__` call whose own argument interpolates a variable, but it
+ * will drop `anchor(dateSource)`. Keeping it inline pinned `date` into every bundle. */"
+
+in "../../node_modules/.pnpm/zod@4.6.7/node_modules/zod/v4/core/regexes.js" contains an annotation that Rollup cannot interpret due to the position of the comment. The comment will be removed to avoid issues.
+../../node_modules/.pnpm/zod@4.6.7/node_modules/zod/v4/core/util.js (400:0): A comment
+
+"// Wrapped in a `@__PURE__` IIFE: esbuild never tree-shakes a top-level initializer that contains a member access on `Number`, so the bare object literal survived into every bundle."
+
+in "../../node_modules/.pnpm/zod@4.6.7/node_modules/zod/v4/core/util.js" contains an annotation that Rollup cannot interpret due to the position of the comment. The comment will be removed to avoid issues.
+✓ 306 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                                     1.09 kB │ gzip:   0.60 kB
+dist/assets/oswald-vietnamese-600-normal-h0z1RevK.woff2             4.14 kB
+dist/assets/oswald-vietnamese-500-normal-hXcn5ojQ.woff2             4.18 kB
+dist/assets/inter-vietnamese-400-normal-DMkecbls.woff2              4.97 kB
+dist/assets/inter-vietnamese-500-normal-DOriooB6.woff2              5.11 kB
+dist/assets/inter-greek-ext-400-normal-DGGRlc-M.woff2               5.26 kB
+dist/assets/inter-greek-ext-500-normal-C4iEst2y.woff2               5.43 kB
+dist/assets/oswald-vietnamese-600-normal-CH5CIKWT.woff              5.89 kB
+dist/assets/oswald-vietnamese-500-normal-Bi4XG4HV.woff              5.91 kB
+dist/assets/inter-vietnamese-400-normal-Bbgyi5SW.woff               6.50 kB
+dist/assets/inter-vietnamese-500-normal-mJboJaSs.woff               6.60 kB
+dist/assets/oswald-cyrillic-500-normal-Dz4ZC46J.woff2               6.84 kB
+dist/assets/oswald-cyrillic-600-normal-OIkAk3Qq.woff2               6.84 kB
+dist/assets/inter-greek-ext-400-normal-KugGGMne.woff                7.06 kB
+dist/assets/inter-greek-ext-500-normal-2j5mBUwD.woff                7.19 kB
+dist/assets/jetbrains-mono-vietnamese-wght-normal-Bt-aOZkq.woff2    7.50 kB
+dist/assets/inter-cyrillic-400-normal-obahsSVq.woff2                7.71 kB
+dist/assets/inter-greek-400-normal-B4URO6DV.woff2                   7.78 kB
+dist/assets/inter-cyrillic-500-normal-BasfLYem.woff2                7.90 kB
+dist/assets/inter-greek-500-normal-BIZE56-Y.woff2                   7.92 kB
+dist/assets/oswald-cyrillic-ext-600-normal-DJv8RkPb.woff2           8.08 kB
+dist/assets/oswald-cyrillic-ext-500-normal-DngHVvy4.woff2           8.13 kB
+dist/assets/oswald-cyrillic-600-normal-B7zyAoGs.woff                8.59 kB
+dist/assets/oswald-cyrillic-500-normal-CjKr_ZfC.woff                8.61 kB
+dist/assets/jetbrains-mono-greek-wght-normal-Bw9x6K1M.woff2         9.00 kB
+dist/assets/inter-cyrillic-400-normal-HOLc17fK.woff                 9.78 kB
+dist/assets/inter-greek-400-normal-q2sYcFCs.woff                    9.92 kB
+dist/assets/inter-cyrillic-500-normal-CxZf_p3X.woff                 9.94 kB
+dist/assets/inter-greek-500-normal-Xzm54t5V.woff                    9.98 kB
+dist/assets/inter-cyrillic-ext-400-normal-BQZuk6qB.woff2           10.23 kB
+dist/assets/inter-cyrillic-ext-500-normal-B0yAr1jD.woff2           10.43 kB
+dist/assets/oswald-cyrillic-ext-500-normal-Hz7kEHBT.woff           10.58 kB
+dist/assets/oswald-cyrillic-ext-600-normal-CXH_3Vsf.woff           10.58 kB
+dist/assets/oswald-latin-ext-600-normal-5Cvn_Zbc.woff2             12.04 kB
+dist/assets/oswald-latin-ext-500-normal-QdEKgtiz.woff2             12.04 kB
+dist/assets/jetbrains-mono-cyrillic-wght-normal-D73BlboJ.woff2     12.11 kB
+dist/assets/oswald-latin-500-normal-B-eyT0Dw.woff2                 12.70 kB
+dist/assets/oswald-latin-600-normal-plFmSr5g.woff2                 12.74 kB
+dist/assets/inter-cyrillic-ext-400-normal-DQukG94-.woff            13.34 kB
+dist/assets/inter-cyrillic-ext-500-normal-BmqWE9Dz.woff            13.45 kB
+dist/assets/jetbrains-mono-latin-ext-wght-normal-DBQx-q_a.woff2    15.20 kB
+dist/assets/oswald-latin-500-normal-DM85Di4w.woff                  16.16 kB
+dist/assets/oswald-latin-ext-600-normal-BUCHT9gM.woff              16.16 kB
+dist/assets/oswald-latin-600-normal-DRToI_2E.woff                  16.18 kB
+dist/assets/oswald-latin-ext-500-normal-DcyNJhgm.woff              16.18 kB
+dist/assets/inter-latin-400-normal-C38fXH4l.woff2                  23.66 kB
+dist/assets/inter-latin-500-normal-Cerq10X2.woff2                  24.27 kB
+dist/assets/inter-latin-400-normal-CyCys3Eg.woff                   30.70 kB
+dist/assets/inter-latin-500-normal-BL9OpVg8.woff                   31.28 kB
+dist/assets/inter-latin-ext-400-normal-C1nco2VV.woff2              35.00 kB
+dist/assets/inter-latin-ext-500-normal-CV4jyFjo.woff2              36.02 kB
+dist/assets/jetbrains-mono-latin-wght-normal-B9CIFXIH.woff2        40.40 kB
+dist/assets/inter-latin-ext-400-normal-77YHD8bZ.woff               47.56 kB
+dist/assets/inter-latin-ext-500-normal-BxGbmqWO.woff               48.49 kB
+dist/assets/App-CZuxq36T.css                                       28.43 kB │ gzip:   6.05 kB
+dist/assets/index-9VGN2D7r.css                                     35.35 kB │ gzip:   8.61 kB
+dist/assets/App-wVxdruNw.js                                       239.86 kB │ gzip:  73.75 kB │ map:   820.41 kB
+dist/assets/index-DoqTXJrN.js                                     467.60 kB │ gzip: 139.78 kB │ map: 2,362.26 kB
+dist/assets/exceljs.min-BSBJIfQm.js                               940.24 kB │ gzip: 271.37 kB │ map: 2,087.67 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 5.89s
+$ tsc --noEmit && vite build
+vite v6.4.5 building for production...
+transforming...
+✓ 85 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                        0.43 kB │ gzip:   0.30 kB
+dist/assets/index-CZuxq36T.css        28.43 kB │ gzip:   6.05 kB
+dist/assets/index-C5OTxEjV.js        437.15 kB │ gzip: 135.44 kB
+dist/assets/exceljs.min-_FHOiBEn.js  940.37 kB │ gzip: 271.39 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 4.51s
+
+== website production build without a lead webhook (must fail)
+05:59:21 [types] Generated 121ms
+05:59:21 [build] output: "static"
+05:59:21 [build] mode: "static"
+05:59:21 [build] directory: /workspace/apex-clean/apps/website/dist/
+05:59:21 [build] Collecting build info...
+05:59:21 [build] ✓ Completed in 163ms.
+05:59:21 [build] Building static entrypoints...
+05:59:21 [vite] ✓ built in 396ms
+05:59:21 [vite] ✓ built in 106ms
+05:59:21 [build] Rearranging server assets...
+
+ generating static routes
+PUBLIC_LEAD_WEBHOOK_URL is required when PUBLIC_ENV=production. Astro inlines it at build time; a static host cannot inject it after upload. Set PUBLIC_LEAD_WEBHOOK_URL before building. See apps/website/.env.example.
+  Location:
+    /workspace/apex-clean/node_modules/.pnpm/astro@7.3.5_@types+node@26.1.2_aws4fetch@1.0.20_yaml@2.9.0/node_modules/astro/dist/runtime/prerender/static-paths.js:52:63
+  Stack trace:
+    at file:///workspace/apex-clean/apps/website/dist/.prerender/chunks/seo_ViQ9SLyT.mjs:44:69
+    at async node:internal/modules/esm/loader:643:26
+    at async Object.getComponentByRoute$1 [as getComponentByRoute] (file:///workspace/apex-clean/apps/website/dist/.prerender/prerender-entry.b6-t8VGZ.mjs:3251:10)
+    at async StaticPaths.getAll (file:///workspace/apex-clean/node_modules/.pnpm/astro@7.3.5_@types+node@26.1.2_aws4fetch@1.0.20_yaml@2.9.0/node_modules/astro/dist/runtime/prerender/static-paths.js:32:23)
+    at async BasicMinimalPluginContext.handler (file:///workspace/apex-clean/node_modules/.pnpm/astro@7.3.5_@types+node@26.1.2_aws4fetch@1.0.20_yaml@2.9.0/node_modules/astro/dist/core/build/static-build.js:113:11)
+production build refused to ship without PUBLIC_LEAD_WEBHOOK_URL
+
+== website check and build
+05:59:28 [types] Generated 51ms
+05:59:28 [check] Getting diagnostics for Astro files in /workspace/apex-clean/apps/website...
+[96msrc/components/QuoteForm.tsx[0m:[93m96[0m:[93m34[0m - [93mwarning[0m[90m ts(6385): [0m'FormEvent' is deprecated.
+
+[7m96[0m   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+[7m  [0m [93m                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[96msrc/components/QuoteForm.tsx[0m:[93m10[0m:[93m39[0m - [93mwarning[0m[90m ts(6385): [0m'FormEvent' is deprecated.
+
+[7m10[0m import { useEffect, useRef, useState, type FormEvent } from 'react';
+[7m  [0m [93m                                      ~~~~~~~~~~~~~~[0m
+
+Result (67 files):
+- 0 errors
+- 0 warnings
+- 2 hints
+
+05:59:34 [types] Generated 36ms
+05:59:34 [build] output: "static"
+05:59:34 [build] mode: "static"
+05:59:34 [build] directory: /workspace/apex-clean/apps/website/dist/
+05:59:34 [build] Collecting build info...
+05:59:34 [build] ✓ Completed in 72ms.
+05:59:34 [build] Building static entrypoints...
+05:59:34 [vite] ✓ built in 301ms
+05:59:34 [vite] ✓ built in 103ms
+05:59:34 [build] Rearranging server assets...
+
+ generating static routes
+05:59:34   ├─ /privacy/index.html (+11ms)
+05:59:34   ├─ /robots.txt (+1ms)
+05:59:34   ├─ /sitemap.xml (+1ms)
+05:59:34   ├─ /terms/index.html (+2ms)
+05:59:34   ├─ /pools/index.html (+10ms)
+05:59:34   ├─ /coating/index.html (+3ms)
+05:59:34   ├─ /renovation/index.html (+4ms)
+05:59:34   ├─ /service/index.html (+2ms)
+05:59:34   ├─ /index.html (+8ms)
+05:59:34 ✓ Completed in 66ms.
+
+05:59:34 [build] ✓ Completed in 505ms.
+05:59:34 [build] 7 page(s) built in 580ms
+05:59:34 [build] Complete!
+
+== unit tests (core)
+
+ RUN  v4.1.12 /workspace/apex-clean
+
+
+ Test Files  47 passed (47)
+      Tests  581 passed (581)
+   Start at  05:59:39
+   Duration  472.73s (transform 817ms, setup 0ms, import 5.42s, tests 461.80s, environment 4ms)
+
+
+== unit tests (designer)
+$ vitest run
+6:07:33 AM [vite] warning: `esbuild` option was specified by "vite:react-babel" plugin. This option is deprecated, please use `oxc` instead.
+6:07:33 AM [vite] warning: `optimizeDeps.esbuildOptions` option was specified by "vite:react-babel" plugin. This option is deprecated, please use `optimizeDeps.rolldownOptions` instead.
+Both esbuild and oxc options were set. oxc options will be used and esbuild options will be ignored. The following esbuild options were set: `{ jsx: 'automatic', jsxImportSource: undefined }`
+
+ RUN  v4.1.12 /workspace/apex-clean/apps/designer
+
+
+ Test Files  26 passed (26)
+      Tests  585 passed (585)
+   Start at  06:07:33
+   Duration  4.56s (transform 1.58s, setup 0ms, import 4.37s, tests 3.10s, environment 3ms)
+
+
+== unit tests (legacy proposal engine)
+PASS marginFromFee(0.30)=23.08%
+PASS feeForMargin(0.30)=42.86%
+PASS Whitaker revenue ≈ 152,041.73
+PASS Whitaker fee ≈ 35,086.55
+PASS Whitaker true margin ≈ 23.08%
+PASS negative cost is rejected
+PASS negative fee is rejected
+PASS a target margin at or above 100% is rejected
+PASS zero pool length reports a validation error
+PASS zero pool length is refused by takeoff
+PASS negative pool width reports a validation error
+PASS negative pool width is refused by takeoff
+PASS inverted depth profile reports a validation error
+PASS inverted depth profile is refused by takeoff
+PASS negative fee reports a validation error
+PASS negative fee is refused by takeoff
+PASS negative direct-entry cost reports a validation error
+PASS negative direct-entry cost is refused by takeoff
+PASS negative allowance reports a validation error
+PASS negative allowance is refused by takeoff
+PASS impossible spa dimension reports a validation error
+PASS impossible spa dimension is refused by takeoff
+PASS standard depth profile is 3.5 → 6.0
+PASS standard spa is 6×6×3.5 (was assumed 7×7)
+PASS bare length×width applies the standard profile
+PASS explicit avgDepth still overrides the standard
+PASS spa defaults to 6×6×3.5
+PASS deck from 4 ft border = 368 sq ft
+PASS deck lands inside ref §1000 back-solve (280–415)
+PASS explicit deckSqFt overrides the border rule
+PASS deck border width is configurable
+PASS pool surface 336
+PASS pool perimeter 76
+PASS pool wetted ≈ 749
+PASS pool gallons ≈ 11,939
+PASS combined wetted ≈ 887 (6×6 spa)
+PASS combined perimeter 100
+PASS combined gallons ≈ 12,881
+PASS approved Designer quantities replace Proposal geometry as pricing authority
+PASS approved revision pricing never needs Proposal geometry inputs
+PASS excavation ≈ 92.3 bank yd³
+PASS gunite ordered ≈ 27.3 yd³
+PASS plaster labor qty = wetted area ≈ 887 sq ft
+PASS plaster bags = 43
+PASS rebar steel ≈ 1,061 lb
+PASS deck line derived from the border rule
+PASS rebar exposes LF #3 allocation basis
+PASS reproduces his $5,500 Excavation line
+PASS reproduces his $12,000 Gunite line
+PASS reproduces his $4,000 Rebar line
+PASS reproduces his $5,000 Pool Deck line
+PASS reproduces his $550 Forming line
+PASS reproduces his $1,500 Site Work line
+PASS reproduces his $8,100 Pool Plumbing line
+PASS plumbing LF ≈ 755 (six runs from the pad + spa jet loop)
+PASS plumbing confidence flagged low (single job, blended rate)
+PASS no-spa job drops the spa suction/return, jet and spillway runs
+PASS no-spa plumbing still prices skimmers/drain/returns (pad-driven, spa-independent)
+PASS reproduces his $1,950 Tile/Materials line
+PASS reproduces his $2,500 Tile/Labor line
+PASS reproduces his $3,600 Coping/Materials line
+PASS reproduces his $3,950 Coping/Labor line
+PASS reproduces his $3,750 Plaster/Materials line
+PASS reproduces his $5,000 Plaster/Labor line
+PASS tile material is per sq ft, labor per LF (different drivers)
+PASS plaster material is per bag, labor per sq ft
+PASS finishes pairs still total his section figures
+PASS code 200 Excavation reconciles to $7,000
+PASS code 400 Shell reconciles to $16,800
+PASS code 800 Finishes reconciles to $20,750
+PASS every line multiplies out: qty × unit cost = extended
+PASS spa excavation is parametric (10×10 digs more than 6×6)
+PASS pool bank ≈ 78 yd³ (ref §200)
+PASS steps area scales with pool size
+PASS dimension order does not change wetted area (14×24 == 24×14)
+PASS two equivalent entries land within 5% on job cost
+PASS fee charged on allowances (jobCost includes allowances)
+PASS trueMargin 23.08 at 0.30 fee
+PASS pricing reconciles exactly: cost + fee = revenue
+PASS jobCost keeps the cents its line items carry
+PASS fee is the disclosed rate on the rounded cost
+PASS allowances net to 12,000 after supersession
+PASS Concrete Diamonds superseded by the deck takeoff
+PASS supersession raises an explanatory flag
+PASS no supersession when the deck is not taken off
+PASS build weeks DERIVED, lands in ref 6–8 wk window
+PASS explicit buildWeeks still overrides (7×3×1.5=31.5)
+PASS supervision is duration-driven, NOT proportional to cost
+PASS missing costs gated OFF by default
+PASS missing costs appear when included
+PASS Lever B tier 1 quantified (> $0)
+PASS Lever B tier 2 = supervision hrs × rate
+PASS Lever B tier 3 carries NO dollars (never in the base)
+PASS Lever B billable = tier1 + tier2 only
+PASS Lever B uplift = billable × (1 + fee)
+PASS Lever B still flagged gated
+PASS Permits unquantified until entered
+PASS caliche exposure computed (fraction of dig below 27in)
+PASS caliche is a RANGE, not a point cost
+PASS budget by code produced
+PASS back-test measures against ACTUAL job cost
+PASS back-test exposes the unmodelled remainder
+PASS coverage flags every unpriced direct line
+PASS residual forces job cost to the actual total
+PASS residual back-test is flagged CIRCULAR
+PASS residual is excluded from substantiated direct cost
+PASS residual counted as unsubstantiated, not coverage
+PASS residual raises a warn flag
+PASS no residual line when back-solve is off
+PASS the default draft is blocked while direct-entry scope is unresolved
+PASS a blocked draft cannot be finalized
+PASS commercially complete pricing remains blocked without an approved Designer revision
+PASS explicitly quoted direct-entry scope clears the issue gate
+PASS finalization returns an immutable customer-safe payload
+PASS issued proposal is immutably pinned to its approved revision with readable quantity explanations
+PASS signProposal flips status to signed and adds signedAt timestamp
+PASS signProposal preserves all approval data and makes the payload frozen
+PASS signProposal emits a job.bound event structure with canonical identifiers
+PASS unsafe calibration script is fail-closed
+
+119 pass / 0 fail
+PASS estimate document hash is pinned
+PASS actual-cost document hash is pinned
+PASS estimate section subtotals reconcile to $116,955.18
+PASS all 61 actual transactions reconcile to $104,602.12
+PASS actual 30% contractor fee reconciles exactly
+PASS actual cost plus fee reconciles to $135,982.76
+PASS payments plus balance reconcile to actual customer total
+PASS estimate exceeded actual cost by $12,353.06
+PASS customer estimate exceeded actual cost-plus total by $16,058.97
+PASS same-job documents are replay evidence, not quantity validation
+PASS uncategorized transactions block production rate calibration
+
+11 pass / 0 fail
+approved quantity authority and digest verification passed
+PASS index.html carries an inline module
+PASS the page reaches engine.mjs
+PASS engine.mjs imports no node: builtin
+PASS approved-takeoff.mjs imports no node: builtin
+PASS sha256.mjs imports no node: builtin
+PASS index.html imports the no-revision path
+PASS index.html imports the production path
+PASS index.html routes on a pinned revision rather than calling one path unconditionally
+PASS a draft prices
+PASS a draft still cannot be issued
+PASS the production path refuses to run without a revision
+PASS the legacy path refuses to run with a revision
+PASS an approved revision clears the approved-takeoff blocker
+PASS a revision-priced takeoff carries the digest it was priced from
+
+all pass / 0 fail
+1 pass / 0 fail
+
+== website unit tests
+$ node --experimental-strip-types --test scripts/tests/*.test.mjs
+✔ production only confirms accepted or duplicate responses for the submitted lead (0.817037ms)
+✔ non-production test hooks retain their permissive acknowledgement contract but reject quarantine (0.177338ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 226.905709
+
+== website Playwright
+[WebServer] (node:13717) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 166 tests using 2 workers
+
+(node:13767) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:13766) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓    1 [chromium] › tests/consent-and-resilience.spec.ts:41:3 › AC-3 · consent correctness (TCPA) › AC-3.3 · the exact string shown is what lands in consent_text (1.2s)
+  ✓    2 [chromium] › tests/consent-and-resilience.spec.ts:22:3 › AC-3 · consent correctness (TCPA) › AC-3.1 / AC-3.2 · the disclosure names the currently-selected brand, and updates live (1.3s)
+  ✓    4 [chromium] › tests/consent-and-resilience.spec.ts:70:3 › AC-3 · consent correctness (TCPA) › vertical landing pages SSR the matching consent brand before interaction (544ms)
+  ✓    3 [chromium] › tests/consent-and-resilience.spec.ts:56:3 › AC-3 · consent correctness (TCPA) › AC-3.4 · a pool lead never submits consent naming Concrete Coating (1.1s)
+  ✓    5 [chromium] › tests/consent-and-resilience.spec.ts:82:3 › AC-3 · consent correctness (TCPA) › declining consent records consent_sms:false and an empty consent_text (621ms)
+  ✓    6 [chromium] › tests/consent-and-resilience.spec.ts:99:3 › AC-4 · form resilience › AC-4.1 · a webhook failure tells the user to call, and shows the real number (983ms)
+  ✓    7 [chromium] › tests/consent-and-resilience.spec.ts:115:3 › AC-4 · form resilience › AC-4.2 · success shows the capture panel and does not double-submit (1.2s)
+  ✓    9 [chromium] › tests/consent-and-resilience.spec.ts:155:3 › AC-4 · form resilience › AC-4.5 · a phone with no email is a valid lead and is sent (737ms)
+  ✓    8 [chromium] › tests/consent-and-resilience.spec.ts:135:3 › AC-4 · form resilience › AC-4.3 · invalid email and phone are rejected before any request is made (1.2s)
+  ✓   10 [chromium] › tests/consent-and-resilience.spec.ts:168:3 › AC-4 · form resilience › AC-4.5 · an email with no phone is a valid lead and is sent (990ms)
+  ✓   11 [chromium] › tests/consent-and-resilience.spec.ts:181:3 › AC-4 · form resilience › AC-4.5 · neither email nor phone is refused before any request is made (1.2s)
+  ✓   12 [chromium] › tests/consent-and-resilience.spec.ts:201:3 › AC-4 · form resilience › AC-4.4 · a quarantined 200 shows the call-us error, not the capture panel (1.0s)
+  ✓   13 [chromium] › tests/consent-and-resilience.spec.ts:227:5 › AC-4 · form resilience › AC-4.4 · accepted still shows the capture panel (1.3s)
+  ✓   14 [chromium] › tests/consent-and-resilience.spec.ts:227:5 › AC-4 · form resilience › AC-4.4 · duplicate still shows the capture panel (1.3s)
+  ✓   15 [chromium] › tests/consent-and-resilience.spec.ts:227:5 › AC-4 · form resilience › AC-4.4 · an unrecognized body still shows the capture panel (1.1s)
+  ✓   16 [chromium] › tests/consent-and-resilience.spec.ts:241:3 › AC-5.5 · analytics event › lead_submit is pushed to the dataLayer with vertical and source (1.7s)
+  ✓   17 [chromium] › tests/consent-and-resilience.spec.ts:277:3 › AC-6 · accessibility floor › AC-6.2 · every form input has an associated label (1.3s)
+  ✓   19 [chromium] › tests/hero-video.spec.ts:36:1 › the pause control is outside .hero-media so the hero copy cannot cover it (5ms)
+  ✓   20 [chromium] › tests/hero-video.spec.ts:52:3 › HeroVideo production controller › autoplays the master and provides an accessible pause and resume control (309ms)
+  ✓   21 [chromium] › tests/hero-video.spec.ts:70:3 › HeroVideo production controller › does not load video for reduced motion, save-data, or slow networks (197ms)
+  ✓   18 [chromium] › tests/consent-and-resilience.spec.ts:285:3 › AC-6 · accessibility floor › AC-6.1 · the service selector is operable by keyboard (599ms)
+  ✓   22 [chromium] › tests/hero-video.spec.ts:78:3 › HeroVideo production controller › uses mobile media only when it is supplied, and preserves the poster when playback fails (157ms)
+  ✓   23 [chromium] › tests/hero-video.spec.ts:89:1 › the native MP4 fixture is playable by Chromium (138ms)
+  ✓   25 [chromium] › tests/homepage-v2.spec.ts:40:3 › Homepage V2 · structure › exactly one h1, and it is the hero promise (578ms)
+  ✓   24 [chromium] › tests/homepage-v2.spec.ts:24:3 › Homepage V2 · structure › the seven narrative sections render, in order (600ms)
+  ✓   27 [chromium] › tests/homepage-v2.spec.ts:72:3 › Homepage V2 · structure › each vertical is reached by ONE link, not several (449ms)
+  ✓   26 [chromium] › tests/homepage-v2.spec.ts:47:3 › Homepage V2 · structure › all four verticals stay reachable from the home page (524ms)
+  ✓   28 [chromium] › tests/homepage-v2.spec.ts:83:3 › Homepage V2 · structure › each vertical keeps a preselect link into the quote form (AC-2.2) (535ms)
+  ✓   29 [chromium] › tests/homepage-v2.spec.ts:92:3 › Homepage V2 · hero media interface › the hero background is a single media element in the declared mode (782ms)
+  ✓   30 [chromium] › tests/homepage-v2.spec.ts:134:3 › Homepage V2 · hero media interface › the hero poster is a real, loaded image with alt text (576ms)
+  ✓   31 [chromium] › tests/homepage-v2.spec.ts:157:5 › Homepage V2 · responsive › no horizontal overflow at desktop (1440px) (555ms)
+  ✓   32 [chromium] › tests/homepage-v2.spec.ts:157:5 › Homepage V2 · responsive › no horizontal overflow at tablet (820px) (434ms)
+  ✓   33 [chromium] › tests/homepage-v2.spec.ts:157:5 › Homepage V2 · responsive › no horizontal overflow at mobile (390px) (399ms)
+  ✓   34 [chromium] › tests/homepage-v2.spec.ts:180:3 › Homepage V2 · responsive › the hero fills the viewport without overflowing it (450ms)
+  ✓   35 [chromium] › tests/homepage-v2.spec.ts:193:3 › Homepage V2 · performance posture › the visual system ships no client JavaScript (420ms)
+  ✓   36 [chromium] › tests/homepage-v2.spec.ts:226:3 › Homepage V2 · performance posture › every non-hero image is lazy (437ms)
+  ✓   38 [chromium] › tests/imagery.spec.ts:54:5 › / › AC-9.2 · every image has meaningful alt text (542ms)
+  ✓   39 [chromium] › tests/imagery.spec.ts:64:5 › / › AC-9.5 · images carry a srcset, and anything below the fold is lazy (442ms)
+  ✓   37 [chromium] › tests/imagery.spec.ts:16:5 › / › AC-9.1 · every image reserves space with an aspect-ratio, matching the file (1.5s)
+  ✓   41 [chromium] › tests/imagery.spec.ts:54:5 › /pools › AC-9.2 · every image has meaningful alt text (202ms)
+  ✓   40 [chromium] › tests/imagery.spec.ts:16:5 › /pools › AC-9.1 · every image reserves space with an aspect-ratio, matching the file (426ms)
+  ✓   42 [chromium] › tests/imagery.spec.ts:64:5 › /pools › AC-9.5 · images carry a srcset, and anything below the fold is lazy (287ms)
+  ✓   43 [chromium] › tests/imagery.spec.ts:16:5 › /coating › AC-9.1 · every image reserves space with an aspect-ratio, matching the file (366ms)
+  ✓   44 [chromium] › tests/imagery.spec.ts:54:5 › /coating › AC-9.2 · every image has meaningful alt text (254ms)
+  ✓   45 [chromium] › tests/imagery.spec.ts:64:5 › /coating › AC-9.5 · images carry a srcset, and anything below the fold is lazy (263ms)
+  ✓   46 [chromium] › tests/imagery.spec.ts:16:5 › /renovation › AC-9.1 · every image reserves space with an aspect-ratio, matching the file (308ms)
+  ✓   47 [chromium] › tests/imagery.spec.ts:54:5 › /renovation › AC-9.2 · every image has meaningful alt text (215ms)
+  ✓   48 [chromium] › tests/imagery.spec.ts:64:5 › /renovation › AC-9.5 · images carry a srcset, and anything below the fold is lazy (236ms)
+  ✓   49 [chromium] › tests/imagery.spec.ts:16:5 › /service › AC-9.1 · every image reserves space with an aspect-ratio, matching the file (347ms)
+  ✓   50 [chromium] › tests/imagery.spec.ts:54:5 › /service › AC-9.2 · every image has meaningful alt text (191ms)
+  ✓   51 [chromium] › tests/imagery.spec.ts:64:5 › /service › AC-9.5 · images carry a srcset, and anything below the fold is lazy (316ms)
+  ✓   52 [chromium] › tests/imagery.spec.ts:90:1 › stock placeholders never claim the work is Apex's (D-20) (414ms)
+  ✓   53 [chromium] › tests/lead-capture.spec.ts:21:3 › AC-1 · lead object completeness › AC-1.1 · payload matches the data contract — every field present, correct types (1.2s)
+  ✓   55 [chromium] › tests/lead-capture.spec.ts:75:3 › AC-1 · lead object completeness › AC-1.3 · lead_id is unique per submission and minted exactly once (3.1s)
+  ✓   54 [chromium] › tests/lead-capture.spec.ts:51:3 › AC-1 · lead object completeness › AC-1.2 · vertical is never empty and is always an exact enum string (4.2s)
+  ✓   56 [chromium] › tests/lead-capture.spec.ts:90:3 › AC-1 · lead object completeness › AC-1.4 · utm parameters and fbclid survive to the payload (877ms)
+  ✓   57 [chromium] › tests/lead-capture.spec.ts:105:3 › AC-1 · lead object completeness › AC-1.5 · first touch survives navigation (land on /pools, submit from /) (1.0s)
+  ✓   58 [chromium] › tests/lead-capture.spec.ts:126:3 › AC-1 · lead object completeness › AC-1.6 · a direct visit yields source:direct / medium:none, never empty strings (847ms)
+  ✓   59 [chromium] › tests/lead-capture.spec.ts:143:3 › AC-1 · lead object completeness › AC-1.7 · a non-production build posts to the TEST webhook, never production (828ms)
+  ✓   61 [chromium] › tests/lead-capture.spec.ts:190:3 › AC-2 · vertical routing and selection › AC-2.1 · the home page offers exactly four verticals in enum order (477ms)
+  ✓   60 [chromium] › tests/lead-capture.spec.ts:164:3 › AC-1 · lead object completeness › AC-4.3 · phone is normalized to digits in the payload (917ms)
+  ✓   63 [chromium] › tests/lead-capture.spec.ts:210:3 › AC-2 · vertical routing and selection › AC-2.3 · the user can still change a pre-selected vertical, and the change wins (788ms)
+  ✓   64 [chromium] › tests/lead-capture.spec.ts:242:5 › AC-8.2 · vertical landing pages arrive pre-selected › /pools opens with "Designer Pools" selected (367ms)
+  ✓   62 [chromium] › tests/lead-capture.spec.ts:200:3 › AC-2 · vertical routing and selection › AC-2.2 · a vertical CTA pre-selects that vertical in the form (1.4s)
+  ✓   65 [chromium] › tests/lead-capture.spec.ts:242:5 › AC-8.2 · vertical landing pages arrive pre-selected › /renovation opens with "Design & Renovation" selected (410ms)
+  ✓   66 [chromium] › tests/lead-capture.spec.ts:242:5 › AC-8.2 · vertical landing pages arrive pre-selected › /coating opens with "Concrete Coating" selected (549ms)
+  ✓   68 [chromium] › tests/lead-capture.spec.ts:259:1 › the proof section presents testimonials as an attributed pull-quote (390ms)
+  ✓   67 [chromium] › tests/lead-capture.spec.ts:242:5 › AC-8.2 · vertical landing pages arrive pre-selected › /service opens with "Pool Service" selected (540ms)
+  ✓   70 [chromium] › tests/legal.spec.ts:17:5 › legal pages › /privacy renders with one H1 and real content (337ms)
+  ✓   69 [chromium] › tests/lead-capture.spec.ts:278:1 › Lyon Financial logo is a clickable external link (385ms)
+  ✓   71 [chromium] › tests/legal.spec.ts:17:5 › legal pages › /terms renders with one H1 and real content (190ms)
+  ✓   73 [chromium] › tests/legal.spec.ts:41:3 › legal pages › the SMS programme disclosure carriers check for is present (233ms)
+  ✓   74 [chromium] › tests/legal.spec.ts:50:3 › legal pages › the privacy policy covers SMS and the right to deletion (213ms)
+  ✓   72 [chromium] › tests/legal.spec.ts:28:3 › legal pages › the footer links to both, from every page, and they resolve (902ms)
+  ✓   75 [chromium] › tests/legal.spec.ts:57:3 › legal pages › both are indexable and in the sitemap (339ms)
+  ✓   77 [chromium] › tests/reduced-motion.spec.ts:32:5 › AC-6.3 · prefers-reduced-motion › /pools · all content is visible with reduced motion (272ms)
+  ✓   76 [chromium] › tests/reduced-motion.spec.ts:32:5 › AC-6.3 · prefers-reduced-motion › / · all content is visible with reduced motion (340ms)
+  ✓   78 [chromium] › tests/reduced-motion.spec.ts:32:5 › AC-6.3 · prefers-reduced-motion › /coating · all content is visible with reduced motion (250ms)
+  ✓   79 [chromium] › tests/reduced-motion.spec.ts:32:5 › AC-6.3 · prefers-reduced-motion › /renovation · all content is visible with reduced motion (271ms)
+  ✓   80 [chromium] › tests/reduced-motion.spec.ts:32:5 › AC-6.3 · prefers-reduced-motion › /service · all content is visible with reduced motion (297ms)
+  ✓   81 [chromium] › tests/reduced-motion.spec.ts:81:3 › AC-6.3 · prefers-reduced-motion › / · every home page CTA is visible and sized with reduced motion (367ms)
+  ✓   82 [chromium] › tests/reduced-motion.spec.ts:113:3 › AC-6.3 · prefers-reduced-motion › / · the hero poster renders with reduced motion (356ms)
+  ✓   83 [chromium] › tests/reduced-motion.spec.ts:130:3 › AC-6 · touch targets › primary CTAs meet the 44px touch-target floor on a phone (286ms)
+(node:15473) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:15480) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   84 [mobile] › tests/consent-and-resilience.spec.ts:22:3 › AC-3 · consent correctness (TCPA) › AC-3.1 / AC-3.2 · the disclosure names the currently-selected brand, and updates live (979ms)
+  ✓   85 [mobile] › tests/consent-and-resilience.spec.ts:41:3 › AC-3 · consent correctness (TCPA) › AC-3.3 · the exact string shown is what lands in consent_text (1.1s)
+  ✓   87 [mobile] › tests/consent-and-resilience.spec.ts:70:3 › AC-3 · consent correctness (TCPA) › vertical landing pages SSR the matching consent brand before interaction (485ms)
+  ✓   86 [mobile] › tests/consent-and-resilience.spec.ts:56:3 › AC-3 · consent correctness (TCPA) › AC-3.4 · a pool lead never submits consent naming Concrete Coating (961ms)
+  ✓   88 [mobile] › tests/consent-and-resilience.spec.ts:82:3 › AC-3 · consent correctness (TCPA) › declining consent records consent_sms:false and an empty consent_text (776ms)
+  ✓   89 [mobile] › tests/consent-and-resilience.spec.ts:99:3 › AC-4 · form resilience › AC-4.1 · a webhook failure tells the user to call, and shows the real number (809ms)
+  ✓   90 [mobile] › tests/consent-and-resilience.spec.ts:115:3 › AC-4 · form resilience › AC-4.2 · success shows the capture panel and does not double-submit (1.3s)
+  ✓   91 [mobile] › tests/consent-and-resilience.spec.ts:135:3 › AC-4 · form resilience › AC-4.3 · invalid email and phone are rejected before any request is made (1.2s)
+  ✓   92 [mobile] › tests/consent-and-resilience.spec.ts:155:3 › AC-4 · form resilience › AC-4.5 · a phone with no email is a valid lead and is sent (765ms)
+  ✓   93 [mobile] › tests/consent-and-resilience.spec.ts:168:3 › AC-4 · form resilience › AC-4.5 · an email with no phone is a valid lead and is sent (780ms)
+  ✓   95 [mobile] › tests/consent-and-resilience.spec.ts:201:3 › AC-4 · form resilience › AC-4.4 · a quarantined 200 shows the call-us error, not the capture panel (775ms)
+  ✓   94 [mobile] › tests/consent-and-resilience.spec.ts:181:3 › AC-4 · form resilience › AC-4.5 · neither email nor phone is refused before any request is made (1.2s)
+  ✓   96 [mobile] › tests/consent-and-resilience.spec.ts:227:5 › AC-4 · form resilience › AC-4.4 · accepted still shows the capture panel (899ms)
+  ✓   97 [mobile] › tests/consent-and-resilience.spec.ts:227:5 › AC-4 · form resilience › AC-4.4 · duplicate still shows the capture panel (837ms)
+  ✓   98 [mobile] › tests/consent-and-resilience.spec.ts:227:5 › AC-4 · form resilience › AC-4.4 · an unrecognized body still shows the capture panel (921ms)
+  ✓   99 [mobile] › tests/consent-and-resilience.spec.ts:241:3 › AC-5.5 · analytics event › lead_submit is pushed to the dataLayer with vertical and source (1.0s)
+  ✓  100 [mobile] › tests/consent-and-resilience.spec.ts:277:3 › AC-6 · accessibility floor › AC-6.2 · every form input has an associated label (637ms)
+  ✓  102 [mobile] › tests/hero-video.spec.ts:36:1 › the pause control is outside .hero-media so the hero copy cannot cover it (6ms)
+  ✓  101 [mobile] › tests/consent-and-resilience.spec.ts:285:3 › AC-6 · accessibility floor › AC-6.1 · the service selector is operable by keyboard (638ms)
+  ✓  103 [mobile] › tests/hero-video.spec.ts:52:3 › HeroVideo production controller › autoplays the master and provides an accessible pause and resume control (220ms)
+  ✓  104 [mobile] › tests/hero-video.spec.ts:70:3 › HeroVideo production controller › does not load video for reduced motion, save-data, or slow networks (126ms)
+  ✓  105 [mobile] › tests/hero-video.spec.ts:78:3 › HeroVideo production controller › uses mobile media only when it is supplied, and preserves the poster when playback fails (101ms)
+  ✓  106 [mobile] › tests/hero-video.spec.ts:89:1 › the native MP4 fixture is playable by Chromium (107ms)
+  ✓  107 [mobile] › tests/homepage-v2.spec.ts:24:3 › Homepage V2 · structure › the seven narrative sections render, in order (347ms)
+  ✓  108 [mobile] › tests/homepage-v2.spec.ts:40:3 › Homepage V2 · structure › exactly one h1, and it is the hero promise (378ms)
+  ✓  109 [mobile] › tests/homepage-v2.spec.ts:47:3 › Homepage V2 · structure › all four verticals stay reachable from the home page (365ms)
+  ✓  110 [mobile] › tests/homepage-v2.spec.ts:72:3 › Homepage V2 · structure › each vertical is reached by ONE link, not several (380ms)
+  ✓  111 [mobile] › tests/homepage-v2.spec.ts:83:3 › Homepage V2 · structure › each vertical keeps a preselect link into the quote form (AC-2.2) (442ms)
+  ✓  112 [mobile] › tests/homepage-v2.spec.ts:92:3 › Homepage V2 · hero media interface › the hero background is a single media element in the declared mode (466ms)
+  ✓  113 [mobile] › tests/homepage-v2.spec.ts:134:3 › Homepage V2 · hero media interface › the hero poster is a real, loaded image with alt text (384ms)
+  ✓  114 [mobile] › tests/homepage-v2.spec.ts:157:5 › Homepage V2 · responsive › no horizontal overflow at desktop (1440px) (469ms)
+  ✓  115 [mobile] › tests/homepage-v2.spec.ts:157:5 › Homepage V2 · responsive › no horizontal overflow at tablet (820px) (473ms)
+  ✓  116 [mobile] › tests/homepage-v2.spec.ts:157:5 › Homepage V2 · responsive › no horizontal overflow at mobile (390px) (380ms)
+  ✓  117 [mobile] › tests/homepage-v2.spec.ts:180:3 › Homepage V2 · responsive › the hero fills the viewport without overflowing it (371ms)
+  ✓  118 [mobile] › tests/homepage-v2.spec.ts:193:3 › Homepage V2 · performance posture › the visual system ships no client JavaScript (292ms)
+  ✓  119 [mobile] › tests/homepage-v2.spec.ts:226:3 › Homepage V2 · performance posture › every non-hero image is lazy (297ms)
+  ✓  121 [mobile] › tests/imagery.spec.ts:54:5 › / › AC-9.2 · every image has meaningful alt text (433ms)
+  ✓  120 [mobile] › tests/imagery.spec.ts:16:5 › / › AC-9.1 · every image reserves space with an aspect-ratio, matching the file (928ms)
+  ✓  122 [mobile] › tests/imagery.spec.ts:64:5 › / › AC-9.5 · images carry a srcset, and anything below the fold is lazy (361ms)
+  ✓  124 [mobile] › tests/imagery.spec.ts:54:5 › /pools › AC-9.2 · every image has meaningful alt text (210ms)
+  ✓  123 [mobile] › tests/imagery.spec.ts:16:5 › /pools › AC-9.1 · every image reserves space with an aspect-ratio, matching the file (370ms)
+  ✓  125 [mobile] › tests/imagery.spec.ts:64:5 › /pools › AC-9.5 · images carry a srcset, and anything below the fold is lazy (219ms)
+  ✓  126 [mobile] › tests/imagery.spec.ts:16:5 › /coating › AC-9.1 · every image reserves space with an aspect-ratio, matching the file (324ms)
+  ✓  127 [mobile] › tests/imagery.spec.ts:54:5 › /coating › AC-9.2 · every image has meaningful alt text (183ms)
+  ✓  128 [mobile] › tests/imagery.spec.ts:64:5 › /coating › AC-9.5 · images carry a srcset, and anything below the fold is lazy (248ms)
+  ✓  129 [mobile] › tests/imagery.spec.ts:16:5 › /renovation › AC-9.1 · every image reserves space with an aspect-ratio, matching the file (306ms)
+  ✓  130 [mobile] › tests/imagery.spec.ts:54:5 › /renovation › AC-9.2 · every image has meaningful alt text (237ms)
+  ✓  131 [mobile] › tests/imagery.spec.ts:64:5 › /renovation › AC-9.5 · images carry a srcset, and anything below the fold is lazy (208ms)
+  ✓  132 [mobile] › tests/imagery.spec.ts:16:5 › /service › AC-9.1 · every image reserves space with an aspect-ratio, matching the file (280ms)
+  ✓  133 [mobile] › tests/imagery.spec.ts:54:5 › /service › AC-9.2 · every image has meaningful alt text (246ms)
+  ✓  134 [mobile] › tests/imagery.spec.ts:64:5 › /service › AC-9.5 · images carry a srcset, and anything below the fold is lazy (240ms)
+  ✓  135 [mobile] › tests/imagery.spec.ts:90:1 › stock placeholders never claim the work is Apex's (D-20) (277ms)
+  ✓  136 [mobile] › tests/lead-capture.spec.ts:21:3 › AC-1 · lead object completeness › AC-1.1 · payload matches the data contract — every field present, correct types (787ms)
+  ✓  138 [mobile] › tests/lead-capture.spec.ts:75:3 › AC-1 · lead object completeness › AC-1.3 · lead_id is unique per submission and minted exactly once (2.2s)
+  ✓  137 [mobile] › tests/lead-capture.spec.ts:51:3 › AC-1 · lead object completeness › AC-1.2 · vertical is never empty and is always an exact enum string (3.1s)
+  ✓  139 [mobile] › tests/lead-capture.spec.ts:90:3 › AC-1 · lead object completeness › AC-1.4 · utm parameters and fbclid survive to the payload (841ms)
+  ✓  140 [mobile] › tests/lead-capture.spec.ts:105:3 › AC-1 · lead object completeness › AC-1.5 · first touch survives navigation (land on /pools, submit from /) (834ms)
+  ✓  141 [mobile] › tests/lead-capture.spec.ts:126:3 › AC-1 · lead object completeness › AC-1.6 · a direct visit yields source:direct / medium:none, never empty strings (801ms)
+  ✓  142 [mobile] › tests/lead-capture.spec.ts:143:3 › AC-1 · lead object completeness › AC-1.7 · a non-production build posts to the TEST webhook, never production (801ms)
+  ✓  144 [mobile] › tests/lead-capture.spec.ts:190:3 › AC-2 · vertical routing and selection › AC-2.1 · the home page offers exactly four verticals in enum order (370ms)
+  ✓  143 [mobile] › tests/lead-capture.spec.ts:164:3 › AC-1 · lead object completeness › AC-4.3 · phone is normalized to digits in the payload (850ms)
+  ✓  146 [mobile] › tests/lead-capture.spec.ts:210:3 › AC-2 · vertical routing and selection › AC-2.3 · the user can still change a pre-selected vertical, and the change wins (552ms)
+  ✓  147 [mobile] › tests/lead-capture.spec.ts:242:5 › AC-8.2 · vertical landing pages arrive pre-selected › /pools opens with "Designer Pools" selected (328ms)
+  ✓  145 [mobile] › tests/lead-capture.spec.ts:200:3 › AC-2 · vertical routing and selection › AC-2.2 · a vertical CTA pre-selects that vertical in the form (1.4s)
+  ✓  148 [mobile] › tests/lead-capture.spec.ts:242:5 › AC-8.2 · vertical landing pages arrive pre-selected › /coating opens with "Concrete Coating" selected (621ms)
+  ✓  149 [mobile] › tests/lead-capture.spec.ts:242:5 › AC-8.2 · vertical landing pages arrive pre-selected › /renovation opens with "Design & Renovation" selected (697ms)
+  ✓  150 [mobile] › tests/lead-capture.spec.ts:242:5 › AC-8.2 · vertical landing pages arrive pre-selected › /service opens with "Pool Service" selected (556ms)
+  ✓  151 [mobile] › tests/lead-capture.spec.ts:259:1 › the proof section presents testimonials as an attributed pull-quote (351ms)
+  ✓  153 [mobile] › tests/legal.spec.ts:17:5 › legal pages › /privacy renders with one H1 and real content (184ms)
+  ✓  152 [mobile] › tests/lead-capture.spec.ts:278:1 › Lyon Financial logo is a clickable external link (431ms)
+  ✓  154 [mobile] › tests/legal.spec.ts:17:5 › legal pages › /terms renders with one H1 and real content (332ms)
+  ✓  156 [mobile] › tests/legal.spec.ts:41:3 › legal pages › the SMS programme disclosure carriers check for is present (293ms)
+  ✓  157 [mobile] › tests/legal.spec.ts:50:3 › legal pages › the privacy policy covers SMS and the right to deletion (486ms)
+  ✓  158 [mobile] › tests/legal.spec.ts:57:3 › legal pages › both are indexable and in the sitemap (666ms)
+  ✓  155 [mobile] › tests/legal.spec.ts:28:3 › legal pages › the footer links to both, from every page, and they resolve (1.8s)
+  ✓  160 [mobile] › tests/reduced-motion.spec.ts:32:5 › AC-6.3 · prefers-reduced-motion › /pools · all content is visible with reduced motion (496ms)
+  ✓  159 [mobile] › tests/reduced-motion.spec.ts:32:5 › AC-6.3 · prefers-reduced-motion › / · all content is visible with reduced motion (641ms)
+  ✓  161 [mobile] › tests/reduced-motion.spec.ts:32:5 › AC-6.3 · prefers-reduced-motion › /coating · all content is visible with reduced motion (394ms)
+  ✓  162 [mobile] › tests/reduced-motion.spec.ts:32:5 › AC-6.3 · prefers-reduced-motion › /renovation · all content is visible with reduced motion (429ms)
+  ✓  163 [mobile] › tests/reduced-motion.spec.ts:32:5 › AC-6.3 · prefers-reduced-motion › /service · all content is visible with reduced motion (309ms)
+  ✓  164 [mobile] › tests/reduced-motion.spec.ts:81:3 › AC-6.3 · prefers-reduced-motion › / · every home page CTA is visible and sized with reduced motion (497ms)
+  ✓  165 [mobile] › tests/reduced-motion.spec.ts:113:3 › AC-6.3 · prefers-reduced-motion › / · the hero poster renders with reduced motion (527ms)
+  ✓  166 [mobile] › tests/reduced-motion.spec.ts:130:3 › AC-6 · touch targets › primary CTAs meet the 44px touch-target floor on a phone (355ms)
+
+  166 passed (58.5s)
+
+== website production intake Playwright
+$ playwright test --config playwright.production.config.ts
+[WebServer] (node:17260) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] [apex] Analytics is enabled for this build but no PUBLIC_GTM_ID / PUBLIC_GA4_MEASUREMENT_ID / PUBLIC_META_PIXEL_ID is set. No tags will load and AC-5.5 cannot pass. Check .env.
+
+Running 10 tests using 2 workers
+
+(node:17451) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:17452) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] [apex] Analytics is enabled for this build but no PUBLIC_GTM_ID / PUBLIC_GA4_MEASUREMENT_ID / PUBLIC_META_PIXEL_ID is set. No tags will load and AC-5.5 cannot pass. Check .env.
+[WebServer] [apex] Analytics is enabled for this build but no PUBLIC_GTM_ID / PUBLIC_GA4_MEASUREMENT_ID / PUBLIC_META_PIXEL_ID is set. No tags will load and AC-5.5 cannot pass. Check .env.
+  ✓   2 [chromium] › tests-production/intake-confirmation.spec.ts:10:3 › HTML response cannot claim production routing and retry retains the lead id (1.3s)
+  ✓   1 [chromium] › tests-production/intake-confirmation.spec.ts:10:3 › empty response cannot claim production routing and retry retains the lead id (1.4s)
+[WebServer] [apex] Analytics is enabled for this build but no PUBLIC_GTM_ID / PUBLIC_GA4_MEASUREMENT_ID / PUBLIC_META_PIXEL_ID is set. No tags will load and AC-5.5 cannot pass. Check .env.
+[WebServer] [apex] Analytics is enabled for this build but no PUBLIC_GTM_ID / PUBLIC_GA4_MEASUREMENT_ID / PUBLIC_META_PIXEL_ID is set. No tags will load and AC-5.5 cannot pass. Check .env.
+  ✓   3 [chromium] › tests-production/intake-confirmation.spec.ts:10:3 › unknown status cannot claim production routing and retry retains the lead id (1.1s)
+[WebServer] [apex] Analytics is enabled for this build but no PUBLIC_GTM_ID / PUBLIC_GA4_MEASUREMENT_ID / PUBLIC_META_PIXEL_ID is set. No tags will load and AC-5.5 cannot pass. Check .env.
+  ✓   4 [chromium] › tests-production/intake-confirmation.spec.ts:10:3 › another lead cannot claim production routing and retry retains the lead id (1.1s)
+(node:17663) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] [apex] Analytics is enabled for this build but no PUBLIC_GTM_ID / PUBLIC_GA4_MEASUREMENT_ID / PUBLIC_META_PIXEL_ID is set. No tags will load and AC-5.5 cannot pass. Check .env.
+  ✓   5 [chromium] › tests-production/intake-confirmation.spec.ts:34:1 › accepted production intake confirms the submitted lead (880ms)
+(node:17744) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] [apex] Analytics is enabled for this build but no PUBLIC_GTM_ID / PUBLIC_GA4_MEASUREMENT_ID / PUBLIC_META_PIXEL_ID is set. No tags will load and AC-5.5 cannot pass. Check .env.
+  ✓   6 [mobile] › tests-production/intake-confirmation.spec.ts:10:3 › empty response cannot claim production routing and retry retains the lead id (1.0s)
+[WebServer] [apex] Analytics is enabled for this build but no PUBLIC_GTM_ID / PUBLIC_GA4_MEASUREMENT_ID / PUBLIC_META_PIXEL_ID is set. No tags will load and AC-5.5 cannot pass. Check .env.
+  ✓   7 [mobile] › tests-production/intake-confirmation.spec.ts:10:3 › HTML response cannot claim production routing and retry retains the lead id (1.1s)
+[WebServer] [apex] Analytics is enabled for this build but no PUBLIC_GTM_ID / PUBLIC_GA4_MEASUREMENT_ID / PUBLIC_META_PIXEL_ID is set. No tags will load and AC-5.5 cannot pass. Check .env.
+  ✓   8 [mobile] › tests-production/intake-confirmation.spec.ts:10:3 › unknown status cannot claim production routing and retry retains the lead id (1.0s)
+[WebServer] [apex] Analytics is enabled for this build but no PUBLIC_GTM_ID / PUBLIC_GA4_MEASUREMENT_ID / PUBLIC_META_PIXEL_ID is set. No tags will load and AC-5.5 cannot pass. Check .env.
+  ✓   9 [mobile] › tests-production/intake-confirmation.spec.ts:10:3 › another lead cannot claim production routing and retry retains the lead id (908ms)
+  ✓  10 [mobile] › tests-production/intake-confirmation.spec.ts:34:1 › accepted production intake confirms the submitted lead (942ms)
+
+  10 passed (10.2s)
+
+== Apex OS estimate route and fee browser regression
+
+  VITE v6.4.5  ready in 137 ms
+
+  ➜  Local:   http://127.0.0.1:4191/app/
+PASS: fee omission, reused route identity, missing/present handoffs, and delayed A request/file isolation
+
+== integration tests
+
+ RUN  v4.1.12 /workspace/apex-clean
+
+
+ Test Files  9 passed (9)
+      Tests  39 passed | 2 skipped (41)
+   Start at  06:08:56
+   Duration  6.02s (transform 848ms, setup 0ms, import 2.27s, tests 2.72s, environment 1ms)
+
+
+== Apex OS full closeout browser acceptance
+ok  server ready, synthetic staff provisioned
+ok  unauthenticated and inactive staff refused
+ok  accepted proposal created exactly one job and project (retry with new key returned same job) {"jobId":"job_01M5P8DTF2DEWEMBTMRK13SQY6"}
+ok  closeout and completion refused before final phase {"close":409,"complete":409}
+ok  required inspections recorded {"count":7}
+ok  gates released through API {"released":6,"browserGate":"final"}
+ok  project advanced to final phase
+ok  browser released final gate after native confirmation {"gate":"final","dialog":"Release Final for Synthetic Closeout Customer? This is irreversible.","dbStatus":"released"}
+ok  browser completed job; superintendent close refused {"superClose":403}
+ok  browser closed and archived job {"dbStatus":"closed"}
+ok  history retained, protected, and immutable {"historyEntries":17,"gateMutation":409,"phaseMutation":409,"closeRetry":200,"evidenceRead":200,"anonymousEvidence":403,"historicalListed":true,"counts":{"jobs":1,"projects":1,"evidence":44}}
+ok  no browser page errors
+PASS closeout acceptance; evidence in /tmp/apex-audit/clean/closeout
+
+== ci.sh finished

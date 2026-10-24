@@ -1,0 +1,21 @@
+{
+  "command": [
+    "env",
+    "-u",
+    "CODEX_THREAD_ID",
+    "-u",
+    "CLAUDECODE",
+    "-u",
+    "CURSOR_TRACE_ID",
+    "-u",
+    "GEMINI_CLI",
+    "corepack",
+    "pnpm",
+    "run",
+    "test:production"
+  ],
+  "cwd": "/workspace/apex-operating-system/apps/website",
+  "sha": "f6d5252f76a3b103b8849ae74c00fd9f9b07c022",
+  "seconds": 12.614,
+  "exit_code": 0
+}

@@ -284,3 +284,11 @@ The engine is safer but is not yet the approved quantity authority. It still
 needs a line-by-line reconciliation against controlled real jobs, an approved
 attached-spa reinforcement/detail interpretation, measured compaction yield,
 and replacement of every equipment-loss and existing-appliance placeholder.
+
+## Workspace dependency installation
+
+Install from the repository root with `corepack pnpm install --frozen-lockfile`.
+Run `corepack pnpm --filter apex-designer dev`, `build`, `test` or `typecheck`
+from the root. The workspace lockfile is authoritative; do not run `npm install`
+or `npm ci` inside Designer. Tauri's `npm run` hooks execute scripts without
+installing dependencies and continue to use this same workspace tree.

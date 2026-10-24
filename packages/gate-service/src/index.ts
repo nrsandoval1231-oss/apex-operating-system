@@ -1,3 +1,4 @@
+import { canonicalJson } from './canonicalJson.js';
 import { createHash } from 'node:crypto';
 import type { Database, Queryable } from '@apex/database';
 import {
@@ -116,25 +117,6 @@ const SCHEDULE_AUTHORITY = ['admin', 'office', 'superintendent'] as const;
  * quantities; deciding what they are is a different act.
  */
 const TAKEOFF_APPROVAL_AUTHORITY = ['admin', 'office'] as const;
-
-/**
- * JSON with every object key sorted, at every depth. Arrays keep their order —
- * position is meaning in a list and sorting one would destroy it.
- */
-const canonicalJson = (value: unknown): string => {
-  const canonical = (node: unknown): unknown => {
-    if (Array.isArray(node)) return node.map(canonical);
-    if (node && typeof node === 'object') {
-      return Object.fromEntries(
-        Object.keys(node as Record<string, unknown>)
-          .sort()
-          .map((key) => [key, canonical((node as Record<string, unknown>)[key])]),
-      );
-    }
-    return node;
-  };
-  return JSON.stringify(canonical(value));
-};
 
 const sha256Hex = (value: string) => createHash('sha256').update(value).digest('hex');
 
@@ -724,20 +706,33 @@ export class GateService {
       return { state: await this.getGate(gateInstanceId), events: [], duplicate: true };
     }
 
-    const state = await this.getGate(gateInstanceId);
+    let state = await this.getGate(gateInstanceId);
     await assertJobMutable(this.db, state.jobId);
     // Authority and the checklist are decided first, by the pure engine. The
     // inspection guard runs only on a release that is otherwise good: someone
     // with no authority to release must be told exactly that, and must not
     // learn the job's inspection state on the way to being refused.
-    const drafts = decideGateCommand(state, command);
+    let drafts = decideGateCommand(state, command);
     if (command.type === 'release-gate') await this.assertInspectionsClear(state);
     if (command.type === 'add-evidence') this.assertEvidenceContext(command, context.evidence, state.jobId);
     const correlationId = context.correlationId ?? createCanonicalId('event');
     const persisted: ApexEvent[] = [];
+    let duplicateInTransaction = false;
 
     await this.db.transaction(async (tx) => {
       await assertJobMutable(tx, state.jobId);
+      // The job lock serializes commands, but preflight facts can already be
+      // stale. Recheck both retries and the decision on this connection before
+      // persisting events, including inspection results committed meanwhile.
+      const replay = await tx.query('select event_id from events where idempotency_key like $1 limit 1',
+        [`${baseIdempotencyKey}:%`]);
+      state = await this.getGate(gateInstanceId, tx);
+      if (replay.rows.length > 0) {
+        duplicateInTransaction = true;
+        return;
+      }
+      drafts = decideGateCommand(state, command);
+      if (command.type === 'release-gate') await this.assertInspectionsClear(state, tx);
       if (command.type === 'add-evidence' && context.evidence) {
         const actor = command.actor;
         if (actor.kind !== 'user') throw new Error('Evidence capture requires a user actor.');
@@ -800,9 +795,9 @@ export class GateService {
     }
 
     return {
-      state: drafts.reduce(evolveGate, state),
+      state: duplicateInTransaction ? state : drafts.reduce(evolveGate, state),
       events: persisted,
-      duplicate: false,
+      duplicate: duplicateInTransaction,
     };
   }
 
@@ -2347,9 +2342,9 @@ export class GateService {
    * Waiving is the escape hatch, and it is a recorded act with a stated reason
    * rather than a flag someone can clear.
    */
-  private async assertInspectionsClear(state: GateState): Promise<void> {
+  private async assertInspectionsClear(state: GateState, client: Queryable = this.db): Promise<void> {
     const inspections = new InspectionService(this.db);
-    const blocking = await inspections.blockingFor(state.jobId, state.definitionKey);
+    const blocking = await inspections.blockingFor(state.jobId, state.definitionKey, client);
     if (blocking.length === 0) return;
     const outstanding = blocking
       .map((inspection) => {

@@ -1,0 +1,12 @@
+{
+  "command": [
+    "corepack",
+    "pnpm",
+    "run",
+    "validate"
+  ],
+  "cwd": "/workspace/apex-operating-system/apps/website",
+  "sha": "f6d5252f76a3b103b8849ae74c00fd9f9b07c022",
+  "seconds": 14.562,
+  "exit_code": 0
+}

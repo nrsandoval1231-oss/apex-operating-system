@@ -118,8 +118,15 @@ export class PostgresDatabase implements Database {
   private constructor(private readonly pool: Pool) {}
 
   static create(options: PostgresOptions): PostgresDatabase {
+    // pg reparses URL TLS options after Pool options. Remove those overrides
+    // after deriving our policy, so a URL cannot disable peer verification or
+    // silently discard the explicitly configured CA.
+    const connectionUrl = new URL(options.url);
+    for (const key of ['ssl', 'sslmode', 'sslcert', 'sslkey', 'sslrootcert', 'uselibpqcompat']) {
+      connectionUrl.searchParams.delete(key);
+    }
     const pool = new Pool({
-      connectionString: options.url,
+      connectionString: connectionUrl.toString(),
       max: options.maxConnections ?? 10,
       ssl: resolveSsl(options.url, options.caCertificate),
       application_name: options.applicationName ?? 'apex-os',

@@ -1,0 +1,420 @@
+
+== install
+! Corepack is about to download https://registry.npmjs.org/pnpm/-/pnpm-11.18.0.tgz
+Scope: all 11 workspace projects
+Already up to date
+Done in 489ms using pnpm v11.18.0
+npm warn deprecated uuid@8.3.2: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
+npm warn deprecated rimraf@2.7.1: Rimraf versions prior to v4 are no longer supported
+npm warn deprecated lodash.isequal@4.5.0: This package is deprecated. Use require('node:util').isDeepStrictEqual instead.
+npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+npm warn deprecated glob@7.2.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated fstream@1.0.12: This package is no longer supported.
+
+added 204 packages in 3s
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+== typecheck
+$ tsc -b && tsc --noEmit -p apps/apex-os/tsconfig.json
+
+> apex-designer@0.1.0 typecheck
+> tsc --noEmit
+
+
+== builds
+$ vite build
+vite v5.4.11 building for production...
+transforming...
+✓ 294 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                                     1.09 kB │ gzip:   0.60 kB
+dist/assets/oswald-vietnamese-600-normal-h0z1RevK.woff2             4.14 kB
+dist/assets/oswald-vietnamese-500-normal-hXcn5ojQ.woff2             4.18 kB
+dist/assets/inter-vietnamese-400-normal-DMkecbls.woff2              4.97 kB
+dist/assets/inter-vietnamese-500-normal-DOriooB6.woff2              5.11 kB
+dist/assets/inter-greek-ext-400-normal-DGGRlc-M.woff2               5.26 kB
+dist/assets/inter-greek-ext-500-normal-C4iEst2y.woff2               5.43 kB
+dist/assets/oswald-vietnamese-600-normal-CH5CIKWT.woff              5.89 kB
+dist/assets/oswald-vietnamese-500-normal-Bi4XG4HV.woff              5.91 kB
+dist/assets/inter-vietnamese-400-normal-Bbgyi5SW.woff               6.50 kB
+dist/assets/inter-vietnamese-500-normal-mJboJaSs.woff               6.60 kB
+dist/assets/oswald-cyrillic-500-normal-Dz4ZC46J.woff2               6.84 kB
+dist/assets/oswald-cyrillic-600-normal-OIkAk3Qq.woff2               6.84 kB
+dist/assets/inter-greek-ext-400-normal-KugGGMne.woff                7.06 kB
+dist/assets/inter-greek-ext-500-normal-2j5mBUwD.woff                7.19 kB
+dist/assets/jetbrains-mono-vietnamese-wght-normal-Bt-aOZkq.woff2    7.50 kB
+dist/assets/inter-cyrillic-400-normal-obahsSVq.woff2                7.71 kB
+dist/assets/inter-greek-400-normal-B4URO6DV.woff2                   7.78 kB
+dist/assets/inter-cyrillic-500-normal-BasfLYem.woff2                7.90 kB
+dist/assets/inter-greek-500-normal-BIZE56-Y.woff2                   7.92 kB
+dist/assets/oswald-cyrillic-ext-600-normal-DJv8RkPb.woff2           8.08 kB
+dist/assets/oswald-cyrillic-ext-500-normal-DngHVvy4.woff2           8.13 kB
+dist/assets/oswald-cyrillic-600-normal-B7zyAoGs.woff                8.59 kB
+dist/assets/oswald-cyrillic-500-normal-CjKr_ZfC.woff                8.61 kB
+dist/assets/jetbrains-mono-greek-wght-normal-Bw9x6K1M.woff2         9.00 kB
+dist/assets/inter-cyrillic-400-normal-HOLc17fK.woff                 9.78 kB
+dist/assets/inter-greek-400-normal-q2sYcFCs.woff                    9.92 kB
+dist/assets/inter-cyrillic-500-normal-CxZf_p3X.woff                 9.94 kB
+dist/assets/inter-greek-500-normal-Xzm54t5V.woff                    9.98 kB
+dist/assets/inter-cyrillic-ext-400-normal-BQZuk6qB.woff2           10.23 kB
+dist/assets/inter-cyrillic-ext-500-normal-B0yAr1jD.woff2           10.43 kB
+dist/assets/oswald-cyrillic-ext-500-normal-Hz7kEHBT.woff           10.58 kB
+dist/assets/oswald-cyrillic-ext-600-normal-CXH_3Vsf.woff           10.58 kB
+dist/assets/oswald-latin-ext-600-normal-5Cvn_Zbc.woff2             12.04 kB
+dist/assets/oswald-latin-ext-500-normal-QdEKgtiz.woff2             12.04 kB
+dist/assets/jetbrains-mono-cyrillic-wght-normal-D73BlboJ.woff2     12.11 kB
+dist/assets/oswald-latin-500-normal-B-eyT0Dw.woff2                 12.70 kB
+dist/assets/oswald-latin-600-normal-plFmSr5g.woff2                 12.74 kB
+dist/assets/inter-cyrillic-ext-400-normal-DQukG94-.woff            13.34 kB
+dist/assets/inter-cyrillic-ext-500-normal-BmqWE9Dz.woff            13.45 kB
+dist/assets/jetbrains-mono-latin-ext-wght-normal-DBQx-q_a.woff2    15.20 kB
+dist/assets/oswald-latin-500-normal-DM85Di4w.woff                  16.16 kB
+dist/assets/oswald-latin-ext-600-normal-BUCHT9gM.woff              16.16 kB
+dist/assets/oswald-latin-600-normal-DRToI_2E.woff                  16.18 kB
+dist/assets/oswald-latin-ext-500-normal-DcyNJhgm.woff              16.18 kB
+dist/assets/inter-latin-400-normal-C38fXH4l.woff2                  23.66 kB
+dist/assets/inter-latin-500-normal-Cerq10X2.woff2                  24.27 kB
+dist/assets/inter-latin-400-normal-CyCys3Eg.woff                   30.70 kB
+dist/assets/inter-latin-500-normal-BL9OpVg8.woff                   31.28 kB
+dist/assets/inter-latin-ext-400-normal-C1nco2VV.woff2              35.00 kB
+dist/assets/inter-latin-ext-500-normal-CV4jyFjo.woff2              36.02 kB
+dist/assets/jetbrains-mono-latin-wght-normal-B9CIFXIH.woff2        40.40 kB
+dist/assets/inter-latin-ext-400-normal-77YHD8bZ.woff               47.56 kB
+dist/assets/inter-latin-ext-500-normal-BxGbmqWO.woff               48.49 kB
+dist/assets/App-6aJVdJBU.css                                       28.43 kB │ gzip:   6.05 kB
+dist/assets/index-BdJqGJdG.css                                     35.37 kB │ gzip:   8.62 kB
+dist/assets/App-CF0myngz.js                                       239.47 kB │ gzip:  73.75 kB │ map:   819.58 kB
+dist/assets/index-D_LYxcoO.js                                     442.90 kB │ gzip: 131.05 kB │ map: 2,227.39 kB
+dist/assets/exceljs.min-knCrCk2K.js                               938.61 kB │ gzip: 271.09 kB │ map: 2,087.52 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 5.44s
+
+> apex-designer@0.1.0 build
+> tsc --noEmit && vite build
+
+vite v6.4.3 building for production...
+transforming...
+✓ 85 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                        0.43 kB │ gzip:   0.30 kB
+dist/assets/index-CZuxq36T.css        28.43 kB │ gzip:   6.05 kB
+dist/assets/index-C5OTxEjV.js        437.15 kB │ gzip: 135.44 kB
+dist/assets/exceljs.min-_FHOiBEn.js  940.37 kB │ gzip: 271.39 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 4.92s
+
+== website production build without a lead webhook (must fail)
+▶ Astro collects anonymous usage data.
+  This information helps us improve Astro.
+  Run "astro telemetry disable" to opt-out.
+  https://astro.build/telemetry
+
+05:48:08 [types] Generated 116ms
+05:48:08 [build] output: "static"
+05:48:08 [build] mode: "static"
+05:48:08 [build] directory: /workspace/apex-operating-system/apps/website/dist/
+05:48:08 [build] Collecting build info...
+05:48:08 [build] ✓ Completed in 159ms.
+05:48:08 [build] Building static entrypoints...
+05:48:09 [vite] ✓ built in 308ms
+05:48:09 [vite] ✓ built in 83ms
+05:48:09 [build] Rearranging server assets...
+
+ generating static routes
+PUBLIC_LEAD_WEBHOOK_URL is required when PUBLIC_ENV=production. Astro inlines it at build time; a static host cannot inject it after upload. Set PUBLIC_LEAD_WEBHOOK_URL before building. See apps/website/.env.example.
+  Location:
+    /workspace/apex-operating-system/node_modules/.pnpm/astro@7.3.5_@types+node@26.1.2_aws4fetch@1.0.20_yaml@2.9.0/node_modules/astro/dist/runtime/prerender/static-paths.js:52:63
+  Stack trace:
+    at file:///workspace/apex-operating-system/apps/website/dist/.prerender/chunks/seo_ViQ9SLyT.mjs:44:69
+    at async node:internal/modules/esm/loader:643:26
+    at async Object.getComponentByRoute$1 [as getComponentByRoute] (file:///workspace/apex-operating-system/apps/website/dist/.prerender/prerender-entry.WcdBNcmE.mjs:3234:10)
+    at async StaticPaths.getAll (file:///workspace/apex-operating-system/node_modules/.pnpm/astro@7.3.5_@types+node@26.1.2_aws4fetch@1.0.20_yaml@2.9.0/node_modules/astro/dist/runtime/prerender/static-paths.js:32:23)
+    at async BasicMinimalPluginContext.handler (file:///workspace/apex-operating-system/node_modules/.pnpm/astro@7.3.5_@types+node@26.1.2_aws4fetch@1.0.20_yaml@2.9.0/node_modules/astro/dist/core/build/static-build.js:113:11)
+production build refused to ship without PUBLIC_LEAD_WEBHOOK_URL
+
+== website check and build
+05:48:15 [types] Generated 44ms
+05:48:15 [check] Getting diagnostics for Astro files in /workspace/apex-operating-system/apps/website...
+[96msrc/components/QuoteForm.tsx[0m:[93m96[0m:[93m34[0m - [93mwarning[0m[90m ts(6385): [0m'FormEvent' is deprecated.
+
+[7m96[0m   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+[7m  [0m [93m                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[96msrc/components/QuoteForm.tsx[0m:[93m10[0m:[93m39[0m - [93mwarning[0m[90m ts(6385): [0m'FormEvent' is deprecated.
+
+[7m10[0m import { useEffect, useRef, useState, type FormEvent } from 'react';
+[7m  [0m [93m                                      ~~~~~~~~~~~~~~[0m
+
+Result (68 files):
+- 0 errors
+- 0 warnings
+- 2 hints
+
+05:48:21 [types] Generated 32ms
+05:48:21 [build] output: "static"
+05:48:21 [build] mode: "static"
+05:48:21 [build] directory: /workspace/apex-operating-system/apps/website/dist/
+05:48:21 [build] Collecting build info...
+05:48:21 [build] ✓ Completed in 77ms.
+05:48:21 [build] Building static entrypoints...
+05:48:21 [vite] ✓ built in 294ms
+05:48:21 [vite] ✓ built in 95ms
+05:48:21 [build] Rearranging server assets...
+
+ generating static routes
+05:48:21   ├─ /privacy/index.html (+11ms)
+05:48:21   ├─ /robots.txt (+1ms)
+05:48:21   ├─ /sitemap.xml (+1ms)
+05:48:21   ├─ /terms/index.html (+2ms)
+05:48:21   ├─ /pools/index.html (+10ms)
+05:48:21   ├─ /coating/index.html (+4ms)
+05:48:21   ├─ /renovation/index.html (+2ms)
+05:48:21   ├─ /service/index.html (+2ms)
+05:48:21   ├─ /index.html (+6ms)
+05:48:21 ✓ Completed in 61ms.
+
+05:48:21 [build] ✓ Completed in 485ms.
+05:48:21 [build] 7 page(s) built in 565ms
+05:48:21 [build] Complete!
+
+== unit tests (core)
+
+ RUN  v4.1.10 /workspace/apex-operating-system
+
+
+ Test Files  43 passed (43)
+      Tests  559 passed | 2 skipped (561)
+   Start at  05:48:26
+   Duration  437.50s (transform 757ms, setup 0ms, import 5.28s, tests 427.48s, environment 4ms)
+
+
+== unit tests (designer)
+
+> apex-designer@0.1.0 test
+> vitest run
+
+
+ RUN  v3.2.7 /workspace/apex-operating-system/apps/designer
+
+ ✓ src/engine/planView.test.ts (44 tests) 22ms
+ ✓ src/engine/structure.test.ts (45 tests) 74ms
+ ✓ src/engine/equipment.test.ts (42 tests) 46ms
+ ✓ src/engine/sectionView.test.ts (21 tests) 10ms
+ ✓ src/engine/excavation.test.ts (27 tests) 11ms
+ ✓ src/engine/hydraulics.test.ts (68 tests) 411ms
+ ✓ src/engine/finishes.test.ts (33 tests) 9ms
+ ✓ src/engine/geometry.test.ts (34 tests) 15ms
+ ✓ src/engine/grid.test.ts (22 tests) 14ms
+ ✓ src/engine/planRotation.test.ts (12 tests) 6ms
+ ✓ src/engine/codeChecks.test.ts (21 tests) 7ms
+ ✓ src/engine/placement.test.ts (17 tests) 5ms
+ ✓ src/engine/jobFile.test.ts (19 tests) 103ms
+ ✓ src/engine/deck.test.ts (14 tests) 5ms
+ ✓ src/engine/ledgePreset.test.ts (34 tests) 49ms
+ ✓ src/engine/bom.test.ts (13 tests) 79ms
+ ✓ src/engine/poolResize.test.ts (12 tests) 6ms
+ ✓ src/engine/depthProfile.test.ts (8 tests) 92ms
+ ✓ src/engine/scenarios.test.ts (66 tests) 356ms
+ ✓ src/engine/apexSubmission.test.ts (8 tests) 201ms
+ ✓ src/engine/approvedTakeoff.test.ts (2 tests) 101ms
+ ✓ src/engine/orderWorkbook.test.ts (6 tests) 192ms
+ ✓ src/apexApi.test.ts (3 tests) 6ms
+ ✓ src/engine/stepMetrics.test.ts (8 tests) 3ms
+ ✓ src/engine/index.safety.test.ts (3 tests) 53ms
+ ✓ src/App.test.tsx (3 tests) 97ms
+
+ Test Files  26 passed (26)
+      Tests  585 passed (585)
+   Start at  05:55:44
+   Duration  3.23s (transform 934ms, setup 0ms, collect 2.53s, tests 1.97s, environment 4ms, prepare 1.33s)
+
+
+== unit tests (legacy proposal engine)
+PASS marginFromFee(0.30)=23.08%
+PASS feeForMargin(0.30)=42.86%
+PASS Whitaker revenue ≈ 152,041.73
+PASS Whitaker fee ≈ 35,086.55
+PASS Whitaker true margin ≈ 23.08%
+PASS negative cost is rejected
+PASS negative fee is rejected
+PASS a target margin at or above 100% is rejected
+PASS zero pool length reports a validation error
+PASS zero pool length is refused by takeoff
+PASS negative pool width reports a validation error
+PASS negative pool width is refused by takeoff
+PASS inverted depth profile reports a validation error
+PASS inverted depth profile is refused by takeoff
+PASS negative fee reports a validation error
+PASS negative fee is refused by takeoff
+PASS negative direct-entry cost reports a validation error
+PASS negative direct-entry cost is refused by takeoff
+PASS negative allowance reports a validation error
+PASS negative allowance is refused by takeoff
+PASS impossible spa dimension reports a validation error
+PASS impossible spa dimension is refused by takeoff
+PASS standard depth profile is 3.5 → 6.0
+PASS standard spa is 6×6×3.5 (was assumed 7×7)
+PASS bare length×width applies the standard profile
+PASS explicit avgDepth still overrides the standard
+PASS spa defaults to 6×6×3.5
+PASS deck from 4 ft border = 368 sq ft
+PASS deck lands inside ref §1000 back-solve (280–415)
+PASS explicit deckSqFt overrides the border rule
+PASS deck border width is configurable
+PASS pool surface 336
+PASS pool perimeter 76
+PASS pool wetted ≈ 749
+PASS pool gallons ≈ 11,939
+PASS combined wetted ≈ 887 (6×6 spa)
+PASS combined perimeter 100
+PASS combined gallons ≈ 12,881
+PASS approved Designer quantities replace Proposal geometry as pricing authority
+PASS approved revision pricing never needs Proposal geometry inputs
+PASS excavation ≈ 92.3 bank yd³
+PASS gunite ordered ≈ 27.3 yd³
+PASS plaster labor qty = wetted area ≈ 887 sq ft
+PASS plaster bags = 43
+PASS rebar steel ≈ 1,061 lb
+PASS deck line derived from the border rule
+PASS rebar exposes LF #3 allocation basis
+PASS reproduces his $5,500 Excavation line
+PASS reproduces his $12,000 Gunite line
+PASS reproduces his $4,000 Rebar line
+PASS reproduces his $5,000 Pool Deck line
+PASS reproduces his $550 Forming line
+PASS reproduces his $1,500 Site Work line
+PASS reproduces his $8,100 Pool Plumbing line
+PASS plumbing LF ≈ 755 (six runs from the pad + spa jet loop)
+PASS plumbing confidence flagged low (single job, blended rate)
+PASS no-spa job drops the spa suction/return, jet and spillway runs
+PASS no-spa plumbing still prices skimmers/drain/returns (pad-driven, spa-independent)
+PASS reproduces his $1,950 Tile/Materials line
+PASS reproduces his $2,500 Tile/Labor line
+PASS reproduces his $3,600 Coping/Materials line
+PASS reproduces his $3,950 Coping/Labor line
+PASS reproduces his $3,750 Plaster/Materials line
+PASS reproduces his $5,000 Plaster/Labor line
+PASS tile material is per sq ft, labor per LF (different drivers)
+PASS plaster material is per bag, labor per sq ft
+PASS finishes pairs still total his section figures
+PASS code 200 Excavation reconciles to $7,000
+PASS code 400 Shell reconciles to $16,800
+PASS code 800 Finishes reconciles to $20,750
+PASS every line multiplies out: qty × unit cost = extended
+PASS spa excavation is parametric (10×10 digs more than 6×6)
+PASS pool bank ≈ 78 yd³ (ref §200)
+PASS steps area scales with pool size
+PASS dimension order does not change wetted area (14×24 == 24×14)
+PASS two equivalent entries land within 5% on job cost
+PASS fee charged on allowances (jobCost includes allowances)
+PASS trueMargin 23.08 at 0.30 fee
+PASS pricing reconciles exactly: cost + fee = revenue
+PASS jobCost keeps the cents its line items carry
+PASS fee is the disclosed rate on the rounded cost
+PASS allowances net to 12,000 after supersession
+PASS Concrete Diamonds superseded by the deck takeoff
+PASS supersession raises an explanatory flag
+PASS no supersession when the deck is not taken off
+PASS build weeks DERIVED, lands in ref 6–8 wk window
+PASS explicit buildWeeks still overrides (7×3×1.5=31.5)
+PASS supervision is duration-driven, NOT proportional to cost
+PASS missing costs gated OFF by default
+PASS missing costs appear when included
+PASS Lever B tier 1 quantified (> $0)
+PASS Lever B tier 2 = supervision hrs × rate
+PASS Lever B tier 3 carries NO dollars (never in the base)
+PASS Lever B billable = tier1 + tier2 only
+PASS Lever B uplift = billable × (1 + fee)
+PASS Lever B still flagged gated
+PASS Permits unquantified until entered
+PASS caliche exposure computed (fraction of dig below 27in)
+PASS caliche is a RANGE, not a point cost
+PASS budget by code produced
+PASS back-test measures against ACTUAL job cost
+PASS back-test exposes the unmodelled remainder
+PASS coverage flags every unpriced direct line
+PASS residual forces job cost to the actual total
+PASS residual back-test is flagged CIRCULAR
+PASS residual is excluded from substantiated direct cost
+PASS residual counted as unsubstantiated, not coverage
+PASS residual raises a warn flag
+PASS no residual line when back-solve is off
+PASS the default draft is blocked while direct-entry scope is unresolved
+PASS a blocked draft cannot be finalized
+PASS commercially complete pricing remains blocked without an approved Designer revision
+PASS explicitly quoted direct-entry scope clears the issue gate
+PASS finalization returns an immutable customer-safe payload
+PASS issued proposal is immutably pinned to its approved revision with readable quantity explanations
+PASS signProposal flips status to signed and adds signedAt timestamp
+PASS signProposal preserves all approval data and makes the payload frozen
+PASS signProposal emits a job.bound event structure with canonical identifiers
+PASS unsafe calibration script is fail-closed
+
+119 pass / 0 fail
+PASS estimate document hash is pinned
+PASS actual-cost document hash is pinned
+PASS estimate section subtotals reconcile to $116,955.18
+PASS all 61 actual transactions reconcile to $104,602.12
+PASS actual 30% contractor fee reconciles exactly
+PASS actual cost plus fee reconciles to $135,982.76
+PASS payments plus balance reconcile to actual customer total
+PASS estimate exceeded actual cost by $12,353.06
+PASS customer estimate exceeded actual cost-plus total by $16,058.97
+PASS same-job documents are replay evidence, not quantity validation
+PASS uncategorized transactions block production rate calibration
+
+11 pass / 0 fail
+approved quantity authority and digest verification passed
+PASS index.html carries an inline module
+PASS the page reaches engine.mjs
+PASS engine.mjs imports no node: builtin
+PASS approved-takeoff.mjs imports no node: builtin
+PASS sha256.mjs imports no node: builtin
+PASS index.html imports the no-revision path
+PASS index.html imports the production path
+PASS index.html routes on a pinned revision rather than calling one path unconditionally
+PASS a draft prices
+PASS a draft still cannot be issued
+PASS the production path refuses to run without a revision
+PASS the legacy path refuses to run with a revision
+PASS an approved revision clears the approved-takeoff blocker
+PASS a revision-priced takeoff carries the digest it was priced from
+
+all pass / 0 fail
+1 pass / 0 fail
+
+== website unit tests
+$ node --experimental-strip-types --test scripts/tests/*.test.mjs
+✔ production only confirms accepted or duplicate responses for the submitted lead (0.927817ms)
+✔ non-production test hooks retain their permissive acknowledgement contract but reject quarantine (0.138439ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 96.87202
+
+== website Playwright
+[WebServer] (node:3979) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+Error: Process from config.webServer exited early.
+
+
+real	8m8.593s
+user	13m0.744s
+sys	1m26.735s

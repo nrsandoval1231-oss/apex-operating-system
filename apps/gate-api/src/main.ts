@@ -6,6 +6,7 @@ import {
   type Database,
 } from '@apex/database';
 import { LocalEvidenceStorage, S3EvidenceStorage, type EvidenceStorage } from '@apex/storage';
+import { s3ConfigFromEnv } from './storageConfig.js';
 import { accessConfigFromEnv } from './accessConfig.js';
 import { createGateApi } from './server.js';
 
@@ -65,26 +66,9 @@ const evidenceDirectory = resolve(process.env.GATE_EVIDENCE_DIRECTORY ?? './var/
  * silent fallback — evidence quietly landing on an ephemeral container disk is
  * exactly the kind of thing nobody notices until it is needed.
  */
-const s3Endpoint = process.env.S3_ENDPOINT?.trim();
-const s3Parts = {
-  bucket: process.env.S3_BUCKET?.trim(),
-  accessKeyId: process.env.S3_ACCESS_KEY_ID?.trim(),
-  secretAccessKey: process.env.S3_SECRET_ACCESS_KEY?.trim(),
-};
-if (s3Endpoint) {
-  const missing = Object.entries(s3Parts).filter(([, value]) => !value).map(([name]) => name);
-  if (missing.length > 0) {
-    throw new Error(`S3_ENDPOINT is set but these are missing: ${missing.join(', ')}.`);
-  }
-}
-const storage: EvidenceStorage = s3Endpoint
-  ? new S3EvidenceStorage({
-    endpoint: s3Endpoint,
-    bucket: s3Parts.bucket!,
-    accessKeyId: s3Parts.accessKeyId!,
-    secretAccessKey: s3Parts.secretAccessKey!,
-    region: process.env.S3_REGION?.trim() || 'auto',
-  })
+const s3 = s3ConfigFromEnv(process.env);
+const storage: EvidenceStorage = s3
+  ? new S3EvidenceStorage(s3)
   : new LocalEvidenceStorage(evidenceDirectory);
 /**
  * The origin customers reach this server on — deployment plan slice 7.
@@ -250,7 +234,7 @@ server.listen(port, HOST, () => {
    * to anything else it is a deployment, and the storage note above reads as
    * reassuring configuration rather than a countdown.
    */
-  if (!s3Endpoint && HOST !== '127.0.0.1' && HOST !== '::1') {
+  if (!s3 && HOST !== '127.0.0.1' && HOST !== '::1') {
     console.warn(
       '\n  !  EVIDENCE IS EPHEMERAL: no object storage is configured, so evidence is being written\n'
       + `     to this container at ${evidenceDirectory} and will be DESTROYED by the next deploy.\n`

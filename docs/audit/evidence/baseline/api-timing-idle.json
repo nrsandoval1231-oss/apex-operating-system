@@ -1,0 +1,23 @@
+{
+  "samples": 100,
+  "unit": "milliseconds",
+  "dataset": "same synthetic baseline PostgreSQL database",
+  "routes": {
+    "/api/jobs": {
+      "median": 4.31,
+      "p95": 6.31
+    },
+    "/api/today": {
+      "median": 21.39,
+      "p95": 25.63
+    },
+    "/api/calendar": {
+      "median": 10.2,
+      "p95": 11.95
+    },
+    "/api/jobs/<synthetic-job>/project": {
+      "median": 2.31,
+      "p95": 2.73
+    }
+  }
+}
