@@ -26,7 +26,7 @@ import {
   ProcurementUpdateSchema,
 } from '@apex/contracts';
 import { DomainRuleError, RoleRefusalError } from '@apex/domain';
-import { CustomerService, GateService, InspectionService, TaskService } from '@apex/gate-service';
+import { CustomerService, GateService, InspectionService, TaskService, CalendarService } from '@apex/gate-service';
 import { renderClosedPage, renderCustomerPage } from './customerPage.js';
 import { log, redactPath } from './log.js';
 
@@ -1025,6 +1025,71 @@ export function createGateApi(options: GateApiOptions) {
       }
 
       if (
+        url.pathname === '/api/calendar-events' ||
+        /^\/api\/calendar-events\//.test(url.pathname)
+      ) {
+        requireStaff(actor);
+        const events = new CalendarService(options.db);
+        if (
+          request.method === 'GET' &&
+          url.pathname === '/api/calendar-events'
+        ) {
+          const job = url.searchParams.get('jobId');
+          return sendJson(
+            response,
+            200,
+            await events.list(
+              actor,
+              job === null ? undefined : idSchemas.job.parse(job),
+            ),
+          );
+        }
+        if (
+          request.method === 'POST' &&
+          url.pathname === '/api/calendar-events'
+        ) {
+          return sendJson(
+            response,
+            201,
+            await events.command(
+              actor,
+              idempotency(request),
+              'create',
+              null,
+              await readJson(request),
+            ),
+          );
+        }
+        const match = url.pathname.match(
+          /^\/api\/calendar-events\/(agenda_[0-9A-HJKMNP-TV-Z]{26})\/(edit|cancel|history)$/,
+        );
+        if (match && request.method === 'GET' && match[2] === 'history') {
+          return sendJson(
+            response,
+            200,
+            await events.history(actor, match[1]!),
+          );
+        }
+        if (
+          match &&
+          request.method === 'POST' &&
+          (match[2] === 'edit' || match[2] === 'cancel')
+        ) {
+          return sendJson(
+            response,
+            200,
+            await events.command(
+              actor,
+              idempotency(request),
+              match[2],
+              match[1]!,
+              await readJson(request),
+            ),
+          );
+        }
+      }
+
+      if (
         url.pathname === '/api/tasks' || url.pathname === '/api/task-assignees' ||
         /^\/api\/tasks\//.test(url.pathname)
       ) {
@@ -1380,6 +1445,35 @@ export function createGateApi(options: GateApiOptions) {
       if (request.method === 'GET' && url.pathname === '/api/subcontractors') {
         requireStaff(actor);
         return sendJson(response, 200, await service.listSubcontractors());
+      }
+
+      if (
+        request.method === 'GET' &&
+        url.pathname === '/api/workspace-calendar'
+      ) {
+        requireStaff(actor);
+        const appointments = await new CalendarService(options.db).list(actor);
+        const tasks = await new TaskService(options.db).list(actor);
+        const operational = await service.listCalendarEntries();
+        return sendJson(response, 200, [
+          ...appointments.map((event) => ({
+            source: 'appointment',
+            id: `appointment:${event.eventId}`,
+            event,
+          })),
+          ...tasks
+            .filter((task) => task.dueDate !== null && !task.completedAt)
+            .map((task) => ({
+              source: 'task',
+              id: `task:${task.taskId}`,
+              task,
+            })),
+          ...operational.map((entry) => ({
+            source: 'operational',
+            id: `operational:${entry.taskId}`,
+            entry,
+          })),
+        ]);
       }
 
       if (request.method === 'GET' && url.pathname === '/api/calendar') {

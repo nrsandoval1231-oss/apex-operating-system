@@ -21,6 +21,7 @@ export const ID_KINDS = [
   'inspect',
   'material',
   'task',
+  'agenda',
 ] as const;
 
 export type CanonicalIdKind = (typeof ID_KINDS)[number];
@@ -53,6 +54,7 @@ export const idSchemas = {
   inspection: canonicalIdSchema('inspect'),
   material: canonicalIdSchema('material'),
   task: canonicalIdSchema('task'),
+  agenda: canonicalIdSchema('agenda'),
 } as const;
 
 export const createCanonicalId = <Kind extends CanonicalIdKind>(kind: Kind, timestamp?: number): `${Kind}_${string}` =>

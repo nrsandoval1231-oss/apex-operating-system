@@ -47,6 +47,7 @@ export const OPERATIONAL_MIGRATIONS = [
   '0035_material_procurement.sql',
   '0036_material_procurement_job_revision_fk.sql',
   '0037_checklist.sql',
+  '0038_calendar_events.sql',
 ] as const;
 
 export const STORAGE_MIGRATION = '0003_evidence_storage.sql';
