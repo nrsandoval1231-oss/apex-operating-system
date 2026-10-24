@@ -63,7 +63,7 @@ try {
     { width: 1440, height: 1000 },
     { width: 390, height: 844 },
   ]) {
-    const page = await browser.newPage({ viewport });
+    const page = await browser.newPage({ viewport, hasTouch: viewport.width < 700, isMobile: viewport.width < 700 });
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
     await page.addInitScript(
@@ -72,7 +72,8 @@ try {
     );
     await page.goto(origin + '/app/calendar?action=schedule-event');
     await page.getByRole('button', { name: 'Close dialog' }).click();
-    await page.getByRole('button', { name: 'Open quick actions' }).click();
+    if (viewport.width < 700) await page.getByRole('button', { name: 'Open quick actions' }).tap();
+    else await page.getByRole('button', { name: 'Open quick actions' }).click();
     await page
       .getByRole('link', { name: 'Schedule Event', exact: true })
       .click();
@@ -109,7 +110,8 @@ try {
         .filter({ hasText: 'Could not reach' })
         .waitFor();
     }
-    await page.getByRole('button', { name: 'Save event', exact: true }).click();
+    if (viewport.width < 700) await page.getByRole('button', { name: 'Save event', exact: true }).tap();
+    else await page.getByRole('button', { name: 'Save event', exact: true }).click();
     const card = () =>
       page
         .locator('.cw-entry')
@@ -173,7 +175,27 @@ try {
     assert.equal(rows.rows.length, 1);
     assert.equal(rows.rows[0].snapshot.revision, 2);
     assert.deepEqual(errors, []);
+    const filters = page.getByRole('button', { name: /^Filters/ });
+    if (viewport.width < 700) {
+      assert.equal(await filters.getAttribute('aria-expanded'), 'false');
+      await page.evaluate(() => window.scrollTo(0, 0));
+      const first = await page.locator('.cw-entry').first().boundingBox();
+      const quick = await page.getByRole('button', { name: 'Open quick actions' }).boundingBox();
+      assert(first && quick && first.y + first.height < quick.y, 'First real appointment is visible above mobile actions');
+      const target = await filters.boundingBox();
+      assert(target.width >= 44 && target.height >= 44);
+      await filters.tap();
+    }
     await page.locator('.cw-filters select').nth(1).selectOption(user);
+    assert.equal(await filters.innerText(), 'Filters (1 active)');
+    await filters.click();
+    assert.equal(await filters.getAttribute('aria-expanded'), 'false');
+    await page.locator('.cw-entry').filter({hasText: changed}).first().waitFor();
+    // A collapsed filter remains active; reopening preserves its selection.
+    if (viewport.width < 700) await filters.tap(); else await filters.click();
+    assert.equal(await page.locator('.cw-filters select').nth(1).inputValue(), user);
+    await filters.click();
+    checks.push(`${viewport.width}px labelled filter disclosure preserves active member filter; mobile touch and first appointment density`);
     await page.evaluate(() => window.scrollTo(0, 0));
     await page.screenshot({
       path: `/tmp/apex2/screenshots/calendar-${viewport.width}.png`,

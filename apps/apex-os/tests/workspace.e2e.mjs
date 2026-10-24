@@ -184,7 +184,7 @@ try {
     { width: 1440, height: 1000 },
     { width: 390, height: 844 },
   ]) {
-    const page = await browser.newPage({ viewport });
+    const page = await browser.newPage({ viewport, hasTouch: viewport.width < 700, isMobile: viewport.width < 700 });
     const errors = [],
       requests = [];
     page.on('pageerror', (e) => errors.push(e.message));
@@ -273,6 +273,15 @@ try {
       `${viewport.width}: coating/renovation/service/unknown inspection tabs stay configuration-required with no pool fetch or controls`,
     );
     // Measure concurrent dashboard reads only for this navigation.
+    if (viewport.width < 700) {
+      await page.goto(origin + `/app/today?project=${jobs.a}`);
+      await page.locator('.selected-project').getByRole('heading', {name:names.a, exact:true}).waitFor();
+      await page.locator('.cw-summary>.cw-entry').first().waitFor();
+      const greeting = await page.locator('.workspace-greeting').boundingBox();
+      assert(greeting.y >= 0 && greeting.y < 150, 'Initial selected Today opens at daily greeting, not auto-scrolled project');
+      await assertMobileAppointment(page);
+      checks.push('390: initial selected Today retains greeting/checklist/appointment viewport');
+    }
     requests.length = 0;
     await page.goto(origin + '/app/today');
     await page
@@ -324,13 +333,16 @@ try {
       await assertMobileAppointment(page);
     }
     await page.getByLabel('Search jobs', { exact: true }).fill(suffix);
-    await page
-      .getByRole('button', { name: `Select ${names.a}`, exact: true })
-      .click();
+    const selectAlpha = page.getByRole('button', { name: `Select ${names.a}`, exact: true });
+    if (viewport.width < 700) await selectAlpha.tap(); else await selectAlpha.click();
     await page
       .locator('.selected-project')
       .getByRole('heading', { name: names.a, exact: true })
       .waitFor();
+    if (viewport.width < 700) {
+      const selectedHeading = await page.locator('.selected-project h2').boundingBox();
+      assert(selectedHeading.y >= 0 && selectedHeading.y < viewport.height - 100, 'Deliberate project selection reveals its heading on mobile');
+    }
     assert(new URL(page.url()).searchParams.get('project') === jobs.a);
     await page
       .locator('.selected-project')
@@ -644,6 +656,26 @@ try {
     );
     await page.close();
   }
+  // Intermediate and narrow layout coverage uses the same persisted real project.
+  for (const width of [360, 768, 1024]) {
+    const page = await browser.newPage({viewport: {width, height: 1000}, hasTouch: true, isMobile: width < 700});
+    await page.addInitScript(t => localStorage.setItem('apex-gate-token', t), tokens.admin);
+    for (const path of [`/app/today?project=${jobs.a}`, `/app/projects/${jobs.a}`]) {
+      await page.goto(origin + path);
+      await page.locator('.selected-project').getByRole('heading', {name: names.a, exact:true}).waitFor();
+      assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${width}px ${path}: no page overflow`);
+      const tab = page.locator('.selected-project').getByRole('button', {name:'Overview',exact:true});
+      await tab.tap();
+      const box = await tab.boundingBox();
+      assert(box.width >= 44 && box.height >= 44, `${width}px accessible project tab target`);
+      if (path.includes('/today')) {
+        const columns = await page.locator('.workspace-columns').evaluate(e => getComputedStyle(e).gridTemplateColumns.split(' ').length);
+        assert.equal(columns, width <= 900 ? 1 : 2);
+      }
+    }
+    checks.push(`${width}px real Today/project layout, touch tab, no horizontal overflow`);
+    await page.close();
+  }
   const field = await browser.newPage({
     viewport: { width: 390, height: 844 },
   });
@@ -715,7 +747,7 @@ try {
         checks,
         screenshots: ['workspace-1440.png', 'workspace-390.png'],
         limits: [
-          'Jobsite upload deferred to following photo milestone; existing gallery only.',
+          'Optional photo persistence is exercised separately by photos.e2e.mjs.',
           'Synthetic loopback acceptance; no staging or live provider acceptance.',
         ],
       },
