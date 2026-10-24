@@ -1,3 +1,4 @@
+import { canonicalJson } from './canonicalJson.js';
 import { createHash } from 'node:crypto';
 import type { Database, Queryable } from '@apex/database';
 import {
@@ -23,17 +24,6 @@ import {
   type PricingBlocker,
 } from '@apex/pricing-engine';
 
-const canonicalJson = (value: unknown): string => {
-  const visit = (node: unknown): unknown => {
-    if (Array.isArray(node)) return node.map(visit);
-    if (node && typeof node === 'object') return Object.fromEntries(
-      Object.keys(node as Record<string, unknown>).sort()
-        .map((key) => [key, visit((node as Record<string, unknown>)[key])]),
-    );
-    return node;
-  };
-  return JSON.stringify(visit(value));
-};
 const sha256 = (value: string): string => createHash('sha256').update(value).digest('hex');
 const commandKey = (value: string): string => {
   if (value.trim().length < 8) throw new Error('Command idempotency keys must contain at least 8 characters.');
