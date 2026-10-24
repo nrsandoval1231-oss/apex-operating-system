@@ -104,6 +104,14 @@ export const apiGet = async <T>(
   return parsed.data;
 };
 
+/** XHR photo uploads use the same invalidation boundary as JSON commands. */
+export function invalidateAndNotify(): void {
+  pendingReads.clear();
+  if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+    window.dispatchEvent(new Event('apex:data-changed'));
+  }
+}
+
 /**
  * A request that changes something.
  *
@@ -150,13 +158,7 @@ export const apiSend = async <T>(
     throw new ApiError(message, response.status);
   }
 
-  pendingReads.clear();
-  if (
-    typeof window !== 'undefined' &&
-    typeof window.dispatchEvent === 'function'
-  ) {
-    window.dispatchEvent(new Event('apex:data-changed'));
-  }
+  invalidateAndNotify();
   const parsed = schema.safeParse(body);
   if (!parsed.success) {
     throw new ApiError(
