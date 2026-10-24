@@ -35,50 +35,72 @@ const RETRY_DELAY_MS = 400;
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-export const apiGet = async <T>(path: string, schema: ZodType<T>, signal?: AbortSignal): Promise<T> => {
-  // No token is not an error the client decides. The server may be running in
-  // single-machine pilot mode, where a local request needs none; if it is not,
-  // it answers 403 and the app shows sign-in. Only the server knows.
-  const token = getToken();
-
-  const send = () => fetch(path, {
-    ...(signal ? { signal } : {}),
-    headers: {
-      ...(token === '' ? {} : { authorization: `Bearer ${token}` }),
-      accept: 'application/json',
-    },
+// Coalesce concurrent token/path reads. A subscriber cancels its own wait, never
+// another subscriber's fetch. Successful commands invalidate pending sharing.
+const pendingReads = new Map<string, Promise<unknown>>();
+export const apiGet = async <T>(
+  path: string,
+  schema: ZodType<T>,
+  signal?: AbortSignal,
+): Promise<T> => {
+  const token = getToken(),
+    key = JSON.stringify([token, path]);
+  let pending = pendingReads.get(key);
+  if (!pending) {
+    pending = (async () => {
+      const send = () =>
+        fetch(path, {
+          headers: {
+            ...(token === '' ? {} : { authorization: `Bearer ${token}` }),
+            accept: 'application/json',
+          },
+        });
+      let response: Response;
+      try {
+        try {
+          response = await send();
+        } catch {
+          await wait(RETRY_DELAY_MS);
+          response = await send();
+        }
+      } catch {
+        throw new ApiError(
+          'Could not reach the Apex API. The connection failed rather than the request.',
+          0,
+        );
+      }
+      const body: unknown = await response.json().catch(() => null);
+      if (!response.ok)
+        throw new ApiError(
+          typeof body === 'object' &&
+          body !== null &&
+          typeof (body as { error?: unknown }).error === 'string'
+            ? (body as { error: string }).error
+            : `Request failed with HTTP ${response.status}.`,
+          response.status,
+        );
+      return body;
+    })();
+    pendingReads.set(key, pending);
+    const clear = () => {
+      if (pendingReads.get(key) === pending) pendingReads.delete(key);
+    };
+    void pending.then(clear, clear);
+  }
+  if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
+  const body = await new Promise<unknown>((resolve, reject) => {
+    const abort = () => reject(new DOMException('Aborted', 'AbortError'));
+    signal?.addEventListener('abort', abort, { once: true });
+    pending!
+      .then(resolve, reject)
+      .finally(() => signal?.removeEventListener('abort', abort));
   });
-
-  let response: Response;
-  try {
-    try {
-      response = await send();
-    } catch (first) {
-      if (first instanceof DOMException && first.name === 'AbortError') throw first;
-      await wait(RETRY_DELAY_MS);
-      response = await send();
-    }
-  } catch (cause) {
-    if (cause instanceof DOMException && cause.name === 'AbortError') throw cause;
-    // The browser does not say why a fetch failed, so this must not guess. It
-    // previously blamed the Gate API, which was wrong often enough to matter:
-    // a blocked request, a sleeping laptop, or a dropped proxy look identical
-    // from here, and naming the wrong cause sends someone to fix the wrong thing.
-    throw new ApiError('Could not reach the Apex API. The connection failed rather than the request.', 0);
-  }
-
-  const body: unknown = await response.json().catch(() => null);
-  if (!response.ok) {
-    const message = typeof body === 'object' && body !== null && typeof (body as { error?: unknown }).error === 'string'
-      ? (body as { error: string }).error
-      : `Request failed with HTTP ${response.status}.`;
-    throw new ApiError(message, response.status);
-  }
-
   const parsed = schema.safeParse(body);
-  if (!parsed.success) {
-    throw new ApiError('The Apex API returned data this build does not understand.', response.status);
-  }
+  if (!parsed.success)
+    throw new ApiError(
+      'The Apex API returned data this build does not understand.',
+      200,
+    );
   return parsed.data;
 };
 
@@ -93,7 +115,7 @@ export const apiGet = async <T>(path: string, schema: ZodType<T>, signal?: Abort
 export const apiSend = async <T>(
   path: string,
   schema: ZodType<T>,
-  init: { method: 'POST' | 'DELETE'; body?: unknown; idempotencyKey?: string } ,
+  init: { method: 'POST' | 'DELETE'; body?: unknown; idempotencyKey?: string },
 ): Promise<T> => {
   const token = getToken();
   let response: Response;
@@ -111,23 +133,36 @@ export const apiSend = async <T>(
       body: JSON.stringify(init.body ?? {}),
     });
   } catch {
-    throw new ApiError('Could not reach the Apex API. The connection failed rather than the request.', 0);
+    throw new ApiError(
+      'Could not reach the Apex API. The connection failed rather than the request.',
+      0,
+    );
   }
 
   const body: unknown = await response.json().catch(() => null);
   if (!response.ok) {
-    const message = typeof body === 'object' && body !== null && typeof (body as { error?: unknown }).error === 'string'
-      ? (body as { error: string }).error
-      : `Request failed with HTTP ${response.status}.`;
+    const message =
+      typeof body === 'object' &&
+      body !== null &&
+      typeof (body as { error?: unknown }).error === 'string'
+        ? (body as { error: string }).error
+        : `Request failed with HTTP ${response.status}.`;
     throw new ApiError(message, response.status);
   }
 
-  if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+  pendingReads.clear();
+  if (
+    typeof window !== 'undefined' &&
+    typeof window.dispatchEvent === 'function'
+  ) {
     window.dispatchEvent(new Event('apex:data-changed'));
   }
   const parsed = schema.safeParse(body);
   if (!parsed.success) {
-    throw new ApiError('The Apex API returned data this build does not understand.', response.status);
+    throw new ApiError(
+      'The Apex API returned data this build does not understand.',
+      response.status,
+    );
   }
   return parsed.data;
 };

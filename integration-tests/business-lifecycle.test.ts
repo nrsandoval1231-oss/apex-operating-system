@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createCanonicalId, type AuthoritativeQuantity, type EventActor, type JobId } from '../packages/contracts/src/index.ts';
 import { PostgresDatabase, applyOperationalMigrations } from '../packages/database/src/index.ts';
 import { MEASURED_LINE_DEFINITIONS, type DirectPriceInput } from '../packages/pricing-engine/src/index.ts';
-import { CustomerService, GateService, InspectionService } from '../packages/gate-service/src/index.ts';
+import { CustomerService, GateService, InspectionService, WorkspaceService } from '../packages/gate-service/src/index.ts';
 
 const url = process.env.DATABASE_URL?.trim();
 const available = Boolean(url);
@@ -18,7 +18,7 @@ beforeAll(async () => {
     values($1,gen_random_uuid(),'admin','Lifecycle Regression') on conflict(user_id) do nothing`, [ids.user]);
   await db.query(`insert into leads(lead_id,intake_source,source_record_id,idempotency_key,accepted_payload)
     values($1,'synthetic-lifecycle',$2,$3,$4::jsonb)`, [ids.lead, ids.lead, `lifecycle:${ids.lead}`,
-    JSON.stringify({ customerName: 'Synthetic Lifecycle', streetAddress: '1 Regression Way' })]);
+    JSON.stringify({ customerName: 'Synthetic Lifecycle', vertical: 'Designer Pools', streetAddress: '1 Regression Way' })]);
 });
 afterAll(async () => { if (available && db) await db.close(); });
 
@@ -124,5 +124,7 @@ describe.skipIf(!available)('business lifecycle on PostgreSQL', () => {
     expect((await api.listJobs('historical')).map((item) => item.jobId)).toContain(jobId);
     expect((await api.getProjectPhaseHistory(jobId)).length).toBeGreaterThan(1);
     expect((await db.query('select count(*)::int as count from evidence_records where job_id=$1', [jobId])).rows[0]?.count).toBeGreaterThan(0);
+    const workspace = (await new WorkspaceService(db).list(actor)).find(item => item.jobId === jobId);
+    expect(workspace).toMatchObject({ division: 'Designer Pools', stageCatalog: 'pools', gates: { released: 7, required: 7 }, proposalVersionId: signed.proposal.proposalVersionId });
   });
 });
