@@ -1,0 +1,10 @@
+{
+  "command": [
+    "bash",
+    "scripts/ci.sh"
+  ],
+  "cwd": "/workspace/apex-clean",
+  "sha": "f4421197de580028bfe53f9c7d50776b20a6a52b",
+  "seconds": 627.133,
+  "exit_code": 0
+}
