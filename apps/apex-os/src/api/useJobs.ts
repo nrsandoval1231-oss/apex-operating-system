@@ -51,7 +51,7 @@ export const useToken = (): string => useSyncExternalStore(subscribeToToken, get
  * changes. Aborted and superseded requests never write state, so a fast token
  * change cannot leave a stale response on screen.
  */
-const useResource = <T>(
+export const useResource = <T>(
   path: string | null,
   load: (path: string, signal: AbortSignal) => Promise<T>,
 ): Query<T> => {

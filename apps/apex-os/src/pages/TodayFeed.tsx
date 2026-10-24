@@ -1,3 +1,4 @@
+import Checklist from '../components/Checklist';
 import { Link } from 'react-router';
 import {
   CARD_GROUP_TITLE,
@@ -87,13 +88,16 @@ export default function TodayFeed() {
     <>
       <header className="title-block">
         <h1>Today</h1>
+        {me.data && <p>Welcome, {me.data.displayName.split(' ')[0]}.</p>}
         <div className="stamp">
           {today()}
           {allLoaded && (
-            <b>{needsYou === 0 ? 'All clear' : `${needsYou} need${needsYou === 1 ? 's' : ''} you`}</b>
+            <b>{needsYou === 0 ? 'Operational cards clear' : `${needsYou} operational item${needsYou === 1 ? '' : 's'}`}</b>
           )}
         </div>
       </header>
+
+      <Checklist compact />
 
       <QueryState
         loading={loading}

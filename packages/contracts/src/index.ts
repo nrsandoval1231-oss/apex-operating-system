@@ -1,4 +1,5 @@
 export * from './ids.js';
+export * from './tasks.js';
 export * from './civilDay.js';
 export * from './records.js';
 export * from './project.js';
