@@ -75,14 +75,14 @@ describe.skipIf(!url)('forensic lifecycle regressions on PostgreSQL', () => {
     expect(replay.proposal.proposalVersionId).toBe(estimate.proposal.proposalVersionId);
   });
 
-  it('rechecks Gate requirements when a failed evaluation commits after release preflight', async () => {
+  it.each(['requirement', 'inspection', 'duplicate'] as const)('rechecks %s changes committed after release preflight', async (change) => {
     const { jobId, api } = await makeSignedJob();
     const inspections = new InspectionService(db);
     for (const { inspectionKey } of await inspections.listInspectionTypes()) {
       await inspections.recordResult({ jobId, inspectionKey, outcome: 'passed', occurredOn: '2026-10-15', actor });
     }
     const gateId = createCanonicalId('gate');
-    await api.createGate({ gateInstanceId: gateId, jobId, definitionKey: 'permit' });
+    await api.createGate({ gateInstanceId: gateId, jobId, definitionKey: change === 'inspection' ? 'pre-gunite' : 'permit' });
     await api.execute(gateId, { type: 'start-gate', actor, at: new Date().toISOString() }, { idempotencyKey: key() });
     const gate = await api.getGate(gateId);
     for (const requirement of gate.requirements.values()) {
@@ -113,16 +113,31 @@ describe.skipIf(!url)('forensic lifecycle regressions on PostgreSQL', () => {
         return db.transaction(work);
       },
     };
+    const releaseKey = key();
     const pending = Promise.allSettled([new GateService(instrumented).execute(gateId,
-      { type: 'release-gate', actor, at: new Date().toISOString() }, { idempotencyKey: key() })]);
+      { type: 'release-gate', actor, at: new Date().toISOString() }, { idempotencyKey: releaseKey })]);
     await preflight;
     try {
-      await api.execute(gateId, { type: 'evaluate-requirement', actor, at: new Date().toISOString(),
+      if (change === 'inspection') {
+        const type = (await inspections.listInspectionTypes()).find((entry) => entry.blocksDefinitionKey === 'pre-gunite')!;
+        await inspections.recordResult({ jobId, inspectionKey: type.inspectionKey, outcome: 'failed',
+          occurredOn: '2026-10-15', actor, corrections: 'Synthetic competing inspection failure.' });
+      } else if (change === 'duplicate') {
+        await api.execute(gateId, { type: 'release-gate', actor, at: new Date().toISOString() },
+          { idempotencyKey: releaseKey });
+      } else await api.execute(gateId, { type: 'evaluate-requirement', actor, at: new Date().toISOString(),
         requirementKey, outcome: 'failed', note: 'Synthetic competing failure before release obtains its lock.' },
       { idempotencyKey: key() });
     } finally { release(); }
     const [result] = await pending;
     const final = await api.getGate(gateId);
+    if (change === 'duplicate') {
+      expect(result?.status).toBe('fulfilled');
+      if (result?.status === 'fulfilled') expect(result.value.duplicate).toBe(true);
+      expect(final.status).toBe('released');
+      expect((await db.query(`select 1 from events where job_id=$1 and event_type='gate.released'`, [jobId])).rows).toHaveLength(1);
+      return;
+    }
     expect.soft(result?.status, 'release must fail after a requirement failure commits').toBe('rejected');
     expect.soft(final.status, 'failed checklist must not be released').not.toBe('released');
     expect((await db.query(`select 1 from events where job_id=$1 and event_type='gate.released'`, [jobId])).rows).toHaveLength(0);
