@@ -65,7 +65,17 @@ const sourceLink = (item: WorkspaceCalendarEntry) =>
   item.source === 'task'
     ? `/checklist${item.task.jobId ? `?project=${item.task.jobId}` : ''}`
     : `/projects/${job(item)}`;
-export default function CalendarWorkspace() {
+export default function CalendarWorkspace({
+  compact = false,
+  jobId,
+  readOnly = false,
+  summary = false,
+}: {
+  compact?: boolean;
+  jobId?: string;
+  readOnly?: boolean;
+  summary?: boolean;
+}) {
   const query = useWorkspaceCalendar();
   const jobs = useJobs();
   const users = useTaskAssignees();
@@ -73,10 +83,17 @@ export default function CalendarWorkspace() {
   const [params, setParams] = useSearchParams();
   const location = useLocation();
   const [view, setView] = useState<View>(() =>
-    window.matchMedia('(max-width: 700px)').matches ? 'Agenda' : 'Week',
+    compact || window.matchMedia('(max-width: 700px)').matches
+      ? 'Agenda'
+      : 'Week',
   );
   const [cursor, setCursor] = useState(civilDay());
-  const [project, setProject] = useState('');
+  const [project, setProject] = useState(
+    jobId ??
+      (location.pathname === '/calendar' && !params.has('action')
+        ? (params.get('project') ?? '')
+        : ''),
+  );
   const [member, setMember] = useState('');
   const [eventType, setEventType] = useState('');
   const [detail, setDetail] = useState<WorkspaceCalendarEntry | null>(null);
@@ -97,7 +114,7 @@ export default function CalendarWorkspace() {
   }, [compose, detail]);
   const retry = useRef<{ body: string; key: string } | null>(null);
   useEffect(() => {
-    if (params.get('action') !== 'schedule-event') return;
+    if (readOnly || params.get('action') !== 'schedule-event') return;
     setDraftJob(params.get('project') ?? '');
     setEditing(null);
     setDetail(null);
@@ -136,6 +153,7 @@ export default function CalendarWorkspace() {
   const entries = (query.data ?? []).filter(
     (item) =>
       !(item.source === 'appointment' && item.event.cancelledAt) &&
+      (!jobId || job(item) === jobId) &&
       (!project || job(item) === project) &&
       (!member || assigned(item) === member) &&
       (!eventType || kind(item) === eventType),
@@ -153,7 +171,15 @@ export default function CalendarWorkspace() {
   const days = Array.from(
     {
       length:
-        view === 'Month' ? 42 : view === 'Week' ? 7 : view === 'Day' ? 1 : 31,
+        view === 'Month'
+          ? 42
+          : view === 'Week'
+            ? 7
+            : view === 'Day'
+              ? 1
+              : compact
+                ? 7
+                : 31,
     },
     (_, i) => calendarAddDays(start, i),
   );
@@ -288,6 +314,7 @@ export default function CalendarWorkspace() {
     if (
       item.source !== 'operational' ||
       !item.entry.visitId ||
+      readOnly ||
       !item.entry.movable
     )
       return;
@@ -312,7 +339,9 @@ export default function CalendarWorkspace() {
       className={`cw-entry ${item.source === 'operational' && item.entry.conflict ? 'cw-conflict' : ''}`}
       key={item.id}
       onClick={() => open(item)}
-      draggable={item.source === 'operational' && item.entry.movable}
+      draggable={
+        !readOnly && item.source === 'operational' && item.entry.movable
+      }
       onDragStart={(e) => e.dataTransfer.setData('text/plain', item.id)}
     >
       <span className="cw-kind">
@@ -338,33 +367,117 @@ export default function CalendarWorkspace() {
       )}
     </button>
   );
+  if (summary) {
+    const today = civilDay();
+    const appointments = entries
+      .filter((item) => {
+        const [start, end] = dates(item);
+        return (
+          item.source === 'appointment' &&
+          start !== null &&
+          end !== null &&
+          start <= today &&
+          end >= today
+        );
+      })
+      .slice(0, 2);
+    const milestones = entries
+      .filter((item) => {
+        const [start] = dates(item);
+        return (
+          start !== null &&
+          start >= today &&
+          (kind(item) === 'milestone' ||
+            (item.source === 'operational' &&
+              ['gate', 'inspection'].includes(kind(item))))
+        );
+      })
+      .sort((a, b) => (dates(a)[0] ?? '').localeCompare(dates(b)[0] ?? ''))
+      .slice(0, 2);
+    const link = (item: WorkspaceCalendarEntry) => (
+      <Link
+        key={item.id}
+        className="cw-entry"
+        to={`/calendar${job(item) ? `?project=${job(item)}` : ''}`}
+      >
+        <span className="cw-kind">{typeLabel(kind(item))}</span>
+        <strong>{title(item)}</strong>
+        <span>{name(job(item))}</span>
+        {item.source === 'appointment' && !item.event.allDay && (
+          <small>
+            {new Date(item.event.startsAt!).toLocaleTimeString([], {
+              hour: 'numeric',
+              minute: '2-digit',
+              timeZone: item.event.timezone,
+            })}{' '}
+            · {item.event.timezone}
+          </small>
+        )}
+      </Link>
+    );
+    return (
+      <section
+        className="calendar-workspace cw-compact cw-summary"
+        aria-label="Today calendar"
+      >
+        <h2>Today's appointments</h2>
+        {query.loading && <p>Loading appointments…</p>}
+        {query.error && (
+          <p role="alert">
+            {query.error.message}
+            <button className="btn ghost" onClick={query.reload}>
+              Retry
+            </button>
+          </p>
+        )}
+        {appointments.map(link)}
+        {query.data && !appointments.length && <p>No appointments today.</p>}
+        <Link className="btn ghost" to="/calendar">
+          Full calendar
+        </Link>
+        <section className="cw-summary-milestones">
+          <h3>Upcoming milestones</h3>
+          {milestones.map(link)}
+          {query.data && !milestones.length && (
+            <p>No dated milestones recorded.</p>
+          )}
+        </section>
+      </section>
+    );
+  }
   return (
-    <section className="calendar-workspace">
+    <section className={`calendar-workspace${compact ? ' cw-compact' : ''}`}>
       <header className="title-block">
         <div>
           <p className="cw-eyebrow">THE WORK AHEAD</p>
-          <h1>Calendar</h1>
+          {compact ? <h2>Calendar</h2> : <h1>Calendar</h1>}
           <p className="dek">
             Appointments, deadlines and operational work in one place.
           </p>
         </div>
-        <button
-          className="btn"
-          onClick={() => {
-            setCompose(true);
-            setEditing(null);
-            setDraftJob(project);
-            setAllDay(true);
-            setError('');
-            retry.current = null;
-          }}
-        >
-          Schedule event
-        </button>
+        {!readOnly && (
+          <button
+            className="btn"
+            onClick={() => {
+              setCompose(true);
+              setEditing(null);
+              setDraftJob(project);
+              setAllDay(true);
+              setError('');
+              retry.current = null;
+            }}
+          >
+            Schedule event
+          </button>
+        )}
       </header>
       <div className="cw-toolbar">
         <div className="cw-views" aria-label="Calendar views">
-          {(['Agenda', 'Day', 'Week', 'Month'] as View[]).map((v) => (
+          {(
+            (compact
+              ? ['Agenda', 'Week']
+              : ['Agenda', 'Day', 'Week', 'Month']) as View[]
+          ).map((v) => (
             <button
               className="btn ghost"
               aria-pressed={v === view}
@@ -404,45 +517,52 @@ export default function CalendarWorkspace() {
           </label>
         </div>
       </div>
-      <div className="cw-filters">
-        <label>
-          Project
-          <select value={project} onChange={(e) => setProject(e.target.value)}>
-            <option value="">All projects & personal</option>
-            {(jobs.data ?? []).map((j) => (
-              <option value={j.jobId} key={j.jobId}>
-                {j.customerName}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Team member
-          <select value={member} onChange={(e) => setMember(e.target.value)}>
-            <option value="">Everyone</option>
-            {(users.data ?? []).map((u) => (
-              <option value={u.userId} key={u.userId}>
-                {u.displayName}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Event type
-          <select
-            value={eventType}
-            onChange={(e) => setEventType(e.target.value)}
-          >
-            <option value="">All work</option>
-            {[...types, 'deadline', 'visit', 'gate', 'inspection'].map((t) => (
-              <option key={t} value={t}>
-                {typeLabel(t)}
-              </option>
-            ))}
-          </select>
-        </label>
-        <span className="cw-division">Division · Unknown</span>
-      </div>
+      {!compact && (
+        <div className="cw-filters">
+          <label>
+            Project
+            <select
+              value={project}
+              onChange={(e) => setProject(e.target.value)}
+            >
+              <option value="">All projects & personal</option>
+              {(jobs.data ?? []).map((j) => (
+                <option value={j.jobId} key={j.jobId}>
+                  {j.customerName}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Team member
+            <select value={member} onChange={(e) => setMember(e.target.value)}>
+              <option value="">Everyone</option>
+              {(users.data ?? []).map((u) => (
+                <option value={u.userId} key={u.userId}>
+                  {u.displayName}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Event type
+            <select
+              value={eventType}
+              onChange={(e) => setEventType(e.target.value)}
+            >
+              <option value="">All work</option>
+              {[...types, 'deadline', 'visit', 'gate', 'inspection'].map(
+                (t) => (
+                  <option key={t} value={t}>
+                    {typeLabel(t)}
+                  </option>
+                ),
+              )}
+            </select>
+          </label>
+          <span className="cw-division">Division · Unknown</span>
+        </div>
+      )}
       {query.loading && <p role="status">Loading calendar…</p>}
       {query.error && (
         <p role="alert">
@@ -464,6 +584,7 @@ export default function CalendarWorkspace() {
       <div
         className={`cw-days cw-${view.toLowerCase()}`}
         aria-label={`${view} calendar`}
+        tabIndex={compact ? 0 : undefined}
       >
         {days
           .filter((d) => view !== 'Agenda' || onDay(d).length > 0)
@@ -514,15 +635,35 @@ export default function CalendarWorkspace() {
             </p>
           </div>
         )}
-      {entries.some(workspaceNeedsScheduling) && (
-        <section className="cw-undated">
-          <h2>Needs scheduling</h2>
-          <p>
-            Open the authoritative project to schedule gates or inspections.
-          </p>
-          {entries.filter(workspaceNeedsScheduling).map(card)}
-        </section>
-      )}
+      <div className={compact ? 'cw-compact-footer' : undefined}>
+        {entries.some(workspaceNeedsScheduling) &&
+          (compact ? (
+            <details className="cw-undated cw-compact-undated">
+              <summary>
+                Needs scheduling ·{' '}
+                {entries.filter(workspaceNeedsScheduling).length}
+              </summary>
+              <p>Open the project to schedule gates or inspections.</p>
+              {entries.filter(workspaceNeedsScheduling).slice(0, 4).map(card)}
+            </details>
+          ) : (
+            <section className="cw-undated">
+              <h2>Needs scheduling</h2>
+              <p>
+                Open the authoritative project to schedule gates or inspections.
+              </p>
+              {entries.filter(workspaceNeedsScheduling).map(card)}
+            </section>
+          ))}
+        {compact && (
+          <Link
+            className="btn ghost cw-full-calendar"
+            to={`/calendar${jobId ? `?project=${jobId}` : ''}`}
+          >
+            Full calendar
+          </Link>
+        )}
+      </div>
       {(compose || detail) && (
         <dialog
           ref={modal}
@@ -770,29 +911,30 @@ export default function CalendarWorkspace() {
                           capacity.
                         </p>
                       )}
-                      {(detail.event.createdBy === me.data?.userId ||
-                        detail.event.assignedUserId === me.data?.userId ||
-                        (detail.event.jobId &&
-                          ['admin', 'office', 'superintendent'].includes(
-                            me.data?.role ?? '',
-                          ))) && (
-                        <div className="cw-actions">
-                          <button
-                            className="btn"
-                            disabled={busy}
-                            onClick={() => beginEdit(detail.event)}
-                          >
-                            Edit event
-                          </button>
-                          <button
-                            className="btn ghost"
-                            disabled={busy}
-                            onClick={() => void cancel(detail.event)}
-                          >
-                            Cancel event
-                          </button>
-                        </div>
-                      )}
+                      {!readOnly &&
+                        (detail.event.createdBy === me.data?.userId ||
+                          detail.event.assignedUserId === me.data?.userId ||
+                          (detail.event.jobId &&
+                            ['admin', 'office', 'superintendent'].includes(
+                              me.data?.role ?? '',
+                            ))) && (
+                          <div className="cw-actions">
+                            <button
+                              className="btn"
+                              disabled={busy}
+                              onClick={() => beginEdit(detail.event)}
+                            >
+                              Edit event
+                            </button>
+                            <button
+                              className="btn ghost"
+                              disabled={busy}
+                              onClick={() => void cancel(detail.event)}
+                            >
+                              Cancel event
+                            </button>
+                          </div>
+                        )}
                       <button
                         className="btn ghost"
                         onClick={() =>
@@ -840,6 +982,7 @@ export default function CalendarWorkspace() {
                           </p>
                         )}
                       {detail.source === 'operational' &&
+                        !readOnly &&
                         detail.entry.movable &&
                         detail.entry.visitId && (
                           <form

@@ -1,3 +1,5 @@
+import ProjectWorkspace from '../components/ProjectWorkspace';
+import '../components/ProjectWorkspace.css';
 import { useState } from 'react';
 import { z } from 'zod';
 import { Link, Navigate, useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
@@ -178,7 +180,7 @@ export default function ProjectDetail({ historical = false }: { historical?: boo
         </div>
         <div className="stamp">
           {JOB_STATUS_LABEL[job.status]}
-          <b>{formatContract(job.contractCents)}</b>
+          {me.data?.role !== 'field' && <b>{formatContract(job.contractCents)}</b>}
         </div>
       </header>
 
@@ -193,6 +195,8 @@ export default function ProjectDetail({ historical = false }: { historical?: boo
         </p>
       )}
       {actionError !== null && <p className="error" role="alert">{actionError}</p>}
+
+      <ProjectWorkspace key={job.jobId} job={job} full readOnly={readOnly} />
 
       <nav className="project-jump" aria-label="Project sections">
         <a href="#construction">Construction</a>
