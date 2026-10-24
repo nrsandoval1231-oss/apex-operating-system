@@ -361,6 +361,41 @@ describe.skipIf(!url)('canonical checklist on real PostgreSQL', () => {
       ).toHaveLength(0);
     }
   });
+  it('reads personal visibility and history in one snapshot during reassignment', async () => {
+    const t = await service.command(actors.owner, key(), 'create', null, {
+      ...fields,
+      assignedUserId: ids.other,
+    });
+    let reassigned = false;
+    const racing = new TaskService({
+      transaction: db.transaction.bind(db),
+      query: async <Row>(sql: string, params?: unknown[]) => {
+        const result = await db.query<Row>(sql, params);
+        if (!reassigned && sql.includes('from tasks')) {
+          reassigned = true;
+          const { jobId: _, ...edit } = fields;
+          await service.command(actors.owner, key(), 'edit', t.taskId, {
+            ...edit,
+            assignedUserId: null,
+            expectedRevision: 1,
+            title: 'Private after reassignment',
+          });
+        }
+        return result;
+      },
+    });
+    const entries = (await racing.history(actors.other, t.taskId)) as {
+      snapshot: { title: string };
+    }[];
+    expect(reassigned).toBe(true);
+    expect(entries).toHaveLength(1);
+    expect(
+      entries.some((h) => h.snapshot.title === 'Private after reassignment'),
+    ).toBe(false);
+    await expect(service.history(actors.other, t.taskId)).rejects.toThrow(
+      /not found/,
+    );
+  });
   it('enforces append-only completion audit and request receipts in PostgreSQL', async () => {
     const t = await service.command(
       actors.owner,

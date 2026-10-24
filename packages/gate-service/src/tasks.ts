@@ -68,19 +68,19 @@ export class TaskService {
   }
   async history(actor: EventActor, id: string) {
     const u = await this.staff(this.db, actor);
-    const r = await this.db.query<{ snapshot: Task }>(
-      'select snapshot from tasks where task_id=$1',
-      [id],
+    // Visibility and audit entries must come from one PostgreSQL statement snapshot.
+    // A reassignment between separate reads must never expose later private entries.
+    const result = await this.db.query<{ entry: unknown }>(
+      `select h.entry from tasks t
+       join task_history h on h.task_id=t.task_id
+       where t.task_id=$1 and (t.job_id is not null or t.created_by=$2 or t.assigned_user_id=$2)
+       order by h.history_id`,
+      [id, u.id],
     );
-    if (!r.rows[0] || !this.visible(r.rows[0].snapshot, u.id))
-      return fail('Task not found.');
-    return (
-      await this.db.query<{ entry: unknown }>(
-        'select entry from task_history where task_id=$1 order by history_id',
-        [id],
-      )
-    ).rows.map((r) => r.entry);
+    if (result.rows.length === 0) return fail('Task not found.');
+    return result.rows.map((r) => r.entry);
   }
+
   async command(
     actor: EventActor,
     key: string,

@@ -24,6 +24,7 @@ export default function Checklist({ compact = false }: { compact?: boolean }) {
   );
   const [filter, setFilter] = useState<Filter>(compact ? 'Today' : 'All');
   const [project, setProject] = useState(params.get('project') ?? '');
+  const [draftJob, setDraftJob] = useState(project);
   const [compose, setCompose] = useState(false);
   const [editing, setEditing] = useState<Task | null>(null);
   const [busy, setBusy] = useState(false);
@@ -38,6 +39,7 @@ export default function Checklist({ compact = false }: { compact?: boolean }) {
   useEffect(() => {
     if (params.get('action') !== 'add-task') return;
     setProject(params.get('project') ?? '');
+    setDraftJob(params.get('project') ?? '');
     setEditing(null);
     setCompose(true);
     setIntent(null);
@@ -119,6 +121,22 @@ export default function Checklist({ compact = false }: { compact?: boolean }) {
     const body = editing
       ? { ...fields, expectedRevision: editing.revision }
       : { ...fields, jobId: String(f.get('job') ?? '') || null };
+    const selectedJob = String(f.get('job') ?? '');
+    if (
+      !editing &&
+      selectedJob &&
+      !jobs.data?.some(
+        (j) =>
+          j.jobId === selectedJob &&
+          j.status !== 'closed' &&
+          j.status !== 'cancelled',
+      )
+    ) {
+      setError(
+        'The selected project is unavailable. Choose an active project or explicitly choose Personal.',
+      );
+      return;
+    }
     const encoded = JSON.stringify(body);
     const key = intent?.body === encoded ? intent.key : crypto.randomUUID();
     setIntent({ body: encoded, key });
@@ -150,6 +168,7 @@ export default function Checklist({ compact = false }: { compact?: boolean }) {
           onClick={() => {
             setEditing(null);
             setCompose(true);
+            setDraftJob(project);
             setIntent(null);
           }}
         >
@@ -237,8 +256,24 @@ export default function Checklist({ compact = false }: { compact?: boolean }) {
           {!editing && (
             <label>
               Project
-              <select aria-label="Project" name="job" defaultValue={project}>
+              <select
+                aria-label="Project"
+                name="job"
+                value={draftJob}
+                onChange={(e) => setDraftJob(e.target.value)}
+              >
                 <option value="">Personal</option>
+                {draftJob &&
+                  !jobs.data.some(
+                    (j) =>
+                      j.jobId === draftJob &&
+                      j.status !== 'closed' &&
+                      j.status !== 'cancelled',
+                  ) && (
+                    <option value={draftJob}>
+                      Selected project unavailable — choose another
+                    </option>
+                  )}
                 {jobs.data
                   ?.filter(
                     (j) => j.status !== 'closed' && j.status !== 'cancelled',
