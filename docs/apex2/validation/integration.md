@@ -1,5 +1,26 @@
 # Final integration validation — 2026-10-24
 
+## Final corrected candidate
+
+Full `bash scripts/ci.sh` **passed again**, exit **0**, **659.457 seconds**, on frozen source/test SHA **`2231248cc6c0fc69e5850188782943191c45dec5`**, after all five review corrections. The source, tests and HEAD stayed fixed throughout this run. Later changes are documentation and screenshots only. [Exact result](final-corrected-ci.json) · [Counts and skips](final-corrected-summary.json) · [Environment](final-corrected-environment.json) · [Migration inventory](final-corrected-migrations.json).
+
+```bash
+cd /workspace/apex2
+source /tmp/apex2/final-v2-env.sh
+export APEX_CI_EVIDENCE_DIR=/tmp/apex2/final-v2/browser
+python docs/audit/tools/run-command.py ci /tmp/apex2/final-v2 bash scripts/ci.sh
+```
+
+The final run passed **1,429 counted cases**: core 596, Designer 585, website unit 2, website browser 166, production intake browser 10, PostgreSQL/storage 70. **Two existing missing-engine guards were skipped**, not passed; the actual engine integration cases ran. Additional staff browser groups passed: shell 6, native IndexedDB races 6, checklist 4, **calendar 16, workspace 31, photos 16**. All five archive scripts and estimate navigation passed. Both [zero-optional-photo closeout](final-corrected-closeout-zero.json) and [optional-photo closeout](final-corrected-closeout-photo.json) passed. No configured infrastructure suite was omitted; no separate lint command is configured.
+
+Preflight verified empty database `apex2_final_v2` on local port 55432 and empty Moto bucket `apex2-final-v2` on local port 59000. Post-run inventory verifies 47 public tables and all 39 registered **operational** migrations, including 0037–0040. The separate storage migration is not part of that operational inventory. Node 24.19.0, pinned CI pnpm 11.18.0, PostgreSQL 17.11, Moto 5.1.15 and Playwright 1.62.1 were used. Full local log: `/tmp/apex2/final-v2/ci.log`.
+
+The independent whole-branch review and single correction re-review are [retained here](independent-review.md). All five original findings are addressed, with no Critical/Important issue remaining in the reviewed correction. The mixed-precision subsecond ordering edge and measured bundle growth remain nonblocking follow-ups. External staging/device/division acceptance conditions remain in [ACCEPTANCE.md](../ACCEPTANCE.md). No merge or deployment is authorized by these results.
+
+## First integrated run — preserved historical evidence
+
+The five whole-branch review corrections are committed at source SHA **`2d52c4161b524238d4de4c82ab9dbdc225a422ca`**; the final browser-harness refinement is at **`2231248cc6c0fc69e5850188782943191c45dec5`**. The full CI result below belongs to its earlier frozen source SHA; the correction evidence is recorded separately under [Final correction wave](#final-correction-wave).
+
 Full `scripts/ci.sh` **passed**, exit **0**, **659.171 seconds**, on frozen product/test SHA **`78dfa0857e53b13d69afc87bd2c8364704d9e485`**. No source/test edits or commits occurred during execution. This document and the metadata are an evidence-only follow-up. Root-owned status/plan/foundation documentation was dirty at the start, recorded in [final-environment.json](final-environment.json), and excluded from the product commit.
 
 ```bash
@@ -52,16 +73,26 @@ Like-for-like totals include **all emitted production JavaScript chunks**, deter
 
 | Measure | Audit baseline | Final | Difference |
 | --- | ---: | ---: | ---: |
-| All JS bytes | 1,647,705 | 1,718,841 | +71,136 (+4.32%) |
-| All JS gzip bytes | 481,039 | 502,365 | +21,326 (+4.43%) |
-| HTML entry JS bytes | 467,603 | 537,050 | +69,447 |
-| HTML entry JS gzip bytes | 139,102 | 159,598 | +20,496 |
-| Staff Vite build | 9.03 s | 6.91 s | Single local observations |
+| All JS bytes | 1,647,705 | 1,720,254 | +72,549 (+4.40%) |
+| All JS gzip bytes | 481,039 | 502,737 | +21,698 (+4.51%) |
+| HTML entry JS bytes | 467,603 | 538,463 | +70,860 |
+| HTML entry JS gzip bytes | 139,102 | 159,966 | +20,864 |
+| Staff Vite build | 9.03 s | 6.87 s | Single local observations from final corrected CI |
 
 Designer remains an async 239,859-byte chunk; Excel remains 940,243 bytes. The photo viewer is a separate 1,689-byte chunk (836 gzip). The inherited Excel size warning remains; the main staff entry's new **>500 kB** threshold crossing also warns. No initial-load reduction or controlled speed improvement is claimed. Full CI workloads differ from baseline, so their total durations are not a product performance comparison.
 
 ## Review and readiness
 
-Milestone 6 task review is approved with no Critical/Important findings; final whole-branch review is separate. No merge, push, deployment, marketing changes or production-service access occurred.
+Milestone 6 task review is approved with no Critical/Important findings; final whole-branch review is separate. No merge, deployment, marketing changes or production-service access occurred.
 
 Live identity/R2/provider permissions, physical mobile camera/Safari, backup/restore and inherited phase-advancement recovery remain unaccepted. A complete offline shell and offline task operation are absent. Optional photo recovery does not imply those capabilities. Coating/renovation lifecycle approval/configuration remains outstanding; service/unknown divisions also show configuration-required states. Existing pilot staff-wide job access and unbounded gallery reads remain. See [acceptance limits](../ACCEPTANCE.md#readiness-limits).
+
+## Final correction wave
+
+The review's three Important and first two Minor findings were corrected in source commit `2d52c4161b524238d4de4c82ab9dbdc225a422ca`; browser-harness refinements followed through `2231248cc6c0fc69e5850188782943191c45dec5`. Calendar Division now reads the canonical workspace project metadata and offers separate Personal and Unknown division filters. A metadata outage disables the choice and displays its own retry/error state. Division combines with project, member and type on desktop and mobile. Compact Agenda advances by its displayed seven days in either direction; full Agenda continues to advance 31 days. All-day work precedes timed work, and timed appointments use actual start instants before the mobile Today two-card limit. Today retains earlier appointments, including elapsed ones, in chronological order.
+
+The photo uploader and protected image loader now omit Authorization when the captured token is empty, matching the shared JSON client. A configured loopback `localUserId` session can upload and view gallery bytes; an anonymous request without local mode remains forbidden. Project task reads now send `jobId`, and a direct HTTP assertion confirms that the project response excludes other projects and personal tasks.
+
+Focused verification used disposable PostgreSQL development databases `apex2_correction_combined` for calendar→workspace in CI order and `apex2_photos_final` for photos, plus local Moto. These are separate from the frozen full-CI database `apex2_final`. The combined database was created empty and migrated before its covering run. Typecheck and staff build exited 0; 11 focused calendar/photo unit cases passed with no skips. Calendar passed 16 browser groups, workspace passed 31 immediately after calendar on the same database, and photos passed 16, all with exit 0 and no skips. The rebuilt visual fixture on `apex2_visual_final_v2` passed 12 viewport captures with no skips; changed captures and [capture metadata](final-captures.json) were refreshed. Exact commands and local evidence paths are in `/tmp/apex2/final-fix-report.md`.
+
+The first 1,429-case CI pass remains historical evidence for `78dfa0857e53b13d69afc87bd2c8364704d9e485`. The final corrected candidate was subsequently rerun through the full CI command at `2231248cc6c0fc69e5850188782943191c45dec5`, as recorded above. Scoped re-review approved all five fixes. No merge or deployment is implied.

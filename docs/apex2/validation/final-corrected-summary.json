@@ -1,0 +1,117 @@
+{
+  "testedSha": "2231248cc6c0fc69e5850188782943191c45dec5",
+  "exitCode": 0,
+  "seconds": 659.457,
+  "failures": 0,
+  "infrastructureSkipped": false,
+  "runnerCases": {
+    "passed": 1429,
+    "skipped": 2
+  },
+  "suites": [
+    {
+      "name": "core Vitest",
+      "files": 50,
+      "passed": 596,
+      "skipped": 0
+    },
+    {
+      "name": "Designer Vitest",
+      "files": 26,
+      "passed": 585,
+      "skipped": 0
+    },
+    {
+      "name": "website Node unit",
+      "passed": 2,
+      "skipped": 0
+    },
+    {
+      "name": "website Playwright",
+      "passed": 166,
+      "skipped": 0
+    },
+    {
+      "name": "website production intake Playwright",
+      "passed": 10,
+      "skipped": 0
+    },
+    {
+      "name": "PostgreSQL/S3 Vitest",
+      "files": 14,
+      "passed": 70,
+      "skipped": 2
+    }
+  ],
+  "skippedCases": [
+    {
+      "file": "integration-tests/designer-contract.test.ts",
+      "suite": "Designer contract test requirement",
+      "test": "finds the Designer engine, because APEX_REQUIRE_DESIGNER_CONTRACT is set",
+      "reason": "Missing-engine failure guard is not enabled when the required engine is present; normal Designer compatibility tests ran."
+    },
+    {
+      "file": "integration-tests/takeoff-to-proposal.test.ts",
+      "suite": "takeoff-to-proposal chain requirement",
+      "test": "finds both engines, because APEX_REQUIRE_TAKEOFF_CHAIN is set",
+      "reason": "Missing-engine failure guard is not enabled when both engines are present; actual takeoff/pricing chain tests ran."
+    }
+  ],
+  "additionalCommands": [
+    {
+      "name": "legacy proposal engine",
+      "passedScripts": 5
+    },
+    {
+      "name": "estimate route regression",
+      "result": "pass"
+    },
+    {
+      "name": "shell synthetic read fixtures",
+      "passedGroups": 6,
+      "skipped": 0
+    },
+    {
+      "name": "native IndexedDB queue races",
+      "passedGroups": 6,
+      "skipped": 0
+    },
+    {
+      "name": "real checklist",
+      "passedGroups": 4,
+      "skipped": 0
+    },
+    {
+      "name": "real calendar",
+      "passedGroups": 16,
+      "skipped": 0
+    },
+    {
+      "name": "real workspace",
+      "passedGroups": 31,
+      "skipped": 0
+    },
+    {
+      "name": "real photos",
+      "passedGroups": 16,
+      "skipped": 0
+    },
+    {
+      "name": "original zero-optional closeout",
+      "result": "pass",
+      "recordedSteps": 12,
+      "skipped": 0
+    },
+    {
+      "name": "optional-photo closeout",
+      "result": "pass",
+      "recordedSteps": 14,
+      "skipped": 0
+    }
+  ],
+  "expectedNegativeCheck": "Production website build without a lead webhook refused as required; not an unexpected test failure.",
+  "staffViteBuildSeconds": 6.87,
+  "baselineStaffViteBuildSeconds": 9.03,
+  "buildTimingInterpretation": "Single local observations, not a controlled performance benchmark or an initial-load speed claim.",
+  "fullLog": "/tmp/apex2/final-v2/ci.log"
+}

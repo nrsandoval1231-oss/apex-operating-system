@@ -30,3 +30,5 @@ Reproduce after a production build with a dedicated loopback PostgreSQL database
 - Designer Pools has the implemented lifecycle. Coating and renovation lifecycles await approval/configuration; service/unknown divisions also display configuration-required states. No pool inspection catalog is silently substituted.
 - Existing staff-wide pilot job access and unbounded gallery reads remain. The Excel chunk size warning is inherited; the staff main entry now also crosses Vite’s 500 kB warning threshold (measured in final validation). No production tenancy/RLS or provider security claim is made.
 - Migration upgrade tests require a disposable integration role with `CREATEDB` to create/drop their own temporary database. This is a test requirement, not a production application-role grant.
+
+- Deferred minor ordering edge: externally supplied UTC appointment timestamps with mixed fractional-second precision can appear out of order within one second. UI-created timestamps use fixed millisecond precision. Numeric timestamp comparison is a follow-up; see [independent review](validation/independent-review.md).
