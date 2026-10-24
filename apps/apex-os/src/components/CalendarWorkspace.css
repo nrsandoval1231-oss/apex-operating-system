@@ -376,3 +376,59 @@
 .calendar-workspace .title-block {
   padding-inline: 0;
 }
+
+.cw-compact {
+  padding: 0;
+}
+.cw-compact .title-block {
+  padding: 0 0 12px;
+  margin: 0;
+}
+.cw-compact .title-block h2 {
+  font-size: 1.2rem;
+}
+.cw-compact .cw-eyebrow,
+.cw-compact .dek {
+  display: none;
+}
+.cw-compact .cw-week {
+  grid-template-columns: minmax(0, 1fr);
+}
+.cw-compact .cw-day {
+  min-height: 0;
+}
+.cw-compact .cw-toolbar {
+  padding: 8px 0;
+}
+.cw-compact .cw-period {
+  font-size: 1rem;
+}
+.cw-compact .cw-undated {
+  margin-top: 12px;
+}
+.cw-compact .cw-undated h2 {
+  font-size: 1rem;
+}
+.cw-compact .cw-days {
+  max-height: 200px;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.cw-compact .cw-agenda {
+  display: block;
+}
+.cw-compact-undated summary {
+  cursor: pointer;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  color: var(--ink-2);
+  font-size: 0.85rem;
+}
+.cw-compact-undated[open] {
+  max-height: 300px;
+  overflow: auto;
+}
+.cw-compact .cw-full-calendar {
+  margin-top: 8px;
+}

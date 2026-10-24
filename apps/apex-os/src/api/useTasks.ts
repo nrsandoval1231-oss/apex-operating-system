@@ -4,6 +4,10 @@ import { useResource } from './useJobs';
 const loadTasks = (p: string, s: AbortSignal) => apiGet(p, TaskListSchema, s);
 const loadAssignees = (p: string, s: AbortSignal) =>
   apiGet(p, TaskAssigneesSchema, s);
-export const useTasks = () => useResource('/api/tasks', loadTasks);
+export const useTasks = (jobId?: string) =>
+  useResource(
+    jobId ? `/api/tasks?job=${encodeURIComponent(jobId)}` : '/api/tasks',
+    loadTasks,
+  );
 export const useTaskAssignees = () =>
   useResource('/api/task-assignees', loadAssignees);

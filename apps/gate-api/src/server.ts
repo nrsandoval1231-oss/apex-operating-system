@@ -26,7 +26,7 @@ import {
   ProcurementUpdateSchema,
 } from '@apex/contracts';
 import { DomainRuleError, RoleRefusalError } from '@apex/domain';
-import { CustomerService, GateService, InspectionService, TaskService, CalendarService } from '@apex/gate-service';
+import { CustomerService, GateService, InspectionService, TaskService, CalendarService, WorkspaceService } from '@apex/gate-service';
 import { renderClosedPage, renderCustomerPage } from './customerPage.js';
 import { log, redactPath } from './log.js';
 
@@ -1256,6 +1256,34 @@ export function createGateApi(options: GateApiOptions) {
         return sendJson(response, 200, await service.getDailyBrief(briefDate, includeProcurement));
       }
 
+      if (request.method === 'GET' && url.pathname === '/api/workspace-projects') {
+        requireStaff(actor);
+        return sendJson(response, 200, await new WorkspaceService(options.db).list(actor));
+      }
+      const workspaceMatch = url.pathname.match(
+        /^\/api\/jobs\/(job_[0-9A-HJKMNP-TV-Z]{26})\/(notes|priority|activity)$/,
+      );
+      if (workspaceMatch) {
+        requireStaff(actor);
+        const workspace = new WorkspaceService(options.db),
+          jobId = idSchemas.job.parse(workspaceMatch[1]);
+        if (request.method === 'GET' && workspaceMatch[2] === 'notes')
+          return sendJson(response, 200, await workspace.notes(actor, jobId));
+        if (request.method === 'GET' && workspaceMatch[2] === 'activity')
+          return sendJson(response, 200, await workspace.activity(actor, jobId));
+        if (request.method === 'POST' && workspaceMatch[2] !== 'activity')
+          return sendJson(
+            response,
+            workspaceMatch[2] === 'notes' ? 201 : 200,
+            await workspace.command(
+              actor,
+              idempotency(request),
+              jobId,
+              workspaceMatch[2] === 'notes' ? 'note' : 'priority',
+              await readJson(request),
+            ),
+          );
+      }
       if (request.method === 'GET' && url.pathname === '/api/jobs') {
         requireStaff(actor);
         const requestedView = url.searchParams.get('view') ?? 'all';
