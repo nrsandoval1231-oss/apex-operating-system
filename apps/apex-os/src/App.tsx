@@ -4,6 +4,7 @@ import Layout from './components/Layout';
 import More from './pages/More';
 import Calendar from './pages/Calendar';
 import TodayFeed from './pages/TodayFeed';
+import ChecklistPage from './pages/Checklist';
 import Projects from './pages/Projects';
 import HistoricalProjects from './pages/HistoricalProjects';
 import ProjectDetail from './pages/ProjectDetail';
@@ -41,8 +42,7 @@ export default function App() {
           </Suspense>
         } />
         <Route path="today" element={<TodayFeed />} />
-        {/* Foundation placeholder: persisted Checklist arrives in milestone 2. */}
-        <Route path="checklist" element={<TodayFeed />} />
+        <Route path="checklist" element={<ChecklistPage />} />
         <Route path="more" element={<More />} />
         <Route path="calendar" element={<Calendar />} />
         <Route path="projects" element={<Projects />} />

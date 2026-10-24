@@ -1,0 +1,176 @@
+.task-filters,
+.task-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 12px 0;
+}
+.checklist button,
+.checklist select,
+.checklist input {
+  min-height: 44px;
+}
+.task-filters button[aria-pressed='true'] {
+  font-weight: 700;
+  text-decoration: underline;
+}
+.task-row {
+  display: flex;
+  gap: 16px;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--rule);
+  overflow-wrap: anywhere;
+}
+.task-row input[type='checkbox'] {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  accent-color: var(--brand-gold);
+}
+.task-row h3,
+.task-row p {
+  margin: 0 0 8px;
+}
+.task-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding: 16px 0;
+}
+.task-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.task-form h3,
+.task-form p {
+  grid-column: 1/-1;
+}
+.task-form input,
+.task-form select,
+.task-form textarea {
+  width: 100%;
+  max-width: 100%;
+  padding: 8px;
+  box-sizing: border-box;
+}
+@media (max-width: 600px) {
+  .task-form {
+    grid-template-columns: 1fr;
+  }
+  .task-filters select {
+    max-width: 100%;
+  }
+}
+.checklist {
+  padding-inline: 18px;
+}
+.checklist button,
+.checklist select,
+.task-form input,
+.task-form textarea {
+  color: var(--ink);
+  background: var(--panel);
+  border: 1px solid var(--rule-bright);
+  border-radius: 4px;
+  font: 500 14px var(--font-ui);
+  padding: 10px 12px;
+}
+.checklist button {
+  cursor: pointer;
+}
+.checklist button:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+.checklist button:hover:not(:disabled),
+.checklist button:focus-visible {
+  border-color: var(--brand-gold);
+}
+.checklist button.action,
+.task-filters button[aria-pressed='true'] {
+  background: var(--surface-selected);
+  color: var(--brand-gold-bright);
+  border-color: var(--brand-gold);
+  text-decoration: none;
+}
+.checklist a {
+  color: var(--brand-gold-bright);
+}
+.task-filters label {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+}
+.task-filters select {
+  min-width: 0;
+}
+.task-row {
+  padding-block: 14px;
+  gap: 10px;
+}
+.task-row > div {
+  min-width: 0;
+}
+.task-row input[type='checkbox'] {
+  appearance: none;
+  display: grid;
+  place-content: center;
+  border: 0;
+  background: transparent;
+  margin: 0;
+  cursor: pointer;
+}
+.task-row input[type='checkbox']::before {
+  content: '';
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--rule-bright);
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+.task-row input[type='checkbox']:checked::before {
+  content: '✓';
+  display: grid;
+  place-content: center;
+  background: var(--brand-gold);
+  border-color: var(--brand-gold);
+  color: var(--brand-charcoal);
+  font-weight: 700;
+}
+.task-row input[type='checkbox']:disabled {
+  cursor: default;
+  opacity: 0.65;
+}
+.task-priority {
+  display: inline-block;
+  padding: 2px 6px;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  font-size: 12px;
+}
+.task-priority[data-priority='urgent'],
+.task-priority[data-priority='high'] {
+  color: var(--brand-gold-bright);
+  border-color: var(--brand-gold);
+}
+.checklist-title {
+  padding-inline: 18px;
+}
+@media (max-width: 600px) {
+  .checklist-title {
+    display: block;
+  }
+  .checklist-title p {
+    margin-top: 12px;
+  }
+  .checklist {
+    padding-inline: 14px;
+  }
+}
+@media (max-width: 600px) {
+  .title-block.checklist-title {
+    display: block;
+  }
+}
