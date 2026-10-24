@@ -48,7 +48,7 @@ WORKDIR /app
 # wholesale keeps pnpm's symlinked layout intact; reconstructing it in the
 # runtime stage is where these Dockerfiles usually go wrong.
 COPY --from=build /app /app
-RUN pnpm prune --prod && pnpm store prune
+RUN CI=true pnpm prune --prod && pnpm store prune
 
 # Bind every interface: the platform reaches the container from outside it.
 # `main.ts` refuses to start with GATE_LOCAL_USER on a non-loopback bind, so

@@ -1,6 +1,7 @@
 # Anything the build produces itself, or must never enter an image.
 **/node_modules
 **/dist
+**/*.tsbuildinfo
 **/.vite
 **/coverage
 .git
