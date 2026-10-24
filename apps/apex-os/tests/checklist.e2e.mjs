@@ -240,6 +240,76 @@ try {
   checks.push(
     'Delayed real API deep link defaults to current assignee and selected project; PostgreSQL association verified; desktop lost-create-ack retry creates exactly one row',
   );
+  // Unavailable deep-link projects must remain explicit, never fall back to Personal.
+  const unavailableTitle = `Unavailable project intent ${Date.now()}`;
+  const unavailableIds = [createCanonicalId('job')];
+  for (const status of ['closed', 'cancelled']) {
+    const unavailableLead = createCanonicalId('lead'),
+      unavailableJob = createCanonicalId('job');
+    await db.query(
+      `insert into leads(lead_id,intake_source,source_record_id,idempotency_key,accepted_payload) values($1,'test',$2,$2,'{}')`,
+      [unavailableLead, unavailableJob],
+    );
+    await db.query(
+      `insert into jobs(job_id,lead_id,signed_proposal_version,status,closed_at,closed_by,reconciliation_complete) values($1,$2,1,$3,now(),$4,true)`,
+      [unavailableJob, unavailableLead, status, user],
+    );
+    unavailableIds.push(unavailableJob);
+  }
+  let unavailablePosts = 0;
+  delayed.on('request', (r) => {
+    if (r.method() === 'POST' && new URL(r.url()).pathname === '/api/tasks')
+      unavailablePosts++;
+  });
+  for (const unavailableJob of unavailableIds) {
+    await delayed.goto(
+      `${origin}/app/checklist?action=add-task&project=${unavailableJob}`,
+    );
+    await delayed.getByLabel('Title', { exact: true }).fill(unavailableTitle);
+    assert.equal(
+      await delayed.locator('select[name="job"]').inputValue(),
+      unavailableJob,
+    );
+    await delayed
+      .getByRole('button', { name: 'Save task', exact: true })
+      .click();
+    await delayed
+      .getByRole('alert')
+      .filter({ hasText: 'selected project is unavailable' })
+      .waitFor();
+    assert.equal(
+      unavailablePosts,
+      0,
+      'unavailable intent must not issue a create request',
+    );
+    assert.equal(
+      (
+        await db.query(
+          `select count(*) from tasks where snapshot->>'title'=$1`,
+          [unavailableTitle],
+        )
+      ).rows[0].count,
+      '0',
+    );
+  }
+  await delayed.locator('select[name="job"]').selectOption('');
+  await delayed.getByRole('button', { name: 'Save task', exact: true }).click();
+  await delayed
+    .getByLabel('Title', { exact: true })
+    .waitFor({ state: 'hidden' });
+  assert.equal(unavailablePosts, 1);
+  assert.equal(
+    (
+      await db.query(`select job_id from tasks where snapshot->>'title'=$1`, [
+        unavailableTitle,
+      ])
+    ).rows[0].job_id,
+    null,
+    'only an explicit Personal choice creates personal work',
+  );
+  checks.push(
+    'Missing/closed/cancelled project intents refuse without any POST or stored task; explicit Personal choice persists personal task',
+  );
   await delayed.close();
   console.log(JSON.stringify({ passed: checks.length, checks }, null, 2));
 } finally {
