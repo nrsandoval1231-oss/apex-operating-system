@@ -2,9 +2,9 @@
 
 ## Current status
 
-Milestones 1–6 are implemented and independently reviewed in open PRs 32–37. Final integration PR 37 is on `codex/apex-2-integration`, based on reviewed photo candidate `6d9162f4849ff5b3ba78d08e5493a14880522283`.
+Milestones 1–6 are implemented and independently reviewed in milestone PRs 32–37. Final integration PR 37 is on `codex/apex-2-integration`, based on reviewed photo candidate `6d9162f4849ff5b3ba78d08e5493a14880522283`.
 
-The implementation started from main `f4421197de580028bfe53f9c7d50776b20a6a52b`, including merged cleanup PR 31. No APEX 2.0 PR has been merged or deployed. Final corrected CI passed at `2231248cc6c0fc69e5850188782943191c45dec5`. Whole-branch review and scoped correction review are complete, with no Critical/Important findings remaining in the reviewed fixes.
+The implementation started from main `f4421197de580028bfe53f9c7d50776b20a6a52b`, including merged cleanup PR 31. The owner authorized merging eligible milestone PRs on 2026-10-24; GitHub records their current merge status. No production deployment was performed. Final corrected CI passed at `2231248cc6c0fc69e5850188782943191c45dec5`. Whole-branch review and scoped correction review are complete, with no Critical/Important findings remaining in the reviewed fixes.
 
 ## Binding specification
 
@@ -23,7 +23,7 @@ No approved mockups were attached or found in the workspace, so the detailed wri
 | 5. Optional photos and recoverable uploads | Implemented; review approved | [36](https://github.com/nrsandoval1231-oss/apex-operating-system/pull/36) | [Photos](validation/photos.md) |
 | 6. Integrated polish and full regression validation | Implemented; final CI and review approved | [37](https://github.com/nrsandoval1231-oss/apex-operating-system/pull/37) | [Acceptance](ACCEPTANCE.md) · [Integration](validation/integration.md) |
 
-PRs are stacked in milestone order to isolate review diffs. Review and merge them in that order, retargeting each dependent PR to main after its prerequisite merges. Local independent review is not owner merge approval. No merge or deployment is authorized by this status document.
+PRs were stacked in milestone order to isolate review diffs. Review and merge them in that order, retargeting each dependent PR to main after its prerequisite merges. Local independent review is not owner merge approval. No merge or deployment is authorized by this status document.
 
 ## Canonical architecture
 
@@ -63,3 +63,5 @@ Total emitted JavaScript grew from 1,647,705 to 1,720,254 bytes (gzip 481,039 to
 - Existing staff-wide job access and financial API policy remain. UI hiding is not stronger server authorization. Large task/calendar/gallery lists remain unpaginated.
 
 Next: owner review of the stacked PRs, approval/configuration of the remaining division catalogs, and staging/device acceptance. Owner approval is required before merge or deployment; no production-readiness claim is made from local tests alone.
+
+Merge-time review and focused correction evidence: [merge acceptance](validation/merge-acceptance.md).
