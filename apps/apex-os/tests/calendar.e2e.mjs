@@ -705,6 +705,7 @@ try {
     await correctionPage.getByRole('button', { name: 'Day', exact: true }).click();
     await correctionPage.getByLabel('Calendar date', { exact: true }).fill(today);
     const correctionCards = correctionPage.locator('.cw-days .cw-entry').filter({ hasText: correctionPrefix });
+    await correctionCards.filter({ hasText: 'pool meeting' }).waitFor();
     assert.equal(await correctionCards.count(), 2);
     await correctionPage.getByLabel('Project', { exact: true }).selectOption(correctionJobs.pools);
     await correctionPage.getByLabel('Team member', { exact: true }).selectOption(user);
