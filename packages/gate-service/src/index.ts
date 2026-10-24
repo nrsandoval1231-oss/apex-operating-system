@@ -2508,3 +2508,5 @@ export * from './inspections.js';
 
 export { CalendarService } from './calendarEvents.js';
 export { WorkspaceService } from './workspace.js';
+
+export { JobPhotoService } from './jobPhotos.js';
