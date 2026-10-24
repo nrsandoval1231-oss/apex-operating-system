@@ -41,17 +41,15 @@ fail() {
 
 log "install"
 pnpm install --frozen-lockfile
-# Designer's typecheck and tests use its own npm tree. Install it before
-# typecheck, and not at the same time as another install into that directory.
-( cd apps/designer && npm ci --ignore-scripts )
+# All applications, including Designer, use the workspace lockfile.
 
 log "typecheck"
 pnpm typecheck
-( cd apps/designer && npm run typecheck )
+pnpm --filter apex-designer typecheck
 
 log "builds"
 pnpm --filter @apex/os build
-( cd apps/designer && npm run build )
+pnpm --filter apex-designer build
 # The production guard has to run before the successful website build so a
 # failed production attempt is not what `dist/` is left holding. Astro throws
 # while loading site config, before it writes pages, but keep the order anyway.
@@ -80,7 +78,7 @@ pnpm exec vitest run --maxWorkers=1 --no-file-parallelism \
   packages apps/gate-api apps/apex-os
 
 log "unit tests (designer)"
-( cd apps/designer && npm test )
+pnpm --filter apex-designer test
 
 log "unit tests (legacy proposal engine)"
 (
@@ -105,7 +103,7 @@ log "website Playwright"
   # Astro 7 backgrounds `astro dev` when it sees an agent environment variable,
   # and Playwright then reports that the web server exited. Clearing them is
   # what a human terminal already does by not having them.
-  env -u CLAUDECODE -u CURSOR_TRACE_ID -u GEMINI_CLI \
+  env -u CODEX_THREAD_ID -u CLAUDECODE -u CURSOR_TRACE_ID -u GEMINI_CLI \
     PUBLIC_ENV=development \
     PUBLIC_LEAD_WEBHOOK_URL_TEST="$WEBHOOK_TEST" \
     pnpm exec playwright test
@@ -114,7 +112,7 @@ log "website Playwright"
 log "website production intake Playwright"
 (
   cd apps/website
-  env -u CLAUDECODE -u CURSOR_TRACE_ID -u GEMINI_CLI \
+  env -u CODEX_THREAD_ID -u CLAUDECODE -u CURSOR_TRACE_ID -u GEMINI_CLI \
     pnpm run test:production
 )
 
@@ -140,6 +138,8 @@ else
   log "integration tests"
   pnpm exec vitest run --config integration-tests/vitest.config.ts \
     --maxWorkers=1 --no-file-parallelism
+  log "Apex OS full closeout browser acceptance"
+  node apps/apex-os/tests/closeout-acceptance.e2e.mjs
 fi
 
 printf '\n== ci.sh finished\n'
