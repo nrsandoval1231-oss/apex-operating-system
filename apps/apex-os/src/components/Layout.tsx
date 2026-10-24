@@ -1,87 +1,107 @@
-import { Outlet, NavLink } from 'react-router';
+import { useEffect, useRef, useState } from 'react';
+import { Link, Outlet, NavLink, useLocation } from 'react-router';
 import { setToken } from '../api/session';
-import { useActionCards, useMe, useToken } from '../api/useJobs';
+import { useMe, useToken } from '../api/useJobs';
 import SignIn from './SignIn';
+import Icon, { type IconName } from './Icon';
 
 const ROLE_LABEL: Readonly<Record<string, string>> = {
-  admin: 'Admin',
-  office: 'Office',
-  superintendent: 'Superintendent',
-  field: 'Field',
-  customer: 'Customer',
+  admin: 'Admin', office: 'Office', superintendent: 'Superintendent', field: 'Field', customer: 'Customer',
 };
+const destinations: { to: string; label: string; icon: IconName }[] = [
+  { to: '/today', label: 'Today', icon: 'today' },
+  { to: '/checklist', label: 'Checklist', icon: 'checklist' },
+  { to: '/calendar', label: 'Calendar', icon: 'calendar' },
+  { to: '/projects', label: 'Jobs', icon: 'jobs' },
+  { to: '/more', label: 'More', icon: 'more' },
+];
+const actions: { label: string; icon: IconName; to: string; intent: string }[] = [
+  { label: 'Add Photos', icon: 'photo', to: '/projects', intent: 'add-photos' },
+  { label: 'Add Task', icon: 'checklist', to: '/checklist', intent: 'add-task' },
+  { label: 'Add Note', icon: 'note', to: '/projects', intent: 'add-note' },
+  { label: 'Schedule Event', icon: 'calendar', to: '/calendar', intent: 'schedule-event' },
+];
 
-// Designer is an Apex OS workspace, served at the same origin under /app/designer.
-
-/**
- * The app shell.
- *
- * Signed out shows nothing but the way in — no nav, no empty screens behind a
- * wall. Signed in, navigation sits under the thumb at phone width and moves to
- * the top once there is room for it.
- */
 export default function Layout() {
   const token = useToken();
-  const { data, error } = useActionCards();
+  // Remount protected views on identity changes: stale data must never survive sign-out.
+  return <AuthenticatedShell key={token} token={token} />;
+}
+
+function AuthenticatedShell({ token }: { token: string }) {
   const me = useMe();
+  const location = useLocation();
+  const [quickOpen, setQuickOpen] = useState(false);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const quickPanel = useRef<HTMLDivElement>(null);
+  const lastLocation = useRef(location);
+  const routeProject = /^\/projects\/([^/]+)/.exec(location.pathname)?.[1];
+  let project = new URLSearchParams(location.search).get('project');
+  if (routeProject) {
+    try { project = decodeURIComponent(routeProject); } catch { project = routeProject; }
+  }
+  const moreActive = ['/more', '/designer', '/historical', '/brief'].some(path => location.pathname === path || location.pathname.startsWith(`${path}/`));
 
-  // Sign-in appears only when the server actually refuses. On a single-machine
-  // pilot it never does, so there is nothing to paste and nothing in the way.
-  if (error?.isAuthFailure === true) return <SignIn />;
+  useEffect(() => {
+    if (lastLocation.current !== location) {
+      setQuickOpen(false);
+      lastLocation.current = location;
+    }
+  }, [location]);
+  useEffect(() => {
+    if (!quickOpen) return;
+    quickPanel.current?.querySelector<HTMLAnchorElement>('a')?.focus();
+    const close = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') { setQuickOpen(false); trigger.current?.focus(); }
+    };
+    const outside = (event: PointerEvent) => {
+      if (event.target instanceof Node && !quickPanel.current?.contains(event.target) && !trigger.current?.contains(event.target)) setQuickOpen(false);
+    };
+    document.addEventListener('keydown', close);
+    document.addEventListener('pointerdown', outside);
+    return () => { document.removeEventListener('keydown', close); document.removeEventListener('pointerdown', outside); };
+  }, [quickOpen]);
 
-  const needsYou = (data ?? []).filter((card) => card.group === 'needs-you').length;
-  const signedInWithToken = token !== '';
+  if (me.error?.isAuthFailure || me.error?.status === 401) return <SignIn />;
+  if (me.data === null) return <div className="shell-status" role="status">
+    <img src={`${import.meta.env.BASE_URL}brand/official-apex-logo.png`} alt="APEX" />
+    {me.loading ? <p>Opening your workspace…</p> : <><p>Unable to open your workspace. {me.error?.message}</p><button type="button" className="btn" onClick={me.reload}>Try again</button></>}
+  </div>;
 
   return (
-    <div className="app">
-      <nav className="nav">
-        {/* The bar spans the screen so its rule does; the links inside stay in
-            the same column as the content, or nothing on the page lines up. */}
-        <div className="sheet nav-inner">
-          <a className="workspace-brand" href="/app/today" aria-label="Apex workspace home">APEX <span>OS</span></a>
-          <NavLink to="/today">
-            <span>Today</span>
-            {/* The count is the reason to look. It only appears when it is not zero. */}
-            {needsYou > 0 && <span className="badge">{needsYou}</span>}
-          </NavLink>
-          <NavLink to="/calendar">
-            <span>Calendar</span>
-          </NavLink>
-          <NavLink to="/designer">
-            <span>Designer</span>
-          </NavLink>
-          <NavLink to="/projects">
-            <span>Projects</span>
-          </NavLink>
-          <NavLink to="/historical">
-            <span>History</span>
-          </NavLink>
-          <NavLink to="/brief">
-            <span>Brief</span>
-          </NavLink>
-
+    <div className="app apex-shell">
+      <a className="skip-link" href="#workspace-content">Skip to content</a>
+      <header className="shell-header">
+        <Link className="shell-brand" to="/today" aria-label="APEX 2.0 home">
+          <img src={`${import.meta.env.BASE_URL}brand/official-apex-logo.png`} alt="" />
+          <span>APEX <strong>2.0</strong></span>
+        </Link>
+        <nav className="shell-nav" aria-label="Main navigation">
+          {destinations.map(item => item.to === '/more'
+            ? <Link key={item.to} to={item.to} className={`shell-destination${moreActive ? ' selected' : ''}`} aria-current={moreActive ? 'page' : undefined}><Icon name={item.icon} /><span>{item.label}</span></Link>
+            : <NavLink key={item.to} to={item.to} className={({ isActive }) => `shell-destination${isActive ? ' selected' : ''}`}><Icon name={item.icon} /><span>{item.label}</span></NavLink>)}
+        </nav>
+        <div className="shell-identity">
+          <span className="shell-user">{me.data.displayName}<small>{ROLE_LABEL[me.data.role] ?? me.data.role}</small></span>
+          {token !== '' && <button type="button" className="shell-signout" onClick={() => { setQuickOpen(false); setToken(''); }}>Sign out</button>}
         </div>
-      </nav>
-
-      <div className="sheet">
-        {/* Only worth a strip when there is a session to end. A single-machine
-            pilot with GATE_LOCAL_USER has no credential at all, so showing
-            "sign out" there would offer to undo nothing. */}
-        {me.data !== null && (
-          <div className="session">
-            <span className="who">
-              <span className="dot" aria-hidden="true" />
-              {me.data.displayName}
-              <span className="role">{ROLE_LABEL[me.data.role] ?? me.data.role}</span>
-            </span>
-            {signedInWithToken && (
-              <button type="button" className="link-quiet" onClick={() => setToken('')}>
-                Sign out
-              </button>
-            )}
-          </div>
-        )}
-        <Outlet />
+      </header>
+      <div id="workspace-content" className="sheet shell-content" tabIndex={-1}><Outlet /></div>
+      <div className="shell-quick">
+        {quickOpen && <div ref={quickPanel} id="quick-actions" className="quick-panel" aria-label="Quick actions" onBlur={event => {
+          if (!event.currentTarget.contains(event.relatedTarget) && event.relatedTarget !== trigger.current) setQuickOpen(false);
+        }}>
+          <span className="quick-heading">Quick actions</span>
+          {actions.map(action => {
+            const query = new URLSearchParams({ action: action.intent });
+            if (project) query.set('project', project);
+            const to = project && (action.intent === 'add-photos' || action.intent === 'add-note') ? `/projects/${encodeURIComponent(project)}` : action.to;
+            return <Link key={action.intent} to={`${to}?${query}`} onClick={() => setQuickOpen(false)}><Icon name={action.icon} />{action.label}</Link>;
+          })}
+        </div>}
+        <button ref={trigger} type="button" className="quick-trigger" aria-label={quickOpen ? 'Close quick actions' : 'Open quick actions'} aria-expanded={quickOpen} aria-controls="quick-actions" onClick={() => setQuickOpen(open => !open)}>
+          <Icon name={quickOpen ? 'close' : 'plus'} size={26} /><span>Quick add</span>
+        </button>
       </div>
     </div>
   );
