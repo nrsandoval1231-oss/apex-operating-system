@@ -1,0 +1,29 @@
+{
+  "startedAt": "2026-10-24T20:05:03.100Z",
+  "adapter": "PostgresDatabase",
+  "database": "disposable Docker PostgreSQL17 loopback",
+  "websiteId": "apex_1792872303_vmrg",
+  "race": [
+    {
+      "status": 201,
+      "body": {
+        "status": "accepted",
+        "lead_id": "apex_1792872303_vmrg",
+        "canonical_lead_id": "lead_01M5QR8JGESXK9WDZADJ9BV00K"
+      }
+    },
+    {
+      "status": 200,
+      "body": {
+        "status": "duplicate",
+        "lead_id": "apex_1792872303_vmrg",
+        "canonical_lead_id": "lead_01M5QR8JGESXK9WDZADJ9BV00K"
+      }
+    }
+  ],
+  "changedReplay": 409,
+  "consentAndProjectAndAttributionPreserved": true,
+  "persistedAcrossAdapterRestart": true,
+  "status": "PASS",
+  "finishedAt": "2026-10-24T20:05:03.152Z"
+}

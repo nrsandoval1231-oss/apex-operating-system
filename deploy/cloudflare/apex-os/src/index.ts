@@ -22,6 +22,10 @@ interface Env {
   S3_SECRET_ACCESS_KEY: string;
   S3_REGION: string;
   APEX_PUBLIC_ORIGIN?: string;
+  /** Anonymous website intake remains off unless explicitly set to "1". */
+  APEX_PUBLIC_LEAD_INTAKE?: string;
+  /** Comma-separated exact origins accepted by the public intake CORS handler. */
+  APEX_PUBLIC_LEAD_ORIGINS?: string;
   APEX_ACCESS_TEAM: string;
   APEX_ACCESS_AUD: string;
   /** Legacy single-email fallback. Omit once that person's `app_users.email` is set. */
@@ -70,6 +74,12 @@ function containerEnv(env: Env): Record<string, string> {
   if (env.APEX_ACCESS_USER_ID?.trim()) values.APEX_ACCESS_USER_ID = env.APEX_ACCESS_USER_ID.trim();
   if (env.APEX_PUBLIC_ORIGIN?.trim()) {
     values.APEX_PUBLIC_ORIGIN = env.APEX_PUBLIC_ORIGIN.trim();
+  }
+  if (env.APEX_PUBLIC_LEAD_INTAKE?.trim()) {
+    values.APEX_PUBLIC_LEAD_INTAKE = env.APEX_PUBLIC_LEAD_INTAKE.trim();
+  }
+  if (env.APEX_PUBLIC_LEAD_ORIGINS?.trim()) {
+    values.APEX_PUBLIC_LEAD_ORIGINS = env.APEX_PUBLIC_LEAD_ORIGINS.trim();
   }
   if (env.APEX_CUSTOMER_CONTACT_PHONE) {
     values.APEX_CUSTOMER_CONTACT_PHONE = env.APEX_CUSTOMER_CONTACT_PHONE;

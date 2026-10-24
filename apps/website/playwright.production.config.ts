@@ -9,17 +9,18 @@ export default defineConfig({
   testDir: './tests-production',
   use: { ...base.use, baseURL: 'http://localhost:4330' },
   webServer: {
-    command: 'npm run dev -- --port 4330',
+    command: 'npm run dev -- --ignore-lock --port 4330',
     url: 'http://localhost:4330',
     reuseExistingServer: false,
     timeout: 120_000,
     env: {
       PUBLIC_ENV: 'production',
       ASTRO_DEV_TOOLBAR: 'false',
-      PUBLIC_LEAD_WEBHOOK_URL: 'https://lead-webhook.example/webhook/apex-lead-intake',
+      PUBLIC_LEAD_WEBHOOK_URL: 'https://lead-webhook.example/api/public/v1/leads',
       PUBLIC_GTM_ID: '',
       PUBLIC_GA4_MEASUREMENT_ID: '',
       PUBLIC_META_PIXEL_ID: '',
+      CODEX_THREAD_ID: '', CLAUDECODE: '', CURSOR_TRACE_ID: '', GEMINI_CLI: '',
     },
   },
 });

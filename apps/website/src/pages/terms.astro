@@ -9,8 +9,7 @@
 import BaseLayout from '@layouts/BaseLayout.astro';
 import Header from '@components/Header.astro';
 import Footer from '@components/Footer.astro';
-import LegalDocument from '@components/LegalDocument.astro';
-import { termsAndConditions } from '@content/legal';
+import CurrentLegal from '@components/CurrentLegal.astro';
 import { breadcrumbSchema, jsonLdGraph } from '@lib/seo';
 
 const path = '/terms';
@@ -23,8 +22,8 @@ const jsonLd = jsonLdGraph([breadcrumbSchema('Terms and Conditions', path)]);
   jsonLd={jsonLd}
 >
   <Header />
-  <main id="top">
-    <LegalDocument doc={termsAndConditions} />
+  <main id="content">
+    <CurrentLegal kind="terms" />
   </main>
   <Footer />
 </BaseLayout>

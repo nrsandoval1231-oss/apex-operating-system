@@ -3,7 +3,7 @@
  * BaseLayout.astro — the document shell for every page.
  *
  * Responsibilities:
- *  - Self-hosted fonts (Oswald / Inter / JetBrains Mono) via @fontsource — no external
+ *  - Self-hosted fonts (Bebas Neue / Barlow / Barlow) via @fontsource — no external
  *    render-blocking request, better Lighthouse (AC-5.1) and no font layout shift.
  *  - Design tokens + all styles via global.css.
  *  - Runs the FIRST-TOUCH attribution capture on every page load (Phase 1 spine). This is
@@ -15,22 +15,18 @@
  * Every absolute URL comes from `site.url` (env), never a literal, because the canonical
  * domain is BLOCKED on D-03 and has to be swappable with one env change.
  */
-import '@fontsource/oswald/400.css';
-import '@fontsource/oswald/500.css';
-import '@fontsource/oswald/600.css';
-import '@fontsource/oswald/700.css';
-import '@fontsource/inter/400.css';
-import '@fontsource/inter/500.css';
-import '@fontsource/inter/600.css';
-import '@fontsource/inter/700.css';
-import '@fontsource/jetbrains-mono/400.css';
-import '@fontsource/jetbrains-mono/500.css';
-import '@fontsource/jetbrains-mono/700.css';
+import '@fontsource/barlow/400.css';
+import '@fontsource/barlow/500.css';
+import '@fontsource/barlow/600.css';
+import '@fontsource/barlow/700.css';
+import '@fontsource/bebas-neue/400.css';
 import '../styles/global.css';
 
 import Analytics from '@components/Analytics.astro';
 import AnalyticsNoscript from '@components/AnalyticsNoscript.astro';
+import MobileCta from '@components/MobileCta.astro';
 import { absoluteUrl, ORG_BRAND } from '@lib/seo';
+import { site } from '@lib/site';
 import { ogImageUrl } from '@lib/site';
 
 interface Props {
@@ -57,7 +53,7 @@ const {
   path = Astro.url.pathname,
   ogType = 'website',
   jsonLd,
-  noindex = false,
+  noindex = site.env !== 'production',
 } = Astro.props;
 
 const canonical = absoluteUrl(path);
@@ -107,8 +103,9 @@ const ogImage = ogImageUrl ? absoluteUrl(ogImageUrl) : null;
   </head>
   <body>
     <AnalyticsNoscript />
-    <a class="skip-link" href="#top">Skip to content</a>
+    <a class="skip-link" href="#content">Skip to content</a>
     <slot />
+    <MobileCta path={path} />
 
     <!--
       Phase 1 spine: capture first-touch attribution on every page load.

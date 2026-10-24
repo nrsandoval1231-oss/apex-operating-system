@@ -77,9 +77,8 @@ export const IMAGE_MANIFEST = {
     label: 'REPLACE · a completed Apex pool at twilight',
     ratio: '4 / 3',
     tone: 'pool',
-    src: '/images/stock/tile-pools-1600.jpg',
-    srcset: '/images/stock/tile-pools-800.jpg 800w, /images/stock/tile-pools-1600.jpg 1600w',
-    stock: true,
+    src: '/images/projects/apexdpv3-1200.webp',
+    srcset: '/images/projects/apexdpv3-480.webp 480w, /images/projects/apexdpv3-800.webp 800w, /images/projects/apexdpv3-1200.webp 1200w',
   },
   'tile-coating': {
     id: 'tile-coating',
@@ -87,9 +86,8 @@ export const IMAGE_MANIFEST = {
     label: 'REPLACE · an Apex-coated garage floor',
     ratio: '4 / 3',
     tone: 'coat',
-    src: '/images/stock/tile-coating-1600.jpg',
-    srcset: '/images/stock/tile-coating-800.jpg 800w, /images/stock/tile-coating-1600.jpg 1600w',
-    stock: true,
+    src: '/images/projects/after-1-dt-1440.webp',
+    srcset: '/images/projects/after-1-dt-480.webp 480w, /images/projects/after-1-dt-800.webp 800w, /images/projects/after-1-dt-1440.webp 1440w',
   },
   'tile-renovation': {
     id: 'tile-renovation',
@@ -97,10 +95,8 @@ export const IMAGE_MANIFEST = {
     label: 'REPLACE · an Apex kitchen remodel',
     ratio: '4 / 3',
     tone: 'reno',
-    src: '/images/stock/tile-renovation-1600.jpg',
-    srcset:
-      '/images/stock/tile-renovation-800.jpg 800w, /images/stock/tile-renovation-1600.jpg 1600w',
-    stock: true,
+    src: '/images/projects/apex-dr-bathroom-1400.webp',
+    srcset: '/images/projects/apex-dr-bathroom-480.webp 480w, /images/projects/apex-dr-bathroom-800.webp 800w, /images/projects/apex-dr-bathroom-1400.webp 1400w',
   },
   'tile-service': {
     id: 'tile-service',
@@ -108,8 +104,8 @@ export const IMAGE_MANIFEST = {
     label: 'REPLACE · an Apex service tech on a route',
     ratio: '4 / 3',
     tone: 'serv',
-    src: '/images/stock/tile-service-1600.jpg',
-    srcset: '/images/stock/tile-service-800.jpg 800w, /images/stock/tile-service-1600.jpg 1600w',
+    src: '/images/projects/apexdpv2-1200.webp',
+    srcset: '/images/projects/apexdpv2-480.webp 480w, /images/projects/apexdpv2-800.webp 800w, /images/projects/apexdpv2-1200.webp 1200w',
     stock: true,
   },
 
@@ -121,9 +117,8 @@ export const IMAGE_MANIFEST = {
     label: 'REPLACE · a completed Apex pool and spa at dusk',
     ratio: '4 / 5',
     tone: 'pool',
-    src: '/images/stock/pools-home-1400.jpg',
-    srcset: '/images/stock/pools-home-800.jpg 800w, /images/stock/pools-home-1400.jpg 1400w',
-    stock: true,
+    src: '/images/projects/apexdpv3-1200.webp',
+    srcset: '/images/projects/apexdpv3-480.webp 480w, /images/projects/apexdpv3-800.webp 800w, /images/projects/apexdpv3-1200.webp 1200w',
   },
 
   // /pools hero. This is the LCP image on that page: VerticalHero loads it eagerly.
@@ -133,9 +128,8 @@ export const IMAGE_MANIFEST = {
     label: 'REPLACE · a completed Apex pool at dusk',
     ratio: '4 / 5',
     tone: 'pool',
-    src: '/images/stock/pools-hero-1400.jpg',
-    srcset: '/images/stock/pools-hero-800.jpg 800w, /images/stock/pools-hero-1400.jpg 1400w',
-    stock: true,
+    src: '/images/projects/apexdpv3-1200.webp',
+    srcset: '/images/projects/apexdpv3-480.webp 480w, /images/projects/apexdpv3-800.webp 800w, /images/projects/apexdpv3-1200.webp 1200w',
   },
 
   // Second photograph on /pools, beside the service list. The crop stops above
@@ -146,9 +140,8 @@ export const IMAGE_MANIFEST = {
     label: 'REPLACE · an Apex backyard with a spa and pergola',
     ratio: '4 / 5',
     tone: 'pool',
-    src: '/images/stock/pools-backyard-1400.jpg',
-    srcset: '/images/stock/pools-backyard-800.jpg 800w, /images/stock/pools-backyard-1400.jpg 1400w',
-    stock: true,
+    src: '/images/projects/apexdpv4-1200.webp',
+    srcset: '/images/projects/apexdpv4-480.webp 480w, /images/projects/apexdpv4-800.webp 800w, /images/projects/apexdpv4-1200.webp 1200w',
   },
 
   // Three shallow vertical cards
@@ -158,9 +151,8 @@ export const IMAGE_MANIFEST = {
     label: 'REPLACE · an Apex polyaspartic install',
     ratio: '16 / 9',
     tone: 'coat',
-    src: '/images/stock/card-coating-1600.jpg',
-    srcset: '/images/stock/card-coating-800.jpg 800w, /images/stock/card-coating-1600.jpg 1600w',
-    stock: true,
+    src: '/images/projects/after-1-dt-1440.webp',
+    srcset: '/images/projects/after-1-dt-480.webp 480w, /images/projects/after-1-dt-800.webp 800w, /images/projects/after-1-dt-1440.webp 1440w',
   },
   'card-renovation': {
     id: 'card-renovation',
@@ -168,10 +160,8 @@ export const IMAGE_MANIFEST = {
     label: 'REPLACE · an Apex renovation in progress',
     ratio: '16 / 9',
     tone: 'reno',
-    src: '/images/stock/card-renovation-1600.jpg',
-    srcset:
-      '/images/stock/card-renovation-800.jpg 800w, /images/stock/card-renovation-1600.jpg 1600w',
-    stock: true,
+    src: '/images/projects/apex-dr-bathroom-1400.webp',
+    srcset: '/images/projects/apex-dr-bathroom-480.webp 480w, /images/projects/apex-dr-bathroom-800.webp 800w, /images/projects/apex-dr-bathroom-1400.webp 1400w',
   },
   'card-service': {
     id: 'card-service',
@@ -179,9 +169,8 @@ export const IMAGE_MANIFEST = {
     label: 'REPLACE · Apex servicing pump and filter equipment',
     ratio: '16 / 9',
     tone: 'serv',
-    src: '/images/stock/card-service-1600.jpg',
-    srcset: '/images/stock/card-service-800.jpg 800w, /images/stock/card-service-1600.jpg 1600w',
-    stock: true,
+    src: '/images/projects/apexdpv2-1200.webp',
+    srcset: '/images/projects/apexdpv2-480.webp 480w, /images/projects/apexdpv2-800.webp 800w, /images/projects/apexdpv2-1200.webp 1200w',
   },
 
   /* =============================================================================
@@ -317,6 +306,15 @@ export const IMAGE_MANIFEST = {
     src: '/images/team/travis-960.jpg',
     srcset: '/images/team/travis-640.jpg 640w, /images/team/travis-960.jpg 960w',
   },
+  'real-pool-hero': { id:'real-pool-hero', alt:'A completed backyard pool with a raised spa and patio seating', label:'Apex pool project', ratio:'16 / 9', tone:'pool', src:'/images/projects/apexdpv3-1200.webp', srcset:'/images/projects/apexdpv3-480.webp 480w, /images/projects/apexdpv3-800.webp 800w, /images/projects/apexdpv3-1200.webp 1200w' },
+  'real-pool-work': { id:'real-pool-work', alt:'A completed backyard pool and raised spa', label:'Apex pool project', ratio:'4 / 3', tone:'pool', src:'/images/projects/apexdpv4-1200.webp', srcset:'/images/projects/apexdpv4-480.webp 480w, /images/projects/apexdpv4-800.webp 800w, /images/projects/apexdpv4-1200.webp 1200w' },
+  'real-coating-work': { id:'real-coating-work', alt:'A finished concrete coating project', label:'Apex concrete coating project', ratio:'16 / 9', tone:'coat', src:'/images/projects/after-1-dt-1440.webp', srcset:'/images/projects/after-1-dt-480.webp 480w, /images/projects/after-1-dt-800.webp 800w, /images/projects/after-1-dt-1440.webp 1440w' },
+  'real-renovation-work': { id:'real-renovation-work', alt:'A renovated bathroom with a double vanity', label:'Apex renovation project', ratio:'4 / 3', tone:'reno', src:'/images/projects/apex-dr-bathroom-1400.webp', srcset:'/images/projects/apex-dr-bathroom-480.webp 480w, /images/projects/apex-dr-bathroom-800.webp 800w, /images/projects/apex-dr-bathroom-1400.webp 1400w' },
+  'real-pool-two': { id:'real-pool-two', alt:'A completed swimming pool project', label:'Apex pool project', ratio:'4 / 3', tone:'pool', src:'/images/projects/apexdpv2-1200.webp', srcset:'/images/projects/apexdpv2-480.webp 480w, /images/projects/apexdpv2-800.webp 800w, /images/projects/apexdpv2-1200.webp 1200w' },
+  'real-pool-three': { id:'real-pool-three', alt:'A backyard pool with a curved edge and spa', label:'Apex pool project', ratio:'4 / 3', tone:'pool', src:'/images/projects/apexdpv5-1200.webp', srcset:'/images/projects/apexdpv5-480.webp 480w, /images/projects/apexdpv5-800.webp 800w, /images/projects/apexdpv5-1200.webp 1200w' },
+  'real-coating-before': { id:'real-coating-before', alt:'Concrete floor before coating work', label:'Apex coating project before work', ratio:'16 / 9', tone:'coat', src:'/images/projects/before-1-dt-1440.webp', srcset:'/images/projects/before-1-dt-480.webp 480w, /images/projects/before-1-dt-800.webp 800w, /images/projects/before-1-dt-1440.webp 1440w' },
+  'real-renovation-laundry': { id:'real-renovation-laundry', alt:'A renovated laundry room', label:'Apex renovation project', ratio:'4 / 3', tone:'reno', src:'/images/projects/apex-dr-laundryroom-1400.webp', srcset:'/images/projects/apex-dr-laundryroom-480.webp 480w, /images/projects/apex-dr-laundryroom-800.webp 800w, /images/projects/apex-dr-laundryroom-1400.webp 1400w' },
+  'real-renovation-project': { id:'real-renovation-project', alt:'A home renovation project in progress', label:'Apex renovation project', ratio:'4 / 3', tone:'reno', src:'/images/projects/apexjob-r2-1-900.webp', srcset:'/images/projects/apexjob-r2-1-480.webp 480w, /images/projects/apexjob-r2-1-800.webp 800w, /images/projects/apexjob-r2-1-900.webp 900w' },
 } as const satisfies Record<string, ImageSlot>;
 
 /**
