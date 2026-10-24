@@ -23,7 +23,8 @@ export default function QuoteForm({ initialVertical, webhookUrl, phoneDisplay, p
     const onPreselect = (event: Event) => { const value = (event as CustomEvent<string>).detail; if (isVertical(value)) choose(value); };
     window.addEventListener('apex:preselect', onPreselect); return () => window.removeEventListener('apex:preselect', onPreselect);
   }, []);
-  function choose(value: Vertical) { if (status === 'sending' || (status === 'error' && pending.current)) return; setVertical(value); setProject({ ...blank, type: '' }); }
+  // The mount-only CTA listener must read the live frozen request, not captured status.
+  function choose(value: Vertical) { if (pending.current) return; setVertical(value); setProject({ ...blank, type: '' }); }
   function update<K extends keyof Project>(key: K, value: Project[K]) { setProject((p) => ({ ...p, [key]: value })); }
   function toggleFeature(value: string) { update('features', project.features.includes(value) ? project.features.filter((x) => x !== value) : [...project.features, value]); }
   function next() { if (step === 1 && !isVertical(vertical)) { setFieldError('Choose a division to continue.'); return; } setFieldError(''); setStep(Math.min(3, step + 1)); }
@@ -46,7 +47,16 @@ export default function QuoteForm({ initialVertical, webhookUrl, phoneDisplay, p
       const body = await res.json().catch(() => null) as {status?:string;lead_id?:string;canonical_lead_id?:string}|null;
       if (!res.ok && (res.status === 400 || res.status === 422)) { pending.current = null; setError('The server rejected this request. Review the details and submit again, or call us.'); setStatus('rejected'); setStep(2); return; }
       if (!res.ok || !isIntakeResponseAccepted(body, pending.current.id)) throw new Error('The request was not confirmed. Your details are retained for a safe retry; retry or call us.');
-      setAccepted(JSON.parse(JSON.stringify(pending.current.payload)) as LeadPayload); setStatus('success');
+      const confirmed = JSON.parse(JSON.stringify(pending.current.payload)) as LeadPayload;
+      setAccepted(confirmed); setStatus('success');
+      // Emit only after the matching acknowledgement, using the frozen payload.
+      try {
+        const w = window as unknown as { dataLayer?: unknown[] };
+        w.dataLayer = w.dataLayer || [];
+        w.dataLayer.push({ event: 'lead_submit', vertical: confirmed.vertical, source: confirmed.source });
+      } catch {
+        // Optional analytics must never turn a confirmed lead into a retry.
+      }
     } catch (err) { setError(err instanceof Error ? err.message : 'The request could not be confirmed. Keep this page open and retry, or call us. If you leave or reload, call before submitting again.'); setStatus('error'); }
   }
   if (status === 'success') return <div className="quote-success" role="status" aria-live="polite"><p className="eyebrow">Request received</p><h3>Thanks{accepted?.first_name ? `, ${accepted.first_name}` : ''}.</h3><p>Your request was accepted. Need to talk now? Call <a href={`tel:${phoneE164}`}>{phoneDisplay}</a>.</p></div>;

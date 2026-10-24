@@ -27,6 +27,7 @@ for (const response of [
     await expect(page.getByRole('status')).toBeVisible();
     expect(leads).toHaveLength(2);
     expect(leads[1].lead_id).toBe(leads[0].lead_id);
+    expect(await page.evaluate(() => (window as any).dataLayer?.filter((item: any) => item.event === 'lead_submit') ?? [])).toEqual([{ event: 'lead_submit', vertical: leads[0].vertical, source: leads[0].source }]);
   });
 }
 
