@@ -259,6 +259,29 @@ describe.skipIf(!url)('canonical checklist on real PostgreSQL', () => {
     expect(nextTaskDate('2026-12-31', 'monthly')).toBe('2027-01-31');
     expect(nextTaskDate('2026-12-31', 'weekly')).toBe('2027-01-07');
   });
+  it('preserves an unavailable assignee on unrelated edits but rejects new inactive assignments', async () => {
+    const t = await service.command(actors.owner, key(), 'create', null, {
+      ...fields, assignedUserId: ids.other,
+    });
+    await db.query('update app_users set active=false where user_id=$1', [ids.other]);
+    const { jobId: _, ...edit } = fields;
+    try {
+      const saved = await service.command(actors.owner, key(), 'edit', t.taskId, {
+        ...edit, assignedUserId: ids.other, detail: 'Unrelated edit', expectedRevision: 1,
+      });
+      expect(saved.assignedUserId).toBe(ids.other);
+      expect(saved.detail).toBe('Unrelated edit');
+      await expect(service.command(actors.owner, key(), 'edit', t.taskId, {
+        ...edit, assignedUserId: ids.inactive, expectedRevision: 2,
+      })).rejects.toThrow(/active staff/);
+      const cleared = await service.command(actors.owner, key(), 'edit', t.taskId, {
+        ...edit, assignedUserId: null, expectedRevision: 2,
+      });
+      expect(cleared.assignedUserId).toBeNull();
+    } finally {
+      await db.query('update app_users set active=true where user_id=$1', [ids.other]);
+    }
+  });
   it('refuses recurring completion when its assignee is deactivated without losing the occurrence', async () => {
     const t = await service.command(actors.owner, key(), 'create', null, {
       ...fields,

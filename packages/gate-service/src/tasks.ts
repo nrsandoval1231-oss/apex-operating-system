@@ -165,7 +165,13 @@ export class TaskService {
           );
       } else if ('jobId' in body && body.jobId)
         await assertJobMutable(tx, body.jobId);
-      if ('assignedUserId' in body && body.assignedUserId) {
+      // Preserve existing assignments on unrelated edits; new assignments still
+      // require active staff, and recurring completion is checked separately.
+      if (
+        'assignedUserId' in body &&
+        body.assignedUserId &&
+        body.assignedUserId !== old?.assignedUserId
+      ) {
         const a = await tx.query(
           'select 1 from app_users where user_id=$1 and active=true and role=any($2::text[]) for share',
           [body.assignedUserId, [...STAFF_ROLES]],
