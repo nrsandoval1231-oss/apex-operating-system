@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import type { JobSummary, WorkspaceProject } from '@apex/contracts';
 import { jobTitle, jobLocation, JOB_STATUS_LABEL } from '../lib/jobDisplay';
 export default function ProjectList({
@@ -15,6 +15,8 @@ export default function ProjectList({
   selected?: string | null;
   dense?: boolean;
 }) {
+  const [params] = useSearchParams();
+  const intent = params.get('action');
   const [search, setSearch] = useState(''),
     [division, setDivision] = useState(''),
     [status, setStatus] = useState(''),
@@ -167,7 +169,7 @@ export default function ProjectList({
           <Link
             className="project-card"
             key={j.jobId}
-            to={`/projects/${j.jobId}`}
+            to={`/projects/${j.jobId}${intent === 'add-photos' || intent === 'add-note' ? `?action=${intent}&project=${j.jobId}` : ''}`}
             aria-label={`Open ${jobTitle(j)}`}
           >
             {content}

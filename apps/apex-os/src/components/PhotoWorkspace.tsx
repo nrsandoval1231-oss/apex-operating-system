@@ -1,5 +1,8 @@
-import { useJobPhotos } from '../api/useJobs';
-import EvidenceProof from './EvidenceProof';
+import { useJobPhotos, useMe } from '../api/useJobs';
+import PhotoComposer from '../photos/PhotoComposer';
+import PhotoGallery from '../photos/PhotoGallery';
+import '../photos/photos.css';
+
 export default function PhotoWorkspace({
   jobId,
   readOnly = false,
@@ -8,26 +11,37 @@ export default function PhotoWorkspace({
   readOnly?: boolean;
 }) {
   const query = useJobPhotos(jobId);
+  const me = useMe();
   return (
-    <section aria-label="Project photos">
+    <section aria-label="Project photos" className="photo-workspace">
       <h3>Project photos</h3>
-      {readOnly && <p>Historical photos · view only</p>}
+      {me.data && (
+        <PhotoComposer
+          key={`${me.data.userId}:${jobId}`}
+          ownerId={me.data.userId}
+          jobId={jobId}
+          readOnly={readOnly}
+        />
+      )}
       {query.loading && <p role="status">Loading photos…</p>}
       {query.error && (
         <p role="alert">
           {query.error.message}
-          <button onClick={query.reload}>Retry</button>
+          <button className="btn ghost" onClick={query.reload}>
+            Retry gallery
+          </button>
         </p>
       )}
-      {query.data?.length === 0 && <p>No project photos recorded.</p>}
-      {query.data?.map((p) => (
-        <article key={p.evidenceId}>
-          <p>
-            {p.gateTitle} · {p.requirementKey}
-          </p>
-          <EvidenceProof evidenceId={p.evidenceId} />
-        </article>
-      ))}
+      {query.data && (
+        <PhotoGallery
+          photos={query.data}
+          canPublish={
+            !!me.data &&
+            ['admin', 'office', 'superintendent'].includes(me.data.role)
+          }
+          readOnly={readOnly}
+        />
+      )}
     </section>
   );
 }
