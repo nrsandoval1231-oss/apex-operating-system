@@ -1,0 +1,45 @@
+
+added 41 packages in 2s
+{
+  "auditReportVersion": 2,
+  "vulnerabilities": {},
+  "metadata": {
+    "vulnerabilities": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0,
+      "total": 0
+    },
+    "dependencies": {
+      "prod": 33,
+      "dev": 0,
+      "optional": 60,
+      "peer": 0,
+      "peerOptional": 0,
+      "total": 92
+    }
+  }
+}
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mProxy environment variables detected. We'll use your proxy for fetch requests.[0m
+
+
+
+ ⛅️ wrangler 4.152.0
+────────────────────
+Total Upload: 56.34 KiB / gzip: 14.09 KiB
+Your Worker has access to the following bindings:
+Binding                                                   Resource
+env.APEX_OS (ApexOsContainer)                             Durable Object
+env.S3_BUCKET ("apex-evidence-staging")                   Environment Variable
+env.S3_REGION ("auto")                                    Environment Variable
+env.APEX_ACCESS_TEAM ("REPLACE_WITH_ACCESS_TEAM")         Environment Variable
+env.APEX_ACCESS_AUD ("REPLACE_WITH_ACCESS_AUD")           Environment Variable
+env.APEX_ACCESS_EMAIL ("REPLACE_WITH_NICK_GMAIL")         Environment Variable
+env.APEX_ACCESS_USER_ID ("REPLACE_WITH_USER_ULID")        Environment Variable
+
+The following containers are available:
+- apex-os-staging-apexoscontainer (/workspace/apex-clean/Dockerfile)
+
+--dry-run: exiting now.

@@ -1,0 +1,81 @@
+
+ RUN  v4.1.10 /workspace/apex-operating-system
+
+ ❯ integration-tests/audit-races.test.ts (4 tests | 3 failed) 628ms
+     × rechecks requirement changes committed after release preflight 158ms
+     × rechecks inspection changes committed after release preflight 216ms
+     × rechecks duplicate changes committed after release preflight 165ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  integration-tests/audit-races.test.ts > forensic lifecycle regressions on PostgreSQL > rechecks requirement changes committed after release preflight
+ FAIL  integration-tests/audit-races.test.ts > forensic lifecycle regressions on PostgreSQL > rechecks inspection changes committed after release preflight
+AssertionError: release must fail after a requirement failure commits: expected 'fulfilled' to be 'rejected' // Object.is equality
+
+Expected: "rejected"
+Received: "fulfilled"
+
+ ❯ integration-tests/audit-races.test.ts:141:90
+    139|       return;
+    140|     }
+    141|     expect.soft(result?.status, 'release must fail after a requirement…
+       |                                                                                          ^
+    142|     expect.soft(final.status, 'failed checklist must not be released')…
+    143|     expect((await db.query(`select 1 from events where job_id=$1 and e…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/7]⎯
+
+ FAIL  integration-tests/audit-races.test.ts > forensic lifecycle regressions on PostgreSQL > rechecks requirement changes committed after release preflight
+ FAIL  integration-tests/audit-races.test.ts > forensic lifecycle regressions on PostgreSQL > rechecks inspection changes committed after release preflight
+AssertionError: failed checklist must not be released: expected 'released' not to be 'released' // Object.is equality
+ ❯ integration-tests/audit-races.test.ts:142:76
+    140|     }
+    141|     expect.soft(result?.status, 'release must fail after a requirement…
+    142|     expect.soft(final.status, 'failed checklist must not be released')…
+       |                                                                            ^
+    143|     expect((await db.query(`select 1 from events where job_id=$1 and e…
+    144|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/7]⎯
+
+ FAIL  integration-tests/audit-races.test.ts > forensic lifecycle regressions on PostgreSQL > rechecks requirement changes committed after release preflight
+ FAIL  integration-tests/audit-races.test.ts > forensic lifecycle regressions on PostgreSQL > rechecks inspection changes committed after release preflight
+AssertionError: expected [ { '?column?': 1 } ] to have a length of +0 but got 1
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ integration-tests/audit-races.test.ts:143:115
+    141|     expect.soft(result?.status, 'release must fail after a requirement…
+    142|     expect.soft(final.status, 'failed checklist must not be released')…
+    143|     expect((await db.query(`select 1 from events where job_id=$1 and e…
+       |                                                                                                                   ^
+    144|   });
+    145| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/7]⎯
+
+ FAIL  integration-tests/audit-races.test.ts > forensic lifecycle regressions on PostgreSQL > rechecks duplicate changes committed after release preflight
+AssertionError: expected 'rejected' to be 'fulfilled' // Object.is equality
+
+Expected: "fulfilled"
+Received: "rejected"
+
+ ❯ integration-tests/audit-races.test.ts:135:30
+    133|     const final = await api.getGate(gateId);
+    134|     if (change === 'duplicate') {
+    135|       expect(result?.status).toBe('fulfilled');
+       |                              ^
+    136|       if (result?.status === 'fulfilled') expect(result.value.duplicat…
+    137|       expect(final.status).toBe('released');
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/7]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  3 failed | 1 passed (4)
+   Start at  06:03:22
+   Duration  1.61s (transform 536ms, setup 0ms, import 814ms, tests 628ms, environment 0ms)
