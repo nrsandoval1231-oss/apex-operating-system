@@ -93,7 +93,7 @@ export const apiGet = async <T>(path: string, schema: ZodType<T>, signal?: Abort
 export const apiSend = async <T>(
   path: string,
   schema: ZodType<T>,
-  init: { method: 'POST' | 'DELETE'; body?: unknown } ,
+  init: { method: 'POST' | 'DELETE'; body?: unknown; idempotencyKey?: string } ,
 ): Promise<T> => {
   const token = getToken();
   let response: Response;
@@ -104,18 +104,9 @@ export const apiSend = async <T>(
         ...(token === '' ? {} : { authorization: `Bearer ${token}` }),
         'content-type': 'application/json',
         accept: 'application/json',
-        /*
-         * Every write carries an idempotency key, whether or not the route
-         * currently demands one.
-         *
-         * The commanding routes refuse without it, and until the takeoff
-         * attach shipped, no route this app could reach was one of them — so
-         * the omission sat here harmlessly and surfaced as a 422 the first
-         * time it mattered. One per call, not per intent: a retry after a
-         * failure is a new attempt by a person who watched the first one fail,
-         * and the domain rules are what stop a second approval, not this.
-         */
-        'idempotency-key': crypto.randomUUID(),
+        // Callers may retain one key per user intent after an uncertain response.
+        // Existing callers still receive a fresh key for each explicit attempt.
+        'idempotency-key': init.idempotencyKey ?? crypto.randomUUID(),
       },
       body: JSON.stringify(init.body ?? {}),
     });

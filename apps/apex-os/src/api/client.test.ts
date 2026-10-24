@@ -45,6 +45,15 @@ afterEach(() => {
 });
 
 describe('apiSend', () => {
+  it('uses a caller intent key for recoverable retries', async () => {
+    const { apiSend } = await loadClient();
+    for (let attempt = 0; attempt < 2; attempt++) {
+      await apiSend('/api/tasks', z.object({ ok: z.boolean() }), {
+        method: 'POST', body: { title: 'Call supplier' }, idempotencyKey: 'stable-intent-key',
+      });
+      expect(sent.headers['idempotency-key']).toBe('stable-intent-key');
+    }
+  });
   it('sends an idempotency key long enough for the API to accept', async () => {
     const { apiSend } = await loadClient();
     await apiSend('/api/jobs/x/approved-takeoff', z.object({ ok: z.boolean() }), {
