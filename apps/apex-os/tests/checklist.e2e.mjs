@@ -217,8 +217,13 @@ try {
     await row().getByRole('button', { name: 'Edit', exact: true }).click();
     assert.equal(await page.getByLabel('Assigned to', { exact: true }).inputValue(), assignee);
     await page.getByLabel('Assigned to', { exact: true }).selectOption('');
+    const savedResponse = page.waitForResponse(response =>
+      response.url() === `${origin}/api/tasks/${created.taskId}/edit` && response.request().method() === 'POST');
     await page.getByRole('button', { name: 'Save task', exact: true }).click();
-    await page.getByRole('button', { name: 'Save task', exact: true }).waitFor({ state: 'hidden' });
+    const saved = await savedResponse;
+    assert.equal(saved.status(), 200);
+    assert.equal((await saved.json()).assignedUserId, null);
+    await page.getByLabel('Assigned to', { exact: true }).waitFor({ state: 'hidden' });
     snapshot = (await db.query('select snapshot from tasks where task_id=$1', [created.taskId])).rows[0].snapshot;
     assert.equal(snapshot.assignedUserId, null, 'only explicit unassignment clears the existing assignee');
     checks.push(`${width}px inactive assignee survives unrelated edit and reload; explicit unassignment persists`);
