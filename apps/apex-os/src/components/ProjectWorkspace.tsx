@@ -198,6 +198,7 @@ function InspectionTab({
       today={civilDay()}
       readOnly={readOnly}
       focus={null}
+      anchorId={null}
     />
   );
 }
@@ -461,11 +462,21 @@ export default function ProjectWorkspace({
             jobId={job.jobId}
             readOnly={immutable}
             hasApprovedTakeoff={job.approvedTakeoffRevisionId !== null}
+            anchorId={null}
           />
         )}
-        {tab === 'Inspections' && (
-          <InspectionTab jobId={job.jobId} readOnly={immutable} />
-        )}
+        {tab === 'Inspections' &&
+          (metadata?.stageCatalog === 'pools' ? (
+            <InspectionTab jobId={job.jobId} readOnly={immutable} />
+          ) : (
+            <section aria-label="Inspection configuration">
+              <h3>Inspection configuration required</h3>
+              <p>
+                No approved inspection catalog is configured for{' '}
+                {metadata?.division ?? 'this division'}.
+              </p>
+            </section>
+          ))}
         {tab === 'Documents' && (
           <section>
             <h3>Retained documents</h3>
