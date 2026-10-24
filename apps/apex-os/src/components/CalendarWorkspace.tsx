@@ -15,6 +15,9 @@ import { useWorkspaceCalendar } from '../api/useWorkspaceCalendar';
 import {
   calendarAddDays,
   calendarDates as dates,
+  calendarLocalInput as localInput,
+  resolveCalendarLocalInstant,
+  workspaceNeedsScheduling,
 } from '../lib/calendarWorkspace';
 import './CalendarWorkspace.css';
 type View = 'Agenda' | 'Day' | 'Week' | 'Month';
@@ -62,14 +65,6 @@ const sourceLink = (item: WorkspaceCalendarEntry) =>
   item.source === 'task'
     ? `/checklist${item.task.jobId ? `?project=${item.task.jobId}` : ''}`
     : `/projects/${job(item)}`;
-const localInput = (iso: string | null) =>
-  iso
-    ? new Date(
-        new Date(iso).valueOf() - new Date(iso).getTimezoneOffset() * 60000,
-      )
-        .toISOString()
-        .slice(0, 16)
-    : '';
 export default function CalendarWorkspace() {
   const query = useWorkspaceCalendar();
   const jobs = useJobs();
@@ -199,6 +194,23 @@ export default function CalendarWorkspace() {
     try {
       setBusy(true);
       setError('');
+      const startsAt = allDay
+        ? null
+        : resolveCalendarLocalInstant(
+            String(data.get('startsAt')),
+            editing?.allDay === false ? editing.startsAt : null,
+          );
+      const endsAt = allDay
+        ? null
+        : resolveCalendarLocalInstant(
+            String(data.get('endsAt')),
+            editing?.allDay === false ? editing.endsAt : null,
+          );
+      const unchangedTimes =
+        editing?.allDay === false &&
+        !allDay &&
+        startsAt === editing.startsAt &&
+        endsAt === editing.endsAt;
       const fields = {
         title: String(data.get('title')),
         note: String(data.get('note') ?? '') || null,
@@ -207,15 +219,13 @@ export default function CalendarWorkspace() {
         allDay,
         startsOn: allDay ? String(data.get('startsOn')) : null,
         endsOn: allDay ? String(data.get('endsOn')) : null,
-        startsAt: allDay
-          ? null
-          : new Date(String(data.get('startsAt'))).toISOString(),
-        endsAt: allDay
-          ? null
-          : new Date(String(data.get('endsAt'))).toISOString(),
-        timezone: allDay
-          ? 'America/Chicago'
-          : Intl.DateTimeFormat().resolvedOptions().timeZone,
+        startsAt,
+        endsAt,
+        timezone: unchangedTimes
+          ? editing.timezone
+          : allDay
+            ? 'America/Chicago'
+            : Intl.DateTimeFormat().resolvedOptions().timeZone,
         ...(editing
           ? { expectedRevision: editing.revision }
           : { jobId: draftJob || null }),
@@ -223,7 +233,7 @@ export default function CalendarWorkspace() {
       const body = JSON.stringify(fields);
       if (retry.current?.body !== body)
         retry.current = { body, key: crypto.randomUUID() };
-      await apiSend(
+      const saved = await apiSend(
         editing
           ? `/api/calendar-events/${editing.eventId}/edit`
           : '/api/calendar-events',
@@ -231,9 +241,11 @@ export default function CalendarWorkspace() {
         { method: 'POST', body: fields, idempotencyKey: retry.current.key },
       );
       setCursor(
-        allDay
-          ? fields.startsOn!
-          : civilDay(new Date(fields.startsAt!), fields.timezone),
+        dates({
+          source: 'appointment',
+          id: `appointment:${saved.eventId}`,
+          event: saved,
+        })[0]!,
       );
       window.dispatchEvent(new Event('apex:data-changed'));
       close();
@@ -310,7 +322,10 @@ export default function CalendarWorkspace() {
           : ''}
       </span>
       <strong>{title(item)}</strong>
-      <span>{name(job(item))}</span>
+      <span>
+        {name(job(item))}
+        {item.source === 'operational' ? ` · ${item.entry.status}` : ''}
+      </span>
       {item.source === 'appointment' && !item.event.allDay && (
         <small>
           {new Date(item.event.startsAt!).toLocaleTimeString([], {
@@ -499,13 +514,13 @@ export default function CalendarWorkspace() {
             </p>
           </div>
         )}
-      {entries.some((i) => dates(i)[0] === null) && (
+      {entries.some(workspaceNeedsScheduling) && (
         <section className="cw-undated">
           <h2>Needs scheduling</h2>
           <p>
             Open the authoritative project to schedule gates or inspections.
           </p>
-          {entries.filter((i) => dates(i)[0] === null).map(card)}
+          {entries.filter(workspaceNeedsScheduling).map(card)}
         </section>
       )}
       {(compose || detail) && (

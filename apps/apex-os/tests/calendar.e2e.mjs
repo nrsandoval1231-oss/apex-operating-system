@@ -474,6 +474,149 @@ try {
     'Existing operational conflict visible; real multi-day drag preserves inclusive span and reason/audit via visit API; gunite multi-day and field move refusals remain',
   );
   await operational.close();
+  // Preserve the actual second repeated-hour instants during an ordinary note edit.
+  const dstTitle = 'Second DST occurrence ' + Date.now();
+  const dstBody = {
+    title: dstTitle,
+    note: null,
+    jobId: null,
+    eventType: 'meeting',
+    assignedUserId: user,
+    allDay: false,
+    startsOn: null,
+    endsOn: null,
+    startsAt: '2026-11-01T07:30:15.125Z',
+    endsAt: '2026-11-01T07:45:30.875Z',
+    timezone: 'UTC',
+  };
+  const dstCreated = await fetch(origin + '/api/calendar-events', {
+    method: 'POST',
+    headers: {
+      authorization: `Bearer ${token}`,
+      'content-type': 'application/json',
+      'idempotency-key': crypto.randomUUID(),
+    },
+    body: JSON.stringify(dstBody),
+  });
+  assert.equal(dstCreated.status, 201);
+  const dstEvent = await dstCreated.json();
+  const dstPage = await browser.newPage({
+    viewport: { width: 1440, height: 1000 },
+    timezoneId: 'America/Chicago',
+  });
+  await dstPage.addInitScript(
+    (t) => localStorage.setItem('apex-gate-token', t),
+    token,
+  );
+  await dstPage.goto(origin + '/app/calendar');
+  await dstPage.getByRole('button', { name: 'Day', exact: true }).click();
+  await dstPage.getByLabel('Calendar date', { exact: true }).fill('2026-11-01');
+  await dstPage.locator('.cw-entry').filter({ hasText: dstTitle }).click();
+  await dstPage
+    .getByRole('button', { name: 'Edit event', exact: true })
+    .click();
+  assert.equal(
+    await dstPage.getByLabel('Starts at', { exact: true }).inputValue(),
+    '2026-11-01T01:30',
+  );
+  await dstPage
+    .getByLabel('Note', { exact: true })
+    .fill('Note edit preserves second occurrence and precision');
+  await dstPage
+    .getByRole('button', { name: 'Save event', exact: true })
+    .click();
+  await dstPage.getByRole('dialog').waitFor({ state: 'hidden' });
+  const dstSaved = (
+    await db.query(
+      'select snapshot from calendar_events where calendar_event_id=$1',
+      [dstEvent.eventId],
+    )
+  ).rows[0].snapshot;
+  assert.equal(dstSaved.startsAt, dstBody.startsAt);
+  assert.equal(dstSaved.endsAt, dstBody.endsAt);
+  assert.equal(dstSaved.timezone, dstBody.timezone);
+  assert.equal(dstSaved.revision, 2);
+  await dstPage.locator('.cw-entry').filter({ hasText: dstTitle }).click();
+  await dstPage
+    .getByRole('button', { name: 'Edit event', exact: true })
+    .click();
+  await dstPage
+    .getByLabel('Starts at', { exact: true })
+    .fill('2026-11-01T01:35');
+  let ambiguousPosts = 0;
+  dstPage.on('request', (r) => {
+    if (
+      r.method() === 'POST' &&
+      new URL(r.url()).pathname ===
+        `/api/calendar-events/${dstEvent.eventId}/edit`
+    )
+      ambiguousPosts++;
+  });
+  await dstPage
+    .getByRole('button', { name: 'Save event', exact: true })
+    .click();
+  await dstPage
+    .getByRole('alert')
+    .filter({ hasText: 'occurs twice' })
+    .waitFor();
+  assert.equal(ambiguousPosts, 0);
+  assert.equal(
+    (
+      await db.query(
+        'select snapshot from calendar_events where calendar_event_id=$1',
+        [dstEvent.eventId],
+      )
+    ).rows[0].snapshot.revision,
+    2,
+  );
+  checks.push(
+    'Chicago second DST hour note-only edit preserves exact UTC seconds/milliseconds and recorded timezone; changed ambiguous local time rejected before any POST',
+  );
+  await dstPage.close();
+
+  const tokyo = await browser.newPage({
+    viewport: { width: 390, height: 844 },
+    timezoneId: 'Asia/Tokyo',
+  });
+  await tokyo.addInitScript(
+    (t) => localStorage.setItem('apex-gate-token', t),
+    token,
+  );
+  await tokyo.goto(origin + '/app/calendar');
+  await tokyo.getByRole('button', { name: 'Day', exact: true }).click();
+  await tokyo
+    .getByRole('button', { name: 'Schedule event', exact: true })
+    .click();
+  const crossTitle = 'Tokyo local Chicago day ' + Date.now();
+  await tokyo.getByLabel('Title', { exact: true }).fill(crossTitle);
+  await tokyo.getByLabel('All day', { exact: true }).uncheck();
+  await tokyo.getByLabel('Starts at', { exact: true }).fill('2026-10-25T12:30');
+  await tokyo.getByLabel('Ends at', { exact: true }).fill('2026-10-25T13:30');
+  await tokyo.getByRole('button', { name: 'Save event', exact: true }).click();
+  await tokyo
+    .locator('.cw-day')
+    .filter({ has: tokyo.locator('time[datetime="2026-10-24"]') })
+    .locator('.cw-entry')
+    .filter({ hasText: crossTitle })
+    .waitFor();
+  assert.equal(
+    await tokyo.getByLabel('Calendar date', { exact: true }).inputValue(),
+    '2026-10-24',
+  );
+  await tokyo.getByRole('button', { name: 'Agenda', exact: true }).click();
+  await tokyo.locator('.cw-entry').filter({ hasText: crossTitle }).waitFor();
+  const crossSaved = (
+    await db.query(
+      "select snapshot from calendar_events where snapshot->>'title'=$1",
+      [crossTitle],
+    )
+  ).rows[0].snapshot;
+  assert.equal(crossSaved.startsAt, '2026-10-25T03:30:00.000Z');
+  assert.equal(crossSaved.timezone, 'Asia/Tokyo');
+  checks.push(
+    'Tokyo local-date save navigates to Chicago business day and remains visible in Day and mobile Agenda while retaining recorded timezone',
+  );
+  await tokyo.close();
   console.log(JSON.stringify({ passed: checks.length, checks }, null, 2));
 } finally {
   if (browser) await browser.close();
