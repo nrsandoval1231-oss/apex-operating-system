@@ -2,7 +2,7 @@
 
 ## Current status
 
-Milestones 1–6 are implemented and independently reviewed. PRs 32–36 are open; the final integration PR follows on `codex/apex-2-integration`, based on reviewed photo candidate `6d9162f4849ff5b3ba78d08e5493a14880522283`.
+Milestones 1–6 are implemented and independently reviewed in open PRs 32–37. Final integration PR 37 is on `codex/apex-2-integration`, based on reviewed photo candidate `6d9162f4849ff5b3ba78d08e5493a14880522283`.
 
 The implementation started from main `f4421197de580028bfe53f9c7d50776b20a6a52b`, including merged cleanup PR 31. No APEX 2.0 PR has been merged or deployed. Final corrected CI passed at `2231248cc6c0fc69e5850188782943191c45dec5`. Whole-branch review and scoped correction review are complete, with no Critical/Important findings remaining in the reviewed fixes.
 
@@ -21,7 +21,7 @@ No approved mockups were attached or found in the workspace, so the detailed wri
 | 3. Unified calendar and persisted appointments | Implemented; review approved | [34](https://github.com/nrsandoval1231-oss/apex-operating-system/pull/34) | [Calendar](validation/calendar.md) |
 | 4. Desktop command center and mobile project workspace | Implemented; review approved | [35](https://github.com/nrsandoval1231-oss/apex-operating-system/pull/35) | [Workspace](validation/workspace.md) |
 | 5. Optional photos and recoverable uploads | Implemented; review approved | [36](https://github.com/nrsandoval1231-oss/apex-operating-system/pull/36) | [Photos](validation/photos.md) |
-| 6. Integrated polish and full regression validation | Implemented; final CI and review approved | Integration PR on this branch | [Acceptance](ACCEPTANCE.md) · [Integration](validation/integration.md) |
+| 6. Integrated polish and full regression validation | Implemented; final CI and review approved | [37](https://github.com/nrsandoval1231-oss/apex-operating-system/pull/37) | [Acceptance](ACCEPTANCE.md) · [Integration](validation/integration.md) |
 
 PRs are stacked in milestone order to isolate review diffs. Review and merge them in that order, retargeting each dependent PR to main after its prerequisite merges. Local independent review is not owner merge approval. No merge or deployment is authorized by this status document.
 
