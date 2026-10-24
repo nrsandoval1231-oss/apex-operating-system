@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router';
 import { lazy, Suspense } from 'react';
 import Layout from './components/Layout';
+import More from './pages/More';
 import Calendar from './pages/Calendar';
 import TodayFeed from './pages/TodayFeed';
 import Projects from './pages/Projects';
@@ -40,6 +41,9 @@ export default function App() {
           </Suspense>
         } />
         <Route path="today" element={<TodayFeed />} />
+        {/* Foundation placeholder: persisted Checklist arrives in milestone 2. */}
+        <Route path="checklist" element={<TodayFeed />} />
+        <Route path="more" element={<More />} />
         <Route path="calendar" element={<Calendar />} />
         <Route path="projects" element={<Projects />} />
         <Route path="historical" element={<HistoricalProjects />} />

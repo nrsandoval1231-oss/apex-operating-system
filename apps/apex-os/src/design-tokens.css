@@ -1,0 +1,41 @@
+/* APEX 2.0: gold sampled from the official Concrete Coating brand asset.
+   The official logo image keeps its original sage artwork. */
+:root:root {
+  --brand-charcoal: #383838;
+  --brand-gold: #b88f52;
+  --brand-gold-bright: #dfbb85;
+  --ground: #171819;
+  --panel: #222324;
+  --panel-2: #2b2c2d;
+  --rule: #414244;
+  --rule-bright: #606163;
+  --ink: #f5f3ef;
+  --ink-2: #c1bdb6;
+  --ink-3: #aaa59e;
+  /* Compatibility aliases carry the new action color through existing views. */
+  --sage: var(--brand-gold);
+  --sage-d: var(--brand-gold-bright);
+  --sage-ink: #17120b;
+  --focus-ring: #f1ce98;
+  --shell-width: 1440px;
+}
+:root:root {
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 28px;
+  --radius-control: 5px;
+  --radius-panel: 10px;
+  --radius-pill: 28px;
+  --control-height: 48px;
+  --shadow-overlay: 0 12px 32px #0009;
+  --shadow-action: 0 5px 24px #0008;
+  --surface-hover: #ffffff0c;
+  --surface-selected: #b88f521a;
+  --border-selected: #b88f5266;
+  --font-ui: var(--f-body);
+  --font-heading: var(--f-title);
+  --font-label: 14px;
+}
