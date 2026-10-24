@@ -55,8 +55,12 @@ if(process.env.PROOF_SUBMIT==='1'){
   const page=await browser.newPage({viewport:{width:390,height:844}});
   await page.goto(base+route+'?utm_source=acceptance&utm_medium=isolated-fixture');
   const form=page.locator('#quote form');await form.scrollIntoViewIfNeeded();
+  // The form hydrates on visibility; wait for Astro to remove its SSR marker before
+  // clicking so this proof exercises React's handlers rather than inert server HTML.
+  await page.waitForFunction(()=>{const island=document.querySelector('#quote astro-island');return Boolean(island&&!island.hasAttribute('ssr'));});
   await form.getByRole('button',{name:/Continue/}).click();
-  await form.getByLabel('Project type',{exact:true}).selectOption({index:1});
+  await form.getByLabel(/Project type/).waitFor();
+  await form.getByLabel(/Project type/).selectOption({index:1});
   await form.getByLabel('Project city',{exact:true}).fill('Lubbock');
   await form.getByRole('button',{name:/Continue/}).click();
   await form.getByLabel('First name',{exact:true}).fill('Website');
