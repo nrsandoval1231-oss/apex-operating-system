@@ -6,7 +6,7 @@ const loadAssignees = (p: string, s: AbortSignal) =>
   apiGet(p, TaskAssigneesSchema, s);
 export const useTasks = (jobId?: string) =>
   useResource(
-    jobId ? `/api/tasks?job=${encodeURIComponent(jobId)}` : '/api/tasks',
+    jobId ? `/api/tasks?jobId=${encodeURIComponent(jobId)}` : '/api/tasks',
     loadTasks,
   );
 export const useTaskAssignees = () =>

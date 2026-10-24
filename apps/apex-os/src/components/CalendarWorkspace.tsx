@@ -11,9 +11,11 @@ import {
 import { apiGet, apiSend } from '../api/client';
 import { useJobs, useMe } from '../api/useJobs';
 import { useTaskAssignees } from '../api/useTasks';
+import { useProjectWorkspace } from '../api/useProjectWorkspace';
 import { useWorkspaceCalendar } from '../api/useWorkspaceCalendar';
 import {
   calendarAddDays,
+  compareCalendarEntries,
   calendarDates as dates,
   calendarLocalInput as localInput,
   resolveCalendarLocalInstant,
@@ -79,6 +81,7 @@ export default function CalendarWorkspace({
   const query = useWorkspaceCalendar();
   const jobs = useJobs();
   const users = useTaskAssignees();
+  const workspace = useProjectWorkspace();
   const me = useMe();
   const [params, setParams] = useSearchParams();
   const location = useLocation();
@@ -95,12 +98,15 @@ export default function CalendarWorkspace({
         : ''),
   );
   const [member, setMember] = useState('');
+  const [division, setDivision] = useState('');
   const [eventType, setEventType] = useState('');
   const [filtersOpen, setFiltersOpen] = useState(
     () => !window.matchMedia('(max-width: 700px)').matches,
   );
   const filtersId = useId();
-  const activeFilters = [project, member, eventType].filter(Boolean).length;
+  const activeFilters = [division, project, member, eventType].filter(
+    Boolean,
+  ).length;
   const [detail, setDetail] = useState<WorkspaceCalendarEntry | null>(null);
   const [editing, setEditing] = useState<CalendarEvent | null>(null);
   const [compose, setCompose] = useState(false);
@@ -155,14 +161,23 @@ export default function CalendarWorkspace({
   const userName = (id: string | null) =>
     users.data?.find((u) => u.userId === id)?.displayName ??
     (id ? 'Inactive staff' : 'Unassigned');
+  const divisionByJob = new Map(
+    (workspace.data ?? []).map((item) => [item.jobId, item.division]),
+  );
+  const itemDivision = (item: WorkspaceCalendarEntry) => {
+    const id = job(item);
+    return id === null ? 'personal' : (divisionByJob.get(id) ?? 'unknown');
+  };
   const entries = (query.data ?? []).filter(
     (item) =>
       !(item.source === 'appointment' && item.event.cancelledAt) &&
       (!jobId || job(item) === jobId) &&
       (!project || job(item) === project) &&
+      (!division ||
+        (workspace.data !== null && itemDivision(item) === division)) &&
       (!member || assigned(item) === member) &&
       (!eventType || kind(item) === eventType),
-  );
+  ).sort(compareCalendarEntries);
   const first =
     view === 'Month'
       ? cursor.slice(0, 7) + '-01'
@@ -198,7 +213,7 @@ export default function CalendarWorkspace({
       return setCursor(
         calendarAddDays(
           cursor,
-          delta * (view === 'Week' ? 7 : view === 'Agenda' ? 31 : 1),
+          delta * (view === 'Week' ? 7 : view === 'Agenda' ? (compact ? 7 : 31) : 1),
         ),
       );
     const d = new Date(cursor.slice(0, 7) + '-01T12:00:00Z');
@@ -534,8 +549,32 @@ export default function CalendarWorkspace({
           </button>
         <div className="cw-filters" id={filtersId} hidden={!filtersOpen}>
           <label>
+            Division
+            <select
+              aria-label="Division"
+              value={division}
+              onChange={(e) => setDivision(e.target.value)}
+              disabled={workspace.data === null}
+            >
+              <option value="">All divisions & personal</option>
+              {[
+                'Designer Pools',
+                'Concrete Coating',
+                'Design & Renovation',
+                'Pool Service',
+              ].map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+              <option value="personal">Personal</option>
+              <option value="unknown">Unknown division</option>
+            </select>
+          </label>
+          <label>
             Project
             <select
+              aria-label="Project"
               value={project}
               onChange={(e) => setProject(e.target.value)}
             >
@@ -549,7 +588,11 @@ export default function CalendarWorkspace({
           </label>
           <label>
             Team member
-            <select value={member} onChange={(e) => setMember(e.target.value)}>
+            <select
+              aria-label="Team member"
+              value={member}
+              onChange={(e) => setMember(e.target.value)}
+            >
               <option value="">Everyone</option>
               {(users.data ?? []).map((u) => (
                 <option value={u.userId} key={u.userId}>
@@ -561,6 +604,7 @@ export default function CalendarWorkspace({
           <label>
             Event type
             <select
+              aria-label="Event type"
               value={eventType}
               onChange={(e) => setEventType(e.target.value)}
             >
@@ -574,7 +618,15 @@ export default function CalendarWorkspace({
               )}
             </select>
           </label>
-          <span className="cw-division">Division · Unknown</span>
+          {workspace.loading && <span role="status">Loading divisions…</span>}
+          {workspace.error && (
+            <span role="alert">
+              Divisions unavailable.{' '}
+              <button className="btn ghost" onClick={workspace.reload}>
+                Retry
+              </button>
+            </span>
+          )}
         </div>
         </div>
       )}
@@ -585,6 +637,13 @@ export default function CalendarWorkspace({
           <button className="btn ghost" onClick={query.reload}>
             Retry
           </button>
+        </p>
+      )}
+      {division && workspace.data === null && (
+        <p role="status">
+          {workspace.error
+            ? 'Division filtering is unavailable until divisions can be loaded.'
+            : 'Waiting for divisions before filtering calendar work…'}
         </p>
       )}
       <h2 className="cw-period">
@@ -640,6 +699,7 @@ export default function CalendarWorkspace({
       {!query.loading &&
         !query.error &&
         query.data !== null &&
+        (!division || workspace.data !== null) &&
         view === 'Agenda' &&
         !days.some((d) => onDay(d).length) && (
           <div className="cw-empty">

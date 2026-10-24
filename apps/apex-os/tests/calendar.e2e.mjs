@@ -186,14 +186,14 @@ try {
       assert(target.width >= 44 && target.height >= 44);
       await filters.tap();
     }
-    await page.locator('.cw-filters select').nth(1).selectOption(user);
+    await page.getByLabel('Team member', { exact: true }).selectOption(user);
     assert.equal(await filters.innerText(), 'Filters (1 active)');
     await filters.click();
     assert.equal(await filters.getAttribute('aria-expanded'), 'false');
     await page.locator('.cw-entry').filter({hasText: changed}).first().waitFor();
     // A collapsed filter remains active; reopening preserves its selection.
     if (viewport.width < 700) await filters.tap(); else await filters.click();
-    assert.equal(await page.locator('.cw-filters select').nth(1).inputValue(), user);
+    assert.equal(await page.getByLabel('Team member', { exact: true }).inputValue(), user);
     await filters.click();
     checks.push(`${viewport.width}px labelled filter disclosure preserves active member filter; mobile touch and first appointment density`);
     await page.evaluate(() => window.scrollTo(0, 0));
@@ -371,7 +371,7 @@ try {
     token,
   );
   await operational.goto(origin + '/app/calendar');
-  await operational.locator('.cw-filters select').nth(0).selectOption(job);
+  await operational.getByLabel('Project', { exact: true }).selectOption(job);
   await operational
     .locator('.cw-entry')
     .filter({ hasText: 'Calendar gunite visit' })
@@ -639,6 +639,186 @@ try {
     'Tokyo local-date save navigates to Chicago business day and remains visible in Day and mobile Agenda while retaining recorded timezone',
   );
   await tokyo.close();
+  const correctionPrefix = `Calendar correction ${Date.now()}`;
+  const correctionJobs = {};
+  for (const [label, vertical] of [
+    ['pools', 'Designer Pools'],
+    ['coating', 'Concrete Coating'],
+  ]) {
+    const leadId = createCanonicalId('lead');
+    const projectId = createCanonicalId('job');
+    correctionJobs[label] = projectId;
+    await db.query(
+      "insert into leads(lead_id,intake_source,source_record_id,idempotency_key,accepted_payload) values($1,'test',$2,$2,$3::jsonb)",
+      [leadId, projectId, JSON.stringify({ customerName: `${correctionPrefix} ${label}`, vertical })],
+    );
+    await db.query(
+      "insert into jobs(job_id,lead_id,signed_proposal_version,status) values($1,$2,1,'active')",
+      [projectId, leadId],
+    );
+  }
+  const createCorrectionEvent = async (label, jobId, assignedUserId = user, eventType = 'meeting', startsOn = today) => {
+    const response = await fetch(origin + '/api/calendar-events', {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${token}`,
+        'content-type': 'application/json',
+        'idempotency-key': crypto.randomUUID(),
+      },
+      body: JSON.stringify({
+        title: `${correctionPrefix} ${label}`,
+        note: null,
+        jobId,
+        eventType,
+        assignedUserId,
+        allDay: true,
+        startsOn,
+        endsOn: startsOn,
+        startsAt: null,
+        endsAt: null,
+        timezone: 'America/Chicago',
+      }),
+    });
+    const event = await response.json();
+    assert.equal(response.status, 201, JSON.stringify(event));
+    return event;
+  };
+  await createCorrectionEvent('pool meeting', correctionJobs.pools);
+  await createCorrectionEvent('pool crew', correctionJobs.pools, field, 'crew');
+  await createCorrectionEvent('coating meeting', correctionJobs.coating);
+  await createCorrectionEvent('unknown meeting', job);
+  await createCorrectionEvent('personal meeting', null);
+  const dayAfter = (offset) => {
+    const date = new Date(today + 'T12:00:00Z');
+    date.setUTCDate(date.getUTCDate() + offset);
+    return date.toISOString().slice(0, 10);
+  };
+  const skippedTitle = `${correctionPrefix} formerly skipped week`;
+  await createCorrectionEvent('formerly skipped week', correctionJobs.pools, user, 'meeting', dayAfter(8));
+  for (const width of [1440, 390]) {
+    const correctionPage = await browser.newPage({ viewport: { width, height: 900 }, hasTouch: width < 700, isMobile: width < 700 });
+    await correctionPage.addInitScript((value) => localStorage.setItem('apex-gate-token', value), token);
+    await correctionPage.goto(origin + '/app/calendar');
+    const disclosure = correctionPage.getByRole('button', { name: /^Filters/ });
+    if (width < 700) await disclosure.click();
+    await correctionPage.getByLabel('Division', { exact: true }).selectOption('Designer Pools');
+    await correctionPage.getByRole('button', { name: 'Day', exact: true }).click();
+    await correctionPage.getByLabel('Calendar date', { exact: true }).fill(today);
+    const correctionCards = correctionPage.locator('.cw-days .cw-entry').filter({ hasText: correctionPrefix });
+    assert.equal(await correctionCards.count(), 2);
+    await correctionPage.getByLabel('Project', { exact: true }).selectOption(correctionJobs.pools);
+    await correctionPage.getByLabel('Team member', { exact: true }).selectOption(user);
+    await correctionPage.getByLabel('Event type', { exact: true }).selectOption('meeting');
+    assert.equal(await disclosure.innerText(), 'Filters (4 active)');
+    assert.equal(await correctionCards.count(), 1);
+    assert.match(await correctionCards.first().innerText(), /pool meeting/);
+    await correctionPage.getByLabel('Division', { exact: true }).selectOption('Concrete Coating');
+    assert.equal(await correctionCards.count(), 0);
+    await correctionPage.getByLabel('Project', { exact: true }).selectOption('');
+    assert.equal(await correctionCards.count(), 1);
+    assert.match(await correctionCards.first().innerText(), /coating meeting/);
+    await correctionPage.getByLabel('Division', { exact: true }).selectOption('personal');
+    assert.match(await correctionCards.first().innerText(), /personal meeting/);
+    await correctionPage.getByLabel('Division', { exact: true }).selectOption('unknown');
+    assert.match(await correctionCards.first().innerText(), /unknown meeting/);
+    if (width === 1440) {
+      await correctionPage.getByLabel('Division', { exact: true }).selectOption('Designer Pools');
+      await correctionPage.route('**/api/workspace-projects', (route) =>
+        route.fulfill({ status: 503, json: { error: 'Synthetic metadata outage' } }),
+      );
+      await correctionPage.evaluate(() => window.dispatchEvent(new Event('apex:data-changed')));
+      await correctionPage.getByRole('alert').filter({ hasText: 'Divisions unavailable.' }).waitFor();
+      assert(await correctionPage.getByLabel('Division', { exact: true }).isDisabled());
+      await correctionPage.getByText('Division filtering is unavailable until divisions can be loaded.').waitFor();
+      await correctionPage.unroute('**/api/workspace-projects');
+      await correctionPage.getByRole('alert').filter({ hasText: 'Divisions unavailable.' }).getByRole('button', { name: 'Retry' }).click();
+      await correctionPage.getByLabel('Division', { exact: true }).waitFor({ state: 'visible' });
+      await correctionPage.locator('.cw-filters select[aria-label="Division"]:enabled').waitFor();
+      assert.equal(await correctionCards.count(), 1);
+      checks.push('Division metadata outage is explicit; filter disables and retry restores known divisions');
+    }
+    checks.push(`${width}px canonical division, personal/unknown and combined project/member/type filters`);
+    await correctionPage.goto(origin + `/app/projects/${correctionJobs.pools}`);
+    await correctionPage.getByRole('button', { name: 'Calendar', exact: true }).click();
+    const compactDate = correctionPage.getByLabel('Calendar date', { exact: true });
+    await compactDate.fill(today);
+    await correctionPage.getByRole('button', { name: 'Next period' }).click();
+    assert.equal(await compactDate.inputValue(), dayAfter(7));
+    await correctionPage.locator('.cw-entry').filter({ hasText: skippedTitle }).waitFor();
+    await correctionPage.getByRole('button', { name: 'Next period' }).click();
+    assert.equal(await compactDate.inputValue(), dayAfter(14));
+    assert.equal(await correctionPage.locator('.cw-entry').filter({ hasText: skippedTitle }).count(), 0);
+    await correctionPage.getByRole('button', { name: 'Previous period' }).click();
+    assert.equal(await compactDate.inputValue(), dayAfter(7));
+    await correctionPage.locator('.cw-entry').filter({ hasText: skippedTitle }).waitFor();
+    await correctionPage.getByRole('button', { name: 'Previous period' }).click();
+    assert.equal(await compactDate.inputValue(), today);
+    checks.push(`${width}px compact Agenda visits adjacent seven-day windows in both directions`);
+    await correctionPage.close();
+  }
+  const fullAgenda = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+  await fullAgenda.addInitScript((value) => localStorage.setItem('apex-gate-token', value), token);
+  await fullAgenda.goto(origin + '/app/calendar');
+  await fullAgenda.getByRole('button', { name: 'Agenda', exact: true }).click();
+  await fullAgenda.getByLabel('Calendar date', { exact: true }).fill(today);
+  await fullAgenda.getByRole('button', { name: 'Next period' }).click();
+  assert.equal(await fullAgenda.getByLabel('Calendar date', { exact: true }).inputValue(), dayAfter(31));
+  checks.push('Full Agenda retains 31-day navigation');
+  await fullAgenda.close();
+  const timedEvents = [];
+  for (const [label, hour] of [['09', 15], ['12', 18], ['15', 21]]) {
+    const response = await fetch(origin + '/api/calendar-events', {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${token}`,
+        'content-type': 'application/json',
+        'idempotency-key': crypto.randomUUID(),
+      },
+      body: JSON.stringify({
+        title: `${correctionPrefix} timed ${label}`,
+        note: null,
+        jobId: correctionJobs.pools,
+        eventType: 'meeting',
+        assignedUserId: user,
+        allDay: false,
+        startsOn: null,
+        endsOn: null,
+        startsAt: `${today}T${hour}:00:00.000Z`,
+        endsAt: `${today}T${hour + 1}:00:00.000Z`,
+        timezone: 'America/Chicago',
+      }),
+    });
+    const event = await response.json();
+    assert.equal(response.status, 201, JSON.stringify(event));
+    timedEvents.push(event.eventId);
+  }
+  const allDayEvent = await createCorrectionEvent('all day order', correctionJobs.pools);
+  const ordered = await browser.newPage({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+  await ordered.addInitScript((value) => localStorage.setItem('apex-gate-token', value), token);
+  let includeAllDay = false;
+  await ordered.route('**/api/workspace-calendar', async (route) => {
+    const response = await route.fetch();
+    const entries = await response.json();
+    const allowed = new Set([...timedEvents, ...(includeAllDay ? [allDayEvent.eventId] : [])]);
+    await route.fulfill({ response, json: entries.filter((entry) => entry.source === 'appointment' && allowed.has(entry.event.eventId)) });
+  });
+  await ordered.goto(origin + '/app');
+  await ordered.getByText(`${correctionPrefix} timed 09`, { exact: true }).waitFor();
+  assert.deepEqual(
+    await ordered.locator('.cw-summary > .cw-entry strong').allTextContents(),
+    [`${correctionPrefix} timed 09`, `${correctionPrefix} timed 12`],
+  );
+  includeAllDay = true;
+  await ordered.goto(origin + '/app/calendar');
+  await ordered.getByRole('button', { name: 'Day', exact: true }).click();
+  await ordered.getByLabel('Calendar date', { exact: true }).fill(today);
+  await ordered.getByText(`${correctionPrefix} all day order`, { exact: true }).waitFor();
+  assert.deepEqual(
+    await ordered.locator('.cw-days .cw-entry strong').allTextContents(),
+    ['all day order', 'timed 09', 'timed 12', 'timed 15'].map((name) => `${correctionPrefix} ${name}`),
+  );
+  checks.push('Three out-of-order persisted timed events show earliest two in mobile Today; Day places all-day first then timed chronology');
+  await ordered.close();
   console.log(JSON.stringify({ passed: checks.length, checks }, null, 2));
 } finally {
   if (browser) await browser.close();

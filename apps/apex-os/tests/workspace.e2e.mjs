@@ -162,6 +162,19 @@ try {
   });
   await api('/api/tasks', {
     ...fields,
+    title: `Personal-only ${suffix}`,
+    jobId: null,
+    dueDate: null,
+    priority: 'normal',
+  });
+  const scopedTasks = await api(`/api/tasks?jobId=${jobs.a}`);
+  assert(scopedTasks.some((task) => task.taskId === mine.taskId));
+  assert(scopedTasks.every((task) => task.jobId === jobs.a));
+  assert(!scopedTasks.some((task) => task.title === `Beta-only ${suffix}`));
+  assert(!scopedTasks.some((task) => task.title === `Personal-only ${suffix}`));
+  checks.push('Project task HTTP response excludes other projects and personal tasks');
+  await api('/api/tasks', {
+    ...fields,
     title: `Field assigned ${suffix}`,
     assignedUserId: ids.field,
     jobId: jobs.a,
@@ -401,7 +414,7 @@ try {
     // Delay the next project's task read: prior project identity must vanish immediately.
     let release;
     const hold = new Promise((r) => (release = r));
-    await page.route(`**/api/tasks?job=${jobs.b}`, async (route) => {
+    await page.route(`**/api/tasks?jobId=${jobs.b}`, async (route) => {
       await hold;
       await route.continue();
     });
@@ -425,7 +438,7 @@ try {
       .locator('.selected-project')
       .getByRole('heading', { name: `Beta-only ${suffix}`, exact: true })
       .waitFor();
-    await page.unroute(`**/api/tasks?job=${jobs.b}`);
+    await page.unroute(`**/api/tasks?jobId=${jobs.b}`);
     checks.push(
       `${viewport.width}: fast project scope switch clears prior tasks`,
     );
