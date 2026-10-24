@@ -26,7 +26,7 @@ import {
   ProcurementUpdateSchema,
 } from '@apex/contracts';
 import { DomainRuleError, RoleRefusalError } from '@apex/domain';
-import { CustomerService, GateService, InspectionService } from '@apex/gate-service';
+import { CustomerService, GateService, InspectionService, TaskService } from '@apex/gate-service';
 import { renderClosedPage, renderCustomerPage } from './customerPage.js';
 import { log, redactPath } from './log.js';
 
@@ -1022,6 +1022,35 @@ export function createGateApi(options: GateApiOptions) {
           status: 'accepted',
           project: null,
         });
+      }
+
+      if (
+        url.pathname === '/api/tasks' || url.pathname === '/api/task-assignees' ||
+        /^\/api\/tasks\//.test(url.pathname)
+      ) {
+        requireStaff(actor);
+        const tasks = new TaskService(options.db);
+        if (request.method === 'GET' && url.pathname === '/api/task-assignees') {
+          return sendJson(response, 200, await tasks.assignees(actor));
+        }
+        if (request.method === 'GET' && url.pathname === '/api/tasks') {
+          const job = url.searchParams.get('jobId');
+          return sendJson(response, 200, await tasks.list(actor, job === null ? undefined : idSchemas.job.parse(job)));
+        }
+        if (request.method === 'POST' && url.pathname === '/api/tasks') {
+          return sendJson(response, 201, await tasks.command(
+            actor, idempotency(request), 'create', null, await readJson(request),
+          ));
+        }
+        const match = url.pathname.match(/^\/api\/tasks\/(task_[0-9A-HJKMNP-TV-Z]{26})\/(edit|complete|history)$/);
+        if (match && request.method === 'GET' && match[2] === 'history') {
+          return sendJson(response, 200, await tasks.history(actor, match[1]!));
+        }
+        if (match && request.method === 'POST' && (match[2] === 'edit' || match[2] === 'complete')) {
+          return sendJson(response, 200, await tasks.command(
+            actor, idempotency(request), match[2], match[1]!, await readJson(request),
+          ));
+        }
       }
 
       const opportunityProposalsMatch = url.pathname.match(
