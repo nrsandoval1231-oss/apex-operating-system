@@ -15,16 +15,33 @@ function envOr(key: string, fallback: string): string {
   return v && v.trim() ? v.trim() : fallback;
 }
 
-/** No committed host. Empty in production fails the build (see below). */
+const buildEnvironment = envOr('PUBLIC_ENV', 'development');
+/** No committed host. Empty or invalid in production fails the build below. */
 const leadWebhookProd = envOr('PUBLIC_LEAD_WEBHOOK_URL', '');
 /** No committed host. Non-production builds read PUBLIC_LEAD_WEBHOOK_URL_TEST. */
 const leadWebhookTest = envOr('PUBLIC_LEAD_WEBHOOK_URL_TEST', '');
+
+if (buildEnvironment === 'production') {
+  if (!leadWebhookProd) {
+    throw new Error('PUBLIC_LEAD_WEBHOOK_URL is required when PUBLIC_ENV=production.');
+  }
+  let productionWebhook: URL;
+  try {
+    productionWebhook = new URL(leadWebhookProd);
+  } catch {
+    throw new Error('PUBLIC_LEAD_WEBHOOK_URL must be an absolute HTTPS URL when PUBLIC_ENV=production.');
+  }
+  if (productionWebhook.protocol !== 'https:' || !productionWebhook.hostname
+    || productionWebhook.username || productionWebhook.password || productionWebhook.hash) {
+    throw new Error('PUBLIC_LEAD_WEBHOOK_URL must be an absolute HTTPS URL without credentials or fragment when PUBLIC_ENV=production.');
+  }
+}
 
 export const site = {
   /** Canonical URL — BLOCKED on D-03; only used for absolute URLs in Phase 4. */
   url: envOr('PUBLIC_SITE_URL', 'https://apexgetsitdone.com'),
   /** "production" enables the live webhook; anything else is a non-prod build. */
-  env: envOr('PUBLIC_ENV', 'development'),
+  env: buildEnvironment,
   phoneDisplay: envOr('PUBLIC_PHONE_DISPLAY', '806-605-0502'),
   phoneE164: envOr('PUBLIC_PHONE_E164', '+18066050502'),
   contactEmail: envOr('PUBLIC_CONTACT_EMAIL', 'travis@apexgetsitdone.com'),
