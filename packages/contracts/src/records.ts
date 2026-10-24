@@ -24,22 +24,38 @@ export type GateReleaseRole = (typeof GATE_RELEASE_ROLES)[number];
 export const EvidenceKindSchema = z.enum(['photo', 'video', 'document', 'measurement', 'inspection']);
 export type EvidenceKind = z.infer<typeof EvidenceKindSchema>;
 
-export const EvidenceRecordSchema = z.strictObject({
-  evidenceId: idSchemas.evidence,
-  jobId: idSchemas.job,
-  gateInstanceId: idSchemas.gate,
-  requirementKey: z.string().min(1).max(120),
-  kind: EvidenceKindSchema,
-  storageKey: z.string().min(1).max(500),
-  sha256: z.string().regex(/^[a-f0-9]{64}$/),
-  capturedAt: z.string().datetime({ offset: true }),
-  capturedBy: idSchemas.user,
-  mimeType: z.string().min(1).max(120),
-  byteSize: z.number().int().positive().max(250_000_000),
-  caption: z.string().max(1000).optional(),
-  planRevisionId: idSchemas.revision.optional(),
-  detailRevision: z.string().max(80).optional(),
-});
+export const EvidenceRecordSchema = z
+  .strictObject({
+    evidenceId: idSchemas.evidence,
+    jobId: idSchemas.job,
+    purpose: z
+      .enum(['gate-requirement', 'jobsite-photo'])
+      .default('gate-requirement'),
+    gateInstanceId: idSchemas.gate.nullable(),
+    requirementKey: z.string().min(1).max(120).nullable(),
+    kind: EvidenceKindSchema,
+    storageKey: z.string().min(1).max(500),
+    sha256: z.string().regex(/^[a-f0-9]{64}$/),
+    capturedAt: z.string().datetime({ offset: true }),
+    capturedBy: idSchemas.user,
+    mimeType: z.string().min(1).max(120),
+    byteSize: z.number().int().positive().max(250_000_000),
+    caption: z.string().max(1000).optional(),
+    planRevisionId: idSchemas.revision.optional(),
+    detailRevision: z.string().max(80).optional(),
+  })
+  .refine(
+    (row) =>
+      row.purpose === 'jobsite-photo'
+        ? row.kind === 'photo' &&
+          row.gateInstanceId === null &&
+          row.requirementKey === null
+        : row.gateInstanceId !== null && row.requirementKey !== null,
+    {
+      message:
+        'Evidence must retain its gate requirement, or be an optional jobsite photo without gate links.',
+    },
+  );
 export type EvidenceRecord = z.infer<typeof EvidenceRecordSchema>;
 
 export const GateRequirementDefinitionSchema = z.strictObject({
