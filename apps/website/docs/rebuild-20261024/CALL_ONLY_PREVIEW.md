@@ -7,3 +7,5 @@ Set `PUBLIC_ENV=staging`, `PUBLIC_PREVIEW_INTAKE_DISABLED=1`, and `PUBLIC_SITE_U
 This explicit mode replaces the inquiry island with an unavailable notice and verified phone link (`+18066050502`). There are no inquiry fields or submission controls. The mode refuses production or either configured endpoint. Preflight allows the missing endpoint only for this exact staging mode, checks rendered call-only markers, phone link and absence of forms; all other missing-endpoint/production guards remain.
 
 This preview cannot accept online inquiries. Enabling public intake, changing Access, migrating OS data or switching apexgetsitdone.com requires its separate release decision. Existing Pages deployments remain retained for rollback; this release changes only the preview alias.
+
+Live Pages verification exposed an inherited extra308 after legacy redirects to directory pages. The staging builder now emits trailing-slash destinations, preserving the configured301 and destination while reaching the page in one hop. Production redirect configuration is unchanged.

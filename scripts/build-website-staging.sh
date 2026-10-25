@@ -28,7 +28,8 @@ EOF
 node --input-type=module -e '
 import {readFileSync,writeFileSync} from "node:fs";
 const {pages=[]}=JSON.parse(readFileSync("config/redirects.json","utf8"));
-const lines=pages.map(({from,to,status=301})=>`${from} ${to} ${status}`);
+// Pages serves directory index pages at trailing-slash URLs; avoid a second 308 hop.
+const lines=pages.map(({from,to,status=301})=>`${from} ${to.endsWith("/") ? to : to + "/"} ${status}`);
 writeFileSync("dist/_redirects",lines.join("\n")+"\n");
 '
 printf 'staging website build wrote %s\n' "$ROOT/apps/website/dist"
