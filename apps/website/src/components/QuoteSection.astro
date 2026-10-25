@@ -14,7 +14,7 @@
  * window.__apexPreselect on mount. The user can still change the selection (AC-2.3).
  */
 import { sections } from '@content/site-copy';
-import { site, leadWebhookUrl } from '@lib/site';
+import { site, leadWebhookUrl, callOnlyPreview } from '@lib/site';
 import { isVertical, type Vertical } from '@content/verticals';
 import QuoteForm from './QuoteForm.tsx';
 
@@ -50,13 +50,18 @@ if (preselect !== undefined && !isVertical(preselect)) {
     </div>
 
     <div class="qgrid">
-      <QuoteForm
+      {callOnlyPreview ? <div data-call-only-preview="true" class="quote-help">
+        <p class="eyebrow">Preview — phone contact only</p>
+        <h3>Let's talk about your project.</h3>
+        <p>Online inquiries are disabled in this preview. No request can be submitted here. Please call Apex to discuss your project.</p>
+        <a class="btn" href={`tel:${site.phoneE164}`}>Call {site.phoneDisplay}</a>
+      </div> : <QuoteForm
         client:visible
         initialVertical={preselect}
         webhookUrl={leadWebhookUrl}
         phoneDisplay={site.phoneDisplay}
         phoneE164={site.phoneE164}
-      />
+      />}
       <aside class="quote-help">
         <p class="eyebrow">Prefer a conversation?</p>
         <h3>Call our Lubbock team.</h3>

@@ -20,6 +20,11 @@ const buildEnvironment = envOr('PUBLIC_ENV', 'development');
 const leadWebhookProd = envOr('PUBLIC_LEAD_WEBHOOK_URL', '');
 /** No committed host. Non-production builds read PUBLIC_LEAD_WEBHOOK_URL_TEST. */
 const leadWebhookTest = envOr('PUBLIC_LEAD_WEBHOOK_URL_TEST', '');
+/** Explicit review-only mode: collect no inquiry data and render phone contact instead. */
+export const callOnlyPreview = envOr('PUBLIC_PREVIEW_INTAKE_DISABLED', '') === '1';
+if (callOnlyPreview && (buildEnvironment !== 'staging' || leadWebhookProd || leadWebhookTest)) {
+  throw new Error('Call-only preview requires PUBLIC_ENV=staging and both inquiry endpoints unset.');
+}
 
 if (buildEnvironment === 'production') {
   if (!leadWebhookProd) {
