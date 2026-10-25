@@ -70,6 +70,7 @@ export interface ImageSlot {
  * photography should replace the stock with. They are the shot list.
  */
 export const IMAGE_MANIFEST = {
+  'home-night-pool-hero': { id:'home-night-pool-hero', alt:'An illuminated pool and spa at night, with a tiled water wall and two fire bowls, from the Apex gallery', label:'Apex pool gallery', ratio:'3 / 4', tone:'pool', src:'/images/projects/apexdpv1-1200.webp', srcset:'/images/projects/apexdpv1-480.webp 480w, /images/projects/apexdpv1-800.webp 800w, /images/projects/apexdpv1-1200.webp 1200w' },
   // Home router tiles (one per vertical)
   'tile-pools': {
     id: 'tile-pools',
