@@ -17,6 +17,8 @@ overrides:
   sharp: 0.35.5
   brace-expansion@1: 1.1.21
   brace-expansion@2: 2.1.7
+  # exceljs 4.4.0 (latest) still pins uuid 8; 11.1.1 keeps CJS and fixes GHSA-w5hq-g745-h8pq.
+  exceljs>uuid: 11.1.1
 # esbuild is a Vite build-time dependency only. Its postinstall script merely
 # verifies the platform binary that pnpm already installs via @esbuild/<platform>,
 # so the script is denied rather than granted install-time execution.

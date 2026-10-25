@@ -1,10 +1,23 @@
 # Apex — Status
 
-**Updated:** 2026-10-15. **Pilot acceptance remains OPEN.**
+**Updated:** 2026-10-25. **Pilot acceptance remains OPEN.** Main: Apex 2.0 merged (PRs #32–#38); nothing new deployed.
 
-Apex runs the business through canonical PostgreSQL operational records. Designer owns measured quantities, the pricing engine owns estimate calculations, QuickBooks owns accounting actuals, n8n owns asynchronous adapters, and Cloudflare is the approved host. [ADR-0004](docs/decisions/ADR-0004-apex-operational-record-authority.md) explicitly supersedes the historical Monday/HubSpot operational-authority assumptions while preserving their approval history. The owner-centered [vision](docs/vision.md) is unchanged.
+## Apex 2.0 (current main)
 
-## This engineering candidate
+- **Foundation (#32)** and **staff checklist (#33)**: persisted canonical tasks with private scopes, audited recurrence, and a Today task panel.
+- **Calendar (#34)**: audited appointments, unified schedule projection, responsive calendar workspace and appointment editor.
+- **Workspace (#35)**: responsive command center, project tabs, persisted project notes and audited priority.
+- **Photos (#36)**: optional jobsite photos with secure upload receipts, recoverable mobile uploads, protected galleries.
+- **Integration (#37)**: responsive workflows integrated, staff sessions isolated.
+- **Website 2.0 (#38)**: rebuilt public Astro site; production build refuses to run without lead-intake config (`PUBLIC_LEAD_WEBHOOK_URL`); quote retries and confirmed conversion tracking preserved.
+- Open draft: #39 (owner-approved family hero video).
+
+**Toolchain:** Node 24 (`.nvmrc`), pnpm 11.18.0 (`engines`). `pnpm verify` and `bash scripts/ci.sh` pass locally; the PostgreSQL/S3 adapter suite is skipped unless `DATABASE_URL` and `S3_*` are set, and a skip is not a pass. Managed Neon is still pending.
+
+**Repository hygiene (2026-10-25):** `docs/archive/` and unused website media were removed, and history was rewritten to purge the archived n8n workflow export and large historical media. The n8n API key that was in that export must still be rotated; purging history does not revoke it.
+
+## Earlier candidate notes (2026-10-15)
+### That engineering candidate
 
 - Today now includes persisted, Lead-linked pre-contract next actions: overdue, due today, and missing next action. Office users can delegate, replace, complete, and inspect retained history from the authoritative opportunity. Future work is not called overdue. A failed lane cannot produce a false all-clear.
 - Proposal acceptance serializes against follow-up writes and resolves open pre-contract work while retaining the existing exactly-one Job/Project invariant. Construction cards and frozen Brief identity remain intact; Brief explicitly names its pre-contract coverage limit.

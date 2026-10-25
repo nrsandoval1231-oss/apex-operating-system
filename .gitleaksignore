@@ -1,0 +1,8 @@
+# Test-fixture strings (idempotency keys, a fake customer token in a redaction test). Reviewed 2026-10-25.
+apps/gate-api/src/log.test.ts:generic-api-key:13
+apps/gate-api/src/server.test.ts:generic-api-key:128
+packages/gate-service/src/leadFollowup.test.ts:generic-api-key:57
+packages/gate-service/src/leadFollowup.test.ts:generic-api-key:58
+packages/gate-service/src/leadFollowup.test.ts:generic-api-key:60
+packages/gate-service/src/leadFollowup.test.ts:generic-api-key:74
+packages/gate-service/src/proposal.test.ts:generic-api-key:179

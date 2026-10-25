@@ -4,6 +4,10 @@
   "private": true,
   "type": "module",
   "packageManager": "pnpm@11.18.0",
+  "engines": {
+    "node": ">=24",
+    "pnpm": "11.18.0"
+  },
   "scripts": {
     "test": "vitest run --maxWorkers=1 --no-file-parallelism && vitest run --config integration-tests/vitest.config.ts --maxWorkers=1 --no-file-parallelism",
     "test:watch": "vitest",
@@ -11,7 +15,7 @@
     "build": "pnpm typecheck",
     "verify": "pnpm typecheck && pnpm --filter @apex/os build && pnpm test",
     "//test": "No --exclude flag: the root vitest.config.ts already includes only packages/** and apps/**, so integration-tests/ cannot match. An unquoted integration-tests/** glob was expanded by POSIX shells (but not by cmd.exe), which turned the second expanded path into a positional filter and made every CI run fail while Windows passed.",
-    "//verify": "typecheck FIRST: it runs tsc -b, which emits the dist/ that the workspace packages' exports point at. Then the staff app is built, because the API serves it and tests assert on the headers it is served with \u2014 without this, `pnpm verify` passes while the shipped bundle is never compiled, and those tests silently depend on a stale local build."
+    "//verify": "typecheck FIRST: it runs tsc -b, which emits the dist/ that the workspace packages' exports point at. Then the staff app is built, because the API serves it and tests assert on the headers it is served with — without this, `pnpm verify` passes while the shipped bundle is never compiled, and those tests silently depend on a stale local build."
   },
   "devDependencies": {
     "@types/node": "26.6.5",

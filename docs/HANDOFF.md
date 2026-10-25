@@ -84,5 +84,5 @@ This is now operational, not broad product implementation:
 - Do not edit applied migrations; add a forward migration.
 - Do not infer prices, acceptance, email delivery, or reconciliation.
 - Do not restore mutation controls to History without a new explicit business decision and migration.
-- Do not rewrite the remaining `docs/archive/` artifacts or old `designer-quantity-v4` fixtures to appear current. Duplicate imported-repo copies were removed; that history lives in git, and the old GitHub repositories were deleted.
+- `docs/archive/` was removed on 2026-10-25 and purged from history (backup kept outside the repo). Do not rewrite the old `designer-quantity-v4` fixtures to appear current. Duplicate imported-repo copies were removed; that history lives in git, and the old GitHub repositories were deleted.
 - Treat `STATUS.md`, `NEXT.md`, and current decision/runbook documents as active guidance; older sections of `docs/status.md` are chronological history.

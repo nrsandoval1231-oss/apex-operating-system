@@ -43,7 +43,6 @@ This code is production-shaped but deployment remains an explicit operator decis
 | `docs/prd` | Apex product requirements, decision register, and operational specifications |
 | `archive/proposal-engine` | Legacy reference/calibration implementation; not the production Proposal authority |
 | `tools/decks` | Reproducible Apex strategy and pitch-deck generators |
-| `docs/archive/` | Historical evidence only; preserved content is not current guidance |
 
 ## Lifecycle invariants
 
@@ -121,7 +120,6 @@ The latest verified baseline is in [`STATUS.md`](STATUS.md).
 - [`docs/decisions/single-signature-gates.md`](docs/decisions/single-signature-gates.md) — current active Gate authority
 - [`docs/requirements/designer-next-slice.md`](docs/requirements/designer-next-slice.md) — implemented Designer slice and explicitly deferred catalog/dig-sheet items
 - [`docs/status.md`](docs/status.md) — chronological engineering record; older sections are historical, not current status
-- [`docs/archive/README.md`](docs/archive/README.md) — superseded artifacts and preserved evidence
 
 ## Safety
 

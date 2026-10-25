@@ -18,7 +18,6 @@ check them out.
 | Product requirements and decisions | `docs/prd` plus `docs/decisions` |
 | Legacy proposal calibration | `archive/proposal-engine` |
 | Deck generators | `tools/decks` |
-| Historical evidence | `docs/archive` |
 
 ## Former source repositories
 
@@ -35,7 +34,7 @@ These GitHub repositories were deleted. History of the import lives in git.
 
 `archive/proposal-engine` stays. `integration-tests/takeoff-to-proposal.test.ts` and `scripts/ci.sh` still run it. The GitHub Actions workflow that used to reference it has been removed.
 
-Duplicate working copies were removed: `archive/imported-repositories/`, plus the git bundles, source zips, duplicate PRD copies, and regenerable deck binaries under `docs/archive/`. Recover an older snapshot from git history. Provenance: `docs/REPOSITORY_CONSOLIDATION_2026-09-16.md`.
+Duplicate working copies were removed: `archive/imported-repositories/`, plus the git bundles, source zips, duplicate PRD copies, and regenerable deck binaries under the former `docs/archive/` (removed and purged from history 2026-10-25). Recover an older snapshot from the 2026-10-25 pre-rewrite backup bundle (kept outside GitHub). Provenance: `docs/REPOSITORY_CONSOLIDATION_2026-09-16.md`.
 
 ## Migration provenance
 
